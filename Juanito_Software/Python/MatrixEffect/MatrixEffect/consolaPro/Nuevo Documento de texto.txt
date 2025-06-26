@@ -1,0 +1,75 @@
+import curses
+import random
+import time
+import threading
+
+CHARS = "01アイウエオカキクケコサシスセソﾊﾋﾌﾍﾎｶﾞｷｸｹｺ01アイウエオカキクケコサシスセソﾊﾋﾌﾍﾎABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890@#$%^&*       "
+
+class Trail:
+    def __init__(self, col, rows):
+        self.col = col
+        self.rows = rows
+        self.reset()
+
+    def reset(self):
+        self.max_length = random.randint(5, 20)
+        self.speed = random.randint(1, 4)
+        self.timer = 0
+        self.head_pos = random.randint(-self.max_length, 0)
+        self.chars = []
+        self.finished = False
+
+    def update(self):
+        self.timer += 1
+        if self.timer % self.speed != 0:
+            return
+        if not self.finished:
+            self.head_pos += 1
+            if 0 <= self.head_pos < self.rows:
+                self.chars.insert(0, random.choice(CHARS))
+            if len(self.chars) > self.max_length:
+                self.finished = True
+        else:
+            if self.chars:
+                self.chars.pop()
+            else:
+                self.reset()
+
+def matrix_rain_curses(stdscr):
+    curses.curs_set(0)  # Ocultar cursor
+    stdscr.nodelay(True)  # No bloquear la entrada
+    stdscr.timeout(50)  # Tiempo de espera para refresco de pantalla
+
+    rows, cols = stdscr.getmaxyx()
+    trails = [Trail(c, rows) for c in range(cols)]
+
+    while True:
+        stdscr.erase()
+        key = stdscr.getch()
+        if key == ord('q'):
+            break
+
+        for trail in trails:
+            trail.update()
+            for i, ch in enumerate(trail.chars):
+                row = trail.head_pos - i
+                if 0 <= row < rows:
+                    # El último (cabeza) en blanco brillante
+                    if i == 0:
+                        stdscr.addstr(row, trail.col, ch, curses.color_pair(2))
+                    else:
+                        stdscr.addstr(row, trail.col, ch, curses.color_pair(1))
+
+        stdscr.refresh()
+        time.sleep(0.05)
+
+def main():
+    curses.initscr()
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Verde normal
+    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Blanco para cabeza
+
+    curses.wrapper(matrix_rain_curses)
+
+if __name__ == "__main__":
+    main()

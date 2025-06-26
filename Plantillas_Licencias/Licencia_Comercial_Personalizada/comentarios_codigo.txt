@@ -1,0 +1,35 @@
+# Copyright (C) 2025 Juanito Software
+#
+# Este archivo forma parte del software comercial springlessEasyBatch (Versión Java).
+# Su uso está sujeto a una licencia de uso individual o corporativa.
+# Queda estrictamente prohibida la distribución, modificación, descompilación o
+# ingeniería inversa del código.
+#
+# Este software solo puede ser instalado y utilizado con una clave de licencia 
+# válida proporcionada por Juanito Software.
+#
+# Para más información o soporte:
+#   - Web: https://tuweb.com
+#   - Email: benaldezperedaj@gmail.com
+#   - Soporte: soporte@juanitosoftware.com
+
+
+
+
+/*
+ * Copyright (C) 2025 Juanito Software
+ *
+ * Este archivo forma parte del software comercial springlessEasyBatch (Versión Java).
+ *
+ * Su uso está sujeto a una licencia de uso individual o corporativa. Queda estrictamente
+ * prohibida la distribución, modificación, descompilación o ingeniería inversa del código.
+ *
+ * Este software solo puede ser instalado y utilizado con una clave de licencia válida
+ * proporcionada por Juanito Software.
+ *
+ * Para más información sobre términos de uso, activación, soporte o adquisición de licencias,
+ * consulta el archivo LICENSE.txt incluido o visita:
+ *   - Sitio web: https://tuweb.com
+ *   - Email: benaldezperedaj@gmail.com
+ *   - Soporte técnico: soporte@juanitosoftware.com
+ */

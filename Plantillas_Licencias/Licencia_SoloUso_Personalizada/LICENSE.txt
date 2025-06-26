@@ -1,0 +1,49 @@
+## Licencia
+
+📄 LICENCIA DE USO NO COMERCIAL – SPRINGLESS EASYBATCH (Versión Python)
+Copyright © 2025 – Juanito Software
+Todos los derechos reservados.
+
+1. CONCESIÓN DE LICENCIA
+
+Se concede al usuario el derecho no exclusivo, no transferible y revocable de:
+
+- Instalar y utilizar este software de forma gratuita.
+- Compartir copias sin modificar del software, siempre que esta licencia se incluya íntegra y sin alteraciones.
+
+2. USO PERMITIDO
+
+Este software se puede utilizar únicamente con fines personales, educativos o de evaluación.
+No está autorizado su uso en entornos comerciales, profesionales, institucionales ni gubernamentales.
+
+3. RESTRICCIONES
+
+Se prohíbe expresamente:
+
+- El uso del software con fines comerciales o lucrativos, incluyendo venta, alquiler, sublicencia o integración en productos de pago.
+- Modificar, traducir, adaptar, descompilar, desensamblar o aplicar ingeniería inversa al software o a cualquiera de sus partes.
+- Crear obras derivadas, productos, servicios o soluciones basadas en este software.
+- Eliminar o alterar los avisos de copyright, autoría o esta licencia.
+
+4. PROPIEDAD INTELECTUAL
+
+Este software es propiedad exclusiva de Juanito Software.
+No se concede ningún derecho de propiedad intelectual, excepto los estipulados expresamente en esta licencia.
+
+5. EXCLUSIÓN DE GARANTÍAS
+
+Este software se proporciona “tal cual”, sin garantías de ningún tipo, ya sean expresas o implícitas.
+El autor no se hace responsable por daños directos o indirectos derivados del uso del software.
+
+6. VERSIÓN COMERCIAL
+
+Esta es una versión gratuita y reducida de un sistema más avanzado, disponible en Java.
+Para adquirir la versión comercial, con funciones ampliadas y soporte, contactar con:
+
+7. CONTACTO
+
+Juanito Software
+Email: bernaldezperedaj@gmail.com  
+GitHub: https://github.com/TU_USUARIO
+Sitio web: https://tuweb.com
+Licencia emitida desde Cantabria, España.
