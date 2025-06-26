@@ -1,0 +1,3 @@
+1. Crea tu archivo con la clase @dataclass (ej: dataclass_template.py)
+2. Ejecuta: SpringlessEasyBatch.exe
+3. Introduce la ruta y el nombre de tu clase.

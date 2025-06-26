@@ -1,0 +1,72 @@
+def start_audio_unicast():
+    """
+    Toma los paquetes del buffer, les añade encabezados RTP y los envía vía unicast (o broadcast, si prefieres)
+    utilizando un socket UDP y en orden de llegada.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    seq_num = 0
+    timestamp = 0
+    ssrc_id = random.randint(100000, 999999)
+
+    while not stop_event.is_set():
+        try:
+            # Verificar si el host está disponible antes de continuar
+            with lock:
+                if host_info is None:
+                    logging.warning("No hay host disponible. Esperando que se establezca un nuevo host...")
+                    time.sleep(1)  # Esperar un segundo antes de comprobar de nuevo
+                    continue  # Si no hay host, se sigue esperando sin hacer nada
+
+            with externalBufferLock:  # Protege el acceso al buffer
+                if not audio_buffer.is_empty():
+                    opus_payload = audio_buffer.get_packet()  # Obtiene el siguiente paquete en orden
+                    
+                    # Empaquetado RTP
+                    packet_vars = {
+                        'version': 2,
+                        'padding': 0,
+                        'extension': 0,
+                        'csi_count': 0,
+                        'marker': 0,
+                        'payload_type': 111,
+                        'sequence_number': seq_num,
+                        'timestamp': timestamp,
+                        'ssrc': ssrc_id,
+                        'payload': opus_payload
+                    }
+
+                    # Genera el paquete RTP
+                    packet_bytes = generate_rtp_packet(packet_vars)
+                    logging.debug(f"Paquete RTP (Unicast) generado: {packet_bytes.hex()}")
+
+                    # Dirección del destino (host_info[0] si está definido)
+                    destination_ip = host_info[0]
+
+                    # Envía el paquete RTP por UDP
+                    sock.sendto(packet_bytes, (destination_ip, AUDIO_PORT))
+                    logging.debug(f"Enviado paquete RTP a {destination_ip} con (seq={seq_num}, ts={timestamp}, tamaño={len(packet_bytes)} bytes)")
+            
+                    # Actualiza para el siguiente paquete
+                    seq_num = (seq_num + 1) % 65536
+                    timestamp += CHUNK  # Sumar tamaño del paquete (por ejemplo 960 para Opus 20ms)
+            time.sleep(0.02)  # Ajusta el tiempo de espera entre paquetes
+        except Exception as e:
+            logging.error("Error enviando paquete de audio: %s", e)
+            break
+    sock.close()
+
+
+--------------
+
+
+
+🔧 Recomendaciones para mejorar aún más la opción 2:
+Encapsular todo en una clase TCPServerManager:
+
+Así evitas los global y mejoras la legibilidad.
+
+Sincroniza siempre las operaciones sobre connected_clients.
+
+Detecta desconexión y reasigna el host si era el que se cayó.
+
+Define un mensaje para sincronizar host_info entre nodos, no solo NEW_CLIENT:.

@@ -1,0 +1,72 @@
+## Licencia
+
+📜 LICENCIA DE USO DEL SOFTWARE
+springlessEasyBatch (Versión Java)
+Titular: Juanito Software
+Versión de la licencia: 1.0
+Fecha: [inserta fecha de publicación]
+
+1. ACEPTACIÓN DE LA LICENCIA
+Al instalar, copiar o utilizar el software springlessEasyBatch (Versión Java), usted acepta quedar vinculado por los términos de esta licencia. Si no acepta estos términos, no instale ni use el software.
+
+2. PROPIEDAD INTELECTUAL
+Este software es propiedad exclusiva de Juanito Software. Todos los derechos de propiedad intelectual, incluyendo pero no limitándose al código fuente, binarios, documentación, diseños y nombres asociados, están protegidos por las leyes de propiedad intelectual y tratados internacionales.
+
+3. CONCESIÓN DE LICENCIA
+Se concede al usuario una licencia no exclusiva, intransferible y revocable para instalar y utilizar el software únicamente en los términos establecidos en esta licencia y conforme a la modalidad adquirida (individual, corporativa, por equipo, etc.).
+
+4. USOS PERMITIDOS
+El usuario puede instalar y utilizar el software en los equipos especificados en la licencia adquirida.
+
+Si la licencia lo permite, puede recibir actualizaciones mientras tenga soporte activo.
+
+Se permite la realización de copias de seguridad personales del software, siempre que no sean distribuidas.
+
+5. USOS RESTRINGIDOS
+Queda expresamente prohibido:
+
+La distribución, cesión, venta, sublicenciamiento o alquiler del software a terceros sin autorización escrita.
+
+La modificación, descompilación, desensamblado, ingeniería inversa o análisis del código fuente, total o parcial.
+
+La creación de trabajos derivados a partir de este software.
+
+El uso simultáneo del software en más dispositivos de los permitidos por la licencia adquirida.
+
+El usuario no podrá eliminar, ocultar ni alterar los avisos de copyright, nombre del autor o el texto de esta licencia.
+
+6. LICENCIAS Y ACTIVACIÓN
+El software puede requerir activación mediante una clave de licencia proporcionada al adquirir el producto.
+
+El uso sin una clave válida constituirá una infracción de esta licencia.
+
+Juanito Software se reserva el derecho de suspender licencias activas que se detecten como fraudulentas o mal utilizadas.
+
+7. ACTUALIZACIONES Y SOPORTE
+Las actualizaciones del software, cuando se ofrezcan, podrán estar sujetas a nuevos términos.
+
+El soporte técnico estará disponible únicamente durante el período acordado en el momento de la compra.
+
+8. LIMITACIÓN DE RESPONSABILIDAD
+Este software se proporciona "tal cual", sin garantías explícitas o implícitas de ningún tipo. Juanito Software no se hace responsable por daños directos, indirectos, incidentales, especiales o consecuentes derivados del uso o la imposibilidad de uso del software.
+
+9. TERMINACIÓN
+Esta licencia se terminará automáticamente sin previo aviso si el usuario incumple cualquiera de sus términos. Al terminar, el usuario deberá desinstalar y eliminar todas las copias del software en su poder.
+
+10. JURISDICCIÓN Y LEGISLACIÓN APLICABLE
+Esta licencia se regirá e interpretará de acuerdo con las leyes de España. Cualquier disputa derivada de esta licencia será resuelta en los tribunales competentes del domicilio del titular de los derechos.
+
+11. CONTACTO
+Juanito Software
+Email: [benaldezperedaj@gmail.com]
+Github: [soporte@juanitosoftware.com]
+Sitio web: [https://tuweb.com]
+Licencia emitida desde Cantabria, España.
+
+📁 Recomendaciones de uso:
+Guarda este texto como LICENSE.txt junto a tu software.
+
+Muestra un resumen o casilla de aceptación si el software tiene instalador gráfico o consola.
+
+Implementa verificación de clave en el código para asegurar su cumplimiento técnico.
+

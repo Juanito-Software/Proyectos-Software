@@ -1,0 +1,33 @@
+-Configuración INICIAL repositorio-
+
+iniciar repositorio: 	git init
+añadir origen:	  	git remote add "origen" "url_repositorio"			ej: git remote add gitlab https://gitlab.com/JuanBP97/Juan_repositorio.git
+eliminar origen:  	git remote remove "origen"
+ver datos origen:	git remote show "origen"
+ver rama actual:  	git Branch
+ver estado:		git status 
+
+
+-Subir al repositorio-PUSH
+
+git add .
+git commit -m "Primer commit"
+
+
+git push --force github master
+git push --force gitlab master
+
+
+-Bajar del repositorio-PULL
+
+git pull github master
+
+git pull gitlab master
+
+
+-CLONAR-
+git clone https://github.com/JuanBP12/Juan_repositorio.git
+git clone https://gitlab.com/juanbpgitlabs/juanito_dam2t_repository2.git
+
+
+

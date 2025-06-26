@@ -1,0 +1,35 @@
+# Copyright (C) 2025 Juanito Software
+#
+# Este programa está protegido por una Licencia de Uso No Comercial.
+# Puedes utilizarlo y compartirlo de forma gratuita, siempre que no se modifique
+# y se incluya este aviso completo.
+#
+# Queda prohibido su uso con fines comerciales, así como su modificación,
+# ingeniería inversa o redistribución alterada.
+#
+# Este software se proporciona “tal cual”, sin garantía de ningún tipo, ya sea
+# expresa o implícita, incluyendo, pero no limitado a, garantías de comerciabilidad
+# o idoneidad para un propósito particular.
+#
+# Para más detalles, consulta el archivo LICENSE.txt incluido con este programa
+# o contacta a bernaldezperedaj@gmail.com.
+
+
+
+/*
+ * Copyright (C) 2025 Juanito Software
+ *
+ * Este programa está protegido por una Licencia de Uso No Comercial.
+ * Puedes utilizarlo y compartirlo de forma gratuita, siempre que no se modifique
+ * y se incluya este aviso completo.
+ *
+ * Queda prohibido su uso con fines comerciales, así como su modificación,
+ * ingeniería inversa o redistribución alterada.
+ *
+ * Este software se proporciona “tal cual”, sin garantía de ningún tipo, ya sea
+ * expresa o implícita, incluyendo, pero no limitado a, garantías de comerciabilidad
+ * o idoneidad para un propósito particular.
+ * 
+ * Para más detalles, consulta el archivo LICENSE.txt incluido con este programa
+ * o contacta a bernaldezperedaj@gmail.com.
+ */
