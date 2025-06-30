@@ -1,0 +1,9 @@
+transformers
+accelerate
+requests
+torch
+huggingface-hub
+optimum
+auto-gptq==0.4.2
+triton-windows<3.4
+
