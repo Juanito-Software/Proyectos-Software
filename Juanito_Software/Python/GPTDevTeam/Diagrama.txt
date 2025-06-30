@@ -1,0 +1,52 @@
++-----------------+         +----------------------+         
+|                 | 1.Prompt|                      |         
+|   Usuario       +-------->|   Generador IA       |         
+| (Tú o cliente)  |         | (CodeLlama GPTQ)     |         
++-----------------+         +----------------------+         
+                                        |                                   
+                           2. Código base generado                     
+                                        |                                   
+                                        v                                   
+                            +-------------------------+                  
+                            |  Limpiador de Docstring |                  
+                            |  (limpia encabezado)    |                  
+                            +------------+------------+                  
+                                        |                                   
+                            3. Mejora y refactoriza                       
+                                        v                                   
+                            +--------------------------+                  
+                            | Revisor de código IA     |                  
+                            | (CodeLlama: refactor)    |                  
+                            +------------+-------------+                  
+                                        |                                   
+                            4. Ejecuta y depura el código                
+                                        v                                   
+                            +-----------------------------+               
+                         +->|   Evaluador de ejecución    |>>-------+              
+                         |  |subprocess con timeout+CtrlC |         |         
+                         |  +-------------+---------------+         |           
+                         |                |			    |
+                         |                |            		    |             
+                         |         Si hay errores                   v
+			 |     reintenta hasta 4 veces         Si funciona      
+                         |                v                         v             
+                         |  +-----------------------------+         |           
+                         |  |     Depurador IA (CodeLlama)|         |          
+                         |  +-----------------------------+         |          
+                         |                |                         |          
+                         |                |                         |          
+                         +----------------+     +-------------------+          
+                             		      	|
+                                                v                          
+                         5. Documentación con comentarios (#)            
+                                      v                                   
+                          +-----------------------------+               
+                          |   Documentador IA (CodeGemma)|               
+                          +-------------+---------------+               
+                                        |                                   
+                          6. Guarda resultado final                      
+                                        v                                   
+                          +------------------------------+              
+                          |     Archivo final generado   |              
+                          |       (CodigoFinal.py)       |              
+                          +------------------------------+              
