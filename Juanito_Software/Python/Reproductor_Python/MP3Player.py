@@ -34,6 +34,7 @@ def run_matrix_effect():
 
 class MP3Player:
     def __init__(self, root):
+        self.user_dragging = False
         self.root = root
         self.root.title("Reproductor de Audio")
         self.instance = vlc.Instance()
@@ -81,6 +82,22 @@ class MP3Player:
 
         self.controls_frame = tk.Frame(self.root)
         self.controls_frame.pack(pady=5)
+        # Barra de progreso y etiquetas de tiempo
+        self.progress_frame = tk.Frame(self.root)
+        self.progress_frame.pack(fill="x", padx=10)
+
+        self.time_elapsed_label = tk.Label(self.progress_frame, text="00:00")
+        self.time_elapsed_label.pack(side="left")
+
+        self.progress_var = tk.DoubleVar()
+        self.progress_scale = tk.Scale(
+            self.progress_frame, variable=self.progress_var, from_=0, to=1000,
+            orient="horizontal", showvalue=0, command=self.on_progress_move
+        )
+        self.progress_scale.pack(side="left", fill="x", expand=True, padx=5)
+
+        self.time_total_label = tk.Label(self.progress_frame, text="00:00")
+        self.time_total_label.pack(side="right")
         self.prev_button = tk.Button(self.controls_frame, text="⏮", command=self.play_previous)
         self.prev_button.pack(side="left", padx=(0, 20))
         self.play_button = tk.Button(self.controls_frame, text="▶️", command=self.play_selected)
@@ -103,7 +120,11 @@ class MP3Player:
 
         self.root.bind("<space>", self.toggle_play_pause)
         self.root.bind("<Return>", self.on_enter)
-
+        self.root.bind("<Control-s>", lambda event: self.stop())
+        self.root.bind("<Control-l>", lambda event: self.toggle_loop_mode())
+        self.root.bind("<Control-r>", lambda event: self.toggle_random_mode())
+        self.root.bind("<Control-t>", lambda event: self.toggle_order_mode())
+        
     def init_settings(self):
         self.night_mode = False
         self.toggle_night_mode()
@@ -113,15 +134,25 @@ class MP3Player:
         if not self.night_mode:
             bg, fg, btn_bg = "black", "lime", "#222"
             sel_bg, sel_fg = "black", "white"
+
+            # Cambios específicos para la barra de progreso
+            self.progress_scale.configure(bg="black", troughcolor="black", fg="lime", highlightbackground="black")
+            self.time_elapsed_label.configure(bg="black", fg="lime")
+            self.time_total_label.configure(bg="black", fg="lime")
         else:
             bg, fg, btn_bg = "SystemButtonFace", "black", "SystemButtonFace"
             sel_bg, sel_fg = "#0078d7", "white"
+
+            # Restaurar estilo por defecto para la barra y etiquetas
+            self.progress_scale.configure(bg="SystemButtonFace", troughcolor="SystemButtonFace", fg="black", highlightbackground="SystemButtonFace")
+            self.time_elapsed_label.configure(bg=self.progress_frame.cget("bg"), fg="white")
+            self.time_total_label.configure(bg=self.progress_frame.cget("bg"), fg="white")
 
         style.configure("Treeview", background=bg, foreground=fg, fieldbackground=bg)
         style.configure("Treeview.Heading", background=bg, foreground=fg, font=('TkDefaultFont', 10, 'bold'))
         style.map("Treeview", background=[("selected", sel_bg)], foreground=[("selected", sel_fg)])
 
-        for frame in [self.root, self.top_frame, self.controls_frame, self.mode_frame]:
+        for frame in [self.root, self.top_frame, self.controls_frame, self.mode_frame, self.progress_frame]:
             frame.configure(bg=bg)
 
         for widget in [
@@ -132,7 +163,9 @@ class MP3Player:
             widget.configure(bg=btn_bg, fg=fg)
 
         self.search_entry.configure(bg=btn_bg, fg=fg, insertbackground=fg)
+
         self.night_mode = not self.night_mode
+
 
     def select_folder(self):
         folder = filedialog.askdirectory()
@@ -172,33 +205,47 @@ class MP3Player:
         recurse("")
         return items
 
+    def node_exists(self, node_id):
+        try:
+            self.tree.item(node_id)
+            return True
+        except tk.TclError:
+            return False
+
     def search_files(self):
         query = self.search_entry.get().lower()
         if self.selected_folder and query:
+            # Limpiar el treeview
             for item in self.tree.get_children():
                 self.tree.delete(item)
+            # Buscar archivos que coincidan con la consulta
             self.search_in_directory("", self.selected_folder, query)
+            # Actualizar la lista de canciones visibles tras la búsqueda
+            self.songs = self.get_all_audio_items()
+            self.played_random = []
         elif not self.selected_folder:
-            print("Selecciona una carpeta primero.")
-        else:
+            print("Por favor, selecciona una carpeta primero.")
+        elif not query:
+            # Si la consulta está vacía, repoblar el treeview con todos los archivos
             self.populate_tree(self.selected_folder)
+            self.songs = self.get_all_audio_items()
+            self.played_random = []
 
     def search_in_directory(self, parent, path, query):
         try:
             items = os.listdir(path)
         except PermissionError:
+            # En caso de no tener permisos para acceder a alguna carpeta
             return
-        has_match = False
         for item in sorted(items, key=str.lower):
             abs_path = os.path.join(path, item)
             if os.path.isdir(abs_path):
+                # Insertamos la carpeta y llamamos recursivamente para sus contenidos
                 node = self.tree.insert(parent, "end", text=item, values=(abs_path,))
                 self.search_in_directory(node, abs_path, query)
-            elif os.path.isfile(abs_path) and query in item.lower() and abs_path.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
-                self.tree.insert(parent, "end", text=item, values=(abs_path,))
-                has_match = True
-        if not has_match and parent:
-            self.tree.delete(parent)
+            elif os.path.isfile(abs_path) and item.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
+                if query in item.lower():
+                    self.tree.insert(parent, "end", text=item, values=(abs_path,))
 
     def play_selected(self):
         selected = self.tree.selection()
@@ -215,6 +262,7 @@ class MP3Player:
                 self.current_media = new_media
                 self.player.set_media(new_media)
                 self.player.play()
+                self.update_progress()
             self.is_paused = False
 
     def pause(self):
@@ -239,15 +287,23 @@ class MP3Player:
     def _play_relative(self, direction):
         if not self.songs or not self.current_file:
             return
-        current_index = next((i for i, item in enumerate(self.songs)
-                              if self.tree.item(item, "values")[0] == self.current_file), None)
+
+        # Filtramos solo nodos que existen
+        valid_songs = [item for item in self.songs if self.node_exists(item)]
+
+        current_index = next(
+            (i for i, item in enumerate(valid_songs)
+            if self.tree.item(item, "values")[0] == self.current_file),
+            None
+        )
         if current_index is not None:
             new_index = current_index + direction
-            if 0 <= new_index < len(self.songs):
-                target = self.songs[new_index]
+            if 0 <= new_index < len(valid_songs):
+                target = valid_songs[new_index]
                 self.tree.selection_set(target)
                 self.tree.see(target)
                 self.play_selected()
+
 
     def disable_other_modes(self, exclude):
         if exclude != 'order':
@@ -308,6 +364,35 @@ class MP3Player:
         if self.current_file:
             self.tree.selection_set(self.current_file)
             self.play_selected()
+    
+    def format_time(self, ms):
+        seconds = int(ms / 1000)
+        m, s = divmod(seconds, 60)
+        return f"{m:02d}:{s:02d}"
+    
+    def on_progress_move(self, value):
+        if self.player.is_playing():
+            self.user_dragging = True
+            # El valor viene entre 0 y 1000, lo normalizamos a duración real
+            pos = float(value) / 1000.0
+            length = self.player.get_length() / 1000  # duración en segundos
+            new_time = pos * length * 1000  # en ms
+            self.player.set_time(int(new_time))
+            self.user_dragging = False
+
+    def update_progress(self):
+        if self.player is not None and self.player.get_length() > 0:
+            length = self.player.get_length()  # en ms
+            current_time = self.player.get_time()  # en ms
+
+            if not self.user_dragging:
+                pos = current_time / length
+                self.progress_var.set(pos * 1000)
+
+            self.time_elapsed_label.config(text=self.format_time(current_time))
+            self.time_total_label.config(text=self.format_time(length))
+        self.root.after(500, self.update_progress)
+
 
 
 class HotkeyListener:
@@ -326,14 +411,6 @@ class HotkeyListener:
                     self.app.play_next()
                 elif key == pynput_keyboard.Key.left:
                     self.app.play_previous()
-                elif key == pynput_keyboard.KeyCode.from_char('s'):
-                    self.app.stop()
-                elif key == pynput_keyboard.KeyCode.from_char('l'):
-                    self.app.toggle_loop_mode()
-                elif key == pynput_keyboard.KeyCode.from_char('r'):
-                    self.app.toggle_random_mode()
-                elif key == pynput_keyboard.KeyCode.from_char('t'):
-                    self.app.toggle_order_mode()
                 elif key == pynput_keyboard.Key.up:
                     vol = min(self.app.player.audio_get_volume() + 10, 100)
                     self.app.player.audio_set_volume(vol)
