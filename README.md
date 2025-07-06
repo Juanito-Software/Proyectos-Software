@@ -20,6 +20,7 @@ Cada carpeta define su propia licencia en el archivo `LICENSE.txt` e incluye su 
 ✅ Podrás encontrar la licencia correspondiente a cada proyecto en su directorio respectivo (normalmente en un archivo LICENSE.txt, LICENSE_ES.txt, README.md o similar).
 
 🚀 Tipos de software incluidos
+
 🔹 Software libre: Algunos proyectos están bajo licencias abiertas como GNU GPL v3, ofreciendo libertad para usar, estudiar, modificar y distribuir.
 
 🔹 Software de libre uso: Otros proyectos permiten su uso gratuito con posibles limitaciones según se indique en la licencia del propio proyecto.
