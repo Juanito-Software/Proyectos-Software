@@ -1,3 +1,44 @@
-FloatTrans/
+# Entornos virtuales
 venv/
 env_Py3.10/
+ENV/
+
+# Proyectos/entornos/carpetas específicas
+FloatTrans/
+AIClipCreator_env/
+ClipVO/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Archivos Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# Archivos grandes o temporales
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wav
+*.mp3
+*.pt
+*.log
+*.dll
+*.so
+*.exe
+*.rar
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
