@@ -1,0 +1,14 @@
+# Core
+numpy
+opencv-python
+Pillow
+mss
+ultralytics
+keyboard
+
+# Win32 APIs (provee win32con y win32gui)
+pywin32
+
+# Módulos locales (no PyPI; mantenlos en tu repo)
+# FloatTrans
+# progress_bar_utils
