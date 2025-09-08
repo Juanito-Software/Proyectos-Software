@@ -1,4 +1,6 @@
 # Entornos virtuales
+.env
+.venv
 venv/
 env/
 env_Py3.10/
@@ -19,10 +21,40 @@ dist/
 
 # Archivos Python compilados
 __pycache__/
+*.py[cod]
 *.pyc
 *.pyo
 *.pyd
 *.pdb
+*.so
+*.dll
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints/
+
+# --- Archivos de datasets ---
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+Dataset*/
+Dataset/
+*.yaml
+
+
+# --- Pesos y modelos entrenados ---
+*.pt
+*.onnx
+*.engine
+*.tflite
+*.pb
+*.h5
+runs/
+
+# --- Archivos de Roboflow ---
+*.cache
+roboflow.json
 
 # Archivos grandes o temporales
 *.mp4
@@ -31,17 +63,15 @@ __pycache__/
 *.mov
 *.wav
 *.mp3
-*.pt
-*.onnx
 *.log
-*.dll
-*.so
 *.exe
 *.rar
 
-# IDEs
+# --- Archivos de VSCode / IDEs ---
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
 *.code-workspace
 
 # Archivos de sistema
