@@ -13,6 +13,7 @@
 # Deberías haber recibido una copia de la Licencia Pública General de GNU junto
 # con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
 
+
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import vlc
@@ -21,7 +22,24 @@ import threading
 import os
 import subprocess
 import sys
-from pynput import keyboard as pynput_keyboard
+from HotKeyManager import HotkeyManager
+from pystray import Icon as TrayIcon, MenuItem as item, Menu
+from PIL import Image, ImageDraw
+
+# virtual-key codes
+VK_RETURN = 0x0D
+VK_SPACE = 0x20
+VK_RIGHT = 0x27
+VK_LEFT  = 0x25
+VK_UP    = 0x26
+VK_DOWN  = 0x28
+VK_S     = ord('S')
+VK_L     = ord('L')
+VK_R     = ord('R')
+VK_T     = ord('T')
+
+def tk_callback(fn):
+    return lambda: app.root.after(0, fn)
 
 def run_matrix_effect():
     if hasattr(sys, '_MEIPASS'):
@@ -30,10 +48,15 @@ def run_matrix_effect():
         base_path = os.path.dirname(os.path.abspath(__file__))
 
     exe_path = os.path.join(base_path, "matrix_effect.exe")
-    subprocess.run([exe_path], check=True)
+    try:
+        p = subprocess.Popen([exe_path])
+        p.communicate()  # Espera a que termine
+    except KeyboardInterrupt:
+        p.terminate()    # Terminamos el proceso si el usuario interrumpe
 
 class MP3Player:
     def __init__(self, root):
+        self._handling_end = False
         self.user_dragging = False
         self.root = root
         self.root.title("Reproductor de Audio")
@@ -64,6 +87,10 @@ class MP3Player:
         self.top_frame = tk.Frame(self.root)
         self.top_frame.pack(pady=5)
 
+        # Contenedor para treeview + scrollbar
+        self.tree_frame = tk.Frame(self.root)
+        self.tree_frame.pack(expand=True, fill="both", padx=5, pady=5)
+
         self.night_button = tk.Button(self.top_frame, text="🌙", command=self.toggle_night_mode)
         self.night_button.pack(side="left")
         self.choose_folder_btn = tk.Button(self.top_frame, text="Seleccionar carpeta", command=self.select_folder)
@@ -73,18 +100,30 @@ class MP3Player:
         self.search_button = tk.Button(self.top_frame, text="Buscar", command=self.search_files)
         self.search_button.pack(side="right")
 
-        self.tree = ttk.Treeview(self.root, columns=("path",))
-        self.tree.column("#0", width=300)
+        self.tree = ttk.Treeview(self.tree_frame, columns=("path",))
         self.tree.heading("#0", text="Nombre")
         self.tree.heading("path", text="Ruta")
-        self.tree.pack(expand=True, fill="both")
+        self.tree.column("#0", width=300)
+
+        # Scrollbar vertical
+        self.scrollbar = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self.scrollbar.set)
+
+        # Layout dentro del frame
+        self.tree.pack(side="left", expand=True, fill="both")
+        self.scrollbar.pack(side="right", fill="y")
+
         self.tree.bind("<Double-1>", self.on_double_click)
 
-        self.controls_frame = tk.Frame(self.root)
-        self.controls_frame.pack(pady=5)
-        # Barra de progreso y etiquetas de tiempo
-        self.progress_frame = tk.Frame(self.root)
-        self.progress_frame.pack(fill="x", padx=10)
+        self.tree.bind("<MouseWheel>", self.on_mouse_wheel)
+
+        # --- Bottom Panel para controles y barra de progreso ---
+        self.bottom_panel = tk.Frame(self.root)
+        self.bottom_panel.pack(side="bottom", fill="x", pady=10)
+
+        # Barra de progreso
+        self.progress_frame = tk.Frame(self.bottom_panel)
+        self.progress_frame.pack(side="top", fill="x", padx=10)
 
         self.time_elapsed_label = tk.Label(self.progress_frame, text="00:00")
         self.time_elapsed_label.pack(side="left")
@@ -98,33 +137,39 @@ class MP3Player:
 
         self.time_total_label = tk.Label(self.progress_frame, text="00:00")
         self.time_total_label.pack(side="right")
+
+        # Controles de reproducción centrados
+        self.controls_frame = tk.Frame(self.bottom_panel)
+        self.controls_frame.pack(pady=5)
+
         self.prev_button = tk.Button(self.controls_frame, text="⏮", command=self.play_previous)
-        self.prev_button.pack(side="left", padx=(0, 20))
+        self.prev_button.pack(side="left", padx=5)
         self.play_button = tk.Button(self.controls_frame, text="▶️", command=self.play_selected)
-        self.play_button.pack(side="left", padx=(0, 20))
-        self.next_button = tk.Button(self.controls_frame, text="⏭", command=self.play_next)
-        self.next_button.pack(side="left", padx=(0, 20))
+        self.play_button.pack(side="left", padx=5)
         self.pause_button = tk.Button(self.controls_frame, text="⏸️", command=self.pause)
-        self.pause_button.pack(side="left", padx=(0, 20))
+        self.pause_button.pack(side="left", padx=5)
         self.stop_button = tk.Button(self.controls_frame, text="⏹️", command=self.stop)
-        self.stop_button.pack(side="right", padx=(0, 20))
+        self.stop_button.pack(side="left", padx=5)
+        self.next_button = tk.Button(self.controls_frame, text="⏭", command=self.play_next)
+        self.next_button.pack(side="left", padx=5)
 
-        self.mode_frame = tk.Frame(self.root)
-        self.mode_frame.pack(pady=5)
+        # Botones de modo centrados
+        self.mode_frame = tk.Frame(self.bottom_panel)
+        self.mode_frame.pack(side="top", pady=5)
+
         self.order_button = tk.Button(self.mode_frame, text="Reproducción en Orden", command=self.toggle_order_mode)
-        self.order_button.pack(side="left", padx=(0, 20))
+        self.order_button.pack(side="left", padx=5)
         self.random_button = tk.Button(self.mode_frame, text="Reproducción Aleatoria", command=self.toggle_random_mode)
-        self.random_button.pack(side="left", padx=(0, 20))
+        self.random_button.pack(side="left", padx=5)
         self.loop_button = tk.Button(self.mode_frame, text="Reproducción en Bucle", command=self.toggle_loop_mode)
-        self.loop_button.pack(side="left", padx=(0, 20))
+        self.loop_button.pack(side="left", padx=5)
 
-        self.root.bind("<space>", self.toggle_play_pause)
-        self.root.bind("<Return>", self.on_enter)
-        self.root.bind("<Control-s>", lambda event: self.stop())
-        self.root.bind("<Control-l>", lambda event: self.toggle_loop_mode())
-        self.root.bind("<Control-r>", lambda event: self.toggle_random_mode())
-        self.root.bind("<Control-t>", lambda event: self.toggle_order_mode())
-        
+
+    def on_mouse_wheel(self, event):
+        # event.delta en Windows suele ser múltiplo de 120
+        # Multiplicamos por 3 para hacerlo más rápido
+        self.tree.yview_scroll(int(-1*(event.delta/120)*3), "units")
+
     def init_settings(self):
         self.night_mode = False
         self.toggle_night_mode()
@@ -152,17 +197,33 @@ class MP3Player:
         style.configure("Treeview.Heading", background=bg, foreground=fg, font=('TkDefaultFont', 10, 'bold'))
         style.map("Treeview", background=[("selected", sel_bg)], foreground=[("selected", sel_fg)])
 
-        for frame in [self.root, self.top_frame, self.controls_frame, self.mode_frame, self.progress_frame]:
-            frame.configure(bg=bg)
+        # incluir bottom_panel y cualquier frame creado dinámicamente
+        frames = [self.root, self.top_frame, getattr(self, "bottom_panel", None),
+                self.controls_frame, self.mode_frame, self.progress_frame]
+
+        for frame in frames:
+            if frame is None:
+                continue
+            try:
+                frame.configure(bg=bg)
+            except Exception:
+                pass
 
         for widget in [
             self.play_button, self.pause_button, self.stop_button, self.prev_button, self.next_button,
             self.night_button, self.choose_folder_btn, self.search_button,
             self.order_button, self.random_button, self.loop_button
         ]:
-            widget.configure(bg=btn_bg, fg=fg)
+            try:
+                widget.configure(bg=btn_bg, fg=fg)
+            except Exception:
+                pass
 
-        self.search_entry.configure(bg=btn_bg, fg=fg, insertbackground=fg)
+        # entrada especial
+        try:
+            self.search_entry.configure(bg=btn_bg, fg=fg, insertbackground=fg)
+        except Exception:
+            pass
 
         self.night_mode = not self.night_mode
 
@@ -360,10 +421,85 @@ class MP3Player:
         self.tree.see(chosen)
         self.play_selected()
 
+    def handle_end_reached(self, event):
+        # Se hace el after en el hilo principal para evitar problemas desde el hilo VLC
+        try:
+            self.root.after(0, self._handle_end)
+        except Exception as e:
+            print("Error programando _handle_end:", e)
+
+    def _handle_end(self):
+        # Protección ante reentradas simultáneas
+        if self._handling_end:
+            return
+        self._handling_end = True
+        try:
+            if self.play_in_order:
+                self.play_next()
+            elif self.play_random:
+                self.play_random_after()
+            elif self.play_loop:
+                self.play_loop_current()
+        finally:
+            # Pequeño delay para evitar múltiples triggers casi simultáneos
+            self.root.after(100, lambda: setattr(self, "_handling_end", False))
+
+    # Reemplaza play_loop_current por esta implementación robusta:
     def play_loop_current(self):
-        if self.current_file:
-            self.tree.selection_set(self.current_file)
-            self.play_selected()
+        """
+        Reproduce de nuevo la misma pista actual. Usa current_media si está disponible
+        (manteniendo el mismo MRL) o crea un nuevo media si hace falta.
+        También intenta seleccionar el item correspondiente en el treeview para la UI.
+        """
+        if not self.current_file:
+            return
+
+        # Intentar seleccionar el item en el treeview (para UI)
+        try:
+            matching_item = next(
+                (item for item in self.songs
+                if self.node_exists(item) and self.tree.item(item, "values")[0] == self.current_file),
+                None
+            )
+            if matching_item:
+                self.tree.selection_set(matching_item)
+                self.tree.see(matching_item)
+        except Exception:
+            # No crítico si falla la UI
+            pass
+
+        # Si tenemos current_media reutilizarlo y reiniciar posición
+        try:
+            if self.current_media:
+                # Si VLC mantiene media: volver al inicio y reproducir
+                # set_time(0) puede fallar si el media ya está cerrado, por eso probamos con play/reset
+                try:
+                    self.player.stop()
+                    # re-assign the same media object to be safe
+                    self.player.set_media(self.current_media)
+                    # reset to 0 ms if supported
+                    try:
+                        self.player.set_time(0)
+                    except Exception:
+                        pass
+                    self.player.play()
+                except Exception as e:
+                    # Fallback: recrear media desde ruta
+                    print("Fallback loop (recrear media):", e)
+                    if os.path.isfile(self.current_file):
+                        new_media = self.instance.media_new(self.current_file)
+                        self.current_media = new_media
+                        self.player.set_media(new_media)
+                        self.player.play()
+            else:
+                # No hay current_media: crear nuevo
+                if os.path.isfile(self.current_file):
+                    new_media = self.instance.media_new(self.current_file)
+                    self.current_media = new_media
+                    self.player.set_media(new_media)
+                    self.player.play()
+        except Exception as e:
+            print("Error intentando reproducir en bucle:", e)
     
     def format_time(self, ms):
         seconds = int(ms / 1000)
@@ -394,7 +530,8 @@ class MP3Player:
         self.root.after(500, self.update_progress)
 
 
-
+# Alternativa usando pynput (menos robusta que HotKeyManager)
+"""
 class HotkeyListener:
     def __init__(self, app):
         self.app = app
@@ -427,18 +564,104 @@ class HotkeyListener:
     def start(self):
         listener = pynput_keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
         listener.start()
+    """
 
 
 if __name__ == "__main__":
-    try:
-        run_matrix_effect()
-    except subprocess.CalledProcessError as e:
-        print(f"matrix_effect.exe terminó con error: {e}")
-    except Exception as e:
-        print(f"Error ejecutando matrix_effect.exe: {e}")
-    finally:
-        root = tk.Tk()
-        app = MP3Player(root)
-        hotkey_listener = HotkeyListener(app)
-        threading.Thread(target=hotkey_listener.start, daemon=True).start()
-        root.mainloop()
+    import threading
+    import tkinter as tk
+    from PIL import Image, ImageDraw
+    from pystray import Icon as TrayIcon, MenuItem as item, Menu
+
+    # -----------------------------
+    # 1️⃣ Crear ventana principal
+    # -----------------------------
+    root = tk.Tk()
+    root.title("MP3 Player")
+
+    # Crear tu app
+    app = MP3Player(root)
+
+    # -----------------------------
+    # 2️⃣ Crear gestor de hotkeys
+    # -----------------------------
+    hk = HotkeyManager(app)
+
+    # Registrar hotkeys
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_RETURN, lambda: app.root.after(0, app.search_files))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_SPACE, lambda: app.root.after(0, app.toggle_play_pause))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_RIGHT, lambda: app.root.after(0, app.play_next))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_LEFT,  lambda: app.root.after(0, app.play_previous))
+
+    def vol_up(): app.player.audio_set_volume(min(app.player.audio_get_volume() + 10, 100))
+    def vol_down(): app.player.audio_set_volume(max(app.player.audio_get_volume() - 10, 0))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_UP, lambda: app.root.after(0, vol_up))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_DOWN, lambda: app.root.after(0, vol_down))
+
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_L, lambda: app.root.after(0, app.toggle_loop_mode))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_R, lambda: app.root.after(0, app.toggle_random_mode))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_T, lambda: app.root.after(0, app.toggle_order_mode))
+
+    hk.start()
+
+    # ---------------------------------------------
+    # 3️⃣ Funciones para bandeja de iconos windows
+    # ---------------------------------------------
+    def create_image():
+        # Icono simple en memoria (32x32)
+        image = Image.new('RGB', (32, 32), "black")
+        dc = ImageDraw.Draw(image)
+        dc.rectangle((8, 8, 24, 24), fill="lime")
+        return image
+
+    def restore_from_tray(icon, item=None):
+        icon.stop()       # Cerramos el icono actual
+        root.deiconify()  # Mostramos la ventana
+
+    def quit_app(icon, item=None):
+        icon.stop()
+        hk.stop()
+        app.stop()
+        root.destroy()
+
+    def minimize_to_tray():
+        root.withdraw()  # Ocultamos ventana
+        # Creamos un nuevo TrayIcon cada vez
+        global tray_icon
+        tray_icon = TrayIcon(
+            "MP3 Player",
+            create_image(),
+            "MP3 Player",
+            Menu(
+                item("Open", restore_from_tray),
+                item("Play/pause", app.toggle_play_pause),
+                item("Exit", quit_app)
+            ), 
+            on_double_click=restore_from_tray  # <-- Esto hace que doble click abra la ventana
+        )
+        # Ejecutarlo en un hilo para que no bloquee Tkinter
+        threading.Thread(target=tray_icon.run, daemon=True).start()
+    
+    # -----------------------------
+    # 4️⃣ Menú del icono
+    # -----------------------------
+    menu_options = Menu(
+        item("Open", restore_from_tray),
+        item("Play/pause", app.toggle_play_pause),
+        item("Exit", quit_app)
+    )
+
+    tray_icon = TrayIcon("MP3 Player", create_image(), "MP3 Player", menu_options)
+
+    # -----------------------------
+    # 5️⃣ Sobrescribir cierre de ventana
+    # -----------------------------
+    def on_close():
+        minimize_to_tray()
+
+    root.protocol("WM_DELETE_WINDOW", on_close)
+
+    # -----------------------------
+    # 6️⃣ Ejecutar ventana principal
+    # -----------------------------
+    root.mainloop()
