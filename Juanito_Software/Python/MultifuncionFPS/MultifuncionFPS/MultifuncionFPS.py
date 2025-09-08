@@ -1,18 +1,3 @@
-# Copyright (C) 2025 JuanitoSoftware&Games
-#
-# Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
-# los términos de la Licencia Pública General de GNU publicada por la Free
-# Software Foundation, ya sea la versión 3 de la Licencia o (según tu elección)
-# cualquier versión posterior.
-#
-# Este programa se distribuye con la esperanza de que sea útil, pero SIN
-# NINGUNA GARANTÍA; incluso sin la garantía implícita de COMERCIALIZACIÓN o
-# IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulta la Licencia Pública General
-# de GNU para más detalles.
-#
-# Deberías haber recibido una copia de la Licencia Pública General de GNU junto
-# con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
-
 import configparser
 import tkinter as tk
 from tkinter import ttk
@@ -29,29 +14,24 @@ import time
 import subprocess
 import sys
 from ultralytics import YOLO
+import mss
+from FloatTrans.src.main import setup_window, read_config 
+from torchaudio.models.wav2vec2 import wav2vec2_base
+from progress_bar_utils import show_fancy_progress_bar
 import cv2
 import numpy as np
-import mss
-from FloatTrans.src.main import setup_window, read_config
-
-
+import keyboard
+from PIL import Image, ImageDraw, ImageFont
+import dxcam 
 
 def run_matrix_effect():
     if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.dirname(os.path.abspath(__file__))
-
     exe_path = os.path.join(base_path, "matrix_effect.exe")
-
-    # Ejecutamos el .exe y esperamos a que termine (sin ventana de consola si usas noconsole)
-    # creationflags para abrir sin ventana, opcional si usas --noconsole en PyInstaller
-    # Aquí dejamos que se abra la consola porque es el efecto matrix
     subprocess.run([exe_path], check=True)
 
-# ---------------------------------------------------------
-# Helpers de aceleración del ratón
-# ---------------------------------------------------------
 def aceleracion_activada():
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse") as key:
@@ -80,23 +60,14 @@ def desactivar_aceleracion():
     except Exception as e:
         print("Error desactivando aceleración:", e)
 
-# ---------------------------------------------------------
 # Paths y constantes
-# ---------------------------------------------------------
-
-# Ruta relativa al script actual
 crosshair_folder = Path(__file__).parent / "crosshairs"
-crosshair_images = [f for f in os.listdir(crosshair_folder) if f.endswith(".png")]# Cargar imágenes de crosshair
+crosshair_images = [f for f in os.listdir(crosshair_folder) if f.endswith(".png")]
 
 SPI_SETMOUSESPEED = 0x0071
-SPI_GETMOUSESPEED = 0x0070
-
 NIGHT_BG = "#000000"  # negro
-NIGHT_FG = "#00FF00"  # verde lima (estilo consola)
+NIGHT_FG = "#00FF00"  # verde lima
 
-# ---------------------------------------------------------
-# Overlay de la mira
-# ---------------------------------------------------------
 class CrosshairOverlay(tk.Toplevel):
     def __init__(self, image_path, scale=1.0, alpha=1.0):
         super().__init__()
@@ -104,10 +75,8 @@ class CrosshairOverlay(tk.Toplevel):
         self.attributes("-topmost", True)
         self.attributes("-transparentcolor", "black")
         self.attributes("-alpha", alpha)
-
         self.original_img = Image.open(image_path)
         self.scale = scale
-
         self.label = tk.Label(self, bg="black")
         self.label.pack()
         self._render()
@@ -147,10 +116,6 @@ class CrosshairOverlay(tk.Toplevel):
                                    ex | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT)
             win32gui.SetLayeredWindowAttributes(hwnd, 0x000000, 255, win32con.LWA_COLORKEY)
 
-
-# ---------------------------------------------------------
-# Overlay de detección de movimiento (queda igual)
-# ---------------------------------------------------------
 class MotionOverlay(tk.Toplevel):
     def __init__(self):
         super().__init__()
@@ -168,24 +133,23 @@ class MotionOverlay(tk.Toplevel):
     def move_and_resize(self, w, h):
         self.geometry(f"{w}x{h}+0+0")
 
-
-# ---------------------------------------------------------
-# Aplicación principal
-# ---------------------------------------------------------
-
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("MultifuncionFPS")
-        self.root.configure(bg=NIGHT_BG)
+        self.motion_thread_running = False
+        self.motion_overlay = None
+        self.overlay = None
+
+        # Configuración inicial
+        root.configure(bg=NIGHT_BG)
         fuente_grande = tkFont.Font(family="TkDefaultFont", size=12)
 
-         # Leemos config y preparamos   con wrapper
+        # Leer configuración
         cfg = read_config()
-        alpha = float(cfg.get("transparency", 1.0)) 
+        alpha = float(cfg.get("transparency", 1.0))
         hotkey = cfg.get("hotkey", None)
 
-        # Selección de imagen
         img_cfg = cfg.get("image_path", "")
         if os.path.exists(img_cfg):
             path = img_cfg
@@ -195,105 +159,100 @@ class App:
             path = str(crosshair_folder / crosshair_images[0])
         print("Usando:", path)
 
-        # Configuramos FloatTrans (se inicia oculto)
         self.ft_win = setup_window(self.root, path, alpha, hotkey)
         self.ft_win.withdraw()
 
-    
         style = ttk.Style()
         style.theme_use("default")
         style.configure("TCheckbutton", background=NIGHT_BG, foreground=NIGHT_FG)
         style.configure("TButton", background=NIGHT_BG, foreground=NIGHT_FG)
         style.configure("TLabel", background=NIGHT_BG, foreground=NIGHT_FG)
         style.configure("TScale", background=NIGHT_BG, troughcolor="#333333", sliderthickness=15)
-        
-        self.float_overlay_proc = None  # Para el proceso del exe
 
-        # Deteccion movimiento
-        self.motion_var_Static = tk.BooleanVar()
+        self.float_overlay_proc = None
 
-        # Deteccion movimiento
-        self.motion_var = tk.BooleanVar()
-
-        ttk.Label(root, text="------- AYUDAS 🙏 --------", font=fuente_grande).grid(row=6, column=0, pady=10)
-        
-        self.motion_toggle = ttk.Checkbutton(root, text="Detección Movimiento Estatica", variable=self.motion_var_Static, command=self.toggle_motion_static)
-        self.motion_toggle.grid(row=7, column=0, padx=20, pady=10)
-
-        self.motion_toggle = ttk.Checkbutton(root, text="Detección Movimiento", variable=self.motion_var, command=self.toggle_motion)
-        self.motion_toggle.grid(row=7, column=1, padx=20, pady=10)
-
-        self.motion_overlay = None
-        self.motion_thread_running = False
-
-        
-        # Mira
+        # Variables y widgets para *Mira*
         self.crosshair_index = 0
         self.crosshair_scale = tk.DoubleVar(value=0.2)
-        self.crosshair_alpha = tk.DoubleVar(value=1.0)  # 1.0 = opaco, 0.1 = muy transparente
+        self.crosshair_alpha = tk.DoubleVar(value=alpha)
         self.toggle_var = tk.BooleanVar()
-        
-        ttk.Label(root, text="-------- MIRA ⊕ --------", font=fuente_grande).grid(row=0, column=0, pady=5)
-        
-        # Boton mostrar mira
-        self.toggle = ttk.Checkbutton(root, text="Mostrar mira", variable=self.toggle_var, command=self.toggle_crosshair)
-        self.toggle.grid(row=1, column=0, padx=5, pady=10)
 
-        # Boton siguiente mira
-        self.next_btn = ttk.Button(root, text="Siguiente mira", command=self.next_crosshair)
+        ttk.Label(root, text="-------- MIRA ⊕ --------", font=fuente_grande) \
+            .grid(row=0, column=0, pady=5)
+
+        self.crosshair_toggle = ttk.Checkbutton(root, text="Mostrar mira",
+                                               variable=self.toggle_var,
+                                               command=self.toggle_crosshair)
+        self.crosshair_toggle.grid(row=1, column=0, padx=5, pady=10)
+
+        self.next_btn = ttk.Button(root, text="Siguiente mira",
+                                   command=self.next_crosshair)
         self.next_btn.grid(row=1, column=1, padx=5, pady=10)
 
-        # Slider tamaño de mira
-        ttk.Label(root, text="Tamaño de mira:").grid(row=1, column=3)
-        self.scale_slider = ttk.Scale(root, from_=0.1, to=2.0, value=0.2, orient="horizontal",
-                                        variable=self.crosshair_scale, command=self.update_crosshair_scale_final)
-        self.scale_slider.grid(row=2, column=3, padx=5, pady=(0,10))
-        self.scale_slider.bind("<ButtonRelease-1>", self.update_crosshair_scale_final)
+        ttk.Label(root, text="Tamaño de mira:") \
+            .grid(row=2, column=0, sticky="e")
+        self.scale_slider = ttk.Scale(root, from_=0.1, to=2.0, value=self.crosshair_scale.get(),
+                                      orient="horizontal", variable=self.crosshair_scale,
+                                      command=self.update_crosshair_scale_final)
+        self.scale_slider.grid(row=2, column=1, padx=5, pady=10)
 
-        # Slider trasparencia de mira
-        self.crosshair_alpha = tk.DoubleVar(value=alpha)
-        ttk.Label(root, text="Transparencia de la mira:").grid(row=1, column=4)
-        self.alpha_slider = ttk.Scale(
-            root, from_=0.1, to=1.0,
-            variable=self.crosshair_alpha,
-            command=self.update_overlay_alpha
-        )
-        self.alpha_slider.grid(row=2, column=4, padx=5, pady=(0,10))
+        ttk.Label(root, text="Transparencia de la mira:") \
+            .grid(row=3, column=0, sticky="e")
+        self.alpha_slider = ttk.Scale(root, from_=0.1, to=1.0,
+                                      variable=self.crosshair_alpha,
+                                      command=self.update_overlay_alpha)
+        self.alpha_slider.set(self.crosshair_alpha.get())
+        self.alpha_slider.grid(row=3, column=1, padx=5, pady=10)
 
+        # Widgets para *Ratón*
+        ttk.Label(root, text="-------- RATÓN ⇧ --------", font=fuente_grande) \
+            .grid(row=4, column=0, pady=5)
 
-        # Aceleración del ratón
         self.acceleration_var = tk.BooleanVar(value=aceleracion_activada())
+        self.acceleration_toggle = ttk.Checkbutton(root, text="Aceleración del ratón",
+                                                  variable=self.acceleration_var,
+                                                  command=self.toggle_acceleration)
+        self.acceleration_toggle.grid(row=5, column=0, padx=20, pady=10)
 
-        ttk.Label(root, text="-------- RATÓN ⇧ --------", font=fuente_grande).grid(row=3, column=0)
+        ttk.Label(root, text="Sensibilidad del ratón:") \
+            .grid(row=5, column=1, sticky="e", padx=5)
+        self.sens_slider = ttk.Scale(root, from_=0.1, to=5.0, value=1.0,
+                                    orient="horizontal", command=self.update_sensitivity)
+        self.sens_slider.grid(row=6, column=1, padx=10, pady=10)
 
-        self.acceleration_toggle = ttk.Checkbutton(root, text="Aceleración del ratón", variable=self.acceleration_var, command=self.toggle_acceleration)
-        self.acceleration_toggle.grid(row=4, column=0, padx=20, pady=10)
+        # Widgets para *Detección de Movimiento*
+        ttk.Label(root, text="-------- AYUDAS 🙏 --------", font=fuente_grande) \
+            .grid(row=7, column=0, pady=10)
+        # Detección de Movimiento CS2
+        self.motion_cs2_var = tk.BooleanVar(value=False)
+        self.motion_toggle_cs2 = ttk.Checkbutton(
+            root, text="Detectar movimiento (CS2)",
+            variable=self.motion_cs2_var,
+            command=self.toggle_motion_CS2
+        )
+        self.motion_toggle_cs2.grid(row=8, column=0, padx=20, pady=10)
 
-        # sensibilidad del raton
-        self.mouse_sensitivity = tk.DoubleVar(value=1.0)
-        ttk.Label(root, text="Sensibilidad del ratón:").grid(row=4, column=1)
-        self.sens_slider = ttk.Scale(root, from_=0.1, to=5.0, value=1.0, orient="horizontal", command=self.update_sensitivity)
-        self.sens_slider.grid(row=5, column=1, padx=10, pady=10)
+        # Detección de Movimiento Personas
+        self.motion_people_var = tk.BooleanVar(value=False)
+        self.motion_toggle_people = ttk.Checkbutton(
+            root, text="Detectar movimiento (Personas)",
+            variable=self.motion_people_var,
+            command=self.toggle_motion_people
+        )
+        self.motion_toggle_people.grid(row=9, column=0, padx=20, pady=10)
 
-        self.current_crosshair = os.path.join(crosshair_folder, crosshair_images[self.crosshair_index])  
 
     def update_overlay_alpha(self, event=None):
         nuevo_alpha = self.crosshair_alpha.get()
-        # Si estás usando la overlay propia de Tkinter
-        if hasattr(self, 'overlay') and self.overlay:
+        if self.overlay:
             self.overlay.set_alpha(nuevo_alpha)
-        # Si estás usando el proceso externo
         elif self.float_overlay_proc:
             self.close_floattrans()
             self.launch_floattrans()
 
-
     def launch_floattrans(self):
-        # Asegúrate de cerrar si ya estaba corriendo
         self.close_floattrans()
-
-        # Modifica el config.ini con el alpha actual
-        config_path = r"C:\Users\User\Desktop\Proyectos\Juanito_Software\Python\MultifuncionFPS\MultifuncionFPS\FloatTrans\config.ini"
+        config_path = Path(__file__).parent / "FloatTrans" / "config.ini"
         config = configparser.ConfigParser()
         config.read(config_path)
         if "General" not in config:
@@ -301,12 +260,9 @@ class App:
         config["General"]["transparency"] = str(self.crosshair_alpha.get())
         with open(config_path, "w") as configfile:
             config.write(configfile)
-
-        # Lanza el EXE pidiendo elevación
-        exe_path = r"C:\Users\User\Desktop\Proyectos\Juanito_Software\Python\MultifuncionFPS\MultifuncionFPS\FloatTrans\FloatTrans.exe"
+        exe_path = Path(__file__).parent / "FloatTrans" / "FloatTrans.exe"
         try:
-            # 'runas' = pedir permisos de administrador
-            ctypes.windll.shell32.ShellExecuteW(None, "runas", exe_path, None, None, 1)
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", str(exe_path), None, None, 1)
         except Exception as e:
             print(f"No se pudo lanzar FloatTrans.exe con elevación: {e}")
 
@@ -315,241 +271,88 @@ class App:
             self.float_overlay_proc.terminate()
             self.float_overlay_proc = None
 
+    def toggle_crosshair(self):
+        if self.toggle_var.get():
+            try:
+                if self.overlay:
+                    self.overlay.destroy()
+                scale_value = self.crosshair_scale.get()
+                self.overlay = CrosshairOverlay(self.current_crosshair, scale=scale_value,
+                                               alpha=self.crosshair_alpha.get())
+            except Exception as e:
+                print("Error al mostrar el crosshair:", e)
+        else:
+            if self.overlay:
+                self.overlay.destroy()
+                self.overlay = None
+            self.close_floattrans()
+
+    def next_crosshair(self):
+        self.crosshair_index = (self.crosshair_index + 1) % len(crosshair_images)
+        self.current_crosshair = os.path.join(crosshair_folder,
+                                              crosshair_images[self.crosshair_index])
+        if self.overlay:
+            self.overlay.change_image(self.current_crosshair)
+
+    def update_crosshair_scale_final(self, event=None):
+        if self.overlay:
+            self.overlay.update_scale(self.crosshair_scale.get())
+
     def toggle_acceleration(self):
         if self.acceleration_var.get():
             activar_aceleracion()
         else:
             desactivar_aceleracion()
 
-
-    # funciones Deteccion movimiento
-    def toggle_motion(self):
-        if self.motion_var.get():
-            if not self.motion_thread_running:
-                self.motion_overlay = MotionOverlay()
-                self.motion_thread_running = True 
-                self.motion_thread = threading.Thread(target=self.run_motion_detection, daemon=True)
-                self.motion_thread.start()
-        else:
-            self.stop_motion_thread()
-
-    def toggle_motion_static(self):
-        if self.motion_var_Static.get():
-            if not self.motion_thread_running:
-                self.motion_overlay = MotionOverlay()
-                self.motion_thread_running = True 
-                self.motion_thread = threading.Thread(target=self.run_motion_detection_static, daemon=True)
-                self.motion_thread.start()
-        else:
-            self.stop_motion_thread()
-
-    def run_motion_detection_static(self):    
-        with mss.mss() as sct:
-            monitor = sct.monitors[1]
-            w, h = monitor["width"], monitor["height"]
-            self.motion_overlay.move_and_resize(w, h)
-
-            prev_frame = None
-
-            while self.motion_thread_running:
-                # código de captura, detección, actualización del overlay
-                sct_img = sct.grab(monitor)
-                frame = np.array(sct_img)
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
-                if prev_frame is None:
-                    prev_frame = gray
-                    continue
-
-                frame_delta = cv2.absdiff(prev_frame, gray)
-                thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
-                thresh = cv2.dilate(thresh, None, iterations=2)
-                contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-                # Crear imagen negra con fondo transparente
-                overlay_img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-                draw = ImageDraw.Draw(overlay_img)
-
-                for c in contours:
-                    if cv2.contourArea(c) < 500:
-                        continue
-                    (x, y, cw, ch) = cv2.boundingRect(c)
-                    draw.rectangle([x, y, x + cw, y + ch], outline=(0, 255, 0, 255), width=2)
-
-                if self.motion_overlay!=None:
-                    try:
-                        self.motion_overlay.update_image(overlay_img)
-                    except Exception as e:
-                        print(f"Error actualizando imagen del overlay desde el hilo: {e}")
-                else:
-                    print("motion_overlay es None, no se puede actualizar la imagen.")
-
-                prev_frame = gray
-                time.sleep(0.03)  # ~30 FPS
-    
-    def run_motion_detection(self):
-        model = YOLO('yolov8s.pt')  # Usa el modelo mediano para mejor rendimiento
-        model.to('cuda')  # Asegura que usa la GPU
-        # Usar video
-        """results = model.predict(source="video.mp4", conf=0.25, iou=0.4, stream=True)
-
-        for r in results:
-            # Aquí puedes visualizar o procesar cada frame
-            boxes = r.boxes
-            print(boxes.xyxy)"""
-        
-        # Usar fotogramas
-        with mss.mss() as sct:
-            monitor = sct.monitors[1]
-            w, h = monitor["width"], monitor["height"]
-            self.motion_overlay.move_and_resize(w, h)
-
-            while self.motion_thread_running:
-                sct_img = sct.grab(monitor)
-                frame = np.array(sct_img)
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
-
-                # Detección con parámetros ajustados
-                results = model.predict(
-                    source=frame_rgb,
-                    classes=[0],       # Solo personas
-                    conf=0.25,         # Más sensible
-                    iou=0.4,           # Evita solapamientos excesivos
-                    verbose=False
-                )
-
-                # Dibuja los rectángulos
-                draw = Image.fromarray(frame_rgb)
-                overlay = Image.new("RGBA", draw.size, (0, 0, 0, 0))
-                draw_overlay = ImageDraw.Draw(overlay)
-
-                for r in results:
-                    for box in r.boxes.xyxy.cpu().numpy():
-                        x1, y1, x2, y2 = map(int, box)
-                        draw_overlay.rectangle([x1, y1, x2, y2], outline="green", width=3)
-
-                composed = Image.alpha_composite(draw.convert("RGBA"), overlay)
-                self.motion_overlay.update_image(composed)
-
-
-        
-    # Funciones Mira
-    def update_crosshair_scale_final(self, event=None):
-        if self.overlay:
-            self.overlay.update_scale(self.crosshair_scale.get())
-
-    def update_crosshair_alpha(self, val=None):
-        if self.overlay:
-            self.overlay.update_alpha(float(val))
-
-    def show_crosshair(self):
-        try:
-            # Cerrar overlay anterior
-            if hasattr(self, 'overlay') and self.overlay:
-                self.overlay.destroy()
-
-            # Crear nuevo overlay
-            scale_value = self.crosshair_scale.get()
-            self.overlay = CrosshairOverlay(self.current_crosshair,
-                                            scale=scale_value,
-                                            alpha=self.crosshair_alpha.get())
-        except Exception as e:
-            print("Error al mostrar el crosshair:", e)
-
-    def set_alpha(self, alpha):
-        self.attributes("-alpha", alpha)
-
-    def change_image(self, image_path):
-        self.original_img = Image.open(image_path)
-        self.update_scale(self.crosshair_scale.get())
-
-    def toggle_crosshair(self):
-        if self.toggle_var.get():
-            self.show_crosshair()
-            self.launch_floattrans()
-        else:
-            self.close_floattrans()
-
-    def next_crosshair(self):
-        self.crosshair_index = (self.crosshair_index + 1) % len(crosshair_images)
-        self.current_crosshair = os.path.join(crosshair_folder, crosshair_images[self.crosshair_index])
-        if self.overlay:
-            self.overlay.destroy()
-            self.overlay = CrosshairOverlay(self.current_crosshair, scale=self.crosshair_scale.get())
-
-
-    # funciones sensibilidad del raton  
     def update_sensitivity(self, val):
         sensitivity = float(val)
-        self.mouse_sensitivity.set(sensitivity)
-        
-        # Mapear 0.1–5.0 en el rango 1–20
         min_slider = 0.1
         max_slider = 5.0
         speed = int(((sensitivity - min_slider) / (max_slider - min_slider)) * (20 - 1) + 1)
-        
         speed = max(1, min(speed, 20))
         ctypes.windll.user32.SystemParametersInfoW(SPI_SETMOUSESPEED, 0, speed, 0)
-        print(f"Sensibilidad ajustada en el sistema a: {speed}/20 (desde {sensitivity})")    
-        
-    
-        
-    # funciones cierre 
-    """
-    def stop_motion_thread(self):
-        if self.motion_thread_running:
-            self.motion_thread_running = False
-            if self.motion_thread.is_alive():
-                self.motion_thread.join(timeout=1)  # espera a que termine
-            if self.motion_overlay:
-                self.motion_overlay.destroy()
-                self.motion_overlay = None
+        print(f"Sensibilidad ajustada en el sistema a: {speed}/20 (desde {sensitivity})")
 
+    def toggle_motion_CS2(self):
+        if self.motion_cs2_var.get():
+            if not self.motion_thread_running:
+                self.motion_overlay = MotionOverlay()
+                self.motion_thread_running = True
+                self.motion_thread = threading.Thread(target=self.run_motion_detection_CS2, daemon=True)
+                self.motion_thread.start()
+        else:
+            self.stop_motion_thread()
 
-    def on_closing(self): 
-        self.stop_motion_thread()
-        if hasattr(self, 'motion_thread'):
-            self.motion_thread.join(timeout=1)  # espera hasta 1 segundo
-        if self.motion_overlay:
-            self.motion_overlay.destroy()
-        if self.overlay:
-            self.overlay.destroy()
-        self.root.destroy()
-    """
+    def toggle_motion_people(self):
+        if self.motion_people_var.get():
+            if not self.motion_thread_running:
+                self.motion_overlay = MotionOverlay()
+                self.motion_thread_running = True
+                self.motion_thread = threading.Thread(target=self.run_motion_detection_people, daemon=True)
+                self.motion_thread.start()
+        else:
+            self.stop_motion_thread()
+
 
     def stop_motion_thread(self):
-        if getattr(self, 'motion_thread_running', False):
-            self.motion_thread_running = False
-            if hasattr(self, 'motion_thread') and self.motion_thread.is_alive():
-                self.motion_thread.join(timeout=1)  # espera a que termine
-        if hasattr(self, 'motion_overlay') and self.motion_overlay:
-            self.motion_overlay.destroy()
-            self.motion_overlay = None
-
+        self.motion_thread_running = False
+        if hasattr(self, 'motion_thread') and self.motion_thread.is_alive():
+            self.motion_thread.join()
+        cv2.destroyAllWindows()
 
     def on_closing(self):
         self.stop_motion_thread()
+        if self.motion_overlay:
+            # Limpieza extra de seguridad
+            clean_img = Image.new("RGBA", (self.motion_overlay.winfo_width(), self.motion_overlay.winfo_height()), (0, 0, 0, 0))
+            self.motion_overlay.update_image(clean_img)
+            self.motion_overlay.destroy()
+        self.root.destroy()
 
-        # Cierra overlay si existe y no ha sido destruida ya
-        if hasattr(self, 'overlay') and self.overlay:
-            try:
-                self.overlay.destroy()
-            except tk.TclError:
-                pass  # Ya está destruida
-
-        # Finalmente cierra la ventana principal
-        try:
-            self.root.destroy()
-        except tk.TclError:
-            pass
-
-
-    # funciones Toggle para atajos de teclado
+    # Atajos de teclado
     def toggle_motion_from_hotkey(self):
-        # Alternar el valor de la variable y llamar al método
-        self.motion_var.set(not self.motion_var.get())
-        self.toggle_motion()
+        self.motion_cs2_var.set(not self.motion_cs2_var.get())
+        self.toggle_motion_CS2()
 
     def toggle_crosshair_from_hotkey(self):
         self.toggle_var.set(not self.toggle_var.get())
@@ -558,32 +361,190 @@ class App:
     def next_crosshair_from_hotkey(self):
         self.next_crosshair()
 
+    def run_motion_detection_CS2(self):
+    # Cargar modelo YOLO
+        model = YOLO("yolov8s.pt")
+        #model = YOLO("runs/detect/train/weights/best.pt")
+        model.to('cuda')  # usar GPU si está disponible
 
-# En el final del archivo
+        # Fuente para overlay
+        font = ImageFont.load_default()
+
+        # Iniciamos cámara de pantalla
+        camera = dxcam.create(output_idx=0)  # pantalla principal
+        camera.start(target_fps=30)
+
+        def detection_loop(): 
+            num_detections = 0
+
+            # Obtenemos un frame inicial para calcular dimensiones
+            frame_bgr = None
+            while frame_bgr is None:
+                frame_bgr = camera.get_latest_frame()
+                time.sleep(0.01)
+
+            screen_height, screen_width, _ = frame_bgr.shape
+
+            # Si hay overlay, lo ajustamos al tamaño de pantalla
+            if self.motion_overlay:
+                self.motion_overlay.move_and_resize(screen_width, screen_height)
+
+            while self.motion_thread_running:
+                frame_bgr = camera.get_latest_frame()
+                if frame_bgr is None:
+                    continue
+
+                # Ajuste dinámico del threshold según número de detecciones
+                if num_detections <= 3:
+                    conf_threshold = 0.3
+                elif 3 < num_detections <= 6:
+                    conf_threshold = 0.4
+                else:
+                    conf_threshold = 0.5
+
+                # Inferencia
+                results = model(frame_bgr, classes=[0, 1, 2], conf=conf_threshold, iou=0.5)
+
+                # Contar detecciones para la próxima iteración
+                num_detections = sum(len(result.boxes) for result in results)
+
+                # Imagen transparente para overlay
+                h, w, _ = frame_bgr.shape
+                overlay_img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                draw = ImageDraw.Draw(overlay_img)
+
+                # Mapeo de clases
+                class_info = {
+                    0: {"label": "Antiterrorista", "color": (0, 0, 255)},
+                    1: {"label": "Cabeza", "color": (255, 0, 0)},
+                    2: {"label": "Terrorista", "color": (0, 255, 0)},
+                }
+
+                # Dibujar cajas
+                for result in results:
+                    boxes = result.boxes
+                    for box in boxes:
+                        x1, y1, x2, y2 = box.xyxy[0].tolist()
+                        cls_id = int(box.cls[0].item())
+                        conf = float(box.conf[0].item())
+
+                        info = class_info.get(cls_id, {"label": "Unknown", "color": (255, 255, 255)})
+                        label = f"{info['label']} {conf:.2f}"
+                        color = info['color'] + (200,)
+
+                        # Rectángulo
+                        draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
+
+                        # Texto
+                        bbox = draw.textbbox((0, 0), label, font=font)
+                        text_width = bbox[2] - bbox[0]
+                        text_height = bbox[3] - bbox[1]
+                        draw.rectangle([x1, y1 - text_height - 2, x1 + text_width, y1], fill=color)
+                        draw.text((x1, y1 - text_height - 2), label, fill=(255, 255, 255, 255), font=font)
+
+                # Actualizar overlay
+                if self.motion_overlay:
+                    try:
+                        self.motion_overlay.update_image(overlay_img)
+                    except Exception as e:
+                        print(f"Error actualizando overlay: {e}")
+
+                time.sleep(0.03)
+
+            # 🔹 Cuando se detiene el bucle → limpiar overlay
+            if self.motion_overlay:
+                clean_img = Image.new("RGBA", (screen_width, screen_height), (0, 0, 0, 0))
+                self.motion_overlay.update_image(clean_img)
+
+            camera.stop()
+
+        # Iniciar hilo de detección
+        thread = threading.Thread(target=detection_loop, daemon=True)
+        thread.start()
+
+
+    def run_motion_detection_people(self):
+        # YOLOv8 estándar para personas
+        model = YOLO("yolov8s.pt")  # Modelo general
+        model.to('cuda')
+        font = ImageFont.load_default()
+        camera = dxcam.create(output_idx=0)
+        camera.start(target_fps=30)
+
+        def detection_loop():
+            num_detections = 0
+            frame_bgr = None
+            while frame_bgr is None:
+                frame_bgr = camera.get_latest_frame()
+                time.sleep(0.01)
+
+            screen_height, screen_width, _ = frame_bgr.shape
+            if self.motion_overlay:
+                self.motion_overlay.move_and_resize(screen_width, screen_height)
+
+            while self.motion_thread_running:
+                frame_bgr = camera.get_latest_frame()
+                if frame_bgr is None:
+                    continue
+
+                # Threshold dinámico
+                if num_detections <= 3:
+                    conf_threshold = 0.3
+                elif 3 < num_detections <= 6:
+                    conf_threshold = 0.4
+                else:
+                    conf_threshold = 0.5
+
+                results = model(frame_bgr, classes=[0], conf=conf_threshold, iou=0.5)  # class 0 = persona
+                num_detections = sum(len(r.boxes) for r in results)
+
+                overlay_img = Image.new("RGBA", (screen_width, screen_height), (0,0,0,0))
+                draw = ImageDraw.Draw(overlay_img)
+
+                for result in results:
+                    for box in result.boxes:
+                        x1, y1, x2, y2 = box.xyxy[0].tolist()
+                        color = (0,255,0,200)  # verde con transparencia
+                        draw.rectangle([x1, y1, x2, y2], outline=color, width=2)
+                        label = f"Persona {float(box.conf[0].item()):.2f}"
+                        bbox = draw.textbbox((0,0), label, font=font)
+                        draw.rectangle([x1, y1-bbox[3], x1+bbox[2], y1], fill=color)
+                        draw.text((x1, y1-bbox[3]), label, fill=(255,255,255,255), font=font)
+
+                if self.motion_overlay:
+                    try:
+                        self.motion_overlay.update_image(overlay_img)
+                    except Exception as e:
+                        print(f"Error actualizando overlay: {e}")
+
+                time.sleep(0.03)
+
+            if self.motion_overlay:
+                clean_img = Image.new("RGBA", (screen_width, screen_height), (0,0,0,0))
+                self.motion_overlay.update_image(clean_img)
+            camera.stop()
+
+        threading.Thread(target=detection_loop, daemon=True).start()
+        
+
 if __name__ == "__main__":
-    import threading
-    import keyboard
-    import tkinter as tk
-
     try:
         run_matrix_effect()
+        for i in range(101):
+            show_fancy_progress_bar(i, 100)
+            time.sleep(0.01)
     except subprocess.CalledProcessError as e:
         print(f"matrix_effect.exe terminó con error (probablemente cerrado con la X): {e}")
     except Exception as e:
         print(f"Error inesperado ejecutando matrix_effect.exe: {e}")
 
-    # Crear la ventana raíz antes de instanciar App
     root = tk.Tk()
     app = App(root)
-    app_instance = app  # Necesario para el hilo de hotkeys
 
-    # Definir hotkeys globales en hilo separado para no bloquear UI
     def global_hotkeys(app):
         keyboard.add_hotkey("ctrl+i", lambda: app.toggle_motion_from_hotkey())
         keyboard.add_hotkey("ctrl+o", lambda: app.toggle_crosshair_from_hotkey())
         keyboard.add_hotkey("ctrl+p", lambda: app.next_crosshair_from_hotkey())
 
     threading.Thread(target=lambda: global_hotkeys(app), daemon=True).start()
-
-    root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.mainloop()

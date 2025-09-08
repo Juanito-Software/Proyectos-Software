@@ -1,10 +1,12 @@
 # Entornos virtuales
 venv/
+env/
 env_Py3.10/
 ENV/
 
 # Proyectos/entornos/carpetas específicas
 FloatTrans/
+frames/
 AIClipCreator_env/
 ClipVO/
 ClipsAI_env/
@@ -30,6 +32,7 @@ __pycache__/
 *.wav
 *.mp3
 *.pt
+*.onnx
 *.log
 *.dll
 *.so
