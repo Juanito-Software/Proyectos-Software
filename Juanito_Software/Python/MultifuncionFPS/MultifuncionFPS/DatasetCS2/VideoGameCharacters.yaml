@@ -1,0 +1,14 @@
+path: DatasetCS2/VideoGameCharacters.v1i.yolov8
+
+train: train/images
+val: train/images   # temporalmente, mientras no tengas valid/
+
+nc: 3
+names: ['contr-terrorist', 'head', 'terrorist']
+
+roboflow:
+  workspace: juanitosoftware
+  project: videogamecharacters-ock1w
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/juanitosoftware/videogamecharacters-ock1w/dataset/1
