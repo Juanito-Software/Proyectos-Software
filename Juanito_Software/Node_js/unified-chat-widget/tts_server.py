@@ -14,54 +14,75 @@
 # Para más detalles, consulta el archivo LICENSE.txt incluido con este programa
 # o contacta a bernaldezperedaj@gmail.com.
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from TTS.api import TTS
 import os
 import time
-from playsound import playsound
+import simpleaudio as sa
 
 app = Flask(__name__)
 
 # Cargar el modelo (elige uno en español)
 tts = TTS(model_name="tts_models/es/css10/vits")
 
+# Configurables
+BASE_AUDIO_DIR = "audios"
+MAX_TEXT_LEN = 500  # seguridad: tamaño máximo aceptado
+
+if not os.path.exists(BASE_AUDIO_DIR):
+    os.makedirs(BASE_AUDIO_DIR, exist_ok=True)
+
+def sanitize_input(text):
+    if not text:
+        return ''
+    # Normaliza y elimina control chars problemáticos
+    t = str(text).strip()
+    t = t.replace('\r', ' ').replace('\n', ' ')
+    # elimina etiquetas HTML
+    t = ''.join(ch for ch in t if ord(ch) >= 32)  # elimina control chars < 32
+    if len(t) > MAX_TEXT_LEN:
+        t = t[:MAX_TEXT_LEN] + '...'
+    return t
+
 @app.route("/speak", methods=["POST"])
 def speak():
-    data = request.get_json()
-    text = data.get("text", "")
+    data = request.get_json(silent=True) or {}
+    text = sanitize_input(data.get("text", ""))
     if not text:
-        return {"error": "Falta el texto"}, 400
+        return jsonify({"error": "Falta el texto o texto no válido"}), 400
 
-    base_path = "audios"
-    if not os.path.exists(base_path):
-        os.makedirs(base_path)
-    
-    file_path = os.path.join(base_path, "output.wav")
-
-    # Intentar borrar el archivo si existe
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-        except PermissionError:
-            # Si está en uso, crear un archivo con timestamp para evitar colisiones
-            timestamp = int(time.time() * 1000)
-            file_path = os.path.join(base_path, f"output_{timestamp}.wav")
-
-    print(f"🗣️ Hablando: {text}")
+    # Nombre de archivo único para evitar colisiones
+    timestamp = int(time.time() * 1000)
+    filename = f"output_{timestamp}.wav"
+    file_path = os.path.join(BASE_AUDIO_DIR, filename)
 
     try:
-        # Guardar el archivo de audio
+        print(f"🗣️ Hablando: {text}")
+        # Guardar wav
         tts.tts_to_file(text=text, file_path=file_path)
-        
-        # Normalizar ruta absoluta y con barras normales
-        abs_path = os.path.abspath(file_path)
 
-        # Reproducir audio
-        playsound(abs_path)
+        # Reproducir con simpleaudio (bloqueante hasta terminar)
+        wave_obj = sa.WaveObject.from_wave_file(os.path.abspath(file_path))
+        play_obj = wave_obj.play()
+        play_obj.wait_done()
+
+        # Intentamos eliminar el archivo (cleanup)
+        try:
+            os.remove(file_path)
+        except Exception:
+            # no fatal: sólo log
+            print("⚠️ No se pudo borrar el archivo de audio:", file_path)
     except Exception as e:
-        return {"error": str(e)}, 500
+        print("ERROR TTS:", e)
+        # Intenta borrar si existe
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
+        return jsonify({"error": str(e)}), 500
 
-    return {"status": "ok", "text": text}
+    return jsonify({"status": "ok", "text": text}), 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002)

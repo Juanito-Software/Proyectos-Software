@@ -100,22 +100,54 @@ function isAdmin(name) {
   if (!name) return false;
   return TTS_ADMINS.some(a => a.toLowerCase() === name.toLowerCase());
 }
-/**
- * parseCommand(text)
- * devuelve { isCommand: bool, token: string|null, cmd: string|null }
- * token = primer "palabra" tal cual (con prefijo si existe)
- * cmd = token sin prefijos (/ ! - \) y en mayúsculas
- */
+// --- Objeto de comandos ---
+const commands = {
+  TTS_ON: (autor, msg) => {
+    if (isAdmin(autor)) {
+      ttsEnabled = true;
+      console.log(`🔊 TTS activado por ${autor}`);
+      sendSystemMessage(`TTS activado por ${autor}`, msg.platform || 'system');
+      sendToTTS(`${autor} ha activado el TTS.`);
+    } else {
+      console.log(`⛔ ${autor} intentó usar TTS_ON sin permiso`);
+      sendSystemMessage(`⛔ ${autor} intentó usar TTS_ON sin permiso`, msg.platform || 'system');
+      sendToTTS(`Alerta de seguridad: ${autor} intentó activar el TTS sin permiso.`);
+    }
+  },
+  TTS_OFF: (autor, msg) => {
+    if (isAdmin(autor)) {
+      ttsEnabled = false;
+      console.log(`🔇 TTS desactivado por ${autor}`);
+      sendSystemMessage(`TTS desactivado por ${autor}`, msg.platform || 'system');
+      sendToTTS(`${autor} ha desactivado el TTS.`);
+    } else {
+      console.log(`⛔ ${autor} intentó usar TTS_OFF sin permiso`);
+      sendSystemMessage(`⛔ ${autor} intentó usar TTS_OFF sin permiso`, msg.platform || 'system');
+      sendToTTS(`Alerta de seguridad: ${autor} intentó desactivar el TTS sin permiso.`);
+    }
+  },
+  SALUDO: (autor, msg) => {
+      const platform = msg.platform || 'web'; // usar 'web' si no hay plataforma
+      console.log(`¡Hola ${autor}! 👋`, platform);
+      sendSystemMessage(`¡Hola ${autor}! 👋`, platform);
+      sendToTTS(`¡Hola ${autor}!`);
+  },
+  HELP: (autor, msg) => {
+      const platform = msg.platform || 'web';
+      const comandosDisponibles = Object.keys(commands).join(', ');
+      console.log(`Comandos disponibles para ${autor}: ${comandosDisponibles}`, platform);
+      sendSystemMessage(`Comandos disponibles: ${comandosDisponibles}`, platform);
+      sendToTTS(`Hola ${autor}, los comandos disponibles son: ${comandosDisponibles}`);
+  }
+};
+
+// --- Función para parsear comandos ---
 function parseCommand(text) {
-  if (!text) return { isCommand: false, token: null, cmd: null };
-  const t = text.trim();
-  if (t === '') return { isCommand: false, token: null, cmd: null };
-  const token = t.split(/\s+/)[0]; // primer "word"
-  // detecta si empieza por uno de los prefijos comunes
-  const hasPrefix = /^[\/!\\-]/.test(token);
-  if (!hasPrefix) return { isCommand: false, token: null, cmd: null };
-  const cmd = token.replace(/^[/!\\-]+/, '').toUpperCase();
-  return { isCommand: true, token, cmd };
+  if (!text) return null;
+  const token = text.trim().split(/\s+/)[0];
+  const match = token.match(/^([!\\])(.+)/); // solo acepta ! o \
+  if (!match) return null;
+  return match[2].toUpperCase(); // devuelve solo el nombre del comando en mayúsculas
 }
 
 /* -------------------------
@@ -162,6 +194,19 @@ function broadcastMessage(messageObj) {
   }
 }
 
+// Devuelve los últimos mensajes en JSON
+app.get('/messages', async (req, res) => {
+  try {
+    const data = await fsp.readFile(messagesFile, 'utf-8');
+    const messages = JSON.parse(data || '[]');
+    res.json(messages);
+  } catch (err) {
+    console.error('Error leyendo latest.json:', err);
+    res.status(500).json({ error: 'No se pudo leer messages' });
+  }
+});
+
+
 // Envía un mensaje tipo "sistema" al widget/chat (se guarda + broadcast)
 // ahora acepta opcionalmente la platform original para que el overlay no lo filtre.
 function sendSystemMessage(text, platform = 'system') {
@@ -180,13 +225,61 @@ function sendSystemMessage(text, platform = 'system') {
   });
 }
 
+// ---------- TTS queue + sanitización (index.js) ----------
 
+// Cola FIFO para TTS
+const ttsQueue = [];
+let ttsProcessing = false;
+
+// Configurables
+const TTS_MAX_LENGTH = 300;         // limitar texto enviado al TTS
+const TTS_POST_TIMEOUT = 120000;    // 120s timeout para la petición al microservicio
+const TTS_DELAY_BETWEEN = 300;      // ms entre audios (pequeña pausa)
+
+// Sanitización ligera (normaliza, elimina caracteres cero-width y saltos de línea)
+function sanitizeForTTS(s) {
+  if (!s) return '';
+  let t = normUnicode(s);
+  t = t.replace(/[\r\n]+/g, ' ');         // unifica saltos de línea
+  t = t.replace(/<[^>]*>/g, '');         // quita tags HTML simples
+  t = t.replace(/[^\x20-\x7EÁÉÍÓÚÜÑáéíóúüñ¿¡€£¥·çÇàèìòùÄÖäöß—–]+/g, ''); // restringe a caracteres comunes + algunos acentos
+  if (t.length > TTS_MAX_LENGTH) t = t.slice(0, TTS_MAX_LENGTH) + '...';
+  return t.trim();
+}
 
 function sendToTTS(message) {
-  axios.post('http://localhost:5002/speak', { text: message })
+  /*axios.post('http://localhost:5002/speak', { text: message })
     .catch((err) => {
       console.error('❌ Error TTS:', err?.message ?? err);
     });
+  */
+  const safe = sanitizeForTTS(message);
+  if (!safe) return;
+  ttsQueue.push(safe);
+  processTTSQueue().catch(err => console.error("TTS queue error:", err));
+}
+
+// Procesador: envía cada item al microservicio y espera su finalización
+async function processTTSQueue() {
+  if (ttsProcessing) return;
+  ttsProcessing = true;
+
+  while (ttsQueue.length > 0) {
+    const texto = ttsQueue.shift();
+    try {
+      console.log('TTS => Enviando texto al servicio:', texto.slice(0, 120));
+      // Post hacia el microservicio. Espera hasta que Flask haya terminado de reproducir.
+      await axios.post('http://localhost:5002/speak', { text: texto }, { timeout: TTS_POST_TIMEOUT });
+    } catch (err) {
+      // Log detallado (no rompas la cola)
+      console.error('❌ Error al enviar/leer TTS:', err?.message ?? err);
+    }
+
+    // Pequeña pausa entre audios para evitar colisiones
+    await new Promise(res => setTimeout(res, TTS_DELAY_BETWEEN));
+  }
+
+  ttsProcessing = false;
 }
 
 export async function saveAndBroadcastMessage(message) {
@@ -211,69 +304,35 @@ export async function saveAndBroadcastMessage(message) {
    handleMessage: robusto y con debug
    ------------------------- */
 function handleMessage(msg) {
-  try {
-    // Normalizar autor y texto
-    const autor = getAuthor(msg);            // siempre minúsculas
-    const texto = getText(msg);              // texto normalizado
-    const tokenInfo = parseCommand(texto);   // detección de comando
+    try {
+        const autor = msg.username || 'Desconocido';
+        const texto = msg.message.trim();
+        const cmdName = parseCommand(texto);
 
-    // DEBUG: muestra exactamente lo que llega
-    console.log('DEBUG handleMessage:', {
-      platform: msg.platform ?? 'unknown',
-      rawUser: msg.user ?? msg.username,
-      autor,
-      texto,
-      token: tokenInfo.token,
-      cmd: tokenInfo.cmd,
-      ttsEnabled
-    });
+        // Ejecuta comando si existe
+        if (cmdName && commands[cmdName]) {
+            commands[cmdName](autor, msg);
+            return; // no procesamos mensaje normal si era comando
+        }
 
-    // --- comandos TTS ---
-    if (tokenInfo.isCommand && tokenInfo.cmd === 'TTS_OFF') {
-      if (isAdmin(autor)) {
-        ttsEnabled = false;
-        console.log(`🔇 TTS desactivado por ${autor}`);
-        sendSystemMessage(`TTS desactivado por ${autor}`, msg.platform || 'system');
-      } else {
-        console.log(`⛔ ${autor} intentó usar TTS_OFF sin permiso`);
-        sendSystemMessage(`⛔ ${autor} intentó usar TTS_OFF sin permiso`, msg.platform || 'system');
-      }
-      // No guardamos ni leemos comandos
-      return;
+        // Procesamiento normal TTS
+        if (ttsEnabled) {
+            const who = msg.username || msg.user || autor || 'alguien';
+            sendToTTS(`${who} dijo: ${texto}`);
+        }
+
+        // Guardar y difundir
+        const mensajeParaGuardar = {
+            ...msg,
+            user: autor,
+            message: texto,
+            received_at: new Date().toISOString()
+        };
+        saveAndBroadcastMessage(mensajeParaGuardar);
+
+    } catch (err) {
+        console.error('Error en handleMessage:', err);
     }
-
-    if (tokenInfo.isCommand && tokenInfo.cmd === 'TTS_ON') {
-      if (isAdmin(autor)) {
-        ttsEnabled = true;
-        console.log(`🔊 TTS activado por ${autor}`);
-        sendSystemMessage(`TTS activado por ${autor}`, msg.platform || 'system');
-      } else {
-        console.log(`⛔ ${autor} intentó usar TTS_ON sin permiso`);
-        sendSystemMessage(`⛔ ${autor} intentó usar TTS_ON sin permiso`, msg.platform || 'system');
-      }
-      return;
-    }
-
-    // Guardar y difundir (guardamos siempre el mensaje normalizado)
-    const mensajeParaGuardar = {
-      ...msg,
-      user: autor || msg.user || msg.username,
-      message: texto,
-      received_at: new Date().toISOString()
-    };
-    saveAndBroadcastMessage(mensajeParaGuardar);
-
-    // Si es comando diferente, no se leerá (ya parseado). Solo leer si TTS activado y no es comando
-    if (ttsEnabled && !tokenInfo.isCommand) {
-      // usa msg.username si existe para lectura más natural; si no, usamos autor
-      const who = msg.username || msg.user || autor || 'alguien';
-      const textoParaLeer = `${who} dijo: ${texto}`;
-      console.log('TTS ▶', textoParaLeer);
-      sendToTTS(textoParaLeer);
-    }
-  } catch (err) {
-    console.error('Error en handleMessage:', err);
-  }
 }
 
 /* -------------------------
