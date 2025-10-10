@@ -67,6 +67,7 @@ roboflow.json
 *.log
 *.exe
 *.rar
+*.whl
 
 # --- Archivos de VSCode / IDEs ---
 .vscode/
