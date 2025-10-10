@@ -5,6 +5,7 @@ venv/
 env/
 env_Py3.10/
 ENV/
+docs/
 
 # Proyectos/entornos/carpetas específicas
 FloatTrans/
