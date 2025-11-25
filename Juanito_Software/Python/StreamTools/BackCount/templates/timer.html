@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuenta Atrás</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+        min-height:100vh;
+        background:transparent;
+        overflow:hidden;
+    }
+    .top-text { font-size:52px; margin-bottom:20px; text-align:center; font-weight:300; letter-spacing:2px; opacity:0.9; }
+    .timer-display {
+        font-weight:bold;
+        text-align:center;
+        font-variant-numeric:tabular-nums;
+        text-shadow:0 0 20px rgba(0,0,0,0.5);
+        letter-spacing:5px;
+    }
+    .finished { animation:pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.05);opacity:0.9;} }
+    @media screen and (max-width:800px) { .timer-display{font-size:80px;} .top-text{font-size:36px;} }
+    .colon { animation:blink 1s step-end infinite; }
+    @keyframes blink { 0%,50%{opacity:1;} 51%,100%{opacity:0.3;} }
+</style>
+</head>
+<body>
+<div class="top-text" id="topText"></div>
+<div class="timer-display" id="timerDisplay">00:00:00</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const timerId = urlParams.get('timer_id');
+    const textColor = urlParams.get('textColor') || '#ffffff';
+    const fontSize = urlParams.get('fontSize') || '120';
+    const topTextParam = urlParams.get('text');
+    
+    const timerDisplay = document.getElementById('timerDisplay');
+    const topText = document.getElementById('topText');
+    timerDisplay.style.color = textColor;
+    timerDisplay.style.fontSize = fontSize + 'px';
+    document.body.style.color = textColor;
+    
+    if (topTextParam) { topText.textContent = topTextParam; topText.style.color = textColor; }
+    else { topText.style.display = 'none'; }
+    
+    let remaining = 0;
+    let finished = false;
+    
+    // ① Obtener tiempo inicial del servidor una sola vez
+    async function fetchTimer() {
+      if (!timerId) return;
+      const response = await fetch(`/api/timer/${timerId}`);
+      const data = await response.json();
+      if (data.error) {
+        timerDisplay.textContent = 'ERROR';
+        return;
+      }
+      remaining = data.remaining;
+      finished = data.finished;
+    }
+    
+    // ② Actualizar la cuenta local cada segundo
+    function updateDisplay() {
+      if (finished) return;
+    
+      if (remaining <= 0) {
+        timerDisplay.textContent = '00:00:00';
+        timerDisplay.classList.add('finished');
+        finished = true;
+        return;
+      }
+    
+      const hours = Math.floor(remaining / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      const seconds = remaining % 60;
+    
+      timerDisplay.textContent =
+        String(hours).padStart(2, '0') + ':' +
+        String(minutes).padStart(2, '0') + ':' +
+        String(seconds).padStart(2, '0');
+    
+      remaining--;
+    }
+    
+    // ③ Iniciar temporizador
+    (async function init() {
+      await fetchTimer();
+      updateDisplay();
+      setInterval(updateDisplay, 1000);      // fluido y preciso
+      setInterval(fetchTimer, 10000);        // refresca desde servidor cada 10 s para sincronizar
+    })();
+</script>
+    
+</body>
+</html>

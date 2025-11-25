@@ -262,5 +262,87 @@
     "timestamp": 1764044077998,
     "user": "JuanitoCanuto",
     "received_at": "2025-11-25T04:14:39.787Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "twitch mola",
+    "timestamp": 1764046946270,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:02:26.273Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "juanitocanutos",
+    "channel": "juanitocanutos",
+    "username": "juanitocanutos",
+    "message": "x2",
+    "timestamp": 1764046952627,
+    "user": "juanitocanutos",
+    "received_at": "2025-11-25T05:02:32.628Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "emojiCool",
+    "timestamp": 1764046969676,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:02:49.677Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "Nooooo! Kick mola maaas!",
+    "timestamp": 1764046970831,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:02:50.831Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "No teneis ni puta idea",
+    "timestamp": 1764046988495,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:03:11.313Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "RUMBLE ES GOZ",
+    "timestamp": 1764046993793,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:03:14.316Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "me encanta que en mi chat pueda estar gente conversando de todas las plataformas",
+    "timestamp": 1764047655972,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:14:15.972Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "Twitch/kick/rumble/youtube",
+    "timestamp": 1764047673215,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:14:33.216Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "es magico",
+    "timestamp": 1764047676917,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T05:14:36.917Z"
   }
 ]

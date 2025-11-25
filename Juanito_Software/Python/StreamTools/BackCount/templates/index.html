@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Cuenta Atrás</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 32px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .time-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .time-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .time-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 18px;
+            transition: border-color 0.3s;
+        }
+
+        .time-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .color-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .color-input-wrapper {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .color-input-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .color-input-wrapper input[type="color"] {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .color-input-wrapper input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .text-input-group {
+            margin-bottom: 15px;
+        }
+
+        .text-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .text-input-group input,
+        .text-input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .text-input-group input:focus,
+        .text-input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-reset {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .info-box strong {
+            color: #2196F3;
+        }
+
+        .preview-box {
+            background: #000;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ Cuenta Atrás Personalizada</h1>
+
+        <form id="configForm">
+            <div class="section">
+                <h2>⏱️ Tiempo</h2>
+                <div class="time-inputs">
+                    <div class="time-group">
+                        <label for="hours">Horas</label>
+                        <input type="number" id="hours" min="0" max="23" value="0" required>
+                    </div>
+                    <div class="time-group">
+                        <label for="minutes">Minutos</label>
+                        <input type="number" id="minutes" min="0" max="59" value="5" required>
+                    </div>
+                    <div class="time-group">
+                        <label for="seconds">Segundos</label>
+                        <input type="number" id="seconds" min="0" max="59" value="0" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎨 Color del Texto</h2>
+                <div class="color-group">
+                    <div class="color-input-wrapper">
+                        <label for="textColor">Color de Texto</label>
+                        <input type="color" id="textColor" value="#ffffff">
+                        <input type="text" id="textColorText" value="#ffffff" readonly>
+                    </div>
+                </div>
+                <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                    <strong>Nota:</strong> El fondo será transparente para usarlo como overlay en OBS.
+                </p>
+            </div>
+
+            <div class="section">
+                <h2>📝 Texto</h2>
+                <div class="text-input-group">
+                    <label for="text">Texto Superior (opcional)</label>
+                    <input type="text" id="text" placeholder="Ej: Break iniciará en..." maxlength="50">
+                </div>
+                <div class="text-input-group">
+                    <label for="fontSize">Tamaño de Fuente</label>
+                    <select id="fontSize">
+                        <option value="48">Pequeño (48px)</option>
+                        <option value="72" selected>Mediano (72px)</option>
+                        <option value="96">Grande (96px)</option>
+                        <option value="120">Extra Grande (120px)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button type="submit" class="btn-start" id="startBtn">▶ Iniciar Temporizador</button>
+                <button type="button" class="btn-reset" onclick="resetForm()">🔄 Resetear</button>
+            </div>
+        </form>
+
+        <div class="info-box">
+            <strong>💡 Para usar en OBS:</strong><br>
+            1. Inicia el temporizador<br>
+            2. Copia la URL que se mostrará<br>
+            3. En OBS, añade una fuente "Navegador"<br>
+            4. Pega la URL en el campo correspondiente<br>
+            5. Tamaño recomendado: 1920x1080
+        </div>
+    </div>
+
+    <script>
+        // Sincronizar color picker con texto
+        document.getElementById('textColor').addEventListener('input', e => {
+            document.getElementById('textColorText').value = e.target.value;
+            updatePreview();
+        });
+
+        document.getElementById('textColorText').addEventListener('input', e => {
+            document.getElementById('textColor').value = e.target.value;
+            updatePreview();
+        });
+
+        // Actualizar preview en tiempo real
+        function updatePreview() {
+            // Preview se actualiza automáticamente con los cambios
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                hours: parseInt(document.getElementById('hours').value) || 0,
+                minutes: parseInt(document.getElementById('minutes').value) || 0,
+                seconds: parseInt(document.getElementById('seconds').value) || 0,
+                textColor: document.getElementById('textColor').value,
+                text: document.getElementById('text').value,
+                fontSize: parseInt(document.getElementById('fontSize').value)
+            };
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const config = await response.json();
+                
+                // Abrir ventana con el temporizador
+                const timerUrl = config.timer_url;
+                const fullUrl = window.location.origin + timerUrl;
+                
+                window.open(timerUrl, '_blank');
+                
+                // Mostrar URL para copiar
+                alert(`Temporizador iniciado!\n\nURL para OBS:\n${fullUrl}\n\nSe abrió en una nueva pestaña.`);
+            } catch (error) {
+                alert('Error al iniciar el temporizador: ' + error.message);
+            }
+        });
+
+        function resetForm() {
+            document.getElementById('configForm').reset();
+        }
+    </script>
+</body>
+</html>
+
