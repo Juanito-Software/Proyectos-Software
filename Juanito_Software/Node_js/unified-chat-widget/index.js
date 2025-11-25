@@ -40,11 +40,22 @@
 // Ejecuta: npm init -y && npm install express tmi.js dotenv axios @pagoru/kick_live_ws
 
 // index.js (main server)
-import 'dotenv/config';
+
+import {
+  loadTwitchAccounts,
+  YOUTUBE_API_KEY,
+  YOUTUBE_CHANNEL_ID,
+  KICK_CHANNEL,
+  KICK_BEARER_TOKEN,
+  KICK_COOKIES,
+  PORT
+} from './services/config.js';
+
 import express from 'express';
 import { connectKick } from './services/kick.js';
 import { connectYouTube } from './services/youtube.js';
-import { connectTwitch } from './services/twitch.js';
+import { connectTwitchAccount } from './services/twitch.js';
+import { connectRumble } from './services/rumble.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
@@ -53,8 +64,10 @@ import { WebSocketServer } from 'ws';
 import http from 'http';
 import axios from 'axios';
 
+// -------------------
 let ttsEnabled = true;
-const TTS_ADMINS = ['juanitocanuto', 'ameloblastos'];
+const TTS_ADMINS = ['juanitocanutos', 'juanitocanuto'];  // Nombres de usuario permitidos para comandos TTS
+// -------------------
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,10 +75,13 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
+
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 3000;
+// 👉 CORRECTO: usar PORT importado o 3000 si no existe
+const finalPort = PORT || 3000;
 
+// Asegura que el directorio y archivo de mensajes existen
 const messagesDir = join(__dirname, 'messages');
 if (!fs.existsSync(messagesDir)) {
   fs.mkdirSync(messagesDir, { recursive: true });
@@ -282,21 +298,59 @@ async function processTTSQueue() {
   ttsProcessing = false;
 }
 
+// Lock para evitar condiciones de carrera al escribir latest.json
+let fileWriteLock = false;
+const writeQueue = [];
+
 export async function saveAndBroadcastMessage(message) {
+  // Añadir a la cola si hay una escritura en progreso
+  if (fileWriteLock) {
+    writeQueue.push(message);
+    return;
+  }
+
+  fileWriteLock = true;
+
   try {
     let messages = [];
     try {
       const data = await fsp.readFile(messagesFile, 'utf-8');
-      messages = JSON.parse(data || '[]');
+      // Limpiar datos corruptos: intentar parsear, si falla usar array vacío
+      try {
+        messages = JSON.parse(data || '[]');
+        if (!Array.isArray(messages)) {
+          console.warn('⚠️ latest.json no es un array, reiniciando...');
+          messages = [];
+        }
+      } catch (parseErr) {
+        console.warn('⚠️ Error parseando latest.json, reiniciando archivo:', parseErr.message);
+        messages = [];
+      }
     } catch (err) {
-      if (err.code !== 'ENOENT') console.error('Error leyendo latest.json:', err);
+      if (err.code !== 'ENOENT') {
+        console.error('Error leyendo latest.json:', err.message);
+      }
+      messages = [];
     }
 
     const newMessages = [...messages.slice(-99), message];
-    await fsp.writeFile(messagesFile, JSON.stringify(newMessages, null, 2), 'utf-8');
+    
+    // Escribir de forma atómica usando un archivo temporal
+    const tempFile = messagesFile + '.tmp';
+    await fsp.writeFile(tempFile, JSON.stringify(newMessages, null, 2), 'utf-8');
+    await fsp.rename(tempFile, messagesFile);
+    
     broadcastMessage(message);
   } catch (err) {
-    console.error('Error en saveAndBroadcastMessage:', err);
+    console.error('Error en saveAndBroadcastMessage:', err.message);
+  } finally {
+    fileWriteLock = false;
+    
+    // Procesar mensajes en cola
+    if (writeQueue.length > 0) {
+      const nextMessage = writeQueue.shift();
+      setImmediate(() => saveAndBroadcastMessage(nextMessage));
+    }
   }
 }
 
@@ -341,16 +395,23 @@ function handleMessage(msg) {
 async function iniciarChats() {
   console.log('🔄 Iniciando conexiones de chat...');
 
+  const twitchAccounts = loadTwitchAccounts();
+
   const conexiones = [
-    { nombre: 'Kick', conectar: connectKick },
-    { nombre: 'YouTube', conectar: connectYouTube },
-    { nombre: 'Twitch', conectar: connectTwitch },
+    ...twitchAccounts.map(acc => ({
+      nombre: `Twitch (${acc.username})`,
+      conectar: () => connectTwitchAccount(acc, handleMessage),
+    })),
+    { nombre: 'Kick', conectar: () => connectKick(handleMessage) },
+    { nombre: 'YouTube', conectar: () => connectYouTube(handleMessage) },
+    { nombre: 'Rumble', conectar: () => connectRumble(handleMessage) },
   ];
 
   const resultados = await Promise.allSettled(
-    conexiones.map(({ conectar }) => conectar(handleMessage))
+    conexiones.map(({ conectar }) => conectar())
   );
-  console.log('✅ Chats inicializados');
+
+  console.log('⚙️ Inicialización completa');
 
   resultados.forEach((resultado, i) => {
     const { nombre } = conexiones[i];
@@ -363,6 +424,6 @@ async function iniciarChats() {
 }
 
 iniciarChats();
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://127.0.0.1:${PORT}`);
+server.listen(finalPort, () => {
+  console.log(`🚀 Servidor corriendo en http://127.0.0.1:${finalPort}`);
 });
