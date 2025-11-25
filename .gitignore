@@ -6,6 +6,7 @@ env/
 env_Py3.10/
 ENV/
 docs/
+coqui_env/
 
 # Proyectos/entornos/carpetas específicas
 FloatTrans/
