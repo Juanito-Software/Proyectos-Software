@@ -1,8 +1,8 @@
 @echo off
 setlocal
 
-:: Ruta del proyecto
-set "projectPath=C:\Users\User\Desktop\Proyectos\Juanito_Software\Paginas\unified-chat-widget"
+:: Ruta del proyecto (usando la ruta actual del script)
+set "projectPath=%~dp0"
 
 :: Cambiar al directorio del proyecto
 cd /d "%projectPath%" || (

@@ -1,186 +1,266 @@
 [
   {
-    "platform": "twitch",
+    "platform": "kick",
     "username": "ameloblastos",
-    "message": "aaron es un mesero",
-    "timestamp": 1750734264298
+    "message": "mizelle puta guarra",
+    "timestamp": 1764043444752,
+    "user": "ameloblastos",
+    "received_at": "2025-11-25T04:04:04.753Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "os quiero mucho gente de rumble",
+    "timestamp": 1764043537974,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "me veis pila",
+    "timestamp": 1764043537975,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "to buena gente illo",
+    "timestamp": 1764043537975,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": ":)",
+    "timestamp": 1764043537975,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "estamos todos",
+    "timestamp": 1764043537975,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "ijijij",
+    "timestamp": 1764043537975,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:05:40.987Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "hey probando",
+    "timestamp": 1764043559235,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:06:02.061Z"
   },
   {
     "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "dwadawd",
-    "timestamp": 1750736014140
+    "message": "aaaa",
+    "timestamp": 1764043563573,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:06:03.573Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "holaaa",
+    "timestamp": 1764043574674,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:06:17.111Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "os quiero mucho gente de rumble",
+    "timestamp": 1764043944461,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.473Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "me veis pila",
+    "timestamp": 1764043944461,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "to buena gente illo",
+    "timestamp": 1764043944461,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": ":)",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "estamos todos",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "ijijij",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "hey probando",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "holaaa",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "gente de rumble vustro chat ahora funciona integrado junto con el de twitch , kick, y youtube",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "los que vienen de twitch morado los que vienen de kick verde los de youtube rojo y los de rumble color azul",
+    "timestamp": 1764043944462,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:12:27.474Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "aaa",
+    "timestamp": 1764043995008,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:15.008Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "gente de rumble vustro chat ahora funciona integrado junto con el de twitch , kick, y youtube los que vienen de twitch morado los que vienen de kick verde los de youtube rojo y los",
+    "timestamp": 1764043992670,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:15.576Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "y los de rumble azul",
+    "timestamp": 1764044019369,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:39.649Z"
   },
   {
     "platform": "kick",
     "username": "JuanitoCanuto",
-    "message": "awddawd",
-    "timestamp": 1750736018287
-  },
-  {
-    "platform": "YouTube",
-    "username": "JuanitoCanuto",
-    "message": "aaaaasdwwd",
-    "timestamp": 1750736068456
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "a",
-    "timestamp": 1750770456230
+    "message": "asi es",
+    "timestamp": 1764044023582,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:43.582Z"
   },
   {
     "platform": "kick",
     "username": "JuanitoCanuto",
-    "message": "b",
-    "timestamp": 1750770465224
+    "message": "confirmo",
+    "timestamp": 1764044025691,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:45.691Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "es como fuck",
+    "timestamp": 1764044035355,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:13:57.673Z"
   },
   {
     "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "aaaaa",
-    "timestamp": 1750786196616
+    "account": "juanitocanutos",
+    "channel": "juanitocanutos",
+    "username": "juanitocanutos",
+    "message": "me gusta la droja",
+    "timestamp": 1764044039158,
+    "user": "juanitocanutos",
+    "received_at": "2025-11-25T04:13:59.158Z"
   },
   {
     "platform": "kick",
     "username": "JuanitoCanuto",
-    "message": "bbbbbbbbb",
-    "timestamp": 1750786201640
-  },
-  {
-    "platform": "YouTube",
-    "username": "BotRix",
-    "message": "BotRix has correctly joined the channel!",
-    "timestamp": 1750786220266
-  },
-  {
-    "platform": "YouTube",
-    "username": "JuanitoCanuto",
-    "message": "ccccccccc",
-    "timestamp": 1750786280340
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "cuajada",
-    "timestamp": 1750786297453
+    "message": "en yoputube ya no hacemos directo",
+    "timestamp": 1764044050122,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:14:10.123Z"
   },
   {
     "platform": "kick",
     "username": "JuanitoCanuto",
-    "message": "cuajaaaaa",
-    "timestamp": 1750786306162
-  },
-  {
-    "platform": "YouTube",
-    "username": "JuanitoCanuto",
-    "message": "cuajo estoy!",
-    "timestamp": 1750786340249
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "fesfsef",
-    "timestamp": 1750794861695
+    "message": "se quejan de copyright",
+    "timestamp": 1764044053968,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:14:13.968Z"
   },
   {
     "platform": "kick",
     "username": "JuanitoCanuto",
-    "message": "dawdawdwa",
-    "timestamp": 1750794869332
+    "message": "a mi me gusta poner temazos",
+    "timestamp": 1764044058929,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:14:18.929Z"
   },
   {
     "platform": "twitch",
-    "username": "ameloblastos",
-    "message": "epaa",
-    "timestamp": 1750794889912
+    "account": "juanitocanutos",
+    "channel": "juanitocanutos",
+    "username": "juanitocanutos",
+    "message": "me gusta el piollo",
+    "timestamp": 1764044070664,
+    "user": "juanitocanutos",
+    "received_at": "2025-11-25T04:14:30.665Z"
   },
   {
-    "platform": "twitch",
-    "username": "ameloblastos",
-    "message": "yo ya lo he probado",
-    "timestamp": 1750794910390
-  },
-  {
-    "platform": "twitch",
+    "platform": "rumble",
     "username": "JuanitoCanuto",
-    "message": "awdadawd",
-    "timestamp": 1750794921221
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "dawawdawd",
-    "timestamp": 1750794926949
-  },
-  {
-    "platform": "twitch",
-    "username": "ameloblastos",
-    "message": "buena rapada",
-    "timestamp": 1750794958583
-  },
-  {
-    "platform": "twitch",
-    "username": "b3lf3gor88",
-    "message": "hola juanitocanuto",
-    "timestamp": 1750795006822
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "soy dios",
-    "timestamp": 1750795043273
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "me gusta el pollo",
-    "timestamp": 1750795052062
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "cocaina",
-    "timestamp": 1750795059418
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "boquerones, sardinas, bufaa bufaaa!",
-    "timestamp": 1750795077341
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "boquerones, sardinas, bufaa!,  bufaaa!",
-    "timestamp": 1750795092827
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "me gusta el pollo y me viene el rollo",
-    "timestamp": 1750795109476
-  },
-  {
-    "platform": "twitch",
-    "username": "JuanitoCanuto",
-    "message": "me follo a la madre del vecino",
-    "timestamp": 1750795115235
-  },
-  {
-    "platform": "kick",
-    "username": "Rodrihh7",
-    "message": "que pasa crack",
-    "timestamp": 1764034815220,
-    "user": "Rodrihh7",
-    "received_at": "2025-11-25T01:40:15.234Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Rodrihh7",
-    "message": "unos troleitos",
-    "timestamp": 1764034836480,
-    "user": "Rodrihh7",
-    "received_at": "2025-11-25T01:40:36.483Z"
+    "message": "me viene el rollo",
+    "timestamp": 1764044077998,
+    "user": "JuanitoCanuto",
+    "received_at": "2025-11-25T04:14:39.787Z"
   }
 ]

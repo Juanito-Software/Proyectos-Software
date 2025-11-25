@@ -1,41 +1,42 @@
 import tmi from 'tmi.js';
-//import { addMessage, getMessages } from '../utils/globalMessages.js';
-//import { appendLatestJson } from '../utils/saveMessage.js';
-import { TWITCH_CHANNEL, TWITCH_CLIENT_ID, TWITCH_OAUTH_TOKEN } from './config.js';
 
-const client = new tmi.Client({
-  options: { debug: true },
-  identity: {
-    username: TWITCH_CLIENT_ID,
-    password: TWITCH_OAUTH_TOKEN,
-  },
-  channels: [TWITCH_CHANNEL],
-});
+export async function connectTwitchAccount(account, onMessage) {
+  const { username, channel, oauth } = account;
 
-export async function connectTwitch(onMessage) {
-  if (!TWITCH_CHANNEL || !TWITCH_CLIENT_ID || !TWITCH_OAUTH_TOKEN) {
-    console.error("❌ Faltan credenciales Twitch en .env");
+  if (!username || !channel || !oauth) {
+    console.error("❌ Credenciales de Twitch incompletas para esta cuenta", account);
     return;
   }
 
+  const client = new tmi.Client({
+    options: { debug: true },
+    identity: {
+      username,
+      password: oauth
+    },
+    channels: [channel.toLowerCase()]
+  });
+
   try {
     await client.connect();
-    console.log("✅ Conectado a Twitch en canal:", TWITCH_CHANNEL);
+    console.log(`✅ Conectado a Twitch: ${username} → #${channel}`);
   } catch (err) {
     console.error("❌ Error conectando a Twitch:", err);
+    return;
   }
 
-    client.on('message', (channel, tags, message, self) => {
+  client.on('message', (chan, tags, message, self) => {
     if (self) return;
 
     const formatted = {
       platform: 'twitch',
+      account: username,
+      channel,
       username: tags['display-name'] || tags.username || 'anon',
-      message: message,
+      message,
       timestamp: Date.now()
     };
+
     onMessage(formatted);
-    //addMessage(formatted);
-    //appendLatestJson(getMessages());
   });
 }
