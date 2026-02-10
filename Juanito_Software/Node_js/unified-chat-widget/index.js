@@ -15,7 +15,7 @@
  o contacta a bernaldezperedaj@gmail.com.
 */
 
-// Proyecto: Unified Chat Widget para OBS (Twitch + YouTube + Kick)
+// Proyecto: Unified Chat Widget para OBS (Twitch + YouTube + Kick + Rumble + Trovo + Odysee + DLive + BitChute)
 // Requisitos: Node.js, OBS, credenciales API
 
 // Estructura del proyecto:
@@ -30,7 +30,12 @@
 // ├── services/
 // │   ├── twitch.js
 // │   ├── youtube.js
-// │   └── kick.js
+// │   ├── kick.js
+// │   ├── rumble.js
+// │   ├── trovo.js
+// │   ├── odysee.js
+// │   ├── dlive.js
+// │   └── bitchute.js
 // ├── public/
 // │   └── chat.html
 // └── messages/
@@ -56,6 +61,10 @@ import { connectKick } from './services/kick.js';
 import { connectYouTube } from './services/youtube.js';
 import { connectTwitchAccount } from './services/twitch.js';
 import { connectRumble } from './services/rumble.js';
+import { connectTrovo } from './services/trovo.js';
+import { connectOdysee } from './services/odysee.js';
+import { connectDLive } from './services/dlive.js';
+import { connectBitChute } from './services/bitchute.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
@@ -405,6 +414,10 @@ async function iniciarChats() {
     { nombre: 'Kick', conectar: () => connectKick(handleMessage) },
     { nombre: 'YouTube', conectar: () => connectYouTube(handleMessage) },
     { nombre: 'Rumble', conectar: () => connectRumble(handleMessage) },
+    { nombre: 'Trovo', conectar: () => connectTrovo(handleMessage) },
+    { nombre: 'Odysee', conectar: () => connectOdysee(handleMessage) },
+    { nombre: 'DLive', conectar: () => connectDLive(handleMessage) },
+    { nombre: 'BitChute', conectar: () => connectBitChute(handleMessage) },
   ];
 
   const resultados = await Promise.allSettled(

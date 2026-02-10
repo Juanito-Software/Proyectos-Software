@@ -20,6 +20,7 @@ import os
 import subprocess
 import sys
 import csv
+import shutil
 
 def run_matrix_effect():
     """Ejecuta la animación de Matrix en la misma consola."""
@@ -39,13 +40,53 @@ def run_matrix_effect():
     else:
         print("❌ No se encontró matrix_effect.exe, se saltará la animación.")
 
+def verificar_ffmpeg():
+    """Verifica si ffmpeg está instalado y disponible en D:\ffmpeg\bin."""
+    # Ruta fija de ffmpeg en la raíz de D:
+    ruta_ffmpeg = r'D:\ffmpeg\bin'
+    
+    ffmpeg_path = os.path.join(ruta_ffmpeg, 'ffmpeg.exe')
+    ffprobe_path = os.path.join(ruta_ffmpeg, 'ffprobe.exe')
+    
+    # Verificar que ambos archivos existen
+    if os.path.isfile(ffmpeg_path) and os.path.isfile(ffprobe_path):
+        # Añadir al PATH del proceso actual para que yt-dlp lo encuentre
+        if ruta_ffmpeg not in os.environ.get('PATH', ''):
+            os.environ['PATH'] = ruta_ffmpeg + os.pathsep + os.environ.get('PATH', '')
+        return True
+    
+    return False
+
 def limpiar_nombre(nombre):
     return re.sub(r'[\\/*?:"<>|]', "", nombre)
 
 def descargar_audio_mp3(url, carpeta_salida="descargas", calidad_mp3="320"):
     """Descarga el audio en MP3 de una URL de YouTube."""
+    # Verificar ffmpeg antes de intentar descargar
+    if not verificar_ffmpeg():
+        print("❌ ERROR: ffmpeg no está instalado o no está en el PATH.")
+        print("   Para convertir a MP3, necesitas instalar ffmpeg.")
+        print("   Descarga desde: https://ffmpeg.org/download.html")
+        print("   O instala con: winget install ffmpeg")
+        print("   O con chocolatey: choco install ffmpeg")
+        raise Exception("ffmpeg no está disponible")
+    
     os.makedirs(carpeta_salida, exist_ok=True)
-    with YoutubeDL({'quiet': True, 'noplaylist': True}) as ydl:
+    # Opciones básicas para obtener información del video
+    info_opts = {
+        'quiet': True,
+        'noplaylist': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+    }
+    with YoutubeDL(info_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         nombre_archivo = limpiar_nombre(info['title'])
 
@@ -60,13 +101,44 @@ def descargar_audio_mp3(url, carpeta_salida="descargas", calidad_mp3="320"):
             'preferredquality': calidad_mp3,
         }],
         'noplaylist': True,
-        'ignoreerrors': True,
-        'quiet': False
+        'ignoreerrors': False,
+        'quiet': False,
+        # Opciones para evitar error 403
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-us,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate',
+            'Connection': 'keep-alive',
+        },
+        'retries': 10,
+        'fragment_retries': 10,
+        'file_access_retries': 3,
     }
 
-    with YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-        print(f"✅ Descargado: {nombre_archivo}.mp3")
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        
+        # Verificar que el archivo MP3 se creó correctamente
+        ruta_mp3 = os.path.join(carpeta_salida, nombre_archivo + ".mp3")
+        if os.path.exists(ruta_mp3):
+            print(f"✅ Descargado: {nombre_archivo}.mp3")
+        else:
+            print(f"⚠️  Advertencia: El archivo MP3 no se creó correctamente.")
+            print(f"   Se descargó el video pero no se pudo convertir a MP3.")
+            raise Exception("Error en la conversión a MP3")
+    except Exception as e:
+        if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
+            print("❌ ERROR: Problema con ffmpeg durante la conversión.")
+            print("   Verifica que ffmpeg esté correctamente instalado.")
+        raise
 
 def descargar_desde_csv(ruta_csv="descargas.csv"):
     """Lee las URLs de un CSV y las descarga automáticamente sin input()"""
@@ -110,6 +182,21 @@ def proceso_interactivo():
             print(f"❌ Error en la descarga: {e}")
 
 if __name__ == "__main__":
+    # Verificar ffmpeg al inicio
+    if not verificar_ffmpeg():
+        print("⚠️  ADVERTENCIA: ffmpeg no está instalado o no está en el PATH.")
+        print("   El programa necesita ffmpeg para convertir videos a MP3.")
+        print("   Opciones para instalar:")
+        print("   1. Con winget: winget install ffmpeg")
+        print("   2. Con chocolatey: choco install ffmpeg")
+        print("   3. Descarga manual: https://ffmpeg.org/download.html")
+        print("   4. Añade ffmpeg al PATH después de instalarlo")
+        continuar = input("\n¿Deseas continuar de todos modos? (s/n): ").strip().lower()
+        if continuar != "s":
+            print("Saliendo del programa...")
+            sys.exit(1)
+        print()
+
     # Animación opcional
     if os.path.exists("matrix_effect.exe"):
         ver_intro = input("¿Quieres ver la animación de Matrix? (s/n): ").strip().lower()

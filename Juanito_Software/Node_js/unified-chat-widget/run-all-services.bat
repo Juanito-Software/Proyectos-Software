@@ -33,6 +33,7 @@ echo   SERVICIOS INICIADOS
 echo ========================================
 echo   - Servidor TTS: Corriendo en segundo plano
 echo   - Servidor Rumble: Se iniciará automáticamente
+echo   - Servidor BitChute: Se iniciará automáticamente
 echo   - Chat Unificado: Iniciando...
 echo ========================================
 echo.

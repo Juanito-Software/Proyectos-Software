@@ -3,9 +3,11 @@ import tmi from 'tmi.js';
 export async function connectTwitchAccount(account, onMessage) {
   const { username, channel, oauth } = account;
 
+  console.log(`🔧 [Twitch] Iniciando servicio para cuenta: ${username}`);
+
   if (!username || !channel || !oauth) {
-    console.error("❌ Credenciales de Twitch incompletas para esta cuenta", account);
-    return;
+    console.error(`❌ [Twitch] Credenciales incompletas para cuenta: ${username}`);
+    throw new Error(`Credenciales incompletas para cuenta: ${username}`);
   }
 
   const client = new tmi.Client({
@@ -19,10 +21,11 @@ export async function connectTwitchAccount(account, onMessage) {
 
   try {
     await client.connect();
-    console.log(`✅ Conectado a Twitch: ${username} → #${channel}`);
+    console.log(`✅ [Twitch] Conectado correctamente: ${username} → #${channel}`);
   } catch (err) {
-    console.error("❌ Error conectando a Twitch:", err);
-    return;
+    const errorMsg = err.message || err.toString();
+    console.error(`❌ [Twitch] Error conectando ${username} → #${channel}: ${errorMsg}`);
+    throw err; // Propagar el error para que Promise.allSettled lo capture
   }
 
   client.on('message', (chan, tags, message, self) => {
@@ -37,6 +40,15 @@ export async function connectTwitchAccount(account, onMessage) {
       timestamp: Date.now()
     };
 
+    console.log(`💬 [Twitch] ${formatted.username}: ${formatted.message}`);
     onMessage(formatted);
+  });
+
+  client.on('disconnected', (reason) => {
+    console.warn(`⚠️ [Twitch] Desconectado ${username}: ${reason}`);
+  });
+
+  client.on('notice', (channel, msgid, message) => {
+    console.log(`ℹ️ [Twitch] Notice en ${channel}: ${message}`);
   });
 }

@@ -53,8 +53,30 @@ def limpiar_nombre(nombre):
     return re.sub(r'[\\/*?:"<>|]', "", nombre)
 
 
+def obtener_ruta_ffmpeg():
+    """Obtiene la ruta de ffmpeg, buscando primero en PATH y luego en rutas específicas."""
+    # Primero intentar buscar en PATH
+    ruta_ffmpeg = shutil.which('ffmpeg')
+    if ruta_ffmpeg:
+        return ruta_ffmpeg
+    
+    # Si no está en PATH, buscar en rutas específicas comunes
+    rutas_especificas = [
+        r"D:\ffmpeg\bin\ffmpeg.exe",  # Ruta proporcionada por el usuario
+        r"C:\ffmpeg\bin\ffmpeg.exe",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg.exe"),
+    ]
+    
+    for ruta in rutas_especificas:
+        if os.path.exists(ruta):
+            return ruta
+    
+    return None
+
+
 def ffmpeg_disponible():
-    return shutil.which('ffmpeg') is not None
+    """Verifica si ffmpeg está disponible."""
+    return obtener_ruta_ffmpeg() is not None
 
 
 # ---------------- yt-dlp implementation ----------------
@@ -62,14 +84,30 @@ def ffmpeg_disponible():
 def descargar_con_ytdlp(url, carpeta_salida="descargas"):
     os.makedirs(carpeta_salida, exist_ok=True)
 
-    # obtener información para el título y resolución
-    titulo = None
-    resolucion = "desconocida"
     if not HAS_YTDLP:
         raise RuntimeError("yt-dlp no está instalado en este entorno.")
 
+    # Configurar ffmpeg ANTES de crear cualquier objeto YoutubeDL
+    ruta_ffmpeg = obtener_ruta_ffmpeg()
+    ruta_ffmpeg_dir = None
+    if ruta_ffmpeg:
+        ruta_ffmpeg_dir = os.path.dirname(ruta_ffmpeg)
+        # Configurar PATH para que yt-dlp encuentre ffmpeg desde el inicio
+        ffmpeg_bin_dir = ruta_ffmpeg_dir
+        if ffmpeg_bin_dir not in os.environ.get('PATH', ''):
+            os.environ['PATH'] = ffmpeg_bin_dir + os.pathsep + os.environ.get('PATH', '')
+
+    # obtener información para el título y resolución
+    titulo = None
+    resolucion = "desconocida"
+    
+    # Configurar opciones básicas para obtener metadatos
+    opts_metadatos = {'quiet': True, 'noplaylist': True}
+    if ruta_ffmpeg_dir:
+        opts_metadatos['ffmpeg_location'] = ruta_ffmpeg_dir
+
     try:
-        with YoutubeDL({'quiet': True, 'noplaylist': True}) as ydl:
+        with YoutubeDL(opts_metadatos) as ydl:
             info = ydl.extract_info(url, download=False)
             titulo = limpiar_nombre(info.get('title', 'video'))
             # intentar obtener la altura (height) preferentemente
@@ -87,26 +125,62 @@ def descargar_con_ytdlp(url, carpeta_salida="descargas"):
 
     ruta_salida = os.path.join(carpeta_salida, f"{titulo} [{resolucion}].%(ext)s")
 
+    # ruta_ffmpeg y ruta_ffmpeg_dir ya están configuradas arriba
+
     ydl_opts = {
         'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
         'outtmpl': ruta_salida,
         'merge_output_format': 'mp4',
         'noplaylist': True,
-        'ignoreerrors': True,
+        'ignoreerrors': False,
         'quiet': False,
-
+        
+        # Opciones para evitar errores 403
+        'retries': 10,                      # Reintentos automáticos
+        'fragment_retries': 10,            # Reintentos para fragmentos
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web'],  # Usar cliente Android primero, luego web
+            }
+        },
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'referer': 'https://www.youtube.com/',
+        
         # Subtítulos
         'writesubtitles': True,             # descargar subtítulos proporcionados por el creador
         'writeautomaticsub': True,          # descargar subtítulos automáticos si no hay
         'subtitleslangs': ['en'],           # solo en inglés
         'subtitlesformat': 'srt',           # archivo srt
-        'embedsubtitles': True              # True si quieres incrustar
+        'embedsubtitles': True,             # True si quieres incrustar
     }
+    
+    # Si tenemos la ruta de ffmpeg, configurarla explícitamente para yt-dlp
+    if ruta_ffmpeg_dir:
+        ydl_opts['ffmpeg_location'] = ruta_ffmpeg_dir
+        print(f"✓ Usando ffmpeg desde: {ruta_ffmpeg_dir}")
 
-    with YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-
-    print(f"✅ Descargado (yt-dlp): {titulo} [{resolucion}].mp4")
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        
+        # Verificar que el archivo realmente se descargó
+        ruta_final = os.path.join(carpeta_salida, f"{titulo} [{resolucion}].mp4")
+        if os.path.exists(ruta_final):
+            print(f"✅ Descargado (yt-dlp): {titulo} [{resolucion}].mp4")
+            print(f"📁 Ubicación: {ruta_final}")
+        else:
+            # Buscar el archivo con cualquier extensión que pueda haber descargado
+            archivos_encontrados = [f for f in os.listdir(carpeta_salida) if titulo in f]
+            if archivos_encontrados:
+                archivo_real = os.path.join(carpeta_salida, archivos_encontrados[0])
+                print(f"✅ Descargado (yt-dlp): {archivos_encontrados[0]}")
+                print(f"📁 Ubicación: {archivo_real}")
+            else:
+                print(f"❌ Error: El archivo no se descargó correctamente.")
+                print(f"   Verifica los mensajes de error anteriores.")
+    except Exception as e:
+        print(f"❌ Error durante la descarga: {e}")
+        raise
 
 
 # ---------------- pytube implementation ----------------
@@ -127,17 +201,35 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
     streams = yt.streams
 
     # 1) Intentar progressive (video+audio en un solo archivo) - es lo más sencillo
+    # NOTA: Los streams progresivos NO requieren ffmpeg
     prog = streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
     if prog:
         resolucion = prog.resolution or 'desconocida'
         filename_noext = f"{titulo} [{resolucion}]"
         print(f"▶ Descargando stream progresivo (video+audio): {resolucion} ...")
         try:
-            prog.download(output_path=carpeta_salida, filename=filename_noext)
-            print(f"✅ Descargado (pytube - progresivo): {filename_noext}.mp4")
+            ruta_descargada = prog.download(output_path=carpeta_salida, filename=filename_noext)
+            # pytube puede devolver la ruta completa o relativa, normalizarla
+            if os.path.isabs(ruta_descargada):
+                ruta_completa = ruta_descargada
+            else:
+                ruta_completa = os.path.abspath(ruta_descargada)
+            # Verificar que el archivo existe
+            if os.path.exists(ruta_completa):
+                print(f"✅ Descargado (pytube - progresivo): {os.path.basename(ruta_completa)}")
+                print(f"📁 Ubicación: {ruta_completa}")
+            else:
+                # Si no existe en la ruta esperada, buscar en la carpeta de salida
+                ruta_alternativa = os.path.join(os.path.abspath(carpeta_salida), f"{filename_noext}.mp4")
+                if os.path.exists(ruta_alternativa):
+                    print(f"✅ Descargado (pytube - progresivo): {os.path.basename(ruta_alternativa)}")
+                    print(f"📁 Ubicación: {ruta_alternativa}")
+                else:
+                    print(f"✅ Descargado (pytube - progresivo): {filename_noext}.mp4")
+                    print(f"📁 Ubicación: {os.path.abspath(carpeta_salida)}")
             return
         except Exception as e:
-            print(f"⚠️ Error descargando stream progresivo: {e}. Intentaré método adaptativo.")
+            print(f"⚠️ Error descargando stream progresivo: {e}. Intentaré método adaptativo (requiere ffmpeg).")
 
     # 2) Si no hay progressive con buena resolución, intentar adaptive: video-only + audio-only y mergear
     video_stream = streams.filter(adaptive=True, only_video=True).order_by('resolution').desc().first()
@@ -150,11 +242,19 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
     if not audio_stream:
         print("⚠️ No se encontró stream de audio. Se descargará solo vídeo si es posible.")
 
-    # comprobar ffmpeg
-    if not ffmpeg_disponible():
-        print("❌ ffmpeg no está disponible en PATH. Para mergear video+audio con pytube necesitas ffmpeg instalado.")
-        print("   Puedes instalarlo en Linux: sudo apt install ffmpeg  (o usar el instalador de tu SO).")
+    # comprobar ffmpeg (solo necesario para streams adaptativos, no para progresivos)
+    ruta_ffmpeg = obtener_ruta_ffmpeg()
+    if not ruta_ffmpeg:
+        print("❌ ffmpeg no está disponible.")
+        print("   Los streams progresivos no requieren ffmpeg, pero para mergear video+audio adaptativos sí es necesario.")
+        print("   Instalación:")
+        print("   - Windows: Descarga desde https://ffmpeg.org/download.html y añádelo al PATH")
+        print("   - Linux: sudo apt install ffmpeg")
+        print("   - macOS: brew install ffmpeg")
+        print(f"   - O coloca ffmpeg.exe en: {os.path.dirname(os.path.abspath(__file__))}")
         return
+    else:
+        print(f"✓ ffmpeg encontrado: {ruta_ffmpeg}")
 
     tmp_dir = tempfile.mkdtemp(prefix='ytmp_')
 
@@ -175,26 +275,33 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
 
         # Intentar merge con ffmpeg: copiar vídeo y reconvertir audio a aac
         if audio_path:
+            ruta_ffmpeg = obtener_ruta_ffmpeg()
+            if not ruta_ffmpeg:
+                print("❌ No se pudo encontrar ffmpeg.")
+                return
+            
             cmd_copy_audio = [
-                'ffmpeg', '-y', '-i', video_path, '-i', audio_path,
+                ruta_ffmpeg, '-y', '-i', video_path, '-i', audio_path,
                 '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', salida_final
             ]
             print("▶ Mergeando video+audio con ffmpeg (intento rápido - copia de vídeo + re-encode de audio)...")
             try:
                 subprocess.run(cmd_copy_audio, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 print(f"✅ Descargado (pytube - adaptive): {os.path.basename(salida_final)}")
+                print(f"📁 Ubicación: {os.path.abspath(salida_final)}")
                 return
             except subprocess.CalledProcessError:
                 print("⚠️ El merge rápido con copia falló. Intentando re-encode completo (más lento)...")
                 # re-encode completo
                 cmd_reencode = [
-                    'ffmpeg', '-y', '-i', video_path, '-i', audio_path,
+                    ruta_ffmpeg, '-y', '-i', video_path, '-i', audio_path,
                     '-c:v', 'libx264', '-preset', 'fast', '-crf', '18',
                     '-c:a', 'aac', '-b:a', '192k', salida_final
                 ]
                 try:
                     subprocess.run(cmd_reencode, check=True)
                     print(f"✅ Descargado (pytube - adaptive, re-encode): {os.path.basename(salida_final)}")
+                    print(f"📁 Ubicación: {os.path.abspath(salida_final)}")
                     return
                 except subprocess.CalledProcessError as e:
                     print(f"❌ Falló el merge/re-encode con ffmpeg: {e}")
@@ -217,7 +324,11 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
 
 # ---------------- wrapper y flujo principal ----------------
 
-def descargar_video_mp4(url, carpeta_salida="C:\\Users\\User\\Desktop\\Proyectos\\Juanito_Software\\Python\\YoutubeToMp4\\descargas", gestor_preferido='yt-dlp'):
+def descargar_video_mp4(url, carpeta_salida=None, gestor_preferido='yt-dlp'):
+    # Si no se especifica carpeta, usar "descargas" en el mismo directorio del script
+    if carpeta_salida is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        carpeta_salida = os.path.join(script_dir, "descargas")
     gestor = gestor_preferido.lower()
     if gestor in ('yt-dlp', 'ytdlp', 'yt'):
         if not HAS_YTDLP:
@@ -265,9 +376,15 @@ def proceso_interactivo(gestor='yt-dlp'):
     print("📥 Modo interactivo. Escribe 'salir' para terminar.")
     while True:
         url = input("\nIntroduce la URL de YouTube (o 'salir'):\n> ").strip()
+        if not url:  # Si está vacío, continuar el bucle
+            continue
         if url.lower() in ("salir", "n", "no"):
             print("Gracias por usar el programa. Esperamos verte pronto.👋")
             break
+        # Validar que sea una URL válida
+        if not (url.startswith("http://") or url.startswith("https://")):
+            print("❌ Por favor, introduce una URL válida que comience con http:// o https://")
+            continue
         try:
             descargar_video_mp4(url, gestor_preferido=gestor)
         except Exception as e:
@@ -311,7 +428,13 @@ if __name__ == "__main__":
 
     # Preguntar modo de descarga
     modo = input("\n¿Quieres descargar automáticamente desde CSV o manualmente por consola? (csv/manual): ").strip().lower()
-    if modo == "csv":
+    
+    # Detectar si el usuario escribió una URL por error
+    if modo.startswith("http://") or modo.startswith("https://") or "youtube.com" in modo or "youtu.be" in modo:
+        print("⚠️ Parece que escribiste una URL. Se usará modo manual.")
+        print("   La próxima vez, escribe 'manual' o 'csv' para elegir el modo.\n")
+        proceso_interactivo(gestor=gestor_elegido)
+    elif modo == "csv":
         ruta_csv = input("Ruta del CSV (por defecto descargas.csv): ").strip() or "descargas.csv"
         descargar_desde_csv(ruta_csv, gestor=gestor_elegido)
     else:

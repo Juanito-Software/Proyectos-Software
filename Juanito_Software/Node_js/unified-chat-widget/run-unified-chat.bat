@@ -16,6 +16,11 @@ echo [INFO] Iniciando servidor de Rumble en segundo plano...
 start "Servidor Rumble" /B coqui_env\Scripts\python.exe rumble_server.py
 timeout /t 2 /nobreak >nul
 
+:: Iniciar servidor de BitChute en segundo plano (si está configurado)
+echo [INFO] Iniciando servidor de BitChute en segundo plano...
+start "Servidor BitChute" /B coqui_env\Scripts\python.exe bitchute_server.py
+timeout /t 2 /nobreak >nul
+
 :: Arrancar servidor principal
 echo [INFO] Ejecutando servidor de chat unificado...
 node index.js
