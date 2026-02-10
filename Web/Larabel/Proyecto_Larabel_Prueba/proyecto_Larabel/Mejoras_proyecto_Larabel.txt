@@ -1,0 +1,80 @@
+-añadir campo booleano "pagado" en la tabla inscripciones para controlar cuando una inscipcion a terminado de pagarse a plazos
+-añadir un par de campos blob de imagen en la tabla entrenadores para Subida de imágenes del DNI (anverso y reverso)
+-forzar la fecha actual en la creación de inscripciones etc ?
+-añadir policies para no saturar el controlador
+-añadir store request validation para no saturar el controlador
+
+
+### Pagos
+
+Actualmente, los pagos son gestionados manualmente por el administrador.  
+Esto se debe a que la integración con pasarelas de pago (Stripe, PayPal, etc.)  
+no forma parte del alcance del proyecto al tratarse de un entorno de aprendizaje.  
+
+En un entorno de producción, se podría integrar un sistema de pagos online
+que permita a los clientes abonar sus inscripciones directamente desde la web.
+
+
+
+
+config
+
+mejor limitar métodos:
+
+'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
+
+
+⚠ Solo si usas login con cookies/sanctum deberías activar:
+
+'supports_credentials' => true,
+
+✅ Ejemplo PRODUCTION RECOMENDADO
+return [
+
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+
+    'allowed_origins' => [
+        'https://miapp.com',
+        'https://front.miapp.com',
+    ],
+
+    'allowed_headers' => ['Content-Type', 'X-Requested-With', 'Authorization'],
+
+    'exposed_headers' => [],
+
+    'max_age' => 3600,
+
+    'supports_credentials' => true,
+];
+
+✅ Conclusión
+Ítem	Estado
+Rutas protegidas	✅
+Validación entrada	✅
+Control ataques		✅
+CORS seguro		⚠ Mejorar en producción
+
+✅ Para desarrollo está OK
+⚠ En producción deberías restringir dominios y métodos
+
+✅ ¿Qué hacer ahora?
+
+Si estás solo probando local → lo puedes dejar así
+
+
+Mensajes de error consistentes: ya lo tienes bastante bien, pero puedes unificar withErrors(['msg' => '...']) o usar validation para todo. 
+
+Excepciones y try/catch opcional: Laravel maneja errores globalmente, pero puedes capturar operaciones críticas (como Payment::create) si quieres mostrar mensajes más amigables. 
+
+
+Cuando preparemos producción, tener en cuenta:
+
+- Asegurar orígenes
+- Ajustar headers
+- Revisar credentials
+- Evitar exposición no deseada
+- gitignore no debe incluir .env, vendor/ y node_modules/
+
+- Password por defecto en ClientsController@store: actualmente pones 'password123'. Para demo está bien, pero asegúrate de indicarlo como temporal.

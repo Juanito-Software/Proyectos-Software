@@ -1,364 +1,934 @@
 [
   {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "hola",
+    "timestamp": 1770500157024,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:35:57.025Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "a topeee",
+    "timestamp": 1770500175963,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:36:15.963Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "mola",
+    "timestamp": 1770500207902,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:36:47.904Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "Sii jaja",
+    "timestamp": 1770500245932,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:37:25.933Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "okis ta bien saberlo",
+    "timestamp": 1770500343916,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:39:03.917Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "solo hablo contigo y gente random de Habbo",
+    "timestamp": 1770500378244,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:39:38.245Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "exacto",
+    "timestamp": 1770500458970,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:40:58.971Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "Sii el de engranajes",
+    "timestamp": 1770500555331,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:42:35.332Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "Sii viene bien q escucho siempre lo latino",
+    "timestamp": 1770500637506,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:43:57.507Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "si mi tío abuelo con los nazis pero no volvió",
+    "timestamp": 1770500654539,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:44:14.541Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "murió ahí",
+    "timestamp": 1770500679056,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:44:39.057Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "división azul",
+    "timestamp": 1770500714465,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:45:14.466Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "te he enviado algunos whatsapps de locura pero es cosa mía no quiero repetirme",
+    "timestamp": 1770500773669,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:46:13.670Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "jeje esta bien los remedios naturales",
+    "timestamp": 1770500927318,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:48:47.319Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "demasiado tranquilo el directo de hoy no han venido los pesaos de Kick",
+    "timestamp": 1770501102290,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:51:42.291Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "hoy me he metido una buena viciada al Mario kart a circuitos online",
+    "timestamp": 1770501193799,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:53:13.800Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "es como fuck jeje",
+    "timestamp": 1770501195260,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-07T21:53:15.261Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "jajaja",
+    "timestamp": 1770501216036,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:53:36.037Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "woww mola",
+    "timestamp": 1770501288200,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:54:48.201Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "apa",
+    "timestamp": 1770501330314,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:55:30.315Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "puelco",
+    "timestamp": 1770501347529,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:55:47.530Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "LUL LUL",
+    "timestamp": 1770501358099,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:55:58.100Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "xili",
+    "timestamp": 1770501381287,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:56:21.288Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "xikilii",
+    "timestamp": 1770501391987,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:56:31.988Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "sisi justo entre cuando lo e nseñabas",
+    "timestamp": 1770501397670,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:56:37.671Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "que pasa xisko",
+    "timestamp": 1770501407059,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:56:47.060Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "bien lo más seguro esq curre pa marzo así q estaré full time pero en Santander",
+    "timestamp": 1770501474252,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:57:54.253Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "muy contento estas hoy",
+    "timestamp": 1770501522407,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:58:42.408Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "SeemsGood",
+    "timestamp": 1770501532358,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:58:52.359Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "no xisko",
+    "timestamp": 1770501538740,
+    "user": "xikily",
+    "received_at": "2026-02-07T21:58:58.741Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "yo currar en Santander ya me cansé de tanto viaje además me desquiciaba ir en tren con los de la mochila",
+    "timestamp": 1770501586183,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T21:59:46.184Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "pues si lo que importa es estar a gusto sino...",
+    "timestamp": 1770501616580,
+    "user": "xikily",
+    "received_at": "2026-02-07T22:00:16.580Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "venga yo marcho",
+    "timestamp": 1770501630861,
+    "user": "xikily",
+    "received_at": "2026-02-07T22:00:30.862Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "al visio",
+    "timestamp": 1770501634478,
+    "user": "xikily",
+    "received_at": "2026-02-07T22:00:34.478Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "esq ya acabe cansado de verles la cara a esos",
+    "timestamp": 1770501644878,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T22:00:44.879Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "venga",
+    "timestamp": 1770501648384,
+    "user": "xikily",
+    "received_at": "2026-02-07T22:00:48.384Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "xikily",
+    "message": "si eso me avisais por wasi",
+    "timestamp": 1770501664303,
+    "user": "xikily",
+    "received_at": "2026-02-07T22:01:04.304Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "ameloblastos",
+    "message": "venga Darío",
+    "timestamp": 1770501664516,
+    "user": "ameloblastos",
+    "received_at": "2026-02-07T22:01:04.516Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "mister nasty!!",
+    "timestamp": 1770503800343,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-07T22:36:42.334Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "mister nasty!!",
+    "timestamp": 1770503805714,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-07T22:36:48.335Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "xcxcvvdfvf",
+    "timestamp": 1770590642084,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-08T22:44:02.087Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "fgfgfg",
+    "timestamp": 1770590672355,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-08T22:44:32.356Z"
+  },
+  {
+    "platform": "kick",
+    "username": "Gaaarciiiaaa",
+    "message": "estas mute",
+    "timestamp": 1770591808366,
+    "user": "Gaaarciiiaaa",
+    "received_at": "2026-02-08T23:03:28.371Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "goz loquete",
+    "timestamp": 1770594890180,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-08T23:54:50.202Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "juaniko deja el movil que no te enteras del documental",
+    "timestamp": 1770597989471,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:46:29.472Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "ostiaa cabron",
+    "timestamp": 1770598078777,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:47:58.779Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "pero eso dispara?",
+    "timestamp": 1770598081501,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:48:01.501Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "aqui estoy echando unos loles",
+    "timestamp": 1770598389009,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:53:09.010Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "estoy en salamanca",
+    "timestamp": 1770598397877,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:53:17.878Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "de una bro",
+    "timestamp": 1770598460315,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:54:20.316Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "que perro",
+    "timestamp": 1770598672216,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:57:52.216Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "buscate un currillo por ahi juaniko",
+    "timestamp": 1770598699456,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:58:19.457Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "que pillas algo fijo",
+    "timestamp": 1770598702801,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T00:58:22.801Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "hola cabezonn",
+    "timestamp": 1770598800651,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T01:00:00.652Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "y una paja no puede?",
+    "timestamp": 1770598824621,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T01:00:24.621Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "te has hecho alguna paja hoy?",
+    "timestamp": 1770598850142,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T01:00:50.143Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "si broder",
+    "timestamp": 1770598855811,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T01:00:55.812Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "pa aqui no hay quien viva 2",
+    "timestamp": 1770598859901,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T01:00:59.902Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "hector_aalonso",
+    "message": "si el grinder jajajaja",
+    "timestamp": 1770598900423,
+    "user": "hector_aalonso",
+    "received_at": "2026-02-09T01:01:40.424Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "la que me acabo de clavar jefe",
+    "timestamp": 1770605490571,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T02:51:30.575Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "te va un poco petado no?",
+    "timestamp": 1770605509050,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T02:51:49.050Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "doxx_20",
+    "message": "dieciséis gigas de RAM están para quemarlas, pero para poder pillarte las de 32 tienes que vender un pulmón",
+    "timestamp": 1770605556553,
+    "user": "doxx_20",
+    "received_at": "2026-02-09T02:52:36.554Z"
+  },
+  {
     "platform": "kick",
     "username": "ameloblastos",
-    "message": "mizelle puta guarra",
-    "timestamp": 1764043444752,
+    "message": "holaa",
+    "timestamp": 1770607867556,
     "user": "ameloblastos",
-    "received_at": "2025-11-25T04:04:04.753Z"
+    "received_at": "2026-02-09T03:31:07.557Z"
   },
   {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "os quiero mucho gente de rumble",
-    "timestamp": 1764043537974,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "ya me acabo de levatar me puse a dormir escuchando la radio",
+    "timestamp": 1770607893893,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T03:31:33.894Z"
   },
   {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "me veis pila",
-    "timestamp": 1764043537975,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "to buena gente illo",
-    "timestamp": 1764043537975,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": ":)",
-    "timestamp": 1764043537975,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "estamos todos",
-    "timestamp": 1764043537975,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "ijijij",
-    "timestamp": 1764043537975,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:05:40.987Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "hey probando",
-    "timestamp": 1764043559235,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:06:02.061Z"
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "goodd",
+    "timestamp": 1770607912199,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T03:31:52.199Z"
   },
   {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "aaaa",
-    "timestamp": 1764043563573,
+    "message": "rthe furer face",
+    "timestamp": 1770663279013,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:06:03.573Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "holaaa",
-    "timestamp": 1764043574674,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:06:17.111Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "os quiero mucho gente de rumble",
-    "timestamp": 1764043944461,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.473Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "me veis pila",
-    "timestamp": 1764043944461,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "to buena gente illo",
-    "timestamp": 1764043944461,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": ":)",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "estamos todos",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "ijijij",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "hey probando",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "holaaa",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "gente de rumble vustro chat ahora funciona integrado junto con el de twitch , kick, y youtube",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "los que vienen de twitch morado los que vienen de kick verde los de youtube rojo y los de rumble color azul",
-    "timestamp": 1764043944462,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:12:27.474Z"
+    "received_at": "2026-02-09T18:54:39.016Z"
   },
   {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "aaa",
-    "timestamp": 1764043995008,
+    "message": "santa averia",
+    "timestamp": 1770664622850,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:15.008Z"
+    "received_at": "2026-02-09T19:17:02.851Z"
   },
   {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "gente de rumble vustro chat ahora funciona integrado junto con el de twitch , kick, y youtube los que vienen de twitch morado los que vienen de kick verde los de youtube rojo y los",
-    "timestamp": 1764043992670,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:15.576Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "y los de rumble azul",
-    "timestamp": 1764044019369,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:39.649Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "asi es",
-    "timestamp": 1764044023582,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:43.582Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "confirmo",
-    "timestamp": 1764044025691,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:45.691Z"
-  },
-  {
-    "platform": "rumble",
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
     "message": "es como fuck",
-    "timestamp": 1764044035355,
+    "timestamp": 1770664625517,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:13:57.673Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "juanitocanutos",
-    "channel": "juanitocanutos",
-    "username": "juanitocanutos",
-    "message": "me gusta la droja",
-    "timestamp": 1764044039158,
-    "user": "juanitocanutos",
-    "received_at": "2025-11-25T04:13:59.158Z"
+    "received_at": "2026-02-09T19:17:05.518Z"
   },
   {
     "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "en yoputube ya no hacemos directo",
-    "timestamp": 1764044050122,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:14:10.123Z"
+    "username": "ameloblastos",
+    "message": "holaa",
+    "timestamp": 1770665608083,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:33:28.084Z"
   },
   {
     "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "se quejan de copyright",
-    "timestamp": 1764044053968,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:14:13.968Z"
+    "username": "ameloblastos",
+    "message": "jajaja",
+    "timestamp": 1770665681076,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:34:41.078Z"
   },
   {
     "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "a mi me gusta poner temazos",
-    "timestamp": 1764044058929,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:14:18.929Z"
+    "username": "ameloblastos",
+    "message": "buenaa",
+    "timestamp": 1770665835218,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:37:15.219Z"
   },
   {
-    "platform": "twitch",
-    "account": "juanitocanutos",
-    "channel": "juanitocanutos",
-    "username": "juanitocanutos",
-    "message": "me gusta el piollo",
-    "timestamp": 1764044070664,
-    "user": "juanitocanutos",
-    "received_at": "2025-11-25T04:14:30.665Z"
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "puede ser no investigue",
+    "timestamp": 1770665914320,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:38:34.321Z"
   },
   {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "me viene el rollo",
-    "timestamp": 1764044077998,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T04:14:39.787Z"
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "simonperezlimpio",
+    "timestamp": 1770665962345,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:39:22.345Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "para sobrevivir en estaciones",
+    "timestamp": 1770666066880,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:41:06.881Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "terminazo a bombazos nucleares",
+    "timestamp": 1770666211670,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:43:31.671Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "simon ha contado q se sigue drogando pero ya un 90% menos",
+    "timestamp": 1770666342415,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:45:42.416Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "los q pasean las mochilitas vamos",
+    "timestamp": 1770666756150,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:52:36.151Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "tb hacen de estatua",
+    "timestamp": 1770666770635,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:52:50.636Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "esq les regalan dinero x pasear moxilas entre semana",
+    "timestamp": 1770666799020,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:53:19.021Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "luego en finde se gastan el dinero enviando putas a su centro",
+    "timestamp": 1770666823564,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:53:43.565Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "prefiero kick va mas fluido",
+    "timestamp": 1770666852834,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:54:12.835Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "jajaja tb",
+    "timestamp": 1770666864992,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:54:24.993Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "van a venir tantas estatuas q no se va a poder entrar en el tren porque tienen que pasear mochilitas",
+    "timestamp": 1770666921273,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:55:21.273Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "son malos",
+    "timestamp": 1770666968378,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:56:08.379Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "son la oscuridad el mal",
+    "timestamp": 1770667043136,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:57:23.136Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "esos salvajes solo se domestican a latigazos",
+    "timestamp": 1770667117951,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:58:37.952Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "es que los odio",
+    "timestamp": 1770667137813,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:58:57.814Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "los rusos buenos viciados del rust",
+    "timestamp": 1770667190909,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T19:59:50.910Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "ok",
+    "timestamp": 1770667360022,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T20:02:40.023Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "mute",
+    "timestamp": 1770667564646,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T20:06:04.646Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "adioos",
+    "timestamp": 1770667626445,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T20:07:06.446Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "hola",
+    "timestamp": 1770675604014,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T22:20:04.015Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "epaa",
+    "timestamp": 1770675648444,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T22:20:48.444Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "toy aquii",
+    "timestamp": 1770675948749,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T22:25:48.749Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "a juan de la palmilla los gitanos han recaudado dinero para darle una caravana",
+    "timestamp": 1770675975148,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T22:26:15.148Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "entro a disc",
+    "timestamp": 1770676016669,
+    "user": "ameloblastos",
+    "received_at": "2026-02-09T22:26:56.669Z"
   },
   {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "twitch mola",
-    "timestamp": 1764046946270,
+    "message": "es como fuck",
+    "timestamp": 1770677530819,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:02:26.273Z"
+    "received_at": "2026-02-09T22:52:10.823Z"
   },
   {
     "platform": "twitch",
-    "account": "juanitocanutos",
-    "channel": "juanitocanutos",
-    "username": "juanitocanutos",
-    "message": "x2",
-    "timestamp": 1764046952627,
-    "user": "juanitocanutos",
-    "received_at": "2025-11-25T05:02:32.628Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "emojiCool",
-    "timestamp": 1764046969676,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:02:49.677Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "Nooooo! Kick mola maaas!",
-    "timestamp": 1764046970831,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:02:50.831Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "No teneis ni puta idea",
-    "timestamp": 1764046988495,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:03:11.313Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "RUMBLE ES GOZ",
-    "timestamp": 1764046993793,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:03:14.316Z"
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "lesaguyi",
+    "message": "Love the vibe here! Feels like this would be fun to collab sometime 😄 Hit me up on Discord:  lordaxiom_1       if you’re ever down!",
+    "timestamp": 1770681844034,
+    "user": "lesaguyi",
+    "received_at": "2026-02-10T00:04:04.036Z"
   },
   {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "me encanta que en mi chat pueda estar gente conversando de todas las plataformas",
-    "timestamp": 1764047655972,
+    "message": "es como fuck",
+    "timestamp": 1770697614417,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:14:15.972Z"
+    "received_at": "2026-02-10T04:26:54.418Z"
   },
   {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "Twitch/kick/rumble/youtube",
-    "timestamp": 1764047673215,
+    "message": "adioss jejej",
+    "timestamp": 1770701688614,
     "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:14:33.216Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "es magico",
-    "timestamp": 1764047676917,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T05:14:36.917Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "gente de rumble",
-    "timestamp": 1764051737133,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T06:22:17.708Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "manifiestense en el chat",
-    "timestamp": 1764051747765,
-    "user": "JuanitoCanuto",
-    "received_at": "2025-11-25T06:22:29.741Z"
+    "received_at": "2026-02-10T05:34:48.615Z"
   }
 ]

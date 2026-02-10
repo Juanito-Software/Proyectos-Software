@@ -86,6 +86,9 @@ def fetch_chat_messages():
                     if message_count > 0:
                         print(f"📨 [Rumble] Obtenidos {message_count} mensaje(s) nuevo(s)")
                     
+                    # Usar un set para evitar duplicados basado en username + message + timestamp aproximado
+                    processed_messages = set()
+                    
                     with messages_lock:
                         for msg in new_messages:
                             username = getattr(msg, 'username', 'anon')
@@ -96,17 +99,27 @@ def fetch_chat_messages():
                             )
                             
                             if message_text:
-                                formatted = {
-                                    'username': username,
-                                    'message': message_text,
-                                    'timestamp': int(time.time() * 1000)
-                                }
-                                latest_messages.append(formatted)
-                                print(f"💬 [Rumble] Mensaje capturado: {username}: {message_text[:50]}")
+                                # Crear una clave única para evitar duplicados (username + mensaje + timestamp aproximado)
+                                # Usamos timestamp redondeado a segundos para agrupar mensajes del mismo segundo
+                                timestamp_rounded = int(time.time())
+                                message_key = f"{username}:{message_text}:{timestamp_rounded}"
                                 
-                                # Mantener solo los últimos N mensajes
-                                if len(latest_messages) > MAX_MESSAGES:
-                                    latest_messages.pop(0)
+                                if message_key not in processed_messages:
+                                    processed_messages.add(message_key)
+                                    
+                                    formatted = {
+                                        'username': username,
+                                        'message': message_text,
+                                        'timestamp': int(time.time() * 1000)
+                                    }
+                                    latest_messages.append(formatted)
+                                    print(f"💬 [Rumble] Mensaje capturado: {username}: {message_text[:50]}")
+                                    
+                                    # Mantener solo los últimos N mensajes
+                                    if len(latest_messages) > MAX_MESSAGES:
+                                        latest_messages.pop(0)
+                                else:
+                                    print(f"⚠️ [Rumble] Mensaje duplicado ignorado: {username}: {message_text[:30]}")
                 except Exception as msg_error:
                     print(f"⚠️ Error obteniendo mensajes del chat: {msg_error}")
                     import traceback
@@ -142,11 +155,16 @@ def start_chat():
         return jsonify({"error": "Falta RUMBLE_API_URL"}), 400
     
     try:
-        # Detener conexión anterior si existe
+        # Detener conexión anterior si existe (evitar duplicación de hilos)
         if is_running:
+            print(f"🛑 Deteniendo conexión anterior de Rumble para evitar duplicación...")
             is_running = False
-            if chat_thread:
-                chat_thread.join(timeout=2)
+            if chat_thread and chat_thread.is_alive():
+                chat_thread.join(timeout=3)
+            # Limpiar mensajes acumulados para evitar duplicados
+            with messages_lock:
+                latest_messages.clear()
+            print(f"✅ Conexión anterior detenida")
         
         # Validar formato de URL
         if not api_url.startswith('http'):
