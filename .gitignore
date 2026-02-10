@@ -68,6 +68,7 @@ roboflow.json
 *.mp3
 *.log
 *.exe
+*.msi
 *.rar
 *.whl
 
