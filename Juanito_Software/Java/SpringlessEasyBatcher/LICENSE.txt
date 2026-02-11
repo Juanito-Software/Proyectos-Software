@@ -1,0 +1,52 @@
+================================================================================
+  SPRINGLESS EASYBATCH – VERSIÓN COMERCIAL (JAVA)
+  Copyright © 2025 – Juanito Software. Todos los derechos reservados.
+================================================================================
+
+PROPIEDAD Y USO
+
+Este software es PROPIETARIO. No se concede ningún derecho de uso, instalación,
+copia ni distribución sin una licencia de pago firmada o aceptada con Juanito
+Software.
+
+USO NO AUTORIZADO
+
+Queda PROHIBIDO:
+
+- Utilizar el software (en entornos comerciales, profesionales, institucionales,
+  educativos o de cualquier otro tipo) sin haber adquirido la licencia
+  correspondiente.
+
+- Copiar, distribuir, sublicenciar, alquilar, prestar o poner el software a
+  disposición de terceros.
+
+- Modificar, descompilar, desensamblar o realizar ingeniería inversa sobre el
+  software o cualquiera de sus partes.
+
+- Eliminar o alterar los avisos de copyright, autoría o este texto de licencia.
+
+LICENCIAS COMERCIALES
+
+El uso legítimo del software requiere la adquisición de una licencia comercial.
+Opciones orientativas (sujetas a condiciones y tarifa vigente):
+
+  • Pymes (5–50 empleados): licencia anual (uso ilimitado + asistencia puntual)
+    o licencia perpetua + 1 año de soporte.
+
+  • Empresas medianas (50–250 empleados): licencia anual (uso ilimitado +
+    asistencia puntual ampliada) o licencia perpetua + 1 año de soporte.
+
+  Soporte adicional, packs de horas o renovaciones se contratan por separado.
+
+Para precios, condiciones y contratación de licencias:
+
+  Juanito Software
+  Email: bernaldezperedaj@gmail.com
+
+GARANTÍAS
+
+El software se proporciona "tal cual". Juanito Software no asume garantías
+expresas o implícitas salvo las que se establezcan por escrito en el contrato
+de licencia.
+
+================================================================================
