@@ -16,7 +16,6 @@
 import tkinter as tk
 from tkinter import PhotoImage
 from PIL import Image, ImageTk
-from pyogg import OpusBufferedEncoder, OpusDecoder
 from collections import deque
 import socket, threading, time, random, pyaudio
 from threading import Event
@@ -27,14 +26,20 @@ import struct
 
 # =================== CONFIGURACIONES GLOBALES ===================
 
-SERVER_PORT = 12345       # Puerto para control y mensajes TCP (opcional para control)
-HEARTBEAT_PORT = 12346    # Puerto para los mensajes de heartbeat y elección
+SERVER_PORT = 12345       # (NO USADO EN LA VERSION SIMPLE) Puerto TCP de control
+HEARTBEAT_PORT = 12346    # (NO USADO EN LA VERSION SIMPLE) Puerto de heartbeat
 AUDIO_PORT = 12347        # Puerto para transmisión de audio vía UDP
 
-BROADCAST_IP = "192.168.1.255"  # Ajusta según tu red
+BROADCAST_IP = "192.168.1.255"  # (NO USADO EN LA VERSION SIMPLE) Broadcast de la red
 
-HEARTBEAT_INTERVAL = 4   # Intervalo entre heartbeats (segundos)
-HEARTBEAT_TIMEOUT = 5    # Tiempo de espera para detectar fallo del heartbeat
+HEARTBEAT_INTERVAL = 4   # (NO USADO EN LA VERSION SIMPLE)
+HEARTBEAT_TIMEOUT = 5    # (NO USADO EN LA VERSION SIMPLE)
+
+# =================== CONFIGURACION 1 VS 1 SIMPLE ===================
+# IP del otro participante en la llamada.
+# En cada PC, pon aquí la IP de la OTRA máquina.
+# Ejemplo: en el PC A, REMOTE_IP = IP del PC B; en el PC B, REMOTE_IP = IP del PC A.
+REMOTE_IP = "192.168.1.40"   # <-- CAMBIA ESTA IP EN CADA ORDENADOR
 
 # Variable global adicional
 host_establecido = False
@@ -68,23 +73,20 @@ RATE = 48000
 # Configuración de PyAudio
 p = pyaudio.PyAudio()
 
-# Configuración de Opus
-encoder = OpusBufferedEncoder()
-decoder = OpusDecoder()
+# =================== CODIFICADOR / DECODIFICADOR SIMPLIFICADOS (PCM SIN OPUS) ===================
 
+class DummyEncoder:
+    """Codificador de prueba: devuelve los datos PCM tal cual (sin compresión)."""
+    def encode(self, data: bytes) -> bytes:
+        return bytes(data)
 
-# Establecer la aplicación y los parámetros de audio
-# frame_duration_ms = 20
-max_bytes = 4000  # Ajusta según tu necesidad
-encoder.set_application("audio")
-encoder.set_channels(CHANNELS)
-encoder.set_sampling_frequency(RATE)
-encoder.frame_size = 960  # tamaño de frame típico para audio a 48kHz
-encoder.set_frame_size(20)
-encoder.set_max_bytes_per_frame(max_bytes)
+class DummyDecoder:
+    """Decodificador de prueba: devuelve los datos PCM tal cual (sin compresión)."""
+    def decode(self, data: bytes) -> bytes:
+        return bytes(data)
 
-decoder.set_channels(CHANNELS)
-decoder.set_sampling_frequency(RATE)
+encoder = DummyEncoder()
+decoder = DummyDecoder()
 
 # Configuración de logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -214,9 +216,6 @@ def get_ip():
     except Exception as e:
         logging.error("Error obteniendo la IP local: %s", e)
         return '127.0.0.1'
-    finally:
-        s.close()
-    return ip
    
 # =================== ACTUALIZACION DE HOST ===================
 
@@ -351,18 +350,12 @@ def start_audio_capture():
             with audio_lock:  # Se asegura de que solo un hilo acceda a esta sección a la vez
                 # Lee datos del stream
                 data = stream.read(CHUNK)
-                logging.debug(f"Datos de audio capturados: {data[:50]}")
 
-                # Convierte a un array de NumPy de tipo int16
-                # audio_data = np.frombuffer(data, dtype=np.int16)
-
-                # Codifica los datos de audio con Opus
+                # Codifica los datos de audio (en la versión simple, pasa PCM tal cual)
                 opus_payload = encoder.encode(bytearray(data))
-                # Añadir el paquete codificado al buffer
-                logging.debug(f"Agregando opus_payload al buffer: {opus_payload.hex()}")
 
-                audio_buffer.add_packet(opus_payload)  # Almacena en el buffer
-                logging.debug(f"Capturado y añadido paquete de audio. Tamaño: {len(opus_payload)} bytes")
+                # Almacena en el buffer
+                audio_buffer.add_packet(opus_payload)
         except Exception as e:
             logging.error("Error capturando audio: %s", e)
             break
@@ -456,7 +449,6 @@ def start_audio_playback():
         try:
             # Recibe los datos por UDP
             data, addr = sock.recvfrom(4096)
-            logging.debug(f"Paquete de audio recibido de {addr}. Tamaño: {len(data)} bytes")
 
             # Parsear RTP
             rtp_info = parse_rtp_packet(data)
@@ -464,19 +456,14 @@ def start_audio_playback():
                 logging.error("Paquete RTP no contiene datos de audio.")
                 continue  # Si no hay payload, pasamos al siguiente paquete
             audio_data = rtp_info["payload"]
-            logging.debug(f"Payload extraído del paquete: {audio_data.hex()}")
 
 
-            # Decodificar Opus a PCM
-            decoded_data = decoder.decode(bytearray(audio_data)) # Decodificación Opus
-            logging.debug(f"Datos decodificados: {bytes(decoded_data)}")
+            # Decodificar a PCM (en la versión simple, datos PCM directos)
+            decoded_data = decoder.decode(bytearray(audio_data))
 
             # Convertir memoryview a bytes antes de escribir en el stream
             if isinstance(decoded_data, memoryview):
                 decoded_data = decoded_data.tobytes()
-
-            logging.debug(f"Recibido paquete de audio de {addr}. Tamaño: {len(decoded_data)} bytes")
-
             # Verifica si el stream está abierto antes de escribir en él
             if stream.is_active():
                 stream.write(decoded_data)
@@ -492,6 +479,75 @@ def start_audio_playback():
         sock.close()
     except Exception as e:
         logging.error("Error al cerrar el stream o el socket: %s", e)
+
+
+# =================== VERSION SIMPLE 1 VS 1 (SIN HEARTBEAT) ===================
+
+def start_simple_audio_sender():
+    """
+    Versión mínima: captura del micrófono, codifica con Opus, empaqueta en RTP
+    y envía por UDP directamente a REMOTE_IP:AUDIO_PORT.
+    """
+    global REMOTE_IP
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    try:
+        stream = p.open(format=FORMAT,
+                        channels=CHANNELS,
+                        rate=RATE,
+                        input=True,
+                        frames_per_buffer=CHUNK)
+    except Exception as e:
+        logging.error("No se pudo abrir el dispositivo de entrada de audio: %s", e)
+        return
+
+    seq = 0
+    ts = 0
+
+    logging.info(f"Iniciando envío simple de audio a {REMOTE_IP}:{AUDIO_PORT}")
+
+    while not stop_event.is_set():
+        try:
+            data = stream.read(CHUNK, exception_on_overflow=False)
+
+            # Codificamos con Opus
+            opus_payload = encoder.encode(bytearray(data))
+
+            # Construimos paquete RTP
+            packet_vars = {
+                'version': 2,
+                'padding': 0,
+                'extension': 0,
+                'csi_count': 0,
+                'marker': 0,
+                'payload_type': 111,
+                'sequence_number': seq,
+                'timestamp': ts,
+                'ssrc': ssrc_id,
+                'payload': opus_payload
+            }
+
+            packet_bytes = generate_rtp_packet(packet_vars)
+
+            sock.sendto(packet_bytes, (REMOTE_IP, AUDIO_PORT))
+
+            seq = (seq + 1) % 65536
+            ts += CHUNK
+
+            # Pequeño descanso para aproximar 20 ms por frame
+            time.sleep(0.02)
+        except Exception as e:
+            logging.error("Error en el envío simple de audio: %s", e)
+            break
+
+    try:
+        stream.stop_stream()
+        stream.close()
+    except Exception as e:
+        logging.error("Error al cerrar el stream de captura: %s", e)
+
+    sock.close()
 
 # =================== MÓDULO HEARTBEAT Y ELECCIÓN ===================
 
@@ -796,32 +852,21 @@ class App(tk.Tk):
         self.status_label.config(text=estado)
         
     def connect(self):
-        """Se ejecuta al pulsar 'Entrar': inicia los hilos para audio, heartbeat y conexión."""
-        global stop_event, host_info, join_timestamp
-        print("Conectando a la llamada de voz...")
-        self.update_status("Conectando...")
+        """
+        Versión simple 1 vs 1: solo arranca recepción y envío directo de audio.
+        No hay elección de host ni heartbeats.
+        """
+        global stop_event
+        print("Conectando a la llamada de voz (modo simple 1v1)...")
+        self.update_status("Conectando (1v1 simple)...")
         stop_event.clear()
-        host_info = None  # Restablecer a un valor predeterminado
-        join_timestamp = time.time()  # Actualizamos el timestamp de unión al conectarse
-        
-        threading.Thread(target=start_audio_playback, daemon=True).start()# Inicia reproducción de audio (recepción)
-        threading.Thread(target=heartbeat_listener, daemon=True).start()# Inicia escucha de heartbeats
-        threading.Thread(target=check_heartbeat, args=(self.update_status,), daemon=True).start()# Inicia verificación de heartbeats y elección de host
-        threading.Thread(target=start_server_for_audio, daemon=True).start()  # Inicia el servidor para audio
 
+        # Hilo que escucha y reproduce audio entrante
+        threading.Thread(target=start_audio_playback, daemon=True).start()
+        # Hilo que captura del micro y envía a REMOTE_IP
+        threading.Thread(target=start_simple_audio_sender, daemon=True).start()
 
-        time.sleep(1)
-
-        with lock:
-            if host_info is not None:
-                server_ip = host_info[0]
-            else:
-                server_ip = get_ip()
-
-        # Inicia captura y transmisión de audio
-        threading.Thread(target=start_audio_capture, daemon=True).start()
-        threading.Thread(target=start_audio_unicast, daemon=True).start()
-        self.update_status("Conectado (Cliente)")
+        self.update_status("Conectado (1v1 simple)")
 
     def disconnect(self):
         """Se ejecuta al pulsar 'Salir': detiene hilos y actualiza la interfaz."""
