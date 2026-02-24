@@ -21,6 +21,7 @@ pyyaml>=5.1.0
 
 # Utilidades de audio
 pydub>=0.25.1
+librosa>=0.10.0  # Para cargar audio sin depender de FFmpeg
 
 # API web (opcional, para futuras extensiones)
 fastapi>=0.104.0

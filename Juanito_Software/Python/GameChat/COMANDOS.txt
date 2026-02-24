@@ -1,0 +1,70 @@
+================================================================================
+                    GAMECHAT - LISTADO DE COMANDOS
+                    (Todos los comandos actualmente implementados)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. VOTACIÓN: MOVIMIENTO
+--------------------------------------------------------------------------------
+El chat vota y la mayoría decide tras ~8 segundos.
+
+  !izquierda  /  !izq  /  !left     →  Mueve al jugador a la izquierda
+  !derecha    /  !der  /  !right    →  Mueve al jugador a la derecha
+  !arriba     /  !up                →  Mueve al jugador hacia arriba
+  !abajo      /  !down              →  Mueve al jugador hacia abajo
+
+--------------------------------------------------------------------------------
+2. VOTACIÓN: DISPARO
+--------------------------------------------------------------------------------
+Dispara en la dirección indicada y mata al primer enemigo en la línea.
+(Enemigos dentro de edificios son inmunes.)
+
+  !shootRight  →  Dispara a la derecha
+  !shootLeft   →  Dispara a la izquierda
+  !shootUp     →  Dispara hacia arriba
+  !shootDown   →  Dispara hacia abajo
+
+--------------------------------------------------------------------------------
+3. DIRECTOR DE CAOS (Habilidades)
+--------------------------------------------------------------------------------
+Cada mensaje suma energía a una barra colectiva. Requiere energía suficiente.
+Coste dinámico: cuantas más veces se usa una habilidad, más cara se vuelve.
+Cooldown global de 30 segundos tras usar cualquier habilidad.
+
+  !lag   (coste base: 25)  →  El jugador se mueve con delay temporal
+  !swap  (coste base: 35)  →  Invierte los controles de movimiento
+  !npc   (coste base: 40)  →  Aparece un enemigo en el mapa
+
+--------------------------------------------------------------------------------
+4. EVENTOS ENCADENADOS (!boom)
+--------------------------------------------------------------------------------
+Cada !boom suma al contador. Tras 10 segundos se ejecuta el evento según total:
+  - 5  personas  →  Chispa (efecto visual menor)
+  - 10 personas  →  Bomba (destruye edificios en el centro)
+  - 20 personas  →  Mega evento (triple bomba + tormenta)
+
+  !boom  →  Suma 1 al contador del evento encadenado
+
+--------------------------------------------------------------------------------
+5. INTERACCIONES PASIVAS (sin comando)
+--------------------------------------------------------------------------------
+Cualquier mensaje, emoji, bits o suscripción influye en el mundo:
+  - Mensajes normales  →  +1 influencia, partículas
+  - Bits               →  +5 por bit, efecto celebración
+  - Suscripción        →  +10 influencia
+  - Donación           →  +15 influencia
+  - Emojis (🔥❤️💕⭐☀️🌧️) →  Efectos visuales específicos en el mapa
+
+--------------------------------------------------------------------------------
+6. MECÁNICAS ESPECIALES
+--------------------------------------------------------------------------------
+  - Edificios (casa, tienda, torre) = zona segura
+    · Jugador en edificio: los enemigos no pueden matarte
+    · Enemigo en edificio: no puede ser eliminado por disparos
+
+  - Al morir: respawn aleatorio en el mapa (evitando agua)
+
+  - Puntos: +1 por enemigo eliminado, +20 por evento !boom
+    (Se resetean al morir)
+
+================================================================================
