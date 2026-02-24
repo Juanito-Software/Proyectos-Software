@@ -21,4 +21,8 @@ Este repositorio no implica por sí mismo derechos de uso sobre todo su contenid
 
 Si tienes dudas sobre el uso permitido de un proyecto concreto, consulta su documentación o contáctame. Este repositorio contiene múltiples programas y herramientas desarrolladas por Juanito Software.
 
+## ⚠️ Advertencia
+Este repositorio contiene proyectos de investigación y experimentales.
+Las dependencias no se mantienen activamente a menos que se especifique lo contrario.
+
 ## ©️ 2025 JuanitoSoftware – Contacto: bernaldezperedaj@gmail.com
