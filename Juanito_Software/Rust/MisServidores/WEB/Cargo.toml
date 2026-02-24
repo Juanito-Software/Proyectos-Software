@@ -1,0 +1,8 @@
+[package]
+name = "servidor-web"
+version = "0.1.0"
+edition = "2021"
+description = "Servidor HTTP en Rust desde cero, sin dependencias externas"
+
+[dependencies]
+# Sin dependencias: solo std

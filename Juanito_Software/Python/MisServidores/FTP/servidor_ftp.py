@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""
+Servidor FTP implementado desde cero.
+Solo biblioteca estándar: socket, threading, os, pathlib. Sin librerías FTP.
+"""
+
+import os
+import socket
+import threading
+from pathlib import Path
+
+# Configuración
+HOST = "0.0.0.0"
+PUERTO = 2121
+RAIZ_FTP = Path(__file__).resolve().parent  # directorio del script como raíz FTP
+
+
+def enviar_respuesta(conn: socket.socket, codigo: int, mensaje: str) -> None:
+    """Envía una línea de respuesta FTP (CRLF)."""
+    conn.sendall(f"{codigo} {mensaje}\r\n".encode("utf-8", errors="replace"))
+
+
+def leer_linea(conn: socket.socket) -> str | None:
+    """Lee una línea del socket de control (hasta CRLF o LF)."""
+    buf = b""
+    while True:
+        try:
+            b = conn.recv(1)
+        except (ConnectionResetError, BrokenPipeError):
+            return None
+        if not b:
+            return None
+        buf += b
+        if buf.endswith(b"\r\n") or buf.endswith(b"\n"):
+            break
+    return buf.decode("utf-8", errors="replace").strip().replace("\r", "").replace("\n", "")
+
+
+def formato_pasv(ip: str, puerto: int) -> str:
+    """Formato PASV: (h1,h2,h3,h4,p1,p2)."""
+    partes = ip.replace(".", ",").split(",")
+    if len(partes) != 4:
+        partes = ["127", "0", "0", "1"]
+    p1, p2 = puerto // 256, puerto % 256
+    return f"({','.join(partes)},{p1},{p2})"
+
+
+def listar_directorio(ruta: Path) -> bytes:
+    """Genera listado tipo LIST (estilo Unix)."""
+    lineas = []
+    try:
+        for e in sorted(ruta.iterdir(), key=lambda x: x.name.lower()):
+            try:
+                st = e.stat()
+                if e.is_dir():
+                    lineas.append(f"drwxr-xr-x 1 owner group 0 Jan 1 00:00 {e.name}\r\n")
+                else:
+                    lineas.append(f"-rw-r--r-- 1 owner group {st.st_size} Jan 1 00:00 {e.name}\r\n")
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return "".join(lineas).encode("utf-8", errors="replace")
+
+
+def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
+    """Maneja una sesión FTP en un hilo."""
+    conn.settimeout(300)
+    enviar_respuesta(conn, 220, "Servidor FTP listo (sin librerías externas)")
+
+    root = RAIZ_FTP.resolve()
+    cwd = root
+    logged_in = False
+    last_user: str | None = None
+    pasv_socket: socket.socket | None = None
+
+    try:
+        while True:
+            linea = leer_linea(conn)
+            if linea is None:
+                break
+
+            partes = linea.split(maxsplit=1)
+            cmd = (partes[0] if partes else "").upper()
+            arg = (partes[1] if len(partes) > 1 else "").strip()
+
+            if cmd == "USER":
+                last_user = arg
+                enviar_respuesta(conn, 331, "Usuario OK, contraseña requerida")
+
+            elif cmd == "PASS":
+                if last_user is not None:
+                    logged_in = True
+                    enviar_respuesta(conn, 230, "Usuario conectado")
+                else:
+                    enviar_respuesta(conn, 503, "Primero envíe USER")
+
+            elif cmd == "SYST":
+                enviar_respuesta(conn, 215, "UNIX Type: L8")
+
+            elif cmd == "PWD":
+                try:
+                    rel = cwd.relative_to(root)
+                    shown = "/" + "/".join(rel.parts) if rel.parts else "/"
+                except ValueError:
+                    shown = "/"
+                enviar_respuesta(conn, 257, f'"{shown}" es el directorio actual')
+
+            elif cmd == "CWD":
+                if not logged_in:
+                    enviar_respuesta(conn, 530, "No conectado")
+                    continue
+                if arg.startswith("/"):
+                    base = root
+                    segs = arg.strip("/").replace("\\", "/").split("/")
+                else:
+                    base = cwd
+                    segs = arg.replace("\\", "/").split("/")
+                nuevo = base
+                for s in segs:
+                    if s in ("", "."):
+                        continue
+                    if s == "..":
+                        nuevo = nuevo.parent
+                        continue
+                    nuevo = nuevo / s
+                try:
+                    nuevo = nuevo.resolve()
+                    if nuevo.is_dir() and str(nuevo).startswith(str(root)):
+                        cwd = nuevo
+                        enviar_respuesta(conn, 250, "Directorio cambiado")
+                    else:
+                        enviar_respuesta(conn, 550, "No se puede cambiar de directorio")
+                except OSError:
+                    enviar_respuesta(conn, 550, "No se puede cambiar de directorio")
+
+            elif cmd == "TYPE":
+                if arg.upper() == "I":
+                    enviar_respuesta(conn, 200, "Modo binario")
+                else:
+                    enviar_respuesta(conn, 504, "Solo TYPE I soportado")
+
+            elif cmd == "PASV":
+                if not logged_in:
+                    enviar_respuesta(conn, 530, "No conectado")
+                    continue
+                if pasv_socket:
+                    try:
+                        pasv_socket.close()
+                    except OSError:
+                        pass
+                try:
+                    pasv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    pasv_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    pasv_socket.bind(("0.0.0.0", 0))
+                    pasv_socket.listen(1)
+                    _, puerto = pasv_socket.getsockname()
+                    ip_anuncio = "127,0,0,1"  # cliente suele conectar a la misma máquina
+                    pasv_str = formato_pasv("127.0.0.1", puerto)
+                    enviar_respuesta(conn, 227, f"Entrando en modo pasivo {pasv_str}")
+                except OSError:
+                    enviar_respuesta(conn, 425, "No se pudo abrir puerto pasivo")
+
+            elif cmd == "LIST":
+                if not logged_in:
+                    enviar_respuesta(conn, 530, "No conectado")
+                    continue
+                if not pasv_socket:
+                    enviar_respuesta(conn, 425, "Use PASV primero")
+                    continue
+                enviar_respuesta(conn, 150, "Abriendo conexión de datos para LIST")
+                try:
+                    data_conn, _ = pasv_socket.accept()
+                    dir_listar = (cwd / arg) if arg else cwd
+                    if dir_listar.is_dir() and str(dir_listar.resolve()).startswith(str(root)):
+                        data_conn.sendall(listar_directorio(dir_listar))
+                    data_conn.close()
+                    enviar_respuesta(conn, 226, "Transferencia completada")
+                except (OSError, socket.timeout):
+                    enviar_respuesta(conn, 550, "Error en LIST")
+                finally:
+                    try:
+                        pasv_socket.close()
+                    except OSError:
+                        pass
+                    pasv_socket = None
+
+            elif cmd == "RETR":
+                if not logged_in:
+                    enviar_respuesta(conn, 530, "No conectado")
+                    continue
+                if not pasv_socket:
+                    enviar_respuesta(conn, 425, "Use PASV primero")
+                    continue
+                fpath = (cwd / arg).resolve()
+                if not fpath.is_file() or not str(fpath).startswith(str(root)):
+                    enviar_respuesta(conn, 550, "Archivo no existe")
+                    continue
+                enviar_respuesta(conn, 150, "Abriendo conexión de datos para RETR")
+                try:
+                    data_conn, _ = pasv_socket.accept()
+                    with open(fpath, "rb") as f:
+                        while True:
+                            chunk = f.read(65536)
+                            if not chunk:
+                                break
+                            data_conn.sendall(chunk)
+                    data_conn.close()
+                    enviar_respuesta(conn, 226, "Transferencia completada")
+                except (OSError, socket.timeout):
+                    enviar_respuesta(conn, 550, "Error en RETR")
+                finally:
+                    try:
+                        pasv_socket.close()
+                    except OSError:
+                        pass
+                    pasv_socket = None
+
+            elif cmd == "STOR":
+                if not logged_in:
+                    enviar_respuesta(conn, 530, "No conectado")
+                    continue
+                if not pasv_socket:
+                    enviar_respuesta(conn, 425, "Use PASV primero")
+                    continue
+                fpath = (cwd / arg).resolve()
+                if not str(fpath).startswith(str(root)):
+                    enviar_respuesta(conn, 550, "Acceso denegado")
+                    continue
+                enviar_respuesta(conn, 150, "Abriendo conexión de datos para STOR")
+                try:
+                    data_conn, _ = pasv_socket.accept()
+                    with open(fpath, "wb") as f:
+                        while True:
+                            chunk = data_conn.recv(65536)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    data_conn.close()
+                    enviar_respuesta(conn, 226, "Transferencia completada")
+                except (OSError, socket.timeout):
+                    enviar_respuesta(conn, 550, "Error en STOR")
+                finally:
+                    try:
+                        pasv_socket.close()
+                    except OSError:
+                        pass
+                    pasv_socket = None
+
+            elif cmd == "NOOP":
+                enviar_respuesta(conn, 200, "OK")
+
+            elif cmd == "QUIT":
+                enviar_respuesta(conn, 221, "Adiós")
+                break
+
+            else:
+                enviar_respuesta(conn, 502, "Comando no implementado")
+    finally:
+        if pasv_socket:
+            try:
+                pasv_socket.close()
+            except OSError:
+                pass
+        try:
+            conn.close()
+        except OSError:
+            pass
+
+
+def main() -> None:
+    servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    servidor.bind((HOST, PUERTO))
+    servidor.listen(50)
+    print(f"Servidor FTP escuchando en {HOST}:{PUERTO}")
+    print(f"Raíz FTP: {RAIZ_FTP}")
+
+    while True:
+        try:
+            conn, addr = servidor.accept()
+            threading.Thread(target=sesion_ftp, args=(conn, addr), daemon=True).start()
+        except KeyboardInterrupt:
+            break
+        except OSError as e:
+            print(f"Error aceptando: {e}")
+
+    servidor.close()
+
+
+if __name__ == "__main__":
+    main()
