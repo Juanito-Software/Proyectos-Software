@@ -1,0 +1,9 @@
+[package]
+name = "ftp-server"
+version = "0.1.0"
+edition = "2021"
+description = "Servidor FTP mínimo en Rust (solo std, sin crates externos)"
+
+[[bin]]
+name = "ftp_server"
+path = "src/main.rs"
