@@ -29,9 +29,12 @@ SUAVIZADO = 0.3
 # INICIALIZA PYGAME
 # ==========================
 pygame.init()
-screen = pygame.display.set_mode((W, H))
+screen = pygame.display.set_mode((W, H), pygame.RESIZABLE)
 pygame.display.set_caption("Simulación 2D - Sol reactivo al sonido")
 clock = pygame.time.Clock()
+# Superficie interna a resolución fija (base); la ventana se puede redimensionar
+canvas = pygame.Surface((W, H))
+window_w, window_h = W, H
 
 # ==========================
 # CREACIÓN DE PARTÍCULAS
@@ -42,8 +45,9 @@ for _ in range(N):
     y = random.uniform(0, H)
     vx = random.uniform(-0.2, 0.2)
     vy = random.uniform(-0.2, 0.2)
-    m = random.uniform(1, 2)   # más pequeñas
-    particles.append([x, y, vx, vy, m])
+    m = random.uniform(1, 2)   # masa
+    r = random.randint(2, 6)   # radio visual; 2 es el mínimo actual, 6 es 3x
+    particles.append([x, y, vx, vy, m, r])
 
 # Sol central
 sol = [W / 2, H / 2, 0, 0, 30]   # radio más pequeño
@@ -51,10 +55,44 @@ sol = [W / 2, H / 2, 0, 0, 30]   # radio más pequeño
 # ==========================
 # AUDIO LOOPBACK CON SOUNDCARD
 # ==========================
-# escoger altavoz principal (loopback)
+# escoger altavoz principal (loopback) con selector
 speakers = sc.all_speakers()
-# Puedes cambiar a cualquier altavoz de la lista
-speaker = speakers[2]  
+
+
+def seleccionar_speaker():
+    """
+    Muestra los dispositivos de audio disponibles y permite seleccionar uno
+    por índice, de forma similar a cómo se elige en MusicWave.py.
+    """
+    if not speakers:
+        raise RuntimeError("No se han encontrado dispositivos de salida de audio.")
+
+    print("\nDispositivos de audio disponibles:")
+    for i, spk in enumerate(speakers):
+        print(f"{i}: {spk.name}")
+
+    while True:
+        seleccion = input(
+            "Selecciona el índice del dispositivo de salida a usar "
+            "(ENTER para usar el 0 por defecto): "
+        ).strip()
+
+        if seleccion == "":
+            return speakers[0]
+
+        try:
+            idx = int(seleccion)
+        except ValueError:
+            print("Por favor, introduce un número válido.")
+            continue
+
+        if 0 <= idx < len(speakers):
+            return speakers[idx]
+        else:
+            print(f"Índice fuera de rango. Debe estar entre 0 y {len(speakers) - 1}.")
+
+
+speaker = seleccionar_speaker()
 nivel_suavizado = 0.0
 
 q_audio = queue.Queue(maxsize=4)
@@ -83,14 +121,15 @@ threading.Thread(target=audio_thread, daemon=True).start()
 running = True
 frame_count = 0
 audio_level = 0.0
-for i, spk in enumerate(sc.all_speakers()):
-    print(i, spk.name)
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.VIDEORESIZE:
+            window_w, window_h = event.w, event.h
+            screen = pygame.display.set_mode((window_w, window_h), pygame.RESIZABLE)
 
-    screen.fill((0, 0, 0))
+    canvas.fill((0, 0, 0))
 
     # Leer último audio
     try:
@@ -149,12 +188,17 @@ while running:
         if math.hypot(dx, dy) < sol[4]:
             p[0] = random.uniform(0, W); p[1] = random.uniform(0, H)
             p[2] = random.uniform(-0.2, 0.2); p[3] = random.uniform(-0.2, 0.2)
-            p[4] = random.uniform(1, 2)
+            p[4] = random.uniform(1, 2)      # masa
+            p[5] = random.randint(2, 6)      # nuevo tamaño aleatorio
 
-        pygame.draw.circle(screen, (255,255,255), (int(p[0]), int(p[1])), 2)
+        pygame.draw.circle(canvas, (255,255,255), (int(p[0]), int(p[1])), p[5])
 
-    pygame.draw.circle(screen, sun_color, (int(sol[0]), int(sol[1])), int(sol[4]))
+    pygame.draw.circle(canvas, sun_color, (int(sol[0]), int(sol[1])), int(sol[4]))
 
+    # Escalar canvas (resolución base) a la ventana actual y mostrar
+    if window_w > 0 and window_h > 0:
+        scaled = pygame.transform.smoothscale(canvas, (window_w, window_h))
+        screen.blit(scaled, (0, 0))
     pygame.display.flip()
     clock.tick(60)
 
