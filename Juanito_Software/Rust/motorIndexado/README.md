@@ -87,3 +87,15 @@ cargo test
 ## Licencia
 
 MIT.
+
+Cómo usarlo
+
+# Indexar
+cargo run -- index . -o indice.json
+
+# Buscar
+cargo run -- search "rust ownership" --limit 10
+
+# Con API HTTP
+cargo build --release --features api
+cargo run --features api -- serve --bind 127.0.0.1:3030

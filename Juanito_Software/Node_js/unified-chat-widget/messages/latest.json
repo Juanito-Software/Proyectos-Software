@@ -2,82 +2,6 @@
   {
     "platform": "rumble",
     "username": "JuanitoCanuto",
-    "message": "b",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "c",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "d",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "f",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "e",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "g",
-    "timestamp": 1771976753583,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:45:55.368Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "g",
-    "timestamp": 1771976758595,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:46:01.378Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "a",
-    "timestamp": 1771976798601,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:46:38.601Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "aa",
-    "timestamp": 1771976799577,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:46:39.577Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
     "message": "a",
     "timestamp": 1771976815738,
     "user": "JuanitoCanuto",
@@ -850,5 +774,79 @@
     "timestamp": 1772107610099,
     "user": "JuanitoCanuto",
     "received_at": "2026-02-26T12:06:50.100Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "los gemelos",
+    "timestamp": 1772133972222,
+    "user": "ameloblastos",
+    "received_at": "2026-02-26T19:26:12.225Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "jajajaja",
+    "timestamp": 1772134106685,
+    "user": "ameloblastos",
+    "received_at": "2026-02-26T19:28:26.686Z"
+  },
+  {
+    "platform": "kick",
+    "username": "SebaZZZ03",
+    "message": "holaaa",
+    "timestamp": 1772134799396,
+    "user": "SebaZZZ03",
+    "received_at": "2026-02-26T19:39:59.397Z"
+  },
+  {
+    "platform": "kick",
+    "username": "SebaZZZ03",
+    "message": "como estas",
+    "timestamp": 1772134801605,
+    "user": "SebaZZZ03",
+    "received_at": "2026-02-26T19:40:01.605Z"
+  },
+  {
+    "platform": "kick",
+    "username": "TeakDPB",
+    "message": "bro podes reaccionar en YT: NEGRON VS TANO22 - FINAL - FECHA 1 - 2026",
+    "timestamp": 1772135125319,
+    "user": "TeakDPB",
+    "received_at": "2026-02-26T19:45:25.320Z"
+  },
+  {
+    "platform": "kick",
+    "username": "TeakDPB",
+    "message": "es gente que cree que rapea",
+    "timestamp": 1772135138997,
+    "user": "TeakDPB",
+    "received_at": "2026-02-26T19:45:38.998Z"
+  },
+  {
+    "platform": "kick",
+    "username": "TeakDPB",
+    "message": "xd",
+    "timestamp": 1772135139706,
+    "user": "TeakDPB",
+    "received_at": "2026-02-26T19:45:39.706Z"
+  },
+  {
+    "platform": "kick",
+    "username": "TeakDPB",
+    "message": "viva españa viva F",
+    "timestamp": 1772135159078,
+    "user": "TeakDPB",
+    "received_at": "2026-02-26T19:45:59.080Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "VIVA FRANCO!",
+    "timestamp": 1772135181216,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-02-26T19:46:21.217Z"
   }
 ]
