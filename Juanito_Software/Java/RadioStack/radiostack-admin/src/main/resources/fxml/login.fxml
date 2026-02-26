@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.radiostack.admin.controller.LoginController"
+      alignment="CENTER" spacing="16" styleClass="login-root">
+    <padding><Insets top="32" right="40" bottom="32" left="40"/></padding>
+
+    <Label text="RADIOSTACK" styleClass="app-title"/>
+    <Label text="Panel de administración" styleClass="app-subtitle"/>
+
+    <VBox spacing="8" styleClass="form-box">
+        <Label text="Email" styleClass="field-label"/>
+        <TextField fx:id="emailField" promptText="admin@radiostack.local" styleClass="field-input"/>
+        <Label text="Contraseña" styleClass="field-label"/>
+        <PasswordField fx:id="passwordField" promptText="Contraseña" styleClass="field-input"/>
+        <Label fx:id="errorLabel" styleClass="error-label"/>
+        <Button text="Entrar" onAction="#login" styleClass="btn-primary" defaultButton="true"/>
+    </VBox>
+</VBox>

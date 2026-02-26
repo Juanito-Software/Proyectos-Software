@@ -1,0 +1,10 @@
+com\radiostack\admin\client\ApiClient.class
+com\radiostack\admin\client\StompClient$ChatMessage.class
+com\radiostack\admin\client\ApiClient$LoginResult.class
+com\radiostack\admin\client\ApiClient$LoginResult$UserInfo.class
+com\radiostack\admin\RadiostackAdminApp.class
+com\radiostack\admin\controller\LoginController.class
+com\radiostack\admin\controller\ChatController.class
+com\radiostack\admin\client\ApiClient$ApiException.class
+com\radiostack\admin\client\StompClient.class
+com\radiostack\admin\controller\DashboardController.class
