@@ -34,6 +34,8 @@ chat_thread = None
 is_running = False
 latest_messages = []
 messages_lock = threading.Lock()
+processed_message_keys = set()  # Claves globales para evitar duplicados entre ciclos
+MAX_PROCESSED_KEYS = 2000  # Límite para no crecer indefinidamente
 
 # Configurables
 RUMBLE_API_URL = os.getenv('RUMBLE_API_URL', '')
@@ -53,7 +55,7 @@ def sanitize_message(msg):
 
 def fetch_chat_messages():
     """Hilo que obtiene mensajes del chat de Rumble"""
-    global rumble_api, is_running, latest_messages, RUMBLE_API_URL
+    global rumble_api, is_running, latest_messages, processed_message_keys, RUMBLE_API_URL
     
     reconnect_attempts = 0
     max_reconnect_attempts = 10  # Intentar reconectar cada 30 segundos
@@ -86,9 +88,6 @@ def fetch_chat_messages():
                     if message_count > 0:
                         print(f"📨 [Rumble] Obtenidos {message_count} mensaje(s) nuevo(s)")
                     
-                    # Usar un set para evitar duplicados basado en username + message + timestamp aproximado
-                    processed_messages = set()
-                    
                     with messages_lock:
                         for msg in new_messages:
                             username = getattr(msg, 'username', 'anon')
@@ -99,13 +98,18 @@ def fetch_chat_messages():
                             )
                             
                             if message_text:
-                                # Crear una clave única para evitar duplicados (username + mensaje + timestamp aproximado)
-                                # Usamos timestamp redondeado a segundos para agrupar mensajes del mismo segundo
-                                timestamp_rounded = int(time.time())
+                                # Clave única global para evitar duplicados entre ciclos (la API puede devolver el mismo mensaje varias veces)
+                                msg_ts = getattr(msg, 'timestamp', None) or int(time.time() * 1000)
+                                timestamp_rounded = int(msg_ts / 1000) if msg_ts else int(time.time())
                                 message_key = f"{username}:{message_text}:{timestamp_rounded}"
                                 
-                                if message_key not in processed_messages:
-                                    processed_messages.add(message_key)
+                                if message_key not in processed_message_keys:
+                                    processed_message_keys.add(message_key)
+                                    # Limitar tamaño del set
+                                    if len(processed_message_keys) > MAX_PROCESSED_KEYS:
+                                        keys_list = list(processed_message_keys)
+                                        processed_message_keys.clear()
+                                        processed_message_keys.update(keys_list[-MAX_PROCESSED_KEYS // 2:])
                                     
                                     formatted = {
                                         'username': username,
@@ -161,9 +165,10 @@ def start_chat():
             is_running = False
             if chat_thread and chat_thread.is_alive():
                 chat_thread.join(timeout=3)
-            # Limpiar mensajes acumulados para evitar duplicados
+            # Limpiar mensajes acumulados y claves procesadas para evitar duplicados
             with messages_lock:
                 latest_messages.clear()
+                processed_message_keys.clear()
             print(f"✅ Conexión anterior detenida")
         
         # Validar formato de URL
@@ -243,6 +248,7 @@ def start_chat():
         is_running = True
         with messages_lock:
             latest_messages.clear()
+            processed_message_keys.clear()
         
         chat_thread = threading.Thread(target=fetch_chat_messages, daemon=True)
         chat_thread.start()
