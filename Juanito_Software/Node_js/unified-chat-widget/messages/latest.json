@@ -2,22 +2,6 @@
   {
     "platform": "rumble",
     "username": "JuanitoCanuto",
-    "message": "a",
-    "timestamp": 1771976815738,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:46:58.565Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "aa",
-    "timestamp": 1771976815738,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-02-24T23:46:58.565Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
     "message": "aaa",
     "timestamp": 1771976815738,
     "user": "JuanitoCanuto",
@@ -848,5 +832,21 @@
     "timestamp": 1772135181216,
     "user": "JuanitoCanuto",
     "received_at": "2026-02-26T19:46:21.217Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "ya toy de nuevo",
+    "timestamp": 1772137014229,
+    "user": "ameloblastos",
+    "received_at": "2026-02-26T20:16:54.230Z"
+  },
+  {
+    "platform": "kick",
+    "username": "ameloblastos",
+    "message": "en discord",
+    "timestamp": 1772137030683,
+    "user": "ameloblastos",
+    "received_at": "2026-02-26T20:17:10.684Z"
   }
 ]
