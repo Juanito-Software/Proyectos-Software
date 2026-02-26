@@ -1,0 +1,40 @@
+[package]
+name = "motor-indexado"
+version = "0.1.0"
+edition = "2021"
+description = "Motor de indexación y búsqueda local tipo mini Google"
+authors = ["Juanito Software"]
+license = "MIT"
+
+[dependencies]
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# Recorrer directorios
+walkdir = "2.4"
+
+# Paralelismo (concurrencia real en Rust)
+rayon = "1.8"
+
+# Serialización y persistencia del índice
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# API HTTP opcional
+axum = { version = "0.7", optional = true }
+tokio = { version = "1.35", features = ["full"], optional = true }
+
+# Codificación de archivos (UTF-8 y fallback)
+encoding_rs = "0.8"
+
+# Utilidades
+thiserror = "1.0"
+anyhow = "1.0"
+
+[features]
+default = []
+api = ["dep:axum", "dep:tokio"]
+
+[[bin]]
+name = "motor-indexado"
+path = "src/main.rs"

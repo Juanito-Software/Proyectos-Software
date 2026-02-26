@@ -9,6 +9,19 @@ import {
 
 let isConnected = false;
 let pollInterval = null;
+const processedMessageIds = new Set();
+const MAX_PROCESSED_IDS = 1000;
+
+/**
+ * Crea un ID único para deduplicar mensajes (por si el servidor envía el mismo dos veces)
+ */
+function createMessageId(msg) {
+  const username = msg.username || 'anon';
+  const message = msg.message || '';
+  const ts = msg.timestamp || Date.now();
+  const rounded = Math.floor(ts / 1000);
+  return `${username}:${message}:${rounded}`;
+}
 
 /**
  * Inicia la conexión al chat de Rumble
@@ -56,6 +69,17 @@ async function fetchMessages(onMessage) {
         timestamp: msg.timestamp || Date.now()
       };
       
+      const msgId = createMessageId(formatted);
+      if (processedMessageIds.has(msgId)) {
+        return; // Evitar duplicados
+      }
+      processedMessageIds.add(msgId);
+      if (processedMessageIds.size > MAX_PROCESSED_IDS) {
+        const arr = [...processedMessageIds];
+        processedMessageIds.clear();
+        arr.slice(-MAX_PROCESSED_IDS / 2).forEach(id => processedMessageIds.add(id));
+      }
+      
       onMessage(formatted);
     });
   } catch (err) {
@@ -71,6 +95,7 @@ async function fetchMessages(onMessage) {
  */
 export async function connectRumble(onMessage) {
   console.log("🔧 [Rumble] Iniciando servicio...");
+  processedMessageIds.clear(); // Limpiar al iniciar nueva conexión
 
   // Intentar conectar
   const connected = await startRumbleConnection();
@@ -113,6 +138,7 @@ export async function disconnectRumble() {
   }
   
   isConnected = false;
+  processedMessageIds.clear();
   
   try {
     await axios.post(`${RUMBLE_SERVER_URL}/stop`);
