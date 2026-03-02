@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameChat2 - Juego controlado por chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f0f12;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    }
+    #hud {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    #hud .event { color: #7bed9f; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <span id="status">Conectando...</span>
+    <span id="lastEvent" class="event"></span>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

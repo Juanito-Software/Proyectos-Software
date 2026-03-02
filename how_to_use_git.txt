@@ -31,3 +31,142 @@ git clone https://gitlab.com/juanbpgitlabs/juanito_dam2t_repository2.git
 
 
 
+
+----RAMAS-----
+
+
+
+Perfecto Juan, ahora vamos a hacerlo práctico de verdad.
+
+Te voy a explicar cómo crear exactamente esa estructura trabajando tú solo, sin complicaciones y sin teoría innecesaria.
+
+🎯 Situación actual
+
+Ahora mismo tienes:
+
+main
+
+Y trabajas todo ahí.
+
+Vamos a empezar a trabajar con ramas de forma profesional.
+
+🧠 Caso real: quieres hacer el login
+1️⃣ Crear una rama nueva
+
+Estando en tu proyecto:
+
+git checkout -b feature/login-system
+
+¿Qué hace esto?
+
+checkout -b crea una rama nueva
+
+Te cambia automáticamente a esa rama
+
+Ahora ya no estás en main.
+
+2️⃣ Trabajas normalmente
+
+Editas archivos.
+
+Luego:
+
+git add .
+git commit -m "Añade sistema de login básico"
+
+Y si quieres subirla a GitHub:
+
+git push origin feature/login-system
+
+Ahora en GitHub existe esa rama.
+
+3️⃣ Volver a main
+
+Cuando termines el login:
+
+git checkout main
+4️⃣ Mezclar la rama en main
+git merge feature/login-system
+
+Ahora main ya tiene el login.
+
+Y puedes borrar la rama si quieres:
+
+git branch -d feature/login-system
+🧱 Lo mismo con inventory
+git checkout -b feature/inventory
+
+Trabajas → commit → push → vuelves a main → merge.
+
+🛠️ Para un bug (ejemplo save-bug)
+
+Desde main:
+
+git checkout main
+git checkout -b fix/save-bug
+
+Arreglas el bug → commit → merge → borrar rama.
+
+📊 Visualmente queda así
+
+Antes:
+
+main
+
+Después:
+
+main
+ ├── feature/login-system
+ ├── feature/inventory
+ └── fix/save-bug
+
+Pero ojo:
+
+Esas ramas no se quedan eternamente.
+Viven poco y mueren rápido.
+
+Eso es importante.
+
+🔥 Consejo profesional moderno
+
+No hagas ramas que vivan semanas.
+
+Haz:
+
+Rama
+
+Trabajo pequeño
+
+Merge rápido
+
+Borrar
+
+Eso es flujo moderno real (trunk-based con ramas cortas).
+
+🧠 Extra importante (detalle que muchos no saben)
+
+Antes de crear una rama nueva, asegúrate de que main esté actualizado:
+
+git checkout main
+git pull origin main
+git checkout -b feature/lo-que-sea
+
+Esto evita conflictos raros.
+
+💬 Opinión sincera
+
+Para ti ahora mismo, Juan:
+
+No necesitas Git Flow complejo.
+
+Solo necesitas:
+
+main protegido (aunque seas tú)
+
+ramas pequeñas
+
+merges frecuentes
+
+Con eso ya estás trabajando como un desarrollador profesional actual.
+
+
