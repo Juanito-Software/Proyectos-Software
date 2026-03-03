@@ -74,6 +74,7 @@ class MP3Player:
         self.play_loop = False
         self.last_index = None
         self.songs = []
+        self.random_scope = []
         self.played_random = []
 
         self.player.event_manager().event_attach(
@@ -388,7 +389,44 @@ class MP3Player:
         self.disable_other_modes('random' if self.play_random else '')
         self.random_button.config(relief="sunken" if self.play_random else "raised")
         if self.play_random:
+            # Aseguramos que la lista global de canciones esté actualizada
             self.songs = self.get_all_audio_items()
+
+            # Determinar la carpeta "actual" para el modo aleatorio
+            base_path = None
+
+            # 1) Si hay una canción en reproducción, usamos su carpeta
+            if self.current_file:
+                base_path = os.path.dirname(self.current_file)
+            else:
+                # 2) Si no hay canción actual, usamos la selección del árbol
+                selected = self.tree.selection()
+                if selected:
+                    sel_path = self.tree.item(selected[0], "values")[0]
+                    if os.path.isdir(sel_path):
+                        base_path = sel_path
+                    else:
+                        base_path = os.path.dirname(sel_path)
+
+            # 3) Si aún no tenemos carpeta, usamos la carpeta raíz seleccionada
+            if not base_path and self.selected_folder:
+                base_path = self.selected_folder
+
+            # Construimos el ámbito aleatorio SOLO con canciones de esa carpeta (no recursivo)
+            if base_path:
+                self.random_scope = [
+                    item for item in self.songs
+                    if os.path.dirname(self.tree.item(item, "values")[0]) == base_path
+                ]
+            else:
+                # Fallback: si por algún motivo no tenemos carpeta, usamos todas
+                self.random_scope = self.songs.copy()
+
+            # Reiniciamos historial de aleatorio
+            self.played_random = []
+        else:
+            # Al desactivar el modo aleatorio limpiamos su ámbito e historial
+            self.random_scope = []
             self.played_random = []
         messagebox.showinfo("Modo Reproducción", f"{'Activando' if self.play_random else 'Desactivando'} reproducción aleatoria")
 
@@ -410,10 +448,23 @@ class MP3Player:
             self.play_loop_current()
 
     def play_random_after(self):
-        available = [item for item in self.songs if item not in self.played_random]
+        # Usamos solo las canciones del ámbito aleatorio (carpeta actual).
+        scope = self.random_scope if self.random_scope else self.songs
+
+        # Filtramos nodos que sigan existiendo en el treeview
+        scope = [item for item in scope if self.node_exists(item)]
+
+        if not scope:
+            return
+
+        available = [item for item in scope if item not in self.played_random]
         if not available:
             self.played_random = []
-            available = self.songs.copy()
+            available = scope.copy()
+
+        if not available:
+            return
+
         chosen = random.choice(available)
         file_path = self.tree.item(chosen, "values")[0]
         self.played_random.append(chosen)
