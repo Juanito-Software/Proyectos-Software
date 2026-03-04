@@ -247,13 +247,22 @@ class MP3Player:
             items = os.listdir(path)
         except PermissionError:
             return
-        for item in sorted(items, key=str.lower):
+        # Primero carpetas (orden alfabético), luego canciones (orden alfabético)
+        dirs = []
+        files = []
+        for item in items:
             abs_path = os.path.join(path, item)
             if os.path.isdir(abs_path):
-                node = self.tree.insert(parent, "end", text=item, values=(abs_path,))
-                self.insert_items(node, abs_path)
+                dirs.append((item, abs_path))
             elif os.path.isfile(abs_path) and abs_path.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
-                self.tree.insert(parent, "end", text=item, values=(abs_path,))
+                files.append((item, abs_path))
+
+        for name, abs_path in sorted(dirs, key=lambda x: x[0].lower()):
+            node = self.tree.insert(parent, "end", text=name, values=(abs_path,))
+            self.insert_items(node, abs_path)
+
+        for name, abs_path in sorted(files, key=lambda x: x[0].lower()):
+            self.tree.insert(parent, "end", text=name, values=(abs_path,))
 
     def get_all_audio_items(self):
         items = []
