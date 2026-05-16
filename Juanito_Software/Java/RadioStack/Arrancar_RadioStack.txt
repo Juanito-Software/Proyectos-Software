@@ -1,0 +1,36 @@
+# RadioStack - Arranque del proyecto
+
+Abrir PowerShell en:
+
+D:\Proyectos\Proyectos-Software\Juanito_Software\Java\RadioStack
+
+## Primera ejecución
+
+Compilar e instalar dependencias Maven:
+
+mvn clean install
+
+## Arrancar backend Spring Boot
+
+Entrar en:
+
+cd radiostack-api
+
+Ejecutar:
+
+mvn spring-boot:run    o    mvn clean spring-boot:run
+
+## API disponible en
+
+http://localhost:8080
+
+## PostgreSQL
+
+Base de datos:
+radiostack
+
+Usuario:
+radiostack
+
+Puerto:
+5432

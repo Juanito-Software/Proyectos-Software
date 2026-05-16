@@ -21,9 +21,16 @@ public class ParrillaController {
 
     @GetMapping
     public List<EmisionDTO> obtenerParrilla(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return parrillaService.obtenerParrilla(from, to).stream()
+            @RequestParam(name = "from")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate from,
+
+            @RequestParam(name = "to")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate to) {
+
+        return parrillaService.obtenerParrilla(from, to)
+                .stream()
                 .map(DtoMapper::toEmisionDTO)
                 .toList();
     }
