@@ -29,11 +29,7 @@ gym_app_demo.sql
 cd C:\laragon\www\gym-app
 ```
 
-4) Si PowerShell no reconoce `php` o `composer`, agregar Laragon al PATH de la sesion:
-
-```powershell
-$env:Path = "C:\laragon\bin\php\php-8.3.26-Win32-vs16-x64;C:\laragon\bin\composer;$env:Path"
-```
+4) Si `php` o `composer` no son reconocidos, verificar que Laragon y Composer estén correctamente añadidos al PATH del sistema.
 
 5) Si `composer install` falla por `zip` o `git`, aplicar este prerequisito:
 
@@ -70,11 +66,13 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-9) Iniciar servicios en Laragon (al menos MySQL) y ejecutar migraciones:
+9) Iniciar servicios en Laragon (al menos MySQL).
+
+- Si ya se importó `gym_app_demo.sql`, no es necesario ejecutar migraciones.
+- Alternativamente, puede generarse la estructura de la base de datos mediante:
 
 ```powershell
 php artisan migrate
-```
 
 ## Ejecucion
 
