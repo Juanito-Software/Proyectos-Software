@@ -1,0 +1,8 @@
+RadioStack/
+├── radiostack-api       -> Backend Spring Boot
+├── radiostack-web       -> Frontend futuro
+├── docs                 -> documentación
+├── scripts              -> scripts SQL / automatización
+└── streaming
+    ├── icecast
+    └── butt

@@ -2,6 +2,8 @@
 
 Plataforma modular para gestión de una radio online, basada en Java, Spring Boot y JavaFX.
 
+para la trasminion de radio estoy usando Icecast + BUTT 
+
 ### Módulos
 
 - **radiostack-core**: modelo de dominio (DDD ligera), servicios y puertos de repositorio sin dependencias de framework.

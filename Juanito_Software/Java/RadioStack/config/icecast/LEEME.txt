@@ -1,0 +1,36 @@
+ICECAST EN WINDOWS — ARREGLO PERMISOS + ARRANQUE
+================================================
+
+ERROR: "could not open error logging ... Permission denied"
+---------------------------------------------------------
+Causa: Icecast no puede crear/escribir en la carpeta log\.
+
+SOLUCION (3 pasos):
+1. Copia a la carpeta de Icecast (donde está icecast.exe):
+   - icecast.xml   (sustituye el antiguo)
+   - start-icecast.bat
+
+2. Clic derecho en start-icecast.bat -> "Ejecutar como administrador"
+   (el .bat crea la carpeta log\ si no existe)
+
+3. Abre en el navegador (usa 127.0.0.1, no solo "localhost"):
+   http://127.0.0.1:8000/
+
+ESTRUCTURA (instalacion tipica en Program Files):
+   icecast.xml
+   start-icecast.bat
+   bin\icecast.exe    <-- el .exe suele estar AQUI, no en la raiz
+   log\
+   web\
+   admin\
+
+OBS / Mixxx:
+   URL:      http://localhost:8000/live
+   Usuario:  source
+   Password: radiostack123
+
+VLC (escuchar):
+   http://localhost:8000/live
+
+Admin web:
+   http://localhost:8000/  -> admin / radiostack123

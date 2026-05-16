@@ -52,4 +52,3 @@ CREATE TABLE chat_message (
     contenido TEXT NOT NULL,
     timestamp TIMESTAMP NOT NULL
 );
-

@@ -1,0 +1,294 @@
+siguientes pasos:
+
+---------
+
+lo primero modifica pg_hba.conf con los datos del backup .bak y mira si siguen funcionando ambos proyectos, este el de radiostack y el de fin de curso API_webapp_puntuaciones, creo que con la configuración que deje en el pg_hba.conf.bak deberían funcionar ambos al permitir autentificación por password
+
+---------
+
+Perfecto, ahora sí está bien montado.
+
+Lo importante del log es esto:
+
+Initialized JPA EntityManagerFactory
+Tomcat started on port 8080
+Started RadiostackApiApplication
+Successfully applied 2 migrations
+
+Eso significa que ya tienes funcionando:
+
+PostgreSQL
+Flyway
+Spring Boot
+Hibernate/JPA
+Repositories
+Seguridad Spring Security
+WebSockets
+Migraciones automáticas
+Datos demo cargados
+
+Y además Hibernate está haciendo queries reales contra tus tablas (programa, locutor, usuario, emision, etc.), así que el modelo relacional ya está consistente.
+
+Los SELECT que ves ahora NO son errores.
+Son simplemente SQL logs de Hibernate.
+
+El único warning “real” ahora es este:
+
+Using generated security password
+
+Eso pasa porque Spring Security está activado y aún no has configurado auth propia/JWT.
+
+Más adelante seguramente harás:
+
+JWT
+login/register
+filtros
+roles
+endpoints públicos
+
+y desaparecerá.
+
+También tienes este warning:
+
+Flyway upgrade recommended: PostgreSQL 17.0 ...
+
+Eso no rompe nada.
+Simplemente Flyway 9.22 todavía no “certifica” PG17 oficialmente.
+
+Puedes ignorarlo.
+
+Y este:
+
+spring.jpa.open-in-view is enabled by default
+
+Tampoco es crítico.
+Luego puedes poner:
+
+spring.jpa.open-in-view=false
+
+cuando tengas DTOs bien hechos.
+
+Ahora mismo estás en la fase buena del proyecto:
+
+backend arrancando
+schema consistente
+datos reales
+endpoints funcionando
+relaciones funcionando
+
+Ya saliste del infierno de configuración.
+
+El siguiente salto útil sería:
+
+probar endpoints con Postman/Swagger
+meter JWT
+conectar frontend React/Vue/Angular
+añadir DTOs + mappers
+paginación/filtros
+Dockerizar PostgreSQL + API
+
+Porque ya tienes una base seria montada.
+
+genial pero sigo sin saber la finalidad del proyecto, es decir tengo montada la radio streaming en localhost con BUTT pero no se como se relaciona eso con nuestro programa de gestion de radio en java spring 
+
+Ahora mismo tienes dos mundos separados y te falta “el puente” entre ellos.
+
+Lo que YA tienes
+1. La radio real (audio)
+
+Tu stack con:
+
+BUTT
+Icecast/Shoutcast
+AutoDJ o música
+stream en localhost
+
+es la parte que realmente emite audio.
+
+Eso es la “emisora”.
+
+2. Tu backend Spring Boot
+
+Tu proyecto RadioStack ahora mismo es:
+
+gestión de programas
+locutores
+emisiones
+usuarios
+chat
+horarios
+auth
+websockets
+
+Eso NO emite audio.
+
+Es el sistema de gestión de la radio.
+
+La clave es entender esto:
+
+Spring Boot NO sustituye a Icecast
+
+Spring Boot coordina la radio.
+
+Icecast transmite el audio.
+
+BUTT envía el audio.
+
+Entonces… ¿para qué sirve tu proyecto?
+
+Ahora mismo estás construyendo algo parecido a:
+
+panel de administración de una emisora
+backend de una radio online
+CMS de streaming
+automatización de programación
+plataforma tipo “radio dashboard”
+
+Algo parecido (salvando distancias) a:
+
+Radio.co
+AzuraCast
+Airtime
+CentovaCast
+OBS dashboards
+Cómo se conectan ambos mundos
+Flujo real
+Locutor
+   ↓
+Micrófono
+   ↓
+BUTT
+   ↓
+Icecast
+   ↓
+Oyentes
+
+Y aparte:
+
+Spring Boot
+   ↓
+Gestiona:
+- programas
+- horarios
+- locutores
+- chat
+- metadata
+- API
+- frontend
+Lo interesante: integrar ambos
+
+Aquí empieza lo potente.
+
+Tu backend puede:
+
+1. Mostrar qué está sonando
+
+Icecast tiene endpoints XML/JSON.
+
+Ejemplo:
+
+http://localhost:8000/status-json.xsl
+
+Desde Spring Boot puedes leer eso.
+
+Y entonces tu frontend mostraría:
+
+“Ahora suena…”
+bitrate
+oyentes conectados
+DJ actual
+metadata
+2. Automatizar emisiones
+
+Tu tabla emision puede servir para:
+
+programar shows
+activar locutores
+cambiar metadata
+lanzar playlists
+3. Chat en vivo
+
+Ya tienes WebSockets.
+
+Puedes hacer:
+
+Oyente ↔ chat en directo ↔ locutor
+
+tipo Twitch radio.
+
+4. Panel de control
+
+Tu backend podría controlar:
+
+iniciar/parar streaming
+ver listeners
+expulsar DJs
+cambiar programación
+subir jingles
+gestionar podcasts
+5. Frontend real
+
+Después haces frontend React/Vue y tienes:
+
+[Player Radio]
+[Ahora suena]
+[Chat]
+[Programación]
+[Locutores]
+[Noticias]
+Lo que probablemente te falta mentalmente
+
+Estás pensando:
+
+“¿Dónde entra el audio dentro de Spring?”
+
+Y la respuesta es:
+
+👉 normalmente NO entra directamente.
+
+Spring gestiona la lógica.
+
+Icecast maneja el streaming.
+
+Arquitectura típica real
+Frontend React
+      ↓
+Spring Boot API
+      ↓
+PostgreSQL
+
+Y aparte:
+
+BUTT → Icecast → Audio Stream
+
+El frontend consume ambas cosas:
+
+API Java
+stream de audio
+Qué haría yo ahora
+
+Tu siguiente paso lógico es:
+
+Añadir endpoint de estado Icecast
+
+Ejemplo:
+
+GET /api/radio/status
+
+Que devuelva:
+
+{
+  "online": true,
+  "listeners": 12,
+  "bitrate": 128,
+  "title": "Morning Beats",
+  "dj": "Juanito"
+}
+
+Leyendo:
+
+http://localhost:8000/status-json.xsl
+
+Ahí es donde TODO empieza a conectarse en tu cabeza.
+
+Porque entonces tu backend ya controla y refleja el estado de la radio real.

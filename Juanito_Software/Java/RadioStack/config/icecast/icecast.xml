@@ -1,0 +1,62 @@
+<icecast>
+    <location>RadioStack</location>
+    <admin>admin@radiostack.local</admin>
+    <hostname>localhost</hostname>
+
+    <limits>
+        <clients>100</clients>
+        <sources>2</sources>
+        <queue-size>524288</queue-size>
+        <client-timeout>30</client-timeout>
+        <header-timeout>15</header-timeout>
+        <source-timeout>10</source-timeout>
+        <burst-size>65535</burst-size>
+    </limits>
+
+    <authentication>
+        <source-password>radiostack123</source-password>
+        <relay-password>radiostack123</relay-password>
+        <admin-user>admin</admin-user>
+        <admin-password>radiostack123</admin-password>
+    </authentication>
+
+    <listen-socket>
+        <port>8000</port>
+        <!-- Escuchar en IPv4 para que http://127.0.0.1:8000 funcione en el navegador -->
+        <bind-address>0.0.0.0</bind-address>
+    </listen-socket>
+
+    <http-headers>
+        <header type="cors" name="Access-Control-Allow-Origin" />
+        <header type="cors" name="Access-Control-Allow-Headers" />
+        <header type="cors" name="Access-Control-Expose-Headers" />
+    </http-headers>
+
+    <mount type="normal">
+        <mount-name>/live</mount-name>
+        <public>true</public>
+        <max-listeners>50</max-listeners>
+    </mount>
+
+    <!-- Rutas relativas a la carpeta donde está icecast.exe (sin ./) -->
+    <paths>
+        <logdir>log</logdir>
+        <webroot>web</webroot>
+        <adminroot>admin</adminroot>
+        <alias source="/" destination="/status.xsl"/>
+    </paths>
+
+    <logging>
+        <accesslog>access.log</accesslog>
+        <errorlog>error.log</errorlog>
+        <loglevel>information</loglevel>
+        <logsize>10000</logsize>
+    </logging>
+
+    <security>
+        <tls-context>
+        </tls-context>
+        <!-- Evita el aviso "No PRNG seed configured" en Icecast 2.5 -->
+        <prng-seed type="static">RadioStackIcecastPrngSeed2026ChangeMeInProduction</prng-seed>
+    </security>
+</icecast>
