@@ -20,6 +20,7 @@ from cocorum import RumbleAPI
 import threading
 import time
 import os
+from collections import OrderedDict
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -34,8 +35,9 @@ chat_thread = None
 is_running = False
 latest_messages = []
 messages_lock = threading.Lock()
-processed_message_keys = set()  # Claves globales para evitar duplicados entre ciclos
-MAX_PROCESSED_KEYS = 2000  # Límite para no crecer indefinidamente
+processed_message_keys = OrderedDict()  # Claves globales (ordenadas) para evitar duplicados entre ciclos
+MAX_PROCESSED_KEYS = 2000
+current_api_url = ''  # URL con la que está conectado rumble_api
 
 # Configurables
 RUMBLE_API_URL = os.getenv('RUMBLE_API_URL', '')
@@ -53,9 +55,50 @@ def sanitize_message(msg):
     text = ''.join(ch for ch in text if ord(ch) >= 32 or ch in '\n\r')
     return text
 
+def get_message_dedup_key(msg, username, message_text):
+    """Clave estable: cocorum ChatMessage usa created_on, no timestamp."""
+    try:
+        msg_id = msg["id"]
+        if msg_id is not None:
+            return f"id:{msg_id}"
+    except (KeyError, TypeError, AttributeError):
+        pass
+    created_on = getattr(msg, "created_on", None)
+    if created_on:
+        return f"{username}:{message_text}:{created_on}"
+    return f"{username}:{message_text}"
+
+def remember_message_key(key):
+    """Registra clave; devuelve True si el mensaje es nuevo."""
+    if key in processed_message_keys:
+        processed_message_keys.move_to_end(key)
+        return False
+    processed_message_keys[key] = True
+    while len(processed_message_keys) > MAX_PROCESSED_KEYS:
+        processed_message_keys.popitem(last=False)
+    return True
+
+def format_rumble_message(msg, username, message_text):
+    """Formatea mensaje con timestamp real (created_on) e id de Rumble si existe."""
+    msg_id = None
+    try:
+        msg_id = msg["id"]
+    except (KeyError, TypeError, AttributeError):
+        pass
+    created_on = getattr(msg, "created_on", None)
+    timestamp_ms = int(created_on * 1000) if created_on else int(time.time() * 1000)
+    formatted = {
+        "username": username,
+        "message": message_text,
+        "timestamp": timestamp_ms,
+    }
+    if msg_id is not None:
+        formatted["id"] = str(msg_id)
+    return formatted
+
 def fetch_chat_messages():
     """Hilo que obtiene mensajes del chat de Rumble"""
-    global rumble_api, is_running, latest_messages, processed_message_keys, RUMBLE_API_URL
+    global rumble_api, is_running, latest_messages, processed_message_keys, RUMBLE_API_URL, current_api_url
     
     reconnect_attempts = 0
     max_reconnect_attempts = 10  # Intentar reconectar cada 30 segundos
@@ -68,8 +111,9 @@ def fetch_chat_messages():
                     try:
                         print(f"🔄 Intentando reconectar a Rumble... (intento {reconnect_attempts + 1}/{max_reconnect_attempts})")
                         rumble_api = RumbleAPI(RUMBLE_API_URL, refresh_rate=REFRESH_RATE)
+                        current_api_url = RUMBLE_API_URL
                         reconnect_attempts = 0  # Resetear contador si conecta
-                        print(f"✅ Reconectado a Rumble")
+                        print(f"✅ Reconectado a Rumble (historial reciente puede repetirse una vez; dedup por id activo)")
                     except Exception as reconnect_error:
                         reconnect_attempts += 1
                         error_msg = str(reconnect_error)
@@ -98,28 +142,11 @@ def fetch_chat_messages():
                             )
                             
                             if message_text:
-                                # Clave única global para evitar duplicados entre ciclos (la API puede devolver el mismo mensaje varias veces)
-                                msg_ts = getattr(msg, 'timestamp', None) or int(time.time() * 1000)
-                                timestamp_rounded = int(msg_ts / 1000) if msg_ts else int(time.time())
-                                message_key = f"{username}:{message_text}:{timestamp_rounded}"
-                                
-                                if message_key not in processed_message_keys:
-                                    processed_message_keys.add(message_key)
-                                    # Limitar tamaño del set
-                                    if len(processed_message_keys) > MAX_PROCESSED_KEYS:
-                                        keys_list = list(processed_message_keys)
-                                        processed_message_keys.clear()
-                                        processed_message_keys.update(keys_list[-MAX_PROCESSED_KEYS // 2:])
-                                    
-                                    formatted = {
-                                        'username': username,
-                                        'message': message_text,
-                                        'timestamp': int(time.time() * 1000)
-                                    }
+                                message_key = get_message_dedup_key(msg, username, message_text)
+                                if remember_message_key(message_key):
+                                    formatted = format_rumble_message(msg, username, message_text)
                                     latest_messages.append(formatted)
                                     print(f"💬 [Rumble] Mensaje capturado: {username}: {message_text[:50]}")
-                                    
-                                    # Mantener solo los últimos N mensajes
                                     if len(latest_messages) > MAX_MESSAGES:
                                         latest_messages.pop(0)
                                 else:
@@ -148,7 +175,7 @@ def fetch_chat_messages():
 @app.route("/start", methods=["POST"])
 def start_chat():
     """Inicia la conexión al chat de Rumble"""
-    global rumble_api, chat_thread, is_running, RUMBLE_API_URL, RUMBLE_CHANNEL
+    global rumble_api, chat_thread, is_running, RUMBLE_API_URL, RUMBLE_CHANNEL, current_api_url
     
     data = request.get_json(silent=True) or {}
     api_url = data.get('api_url') or RUMBLE_API_URL
@@ -157,6 +184,16 @@ def start_chat():
     
     if not api_url:
         return jsonify({"error": "Falta RUMBLE_API_URL"}), 400
+
+    # Node llama /start tras auto-conexión del .bat: no reiniciar ni vaciar deduplicación
+    if is_running and rumble_api and api_url == current_api_url:
+        print("✅ [Rumble] Ya conectado con la misma API URL, sin reiniciar")
+        return jsonify({
+            "status": "ok",
+            "message": "Ya conectado",
+            "api_url": api_url,
+            "channel": channel,
+        }), 200
     
     try:
         # Detener conexión anterior si existe (evitar duplicación de hilos)
@@ -187,10 +224,14 @@ def start_chat():
             print(f"🔧 URL de stream específico proporcionada: {stream_url}")
             # No limpiar parámetros aquí porque puede ser necesario
         
-        # Inicializar API de Rumble
+        # Inicializar API de Rumble (solo si cambió la URL; recrear vacía el historial "nuevo" de cocorum)
         try:
-            print(f"🔗 Intentando conectar con: {url_to_use}")
-            rumble_api = RumbleAPI(url_to_use, refresh_rate=REFRESH_RATE)
+            if rumble_api and api_url == current_api_url:
+                print(f"🔗 Reutilizando conexión Rumble existente: {url_to_use}")
+            else:
+                print(f"🔗 Intentando conectar con: {url_to_use}")
+                rumble_api = RumbleAPI(url_to_use, refresh_rate=REFRESH_RATE)
+                current_api_url = api_url
             # Verificar si hay stream activo
             try:
                 livestream = rumble_api.latest_livestream
@@ -222,6 +263,7 @@ def start_chat():
                 print(f"🔄 Intentando con URL de stream: {stream_url}")
                 try:
                     rumble_api = RumbleAPI(stream_url, refresh_rate=REFRESH_RATE)
+                    current_api_url = stream_url
                     print(f"✅ Conectado usando URL de stream")
                 except Exception as stream_error:
                     error_msg = str(stream_error)
@@ -345,6 +387,7 @@ if __name__ == "__main__":
             else:
                 try:
                     rumble_api = RumbleAPI(RUMBLE_API_URL, refresh_rate=REFRESH_RATE)
+                    current_api_url = RUMBLE_API_URL
                     is_running = True
                     chat_thread = threading.Thread(target=fetch_chat_messages, daemon=True)
                     chat_thread.start()
