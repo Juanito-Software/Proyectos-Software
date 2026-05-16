@@ -37,6 +37,12 @@ VK_S     = ord('S')
 VK_L     = ord('L')
 VK_R     = ord('R')
 VK_T     = ord('T')
+VK_O     = ord('O')
+VK_P     = ord('P')
+VK_M     = ord('M')
+VK_PLUS  = ord('+')
+VK_MINUS = ord('-')
+
 
 def tk_callback(fn):
     return lambda: app.root.after(0, fn)
@@ -657,10 +663,12 @@ if __name__ == "__main__":
     def vol_down(): app.player.audio_set_volume(max(app.player.audio_get_volume() - 10, 0))
     hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_UP, lambda: app.root.after(0, vol_up))
     hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_DOWN, lambda: app.root.after(0, vol_down))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_PLUS, lambda: app.root.after(0, vol_up))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_MINUS, lambda: app.root.after(0, vol_down))
 
     hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_L, lambda: app.root.after(0, app.toggle_loop_mode))
-    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_R, lambda: app.root.after(0, app.toggle_random_mode))
-    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_T, lambda: app.root.after(0, app.toggle_order_mode))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_R, lambda: app.root.after(0, app.toggle_random_mode))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_O, lambda: app.root.after(0, app.toggle_order_mode))
 
     hk.start()
 

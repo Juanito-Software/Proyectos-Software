@@ -16,11 +16,11 @@ const MAX_PROCESSED_IDS = 1000;
  * Crea un ID único para deduplicar mensajes (por si el servidor envía el mismo dos veces)
  */
 function createMessageId(msg) {
+  if (msg.id) return `id:${msg.id}`;
   const username = msg.username || 'anon';
   const message = msg.message || '';
   const ts = msg.timestamp || Date.now();
-  const rounded = Math.floor(ts / 1000);
-  return `${username}:${message}:${rounded}`;
+  return `${username}:${message}:${ts}`;
 }
 
 /**
@@ -39,7 +39,7 @@ async function startRumbleConnection() {
       stream_url: RUMBLE_STREAM_URL  // URL opcional del stream específico
     });
 
-    if (response.data.status === 'ok') {
+    if (response.data.status === 'ok' || response.data.status === 'pending') {
       console.log(`✅ [Rumble] Conectado: ${RUMBLE_API_URL}`);
       return true;
     }
@@ -114,18 +114,18 @@ export async function connectRumble(onMessage) {
 
   console.log(`✅ [Rumble] Servicio iniciado. Polling cada ${RUMBLE_POLL_INTERVAL}ms`);
   
-  // Verificar estado periódicamente
+  // Solo reconectar si el hilo dejó de correr (evitar /start que reinicia cocorum y repite el chat)
   setInterval(async () => {
     try {
       const status = await axios.get(`${RUMBLE_SERVER_URL}/status`);
-      if (!status.data.connected && isConnected) {
-        console.warn("⚠️ [Rumble] Conexión perdida, intentando reconectar...");
+      if (isConnected && status.data.connected === false) {
+        console.warn("⚠️ [Rumble] Hilo detenido, intentando reconectar...");
         await startRumbleConnection();
       }
     } catch (err) {
       // Servidor no disponible, no hacer nada
     }
-  }, 30000); // Verificar cada 30 segundos
+  }, 60000);
 }
 
 /**
