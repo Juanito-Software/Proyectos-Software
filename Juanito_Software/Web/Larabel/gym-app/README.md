@@ -18,6 +18,10 @@ Aplicacion web para gestion de gimnasio, desarrollada con Laravel y Vite.
 ```powershell
 C:\laragon\www\gym-app
 ```
+2. Importar el archivo SQL:
+```
+gym_app_demo.sql
+```
 
 2) Confirmar carpeta de trabajo correcta (importante):
 
