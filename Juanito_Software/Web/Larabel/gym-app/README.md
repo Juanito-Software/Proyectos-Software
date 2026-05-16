@@ -23,12 +23,6 @@ C:\laragon\www\gym-app
 gym_app_demo.sql
 ```
 
-2) Confirmar carpeta de trabajo correcta (importante):
-
-- Debes estar en la carpeta donde existen `composer.json` y `package.json`.
-- Si instalas desde un ZIP de entrega, normalmente sera algo como:
-  `C:\laragon\www\gym-app-v1.0\gym-app_v1.0`
-
 3) Abrir una terminal en la carpeta del proyecto:
 
 ```powershell
