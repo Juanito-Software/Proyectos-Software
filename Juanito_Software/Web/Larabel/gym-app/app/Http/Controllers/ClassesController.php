@@ -28,6 +28,11 @@ class ClassesController extends Controller
     public function store(Request $request)
     {
         try {
+            $request->merge([
+                'init_hour' => $request->filled('init_hour') ? substr((string) $request->input('init_hour'), 0, 5) : $request->input('init_hour'),
+                'final_hour' => $request->filled('final_hour') ? substr((string) $request->input('final_hour'), 0, 5) : $request->input('final_hour'),
+            ]);
+
             $validated = $request->validate([
                 'name'        => 'required|string|max:100|unique:classes,name',
                 'desc'        => 'nullable|string|max:255',
@@ -93,6 +98,11 @@ class ClassesController extends Controller
     public function update(Request $request, $id)
     {
         $class = Classe::findOrFail($id);
+
+        $request->merge([
+            'init_hour' => $request->filled('init_hour') ? substr((string) $request->input('init_hour'), 0, 5) : $request->input('init_hour'),
+            'final_hour' => $request->filled('final_hour') ? substr((string) $request->input('final_hour'), 0, 5) : $request->input('final_hour'),
+        ]);
 
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:100', Rule::unique('classes', 'name')->ignore($class->id)],

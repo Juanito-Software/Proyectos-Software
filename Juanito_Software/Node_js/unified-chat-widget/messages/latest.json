@@ -3,46 +3,6 @@
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
-    "username": "frann17malaka",
-    "message": "juuuuuuuuuuuuuuuuuuuuuuuuuuuuaaaaaaaaaannnnnnnnnnnnn desssspiertaaaaaaaaaaaaaaaaaaaaaaaa",
-    "timestamp": 1776643721002,
-    "user": "frann17malaka",
-    "received_at": "2026-04-20T00:08:41.003Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "frann17malaka",
-    "message": "juuuuuuuuuuuuuuuuuuuuuuuuuuuuaaaaaaaaaannnnnnnnnnnnn desssspiertaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "timestamp": 1776643737895,
-    "user": "frann17malaka",
-    "received_at": "2026-04-20T00:08:57.896Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "niñoo",
-    "timestamp": 1776644622531,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-04-20T00:23:42.532Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "no chilles",
-    "timestamp": 1776644625423,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-04-20T00:23:45.423Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
     "message": "@carlossantanahernandezz Hola broo",
     "timestamp": 1776644730600,
@@ -898,5 +858,37 @@
     "timestamp": 1778936316444,
     "user": "JuanitoCanuto",
     "received_at": "2026-05-16T12:58:36.444Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "finalmente",
+    "timestamp": 1778942367000,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-16T14:39:34.165Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "todo sale a pedir de milhouse",
+    "timestamp": 1778942380000,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-16T14:39:46.192Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "ya esta",
+    "timestamp": 1778943159108,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-16T14:52:39.110Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "podeis",
+    "timestamp": 1778943160950,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-16T14:52:40.950Z"
   }
 ]
