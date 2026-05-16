@@ -1,0 +1,3 @@
+si npm run dv no funciona hay que instalar el composer y añadir la ruta en el path designado la versión de php en el proceso luego pones el comando composer install
+
+si sigue sin funcionar luego hay que poner el comando npm install
