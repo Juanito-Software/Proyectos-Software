@@ -4,36 +4,6 @@
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "El contador de porros va por 14 gente",
-    "timestamp": 1776647076701,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-04-20T01:04:36.702Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "Que no os engañen",
-    "timestamp": 1776647081165,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-04-20T01:04:41.166Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "En 5 o 10 min subo que estoy viendo  la tele gente",
-    "timestamp": 1776647138827,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-04-20T01:05:38.827Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
     "message": "Hacemos directo fresco de documentales",
     "timestamp": 1776647154253,
     "user": "JuanitoCanuto",
@@ -868,5 +838,29 @@
     "timestamp": 1778973737456,
     "user": "JuanitoCanuto",
     "received_at": "2026-05-16T23:22:17.458Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "pantereitor te segui jejej",
+    "timestamp": 1778977287666,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-17T00:21:27.667Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "grande",
+    "timestamp": 1778979145172,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-17T00:52:25.173Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "ese pive",
+    "timestamp": 1778979146990,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-17T00:52:26.990Z"
   }
 ]
