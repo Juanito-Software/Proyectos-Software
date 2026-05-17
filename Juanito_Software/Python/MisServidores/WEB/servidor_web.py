@@ -134,8 +134,7 @@ def manejar_peticion(metodo: str, ruta: str, headers: dict, body: bytes) -> byte
     """
     Procesa la petición y devuelve la respuesta HTTP en bytes.
     """
-    # Página por defecto si no hay carpeta public o no existe el archivo
-    html_inicio = b"""<!DOCTYPE html>
+    html_inicio = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -144,26 +143,40 @@ def manejar_peticion(metodo: str, ruta: str, headers: dict, body: bytes) -> byte
 </head>
 <body>
     <h1>Servidor web en Python</h1>
-    <p>Hecho desde cero con <code>socket</code>. Sin librerías externas.</p>
-    <p>Ruta solicitada: """
-    html_fin = b"""</p>
+    <p>Hecho desde cero con <code>socket</code>. Sin librerias externas.</p>
+    <p>Ruta solicitada: """.encode("utf-8")
+
+    html_fin = """</p>
 </body>
-</html>"""
+</html>""".encode("utf-8")
 
     if metodo != "GET" and metodo != "HEAD":
-        cuerpo = (html_inicio + f"<em>{ruta}</em> - Método no permitido".encode("utf-8") + html_fin)
+        cuerpo = html_inicio + f"<em>{ruta}</em> - Metodo no permitido".encode("utf-8") + html_fin
         return construir_respuesta(405, "Method Not Allowed", cuerpo)
+
+    if ruta == "/hola":
+        cuerpo = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Hola</title>
+</head>
+<body>
+    <h1>Hola desde Python</h1>
+</body>
+</html>""".encode("utf-8")
+        return construir_respuesta(200, "OK", cuerpo)
 
     codigo, cuerpo, tipo = servir_archivo(ruta)
 
     if codigo == 404:
-        cuerpo = html_inicio + ruta.encode("utf-8") + b" - No encontrado" + html_fin
+        cuerpo = html_inicio + ruta.encode("utf-8") + " - No encontrado".encode("utf-8") + html_fin
         return construir_respuesta(404, "Not Found", cuerpo, tipo_contenido=tipo)
     if codigo == 403:
-        cuerpo = html_inicio + b"Acceso denegado" + html_fin
+        cuerpo = html_inicio + "Acceso denegado".encode("utf-8") + html_fin
         return construir_respuesta(403, "Forbidden", cuerpo, tipo_contenido=tipo)
     if codigo == 500:
-        cuerpo = html_inicio + b"Error del servidor" + html_fin
+        cuerpo = html_inicio + "Error del servidor".encode("utf-8") + html_fin
         return construir_respuesta(500, "Internal Server Error", cuerpo, tipo_contenido=tipo)
 
     if metodo == "HEAD":
@@ -209,7 +222,7 @@ def main():
     servidor.bind((HOST, PUERTO))
     servidor.listen(5)
     print(f"Servidor en http://{HOST}:{PUERTO}")
-    print("Solo biblioteca estándar (socket). Sin dependencias externas.")
+    print("Solo biblioteca estandar (socket). Sin dependencias externas.")
     print("Detener con Ctrl+C.\n")
 
     try:
