@@ -153,20 +153,136 @@ git checkout -b feature/lo-que-sea
 
 Esto evita conflictos raros.
 
-💬 Opinión sincera
 
-Para ti ahora mismo, Juan:
+Lo más realista sería:
 
-No necesitas Git Flow complejo.
+✔ versión simple mejor:
+main
+develop
+feature/*
 
-Solo necesitas:
+Sin release/hotfix salvo que crezca mucho
 
-main protegido (aunque seas tú)
 
-ramas pequeñas
+---
 
-merges frecuentes
 
-Con eso ya estás trabajando como un desarrollador profesional actual.
+🧠 1. Estructura base de Git Flow
+
+Tienes estas ramas principales:
+
+main        → versión estable (producción)
+develop     → integración de desarrollo
+
+Y ramas auxiliares:
+
+feature/*   → nuevas funcionalidades
+release/*   → preparación de versión
+hotfix/*    → arreglos urgentes en producción
+🔧 2. Flujo real paso a paso
+🚀 1. Empezar feature (ej: PASV)
+git checkout develop
+git checkout -b feature/pasv-mode
+
+Trabajas ahí.
+
+📦 2. Commit usando Conventional Commits
+feat: implement PASV mode support
+🔀 3. Terminar feature
+git checkout develop
+git merge feature/pasv-mode
+🧪 4. Preparar release
+
+Cuando ya está “listo para versión”:
+
+git checkout -b release/1.0.0
+
+Aquí solo:
+
+bugs pequeños
+docs
+ajustes finales
+🏁 5. Pasar a producción
+git checkout main
+git merge release/1.0.0
+
+y luego:
+
+git tag 1.0.0
+🔥 6. Hotfix (crítico en producción)
+
+Si hay un bug en main:
+
+git checkout -b hotfix/fix-path-bug main
+
+Arreglas:
+
+fix: correct directory traversal vulnerability in CWD
+
+Luego:
+
+git checkout main
+git merge hotfix/fix-path-bug
+git tag 1.0.1
+
+Y también:
+
+git checkout develop
+git merge hotfix/fix-path-bug
+🧠 3. Visual mental del sistema
+main -----------o--------o----o (releases)
+                 \      /
+develop ----o----o----o----o----o
+              \      /
+feature        feature branches
+⚖️ 4. Cuándo usar Git Flow (y cuándo NO)
+✔ Útil cuando:
+proyectos con versiones (v1, v2…)
+software “estable”
+equipos grandes
+releases controladas
+
+
+---
+
+
+Commits:
+
+🔧 Tipos más usados
+🚀 feat
+
+Nueva funcionalidad
+
+feat: add PASV mode support
+🐛 fix
+
+Corrección de bugs
+
+fix: resolve file path handling in CWD command
+📚 docs
+
+Cambios en documentación
+
+docs: update README with FileZilla usage instructions
+🔧 refactor
+
+Cambios internos sin cambiar comportamiento
+
+refactor: simplify FTP command parser logic
+🧪 test
+
+Añadir o modificar tests
+
+test: add unit tests for path validation
+⚙️ chore
+
+Tareas internas (build, config, limpieza)
+
+chore: update Cargo.toml dependencies
+🚨 style (menos importante en Rust)
+
+Formato, espacios, etc.
+
+style: format code with rustfmt
 
 
