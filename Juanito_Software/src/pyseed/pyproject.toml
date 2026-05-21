@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyseed"
+version = "0.1.0"
+description = "Generador de estructuras de proyectos Python limpias y listas para producción."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Juanito Software", email = "juanito@example.com" }
+]
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
+    "Topic :: Software Development :: Code Generators",
+]
+
+[project.scripts]
+pyseed = "pyseed.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyseed"]
