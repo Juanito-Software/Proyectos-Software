@@ -60,6 +60,12 @@ El asistente te pregunta paso a paso: nombre, descripción, autor, licencia, CLI
 pyseed mi-proyecto
 
 # Con todas las opciones
+windows:
+
+pyseed mi-api --description "Una API REST moderna" --license "Apache 2.0" --author "Juan García" --email "juan@example.com" --cli --framework pytest --venv --no-git --output-dir C:\Users\User\Desktop
+
+linux:
+
 pyseed mi-api \
   --description "Una API REST moderna" \
   --license "Apache 2.0" \
@@ -75,7 +81,7 @@ pyseed mi-api \
 pyseed mi-script --no-git --no-tests --license "BSD 3-Clause"
 ```
 
-### Como módulo Python
+### Como módulo Python (si no está en el PATH del sistema)
 
 ```bash
 python -m pyseed mi-proyecto --cli
