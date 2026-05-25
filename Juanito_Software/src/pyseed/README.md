@@ -67,7 +67,9 @@ pyseed mi-api \
   --email "juan@example.com" \
   --cli \
   --framework pytest \
-  --venv
+  --venv \
+  --no-git \
+  --output-dir C:\Users\User\Desktop
 
 # Sin Git ni tests
 pyseed mi-script --no-git --no-tests --license "BSD 3-Clause"
