@@ -204,3 +204,39 @@ fn manejar_request(req: HttpRequest) -> HttpResponse {
         _ => HttpResponse::not_found(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_manejar_request_root() {
+        let req = HttpRequest {
+            metodo: "GET".to_string(),
+            path: "/".to_string(),
+            version: "HTTP/1.1".to_string(),
+            headers: HashMap::new(),
+            body: Vec::new(),
+        };
+        let res = manejar_request(req);
+        assert_eq!(res.status, 200);
+        assert_eq!(res.frase, "OK");
+        let body_str = String::from_utf8(res.body).unwrap();
+        assert!(body_str.contains("Servidor web en Rust"));
+    }
+
+    #[test]
+    fn test_manejar_request_not_found() {
+        let req = HttpRequest {
+            metodo: "GET".to_string(),
+            path: "/nonexistent".to_string(),
+            version: "HTTP/1.1".to_string(),
+            headers: HashMap::new(),
+            body: Vec::new(),
+        };
+        let res = manejar_request(req);
+        assert_eq!(res.status, 404);
+        assert_eq!(res.frase, "Not Found");
+    }
+}
+
