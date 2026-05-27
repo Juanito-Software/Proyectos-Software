@@ -303,3 +303,25 @@ fn main() -> io::Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_pasv_addr_v4() {
+        let ip = "127.0.0.1".parse::<std::net::IpAddr>().unwrap();
+        let port = 2121;
+        let formatted = format_pasv_addr(ip, port);
+        assert_eq!(formatted, "127,0,0,1,8,73"); // 2121 / 256 = 8, 2121 % 256 = 73
+    }
+
+    #[test]
+    fn test_format_pasv_addr_v6_fallback() {
+        let ip = "::1".parse::<std::net::IpAddr>().unwrap();
+        let port = 8080;
+        let formatted = format_pasv_addr(ip, port);
+        assert_eq!(formatted, "127,0,0,1,31,144"); // 8080 / 256 = 31, 8080 % 256 = 144
+    }
+}
+
