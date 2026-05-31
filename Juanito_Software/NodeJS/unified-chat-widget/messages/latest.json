@@ -1,446 +1,6 @@
 [
   {
     "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "hola buenas",
-    "timestamp": 1779647102818,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:25:02.819Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "no esta juanito?",
-    "timestamp": 1779647109339,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:25:09.340Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "ah vale",
-    "timestamp": 1779647129892,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:25:29.892Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "perdon adolf hitler",
-    "timestamp": 1779647146932,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:25:46.932Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "yo me estoy fumando uno de polen de 0,4 a tu salud",
-    "timestamp": 1779647178411,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:26:18.412Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "me estoy fumando un porrazo a tu salud, un super tronco",
-    "timestamp": 1779647199596,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:26:39.597Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "vale perdon",
-    "timestamp": 1779647216806,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:26:56.807Z"
-  },
-  {
-    "platform": "kick",
-    "username": "Josee_aguiilaar",
-    "message": "noo",
-    "timestamp": 1779647222031,
-    "user": "Josee_aguiilaar",
-    "received_at": "2026-05-24T18:27:02.032Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "adrianmatamoros : eres mayor que tu hermano? uanitoCanuto : no el es mayor, me saca 5 años",
-    "timestamp": 1779707318815,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:08:38.820Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "adrianmatamoros : eres mayor que tu hermano? uanitoCanuto : no el es mayor, me saca 5 años",
-    "timestamp": 1779707330510,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:08:50.511Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "bueno voy arrancando",
-    "timestamp": 1779707640000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:14:07.089Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "a ver si no vienen subnormales hot",
-    "timestamp": 1779707647000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:14:07.089Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "bueno voy arrancando",
-    "timestamp": 1779707640000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:14:59.479Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "a ver si no vienen subnormales hot",
-    "timestamp": 1779707647000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:14:59.480Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "probando",
-    "timestamp": 1779707716182,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:15:16.183Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "probandoo",
-    "timestamp": 1779707720858,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:15:20.859Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "adrianmatamoros : eres mayor que tu hermano? uanitoCanuto : no el es mayor, me saca 5 años",
-    "timestamp": 1779707735508,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:15:35.508Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "probandoooo",
-    "timestamp": 1779707730000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:15:35.578Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "doxx_20",
-    "message": "que pollas haces",
-    "timestamp": 1779708045031,
-    "user": "doxx_20",
-    "received_at": "2026-05-25T11:20:45.033Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "doxx_20",
-    "message": "lo que tú digas",
-    "timestamp": 1779708062955,
-    "user": "doxx_20",
-    "received_at": "2026-05-25T11:21:02.956Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "doxx_20",
-    "message": "calla deja de gritar",
-    "timestamp": 1779708091936,
-    "user": "doxx_20",
-    "received_at": "2026-05-25T11:21:31.937Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "gritare si quiero",
-    "timestamp": 1779708102456,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:21:42.457Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "es de dia",
-    "timestamp": 1779708104101,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:21:44.101Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "callate mamon",
-    "timestamp": 1779708106674,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:21:46.674Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "doxx_20",
-    "message": "ssshhhh",
-    "timestamp": 1779708119974,
-    "user": "doxx_20",
-    "received_at": "2026-05-25T11:21:59.975Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "doxx_20",
-    "message": "pon porno",
-    "timestamp": 1779708155712,
-    "user": "doxx_20",
-    "received_at": "2026-05-25T11:22:35.713Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "grandes los de rumble los mejores",
-    "timestamp": 1779709419000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T11:43:43.197Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "holaaa",
-    "timestamp": 1779720386677,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T14:46:26.678Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "quien hay por ahii",
-    "timestamp": 1779720390330,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T14:46:30.330Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "iepale",
-    "timestamp": 1779720402000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T14:46:42.939Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "hombree como estamos",
-    "timestamp": 1779721032532,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T14:57:12.533Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "Adrian grande",
-    "timestamp": 1779721051973,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T14:57:31.974Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "clarooo",
-    "timestamp": 1779721054135,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T14:57:34.135Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "a ti si que te quiero ver por aqui",
-    "timestamp": 1779721057338,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T14:57:37.338Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "gracias tu si q eres grande maquina",
-    "timestamp": 1779721060231,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T14:57:40.231Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "juanheredia",
-    "timestamp": 1779721077187,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T14:57:57.188Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "holaa buenas tardes que tal ?",
-    "timestamp": 1779721082489,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T14:58:02.490Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "yo?",
-    "timestamp": 1779721097596,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T14:58:17.597Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "q va no soy de esos tontos",
-    "timestamp": 1779721105585,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T14:58:25.586Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "yyo?",
-    "timestamp": 1779721115681,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T14:58:35.682Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "grandeee juanitooo",
-    "timestamp": 1779721115775,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T14:58:35.775Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "como te va el dia churra",
-    "timestamp": 1779721166257,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T14:59:26.257Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "hay porros hoy rey?",
-    "timestamp": 1779721179397,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T14:59:39.398Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "y q tal el cbd bueno o que ?",
-    "timestamp": 1779721198566,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T14:59:58.567Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "te vas a tener  que quitar el canuto de nombre ya no eres el mismo",
-    "timestamp": 1779721213177,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:00:13.178Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "pero sigues siendo adolf hitler",
-    "timestamp": 1779721223811,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:00:23.812Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "te puedo hacer una pregunta juan?",
-    "timestamp": 1779721224715,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:00:24.715Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "robertillouwu si me vuelves a llamar Juanca te vas baneado para siempre",
-    "timestamp": 1779721231617,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T15:00:31.617Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "si, dispara",
-    "timestamp": 1779721236615,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-05-25T15:00:36.615Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "franco o hitler?",
-    "timestamp": 1779721240459,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:00:40.459Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "jajajjajaj concuerdo contigo",
-    "timestamp": 1779721265163,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:01:05.163Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "cuantos años tienes juan?",
-    "timestamp": 1779721275687,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:01:15.687Z"
-  },
-  {
-    "platform": "kick",
     "username": "adrianmatamoros",
     "message": "yo tengo veintiseis",
     "timestamp": 1779721286273,
@@ -822,5 +382,421 @@
     "timestamp": 1780173478000,
     "user": "JuanitoCanuto",
     "received_at": "2026-05-30T20:38:01.979Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "hola buenas",
+    "timestamp": 1780183387792,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:23:07.797Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "no se escucha nada",
+    "timestamp": 1780183397158,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:23:17.159Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "ni a ti ni al juego ni nada",
+    "timestamp": 1780183420430,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:23:40.432Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "tienes que activar la voz en audio del escritorio y en microfono en obs",
+    "timestamp": 1780183510079,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:25:10.080Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "arriba en ahi abajo sube",
+    "timestamp": 1780183550603,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:25:50.604Z"
+  },
+  {
+    "platform": "kick",
+    "username": "arpickelprimo",
+    "message": "ni el audio sabes poner",
+    "timestamp": 1780183561450,
+    "user": "arpickelprimo",
+    "received_at": "2026-05-30T23:26:01.451Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "en mezclador de audio",
+    "timestamp": 1780183567643,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:26:07.644Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "ME HE FUMAO 1 PORRO",
+    "timestamp": 1780183586977,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:26:26.978Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "oleee",
+    "timestamp": 1780183591072,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:26:31.072Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "DEJAME VIVIR",
+    "timestamp": 1780183591742,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:26:31.742Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "tus huevos ahi",
+    "timestamp": 1780183593247,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:26:33.247Z"
+  },
+  {
+    "platform": "kick",
+    "username": "SebuscanBellakas",
+    "message": "no sabes cuanto me la pela",
+    "timestamp": 1780183596521,
+    "user": "SebuscanBellakas",
+    "received_at": "2026-05-30T23:26:36.521Z"
+  },
+  {
+    "platform": "kick",
+    "username": "arpickelprimo",
+    "message": "no era q no podias ?",
+    "timestamp": 1780183611189,
+    "user": "arpickelprimo",
+    "received_at": "2026-05-30T23:26:51.190Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "ves a mezclador de audio y subete el microfono y el audio de escritorio juan",
+    "timestamp": 1780183617087,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:26:57.088Z"
+  },
+  {
+    "platform": "kick",
+    "username": "arpickelprimo",
+    "message": "que no se escucha desgraciado",
+    "timestamp": 1780183638724,
+    "user": "arpickelprimo",
+    "received_at": "2026-05-30T23:27:18.725Z"
+  },
+  {
+    "platform": "kick",
+    "username": "josee_aguiilaar2",
+    "message": "abajo bro donde las barras azules de subir y bajar volumen",
+    "timestamp": 1780183660029,
+    "user": "josee_aguiilaar2",
+    "received_at": "2026-05-30T23:27:40.029Z"
+  },
+  {
+    "platform": "kick",
+    "username": "arpickelprimo",
+    "message": "a ver no banees y habla ******* que eres un chupapolla baneando",
+    "timestamp": 1780183726593,
+    "user": "arpickelprimo",
+    "received_at": "2026-05-30T23:28:46.593Z"
+  },
+  {
+    "platform": "kick",
+    "username": "arpickelprimo",
+    "message": "porrerp",
+    "timestamp": 1780183740496,
+    "user": "arpickelprimo",
+    "received_at": "2026-05-30T23:29:00.530Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "SI OS PORTAIS O DESBANEOO",
+    "timestamp": 1780183764001,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:29:24.002Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "hombreee que tal como estamos",
+    "timestamp": 1780183791620,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:29:51.622Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "vengo de buenas",
+    "timestamp": 1780183793394,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:29:53.394Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "te hasd fumao tus porretes oq ue",
+    "timestamp": 1780183818941,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:30:18.942Z"
+  },
+  {
+    "platform": "kick",
+    "username": "luisferran",
+    "message": "a  mi que me importa que me banees payaso mira la vida que llevas pringao espabila",
+    "timestamp": 1780183826552,
+    "user": "luisferran",
+    "received_at": "2026-05-30T23:30:26.553Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "PROGRAMADOR",
+    "timestamp": 1780183842359,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:30:42.360Z"
+  },
+  {
+    "platform": "kick",
+    "username": "luisferran",
+    "message": "porrero",
+    "timestamp": 1780183843334,
+    "user": "luisferran",
+    "received_at": "2026-05-30T23:30:43.334Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "respeta luis ferran payaso",
+    "timestamp": 1780183844721,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:30:44.721Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "Y TU?",
+    "timestamp": 1780183845184,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:30:45.184Z"
+  },
+  {
+    "platform": "kick",
+    "username": "luisferran",
+    "message": "programame los huevos payaso",
+    "timestamp": 1780183850526,
+    "user": "luisferran",
+    "received_at": "2026-05-30T23:30:50.526Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "q te pasa juanito q estass to cuajado",
+    "timestamp": 1780183864952,
+    "user": "deyirosantana",
+    "received_at": "2026-05-30T23:31:04.953Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "SANTA MARIA DE CAYON CANTABRIA",
+    "timestamp": 1780183868383,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:31:08.383Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "URB LA FLORIDA N7",
+    "timestamp": 1780183878721,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:31:18.722Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "AQUI TE ESPERO MARICON",
+    "timestamp": 1780183886315,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:31:26.315Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "cuantos porros van hoy juanito mi hermano",
+    "timestamp": 1780183888688,
+    "user": "deyirosantana",
+    "received_at": "2026-05-30T23:31:28.688Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "tu apuñalarias al chaval ese juan?",
+    "timestamp": 1780183898842,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:31:38.843Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "antes te fumabas diez y no te cuajabas eh, ahora con uno ya estas cuajadisimo",
+    "timestamp": 1780183931809,
+    "user": "deyirosantana",
+    "received_at": "2026-05-30T23:32:11.810Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "juan, te lo digo completamente a buenas, desbanearis a los chavales del discord para pasarnos a saludar de vez en cuando o que",
+    "timestamp": 1780183934329,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:32:14.329Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "si no no pasa nada, rey ******",
+    "timestamp": 1780183942290,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:32:22.290Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "NO",
+    "timestamp": 1780183958556,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:32:38.557Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "vale, np",
+    "timestamp": 1780183964162,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:32:44.164Z"
+  },
+  {
+    "platform": "kick",
+    "username": "Arpickk",
+    "message": "porno de niños dauwn",
+    "timestamp": 1780184061450,
+    "user": "Arpickk",
+    "received_at": "2026-05-30T23:34:21.451Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "AAA",
+    "timestamp": 1780184077778,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:34:37.779Z"
+  },
+  {
+    "platform": "kick",
+    "username": "Josee_aguiilaar",
+    "message": "PORNO DE DOWNS DE ENANOS MENORES DE EDAD VPORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD",
+    "timestamp": 1780184088746,
+    "user": "Josee_aguiilaar",
+    "received_at": "2026-05-30T23:34:48.748Z"
+  },
+  {
+    "platform": "kick",
+    "username": "Josee_aguiilaar",
+    "message": "PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD",
+    "timestamp": 1780184090173,
+    "user": "Josee_aguiilaar",
+    "received_at": "2026-05-30T23:34:50.173Z"
+  },
+  {
+    "platform": "kick",
+    "username": "Josee_aguiilaar",
+    "message": "PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD PORNO DE DOWNS DE ENANOS MENORES DE EDAD",
+    "timestamp": 1780184092896,
+    "user": "Josee_aguiilaar",
+    "received_at": "2026-05-30T23:34:52.896Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "grandes los de rumblee",
+    "timestamp": 1780173478000,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:35:57.769Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "tienes el rust descargado?",
+    "timestamp": 1780184170623,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:36:10.625Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "le damos un wipesito con el deyiro un dia o que",
+    "timestamp": 1780184188615,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:36:28.616Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "viva adolf",
+    "timestamp": 1780184207318,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:36:47.320Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "hitler",
+    "timestamp": 1780184210902,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:36:50.902Z"
+  },
+  {
+    "platform": "kick",
+    "username": "joseamelano",
+    "message": "ese eres tu juanito, el rey hitleer",
+    "timestamp": 1780184225784,
+    "user": "joseamelano",
+    "received_at": "2026-05-30T23:37:05.786Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "viva adolf viva adolf viva adolf",
+    "timestamp": 1780184554840,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:42:34.841Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "y frANCO 7 VECES MAS",
+    "timestamp": 1780184567716,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-05-30T23:42:47.717Z"
   }
 ]
