@@ -61,7 +61,10 @@ def desactivar_aceleracion():
         print("Error desactivando aceleración:", e)
 
 # Paths y constantes
-crosshair_folder = Path(__file__).parent / "crosshairs"
+if hasattr(sys, '_MEIPASS'):
+    crosshair_folder = Path(sys._MEIPASS) / "crosshairs"
+else:
+    crosshair_folder = Path(__file__).parent / "crosshairs"
 crosshair_images = [f for f in os.listdir(crosshair_folder) if f.endswith(".png")]
 
 SPI_SETMOUSESPEED = 0x0071
@@ -158,7 +161,7 @@ class App:
                 raise RuntimeError("No crosshairs found")
             path = str(crosshair_folder / crosshair_images[0])
         print("Usando:", path)
-
+        self.current_crosshair = path
         self.ft_win = setup_window(self.root, path, alpha, hotkey)
         self.ft_win.withdraw()
 
