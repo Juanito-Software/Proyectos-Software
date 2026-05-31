@@ -1,5 +1,6 @@
-# Juanito Software 2025 - YoutubeToMp3 mixto (CSV o consola)
-# Copyright (C) 2025 Juanito Software
+# JuanitoSoftware 2025 - YoutubeToMp3 mixto (CSV o consola)
+
+# Copyright (C) 2025 JuanitoSoftware
 #
 # Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
 # los términos de la Licencia Pública General de GNU publicada por la Free
