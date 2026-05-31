@@ -1,4 +1,4 @@
-# Copyright (C) 2025 JuanitoSoftware&Games
+# Copyright (C) 2025 JuanitoSoftware
 #
 # Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
 # los términos de la Licencia Pública General de GNU publicada por la Free

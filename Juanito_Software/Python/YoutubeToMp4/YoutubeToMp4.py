@@ -1,6 +1,21 @@
-# Juanito Software 2025 - YoutubeToMP4 (CSV o consola)
+# JuanitoSoftware 2025 - YoutubeToMP4 (CSV o consola)
 # Gestor de descargas: pytube
 # - pytube: intenta descargar el stream progressive más alto; si no existe, baja video-only + audio-only y los mergea con ffmpeg
+
+# Copyright (C) 2025 JuanitoSoftware
+#
+# Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
+# los términos de la Licencia Pública General de GNU publicada por la Free
+# Software Foundation, ya sea la versión 3 de la Licencia o (según tu elección)
+# cualquier versión posterior.
+#
+# Este programa se distribuye con la esperanza de que sea útil, pero SIN
+# NINGUNA GARANTÍA; incluso sin la garantía implícita de COMERCIALIZACIÓN o
+# IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulta la Licencia Pública General
+# de GNU para más detalles.
+#
+# Deberías haber recibido una copia de la Licencia Pública General de GNU junto
+# con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
 
 import re
 import os
