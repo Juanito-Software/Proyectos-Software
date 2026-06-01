@@ -1,0 +1,2119 @@
+{
+  "term_to_docs": {
+    "ej": {
+      ".\\src\\api.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 1
+    },
+    "ruido": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "intensivo": {
+      ".\\README.md": 1
+    },
+    "indexadas": {
+      ".\\README.md": 1
+    },
+    "servidor": {
+      ".\\src\\api.rs": 1
+    },
+    "handler": {
+      ".\\src\\api.rs": 2
+    },
+    "índice": {
+      ".\\src\\search.rs": 2,
+      ".\\src\\index.rs": 6,
+      ".\\Cargo.toml": 1,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\api.rs": 2,
+      ".\\src\\main.rs": 10,
+      ".\\src\\crawler.rs": 3,
+      ".\\README.md": 7,
+      ".\\src\\lib.rs": 1
+    },
+    "paralela": {
+      ".\\src\\index.rs": 1,
+      ".\\README.md": 1
+    },
+    "src": {
+      ".\\Cargo.toml": 1
+    },
+    "módulo": {
+      ".\\README.md": 1
+    },
+    "por": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\main.rs": 3,
+      ".\\src\\search.rs": 4,
+      ".\\README.md": 5
+    },
+    "contienen": {
+      ".\\src\\index.rs": 1
+    },
+    "nlib": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "tokenize": {
+      ".\\src\\lib.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\tokenizer.rs": 5,
+      ".\\src\\search.rs": 1
+    },
+    "links": {
+      ".\\src\\crawler.rs": 1
+    },
+    "cada": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 1
+    },
+    "que": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\README.md": 1
+    },
+    "concurrencia": {
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "del": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\main.rs": 5,
+      ".\\README.md": 1,
+      ".\\src\\search.rs": 1
+    },
+    "depth": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 6,
+      ".\\src\\crawler.rs": 3
+    },
+    "bajo": {
+      ".\\README.md": 1
+    },
+    "20": {
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 2
+    },
+    "as": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\api.rs": 1
+    },
+    "toolchains": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "www": {
+      ".\\README.md": 1
+    },
+    "búsquedas": {
+      ".\\src\\api.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 1
+    },
+    "resultados": {
+      ".\\src\\main.rs": 3,
+      ".\\src\\search.rs": 1
+    },
+    "ntarget": {
+      ".\\target\\.rustc_info.json": 19
+    },
+    "load": {
+      ".\\src\\main.rs": 2
+    },
+    "coinciden": {
+      ".\\src\\search.rs": 1
+    },
+    "dependencies": {
+      ".\\Cargo.toml": 1
+    },
+    "edition": {
+      ".\\Cargo.toml": 1
+    },
+    "tcplistener": {
+      ".\\src\\api.rs": 1
+    },
+    "map": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\index.rs": 5,
+      ".\\src\\api.rs": 1,
+      ".\\src\\crawler.rs": 4,
+      ".\\src\\search.rs": 1
+    },
+    "archivos": {
+      ".\\README.md": 2,
+      ".\\Cargo.toml": 1,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\index.rs": 1
+    },
+    "total": {
+      ".\\src\\index.rs": 1
+    },
+    "family": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "17747080675513052775": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "display": {
+      ".\\src\\main.rs": 5
+    },
+    "limit": {
+      ".\\src\\search.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\main.rs": 6,
+      ".\\src\\api.rs": 5
+    },
+    "invertedindex": {
+      ".\\src\\lib.rs": 1,
+      ".\\src\\main.rs": 4,
+      ".\\src\\search.rs": 2,
+      ".\\src\\index.rs": 6,
+      ".\\src\\crawler.rs": 5,
+      ".\\src\\api.rs": 4
+    },
+    "unwrap": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\main.rs": 2
+    },
+    "1252": {
+      ".\\src\\crawler.rs": 1
+    },
+    "con": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\api.rs": 1,
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 10
+    },
+    "response": {
+      ".\\src\\api.rs": 1
+    },
+    "índices": {
+      ".\\src\\crawler.rs": 1
+    },
+    "rápida": {
+      ".\\src\\lib.rs": 1
+    },
+    "01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "posiciones": {
+      ".\\src\\index.rs": 2
+    },
+    "debug": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\api.rs": 1
+    },
+    "ref": {
+      ".\\src\\api.rs": 1
+    },
+    "paralelo": {
+      ".\\src\\crawler.rs": 2,
+      ".\\README.md": 1
+    },
+    "or": {
+      ".\\src\\main.rs": 2,
+      ".\\src\\index.rs": 4,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 2
+    },
+    "stdout": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "tokenizer": {
+      ".\\src\\lib.rs": 2,
+      ".\\src\\search.rs": 2,
+      ".\\src\\index.rs": 2,
+      ".\\README.md": 1
+    },
+    "decoded": {
+      ".\\src\\crawler.rs": 2
+    },
+    "nwindows": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "routing": {
+      ".\\src\\api.rs": 1
+    },
+    "16": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "directory": {
+      ".\\src\\main.rs": 3,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\lib.rs": 1
+    },
+    "entry": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 4
+    },
+    "motor": {
+      ".\\src\\lib.rs": 1,
+      ".\\Cargo.toml": 3,
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 5
+    },
+    "minúsculas": {
+      ".\\src\\tokenizer.rs": 2,
+      ".\\README.md": 1
+    },
+    "recorrer": {
+      ".\\Cargo.toml": 1
+    },
+    "user": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "estructura": {
+      ".\\README.md": 1
+    },
+    "arch": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "env": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "deserialize": {
+      ".\\src\\api.rs": 2,
+      ".\\src\\index.rs": 5
+    },
+    "similar": {
+      ".\\README.md": 1
+    },
+    "js": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "cfg": {
+      ".\\src\\lib.rs": 1,
+      ".\\src\\main.rs": 2,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "lib": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "clap": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 1
+    },
+    "cmpxchg16b": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "invertedindexserde": {
+      ".\\src\\index.rs": 5
+    },
+    "npanic": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "width": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "sola": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 1
+    },
+    "695421935749049242": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "compilación": {
+      ".\\README.md": 1
+    },
+    "tf": {
+      ".\\src\\search.rs": 1
+    },
+    "alfanuméricos": {
+      ".\\src\\tokenizer.rs": 2
+    },
+    "status": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "sse2": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "buscar": {
+      ".\\README.md": 3
+    },
+    "trabajo": {
+      ".\\src\\crawler.rs": 1
+    },
+    "fingerprint": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "hello": {
+      ".\\src\\tokenizer.rs": 2
+    },
+    "short": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\main.rs": 8
+    },
+    "términos": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\main.rs": 3,
+      ".\\src\\search.rs": 1,
+      ".\\README.md": 1
+    },
+    "subcommand": {
+      ".\\src\\main.rs": 3
+    },
+    "persistencia": {
+      ".\\Cargo.toml": 1
+    },
+    "buscando": {
+      ".\\src\\main.rs": 2
+    },
+    "net": {
+      ".\\src\\api.rs": 1
+    },
+    "estable": {
+      ".\\README.md": 1
+    },
+    "abi": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "fxsr": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "descendente": {
+      ".\\src\\search.rs": 1
+    },
+    "little": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "true": {
+      ".\\Cargo.toml": 2,
+      ".\\target\\.rustc_info.json": 2
+    },
+    "use": {
+      ".\\src\\crawler.rs": 5,
+      ".\\src\\main.rs": 4,
+      ".\\src\\index.rs": 4,
+      ".\\src\\api.rs": 6,
+      ".\\src\\lib.rs": 5,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\search.rs": 4
+    },
+    "macro": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "out": {
+      ".\\src\\main.rs": 3
+    },
+    "path": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 9,
+      ".\\src\\index.rs": 5,
+      ".\\src\\main.rs": 13,
+      ".\\src\\crawler.rs": 20,
+      ".\\Cargo.toml": 1,
+      ".\\src\\search.rs": 6
+    },
+    "número": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\main.rs": 2,
+      ".\\src\\index.rs": 3
+    },
+    "ordenados": {
+      ".\\src\\search.rs": 1
+    },
+    "indexador": {
+      ".\\README.md": 1
+    },
+    "lt": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "recorre": {
+      ".\\src\\crawler.rs": 2,
+      ".\\README.md": 2
+    },
+    "bool": {
+      ".\\src\\crawler.rs": 1
+    },
+    "multi": {
+      ".\\README.md": 1
+    },
+    "rt": {
+      ".\\src\\main.rs": 2
+    },
+    "no": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\crawler.rs": 2
+    },
+    "solo": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 2
+    },
+    "soporta": {
+      ".\\src\\search.rs": 1
+    },
+    "os": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "lower": {
+      ".\\src\\index.rs": 2
+    },
+    "3030": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 2
+    },
+    "añade": {
+      ".\\src\\index.rs": 1
+    },
+    "texto": {
+      ".\\src\\crawler.rs": 3,
+      ".\\README.md": 3,
+      ".\\src\\tokenizer.rs": 2
+    },
+    "paralelismo": {
+      ".\\Cargo.toml": 1
+    },
+    "indexado": {
+      ".\\src\\main.rs": 3,
+      ".\\Cargo.toml": 2
+    },
+    "google": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\lib.rs": 1,
+      ".\\Cargo.toml": 1
+    },
+    "endian": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "directorio": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 4
+    },
+    "niveles": {
+      ".\\README.md": 1
+    },
+    "document": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "write": {
+      ".\\src\\main.rs": 1
+    },
+    "consideramos": {
+      ".\\src\\crawler.rs": 1
+    },
+    "01f6ddf75": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "enum": {
+      ".\\src\\main.rs": 1
+    },
+    "guardado": {
+      ".\\src\\main.rs": 1
+    },
+    "serde": {
+      ".\\src\\index.rs": 5,
+      ".\\Cargo.toml": 2,
+      ".\\src\\main.rs": 2,
+      ".\\src\\api.rs": 3
+    },
+    "iter": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\api.rs": 1,
+      ".\\src\\index.rs": 4,
+      ".\\src\\search.rs": 1,
+      ".\\src\\main.rs": 1
+    },
+    "features": {
+      ".\\README.md": 3,
+      ".\\Cargo.toml": 4,
+      ".\\src\\main.rs": 1
+    },
+    "md": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "lista": {
+      ".\\src\\index.rs": 1
+    },
+    "read": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "state": {
+      ".\\src\\api.rs": 8
+    },
+    "proyecto": {
+      ".\\README.md": 5
+    },
+    "construye": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "uso": {
+      ".\\README.md": 1
+    },
+    "útil": {
+      ".\\src\\index.rs": 1
+    },
+    "filter": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "exe": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "indiques": {
+      ".\\README.md": 1
+    },
+    "bat": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "txt": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "stderr": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "on": {
+      ".\\src\\main.rs": 1
+    },
+    "false": {
+      ".\\src\\crawler.rs": 2
+    },
+    "puntuación": {
+      ".\\src\\search.rs": 1
+    },
+    "profundidad": {
+      ".\\src\\main.rs": 2
+    },
+    "let": {
+      ".\\src\\api.rs": 7,
+      ".\\src\\crawler.rs": 10,
+      ".\\src\\search.rs": 4,
+      ".\\src\\tokenizer.rs": 2,
+      ".\\src\\index.rs": 4,
+      ".\\src\\main.rs": 12
+    },
+    "existente": {
+      ".\\src\\main.rs": 1
+    },
+    "directorios": {
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 1
+    },
+    "basic": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "version": {
+      ".\\target\\.rustc_info.json": 1,
+      ".\\Cargo.toml": 5
+    },
+    "arg": {
+      ".\\src\\main.rs": 12
+    },
+    "lang": {
+      ".\\README.md": 1
+    },
+    "html": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "rlib": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "hashmap": {
+      ".\\src\\index.rs": 7,
+      ".\\src\\search.rs": 3
+    },
+    "rustup": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "extract": {
+      ".\\src\\api.rs": 1
+    },
+    "carpeta": {
+      ".\\README.md": 2
+    },
+    "cargado": {
+      ".\\src\\api.rs": 1
+    },
+    "busca": {
+      ".\\src\\main.rs": 2,
+      ".\\src\\search.rs": 1
+    },
+    "93": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "follow": {
+      ".\\src\\crawler.rs": 1
+    },
+    "búsqueda": {
+      ".\\src\\main.rs": 4,
+      ".\\src\\lib.rs": 2,
+      ".\\src\\search.rs": 2,
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 3
+    },
+    "pasada": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 1
+    },
+    "output": {
+      ".\\src\\main.rs": 3
+    },
+    "axum": {
+      ".\\README.md": 2,
+      ".\\Cargo.toml": 2,
+      ".\\src\\api.rs": 2
+    },
+    "dll": {
+      ".\\target\\.rustc_info.json": 3
+    },
+    "varias": {
+      ".\\src\\search.rs": 2
+    },
+    "file": {
+      ".\\src\\crawler.rs": 7,
+      ".\\src\\main.rs": 6
+    },
+    "org": {
+      ".\\README.md": 1
+    },
+    "mi": {
+      ".\\README.md": 2
+    },
+    "término": {
+      ".\\src\\index.rs": 4,
+      ".\\README.md": 2
+    },
+    "falla": {
+      ".\\src\\crawler.rs": 1
+    },
+    "parser": {
+      ".\\src\\main.rs": 2
+    },
+    "sistemas": {
+      ".\\README.md": 1
+    },
+    "carpetas": {
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 1
+    },
+    "arc": {
+      ".\\src\\api.rs": 3
+    },
+    "ts": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "ejemplo": {
+      ".\\README.md": 1
+    },
+    "sort": {
+      ".\\src\\search.rs": 1
+    },
+    "u32": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\search.rs": 2,
+      ".\\src\\index.rs": 3
+    },
+    "opcionalmente": {
+      ".\\README.md": 1
+    },
+    "divide": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "searchquery": {
+      ".\\src\\api.rs": 2
+    },
+    "sh": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "devuelve": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 1
+    },
+    "world": {
+      ".\\src\\tokenizer.rs": 2
+    },
+    "for": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 5,
+      ".\\src\\main.rs": 1,
+      ".\\src\\search.rs": 2
+    },
+    "bind": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 3
+    },
+    "leer": {
+      ".\\src\\crawler.rs": 2
+    },
+    "reducir": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "date": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "collections": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 1
+    },
+    "walkdir": {
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "build": {
+      ".\\README.md": 2
+    },
+    "is": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 5,
+      ".\\src\\main.rs": 1
+    },
+    "escuchando": {
+      ".\\src\\api.rs": 1
+    },
+    "al": {
+      ".\\src\\index.rs": 1
+    },
+    "walker": {
+      ".\\src\\crawler.rs": 2
+    },
+    "parse": {
+      ".\\src\\main.rs": 1
+    },
+    "32": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "defecto": {
+      ".\\src\\main.rs": 3
+    },
+    "push": {
+      ".\\src\\search.rs": 1
+    },
+    "real": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1,
+      ".\\Cargo.toml": 1
+    },
+    "type": {
+      ".\\src\\crawler.rs": 1
+    },
+    "extensiones": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "memoria": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 1
+    },
+    "anyhow": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 1,
+      ".\\src\\api.rs": 1
+    },
+    "la": {
+      ".\\src\\main.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\api.rs": 1
+    },
+    "package": {
+      ".\\Cargo.toml": 1
+    },
+    "py": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "partial": {
+      ".\\src\\crawler.rs": 4
+    },
+    "println": {
+      ".\\src\\main.rs": 9,
+      ".\\src\\api.rs": 2
+    },
+    "in": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 3,
+      ".\\src\\search.rs": 2
+    },
+    "json": {
+      ".\\src\\api.rs": 6,
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 11,
+      ".\\README.md": 6,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "matches": {
+      ".\\src\\search.rs": 6,
+      ".\\src\\main.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 3
+    },
+    "score": {
+      ".\\src\\api.rs": 3,
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\search.rs": 8
+    },
+    "codificación": {
+      ".\\Cargo.toml": 1
+    },
+    "assert": {
+      ".\\src\\tokenizer.rs": 6
+    },
+    "máximo": {
+      ".\\src\\main.rs": 2
+    },
+    "serve": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 2,
+      ".\\src\\main.rs": 3
+    },
+    "donde": {
+      ".\\src\\main.rs": 1
+    },
+    "add": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "actual": {
+      ".\\src\\main.rs": 1
+    },
+    "ligera": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 1
+    },
+    "super": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "css": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "rustc": {
+      ".\\target\\.rustc_info.json": 3
+    },
+    "opcional": {
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 1
+    },
+    "invertido": {
+      ".\\src\\lib.rs": 1,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\index.rs": 2
+    },
+    "permite": {
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 1
+    },
+    "fn": {
+      ".\\src\\main.rs": 4,
+      ".\\src\\crawler.rs": 4,
+      ".\\src\\tokenizer.rs": 3,
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 10,
+      ".\\src\\api.rs": 5
+    },
+    "https": {
+      ".\\README.md": 1
+    },
+    "nivel": {
+      ".\\README.md": 1
+    },
+    "len": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "juanito": {
+      ".\\Cargo.toml": 1
+    },
+    "split": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "struct": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\index.rs": 2,
+      ".\\src\\search.rs": 1,
+      ".\\src\\api.rs": 4
+    },
+    "ownership": {
+      ".\\README.md": 2
+    },
+    "respuesta": {
+      ".\\README.md": 1
+    },
+    "dir": {
+      ".\\src\\main.rs": 10
+    },
+    "release": {
+      ".\\README.md": 2
+    },
+    "count": {
+      ".\\src\\search.rs": 3,
+      ".\\src\\main.rs": 4,
+      ".\\src\\index.rs": 15
+    },
+    "guardamos": {
+      ".\\src\\index.rs": 1
+    },
+    "concepto": {
+      ".\\README.md": 1
+    },
+    "async": {
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 2
+    },
+    "persistente": {
+      ".\\README.md": 1
+    },
+    "descripción": {
+      ".\\README.md": 1
+    },
+    "indexa": {
+      ".\\README.md": 2,
+      ".\\src\\main.rs": 2,
+      ".\\src\\crawler.rs": 3
+    },
+    "prelude": {
+      ".\\src\\crawler.rs": 1
+    },
+    "match": {
+      ".\\src\\main.rs": 1
+    },
+    "bin": {
+      ".\\Cargo.toml": 1
+    },
+    "lifetimes": {
+      ".\\README.md": 1
+    },
+    "router": {
+      ".\\src\\api.rs": 6
+    },
+    "documentos": {
+      ".\\src\\index.rs": 3,
+      ".\\src\\main.rs": 2
+    },
+    "bytes": {
+      ".\\src\\crawler.rs": 3
+    },
+    "mut": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\search.rs": 2,
+      ".\\src\\crawler.rs": 2
+    },
+    "some": {
+      ".\\src\\crawler.rs": 4,
+      ".\\src\\search.rs": 1
+    },
+    "pointer": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "searchresultdto": {
+      ".\\src\\api.rs": 4
+    },
+    "mit": {
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 1
+    },
+    "serialize": {
+      ".\\src\\index.rs": 5,
+      ".\\src\\api.rs": 3
+    },
+    "toml": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "yaml": {
+      ".\\src\\crawler.rs": 1
+    },
+    "max": {
+      ".\\src\\crawler.rs": 4
+    },
+    "truncate": {
+      ".\\src\\search.rs": 1
+    },
+    "option": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\main.rs": 4,
+      ".\\src\\crawler.rs": 3
+    },
+    "requisitos": {
+      ".\\README.md": 1
+    },
+    "std": {
+      ".\\src\\search.rs": 2,
+      ".\\src\\index.rs": 2,
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\main.rs": 5,
+      ".\\src\\api.rs": 3
+    },
+    "results": {
+      ".\\src\\search.rs": 4,
+      ".\\README.md": 1,
+      ".\\src\\api.rs": 5,
+      ".\\src\\main.rs": 10
+    },
+    "servir": {
+      ".\\README.md": 1
+    },
+    "una": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 1
+    },
+    "2021": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "indice": {
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 4
+    },
+    "un": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\index.rs": 2,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\search.rs": 1,
+      ".\\src\\main.rs": 3,
+      ".\\README.md": 4
+    },
+    "normaliza": {
+      ".\\README.md": 1,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "arranca": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 1
+    },
+    "index": {
+      ".\\src\\api.rs": 10,
+      ".\\src\\lib.rs": 3,
+      ".\\README.md": 5,
+      ".\\src\\search.rs": 3,
+      ".\\src\\crawler.rs": 7,
+      ".\\src\\main.rs": 30
+    },
+    "name": {
+      ".\\Cargo.toml": 2,
+      ".\\src\\main.rs": 8
+    },
+    "buf": {
+      ".\\src\\crawler.rs": 1
+    },
+    "then": {
+      ".\\src\\crawler.rs": 1
+    },
+    "qué": {
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 2
+    },
+    "usize": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\index.rs": 4,
+      ".\\src\\main.rs": 4,
+      ".\\src\\api.rs": 2,
+      ".\\src\\search.rs": 1
+    },
+    "enumerate": {
+      ".\\src\\main.rs": 1
+    },
+    "el": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\search.rs": 2,
+      ".\\README.md": 4,
+      ".\\src\\crawler.rs": 4,
+      ".\\src\\main.rs": 3,
+      ".\\src\\index.rs": 2,
+      ".\\src\\api.rs": 3
+    },
+    "main": {
+      ".\\src\\main.rs": 1,
+      ".\\Cargo.toml": 1
+    },
+    "users": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "query": {
+      ".\\src\\api.rs": 3,
+      ".\\src\\main.rs": 10,
+      ".\\src\\search.rs": 3
+    },
+    "be": {
+      ".\\src\\tokenizer.rs": 2
+    },
+    "term": {
+      ".\\src\\index.rs": 21,
+      ".\\src\\search.rs": 5,
+      ".\\src\\main.rs": 2
+    },
+    "pretty": {
+      ".\\src\\main.rs": 1
+    },
+    "pathbuf": {
+      ".\\src\\search.rs": 3,
+      ".\\src\\main.rs": 8,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\index.rs": 6
+    },
+    "encoding": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\crawler.rs": 2
+    },
+    "guardar": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 2
+    },
+    "self": {
+      ".\\src\\api.rs": 2,
+      ".\\src\\index.rs": 23
+    },
+    "todos": {
+      ".\\src\\crawler.rs": 2
+    },
+    "await": {
+      ".\\src\\api.rs": 2
+    },
+    "trim": {
+      ".\\src\\crawler.rs": 1
+    },
+    "hash": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "serializer": {
+      ".\\src\\index.rs": 3
+    },
+    "fallback": {
+      ".\\Cargo.toml": 1
+    },
+    "rs": {
+      ".\\Cargo.toml": 2,
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "dep": {
+      ".\\Cargo.toml": 2
+    },
+    "get": {
+      ".\\src\\api.rs": 3,
+      ".\\src\\index.rs": 1,
+      ".\\README.md": 1
+    },
+    "35": {
+      ".\\Cargo.toml": 1
+    },
+    "bash": {
+      ".\\README.md": 7
+    },
+    "relevancia": {
+      ".\\src\\search.rs": 1
+    },
+    "extensions": {
+      ".\\src\\crawler.rs": 2
+    },
+    "authors": {
+      ".\\Cargo.toml": 1
+    },
+    "consultas": {
+      ".\\src\\search.rs": 1
+    },
+    "palabras": {
+      ".\\README.md": 1,
+      ".\\src\\search.rs": 2
+    },
+    "uno": {
+      ".\\src\\crawler.rs": 1
+    },
+    "ideal": {
+      ".\\README.md": 1
+    },
+    "result": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 4
+    },
+    "otro": {
+      ".\\src\\index.rs": 1
+    },
+    "máxima": {
+      ".\\src\\main.rs": 2
+    },
+    "ok": {
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\index.rs": 1,
+      ".\\src\\main.rs": 3,
+      ".\\src\\api.rs": 1
+    },
+    "documento": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "http": {
+      ".\\README.md": 5,
+      ".\\src\\api.rs": 2,
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 1
+    },
+    "listener": {
+      ".\\src\\api.rs": 2
+    },
+    "token": {
+      ".\\src\\index.rs": 2
+    },
+    "text": {
+      ".\\src\\tokenizer.rs": 2,
+      ".\\src\\crawler.rs": 6
+    },
+    "addr": {
+      ".\\src\\api.rs": 4
+    },
+    "idx": {
+      ".\\src\\main.rs": 2,
+      ".\\src\\crawler.rs": 3
+    },
+    "tokio": {
+      ".\\Cargo.toml": 2,
+      ".\\src\\api.rs": 1,
+      ".\\src\\main.rs": 1,
+      ".\\README.md": 1
+    },
+    "requiere": {
+      ".\\src\\main.rs": 1
+    },
+    "print": {
+      ".\\src\\main.rs": 3
+    },
+    "crate": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 2,
+      ".\\src\\api.rs": 2
+    },
+    "21": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "encontraron": {
+      ".\\src\\main.rs": 1
+    },
+    "frecuencias": {
+      ".\\src\\search.rs": 1
+    },
+    "primero": {
+      ".\\README.md": 1
+    },
+    "if": {
+      ".\\src\\search.rs": 3,
+      ".\\src\\main.rs": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "resultado": {
+      ".\\src\\search.rs": 1
+    },
+    "successes": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "ps1": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "genera": {
+      ".\\README.md": 1
+    },
+    "searchresponse": {
+      ".\\src\\api.rs": 3
+    },
+    "alphanumeric": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "para": {
+      ".\\src\\tokenizer.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\index.rs": 2,
+      ".\\src\\api.rs": 1
+    },
+    "contenido": {
+      ".\\src\\index.rs": 1
+    },
+    "by": {
+      ".\\src\\search.rs": 1
+    },
+    "frecuencia": {
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 1
+    },
+    "local": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\lib.rs": 1
+    },
+    "default": {
+      ".\\src\\main.rs": 7,
+      ".\\src\\index.rs": 3,
+      ".\\Cargo.toml": 1,
+      ".\\src\\api.rs": 3
+    },
+    "contains": {
+      ".\\src\\tokenizer.rs": 6,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\search.rs": 1
+    },
+    "thiserror": {
+      ".\\Cargo.toml": 1
+    },
+    "rendimiento": {
+      ".\\README.md": 1
+    },
+    "lee": {
+      ".\\src\\crawler.rs": 1
+    },
+    "docs": {
+      ".\\src\\index.rs": 16
+    },
+    "collect": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\index.rs": 4,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\api.rs": 1
+    },
+    "lowercase": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "feature": {
+      ".\\src\\api.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 2,
+      ".\\src\\lib.rs": 1,
+      ".\\target\\.rustc_info.json": 5
+    },
+    "puerto": {
+      ".\\src\\main.rs": 1
+    },
+    "root": {
+      ".\\src\\crawler.rs": 3
+    },
+    "lossy": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "cli": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\main.rs": 5,
+      ".\\README.md": 2,
+      ".\\src\\lib.rs": 1
+    },
+    "optional": {
+      ".\\Cargo.toml": 2
+    },
+    "return": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\main.rs": 1
+    },
+    "ptr": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "ruta": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\main.rs": 2,
+      ".\\src\\search.rs": 1
+    },
+    "procesar": {
+      ".\\src\\crawler.rs": 2
+    },
+    "has": {
+      ".\\target\\.rustc_info.json": 6
+    },
+    "caracteres": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "usa": {
+      ".\\src\\crawler.rs": 2
+    },
+    "borrowing": {
+      ".\\README.md": 1
+    },
+    "aparece": {
+      ".\\src\\index.rs": 1
+    },
+    "compilar": {
+      ".\\src\\main.rs": 1
+    },
+    "11": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "ncommit": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "pc": {
+      ".\\target\\.rustc_info.json": 3
+    },
+    "tests": {
+      ".\\README.md": 1,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "clone": {
+      ".\\src\\index.rs": 4,
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\search.rs": 4,
+      ".\\src\\api.rs": 1
+    },
+    "indexar": {
+      ".\\README.md": 2,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\main.rs": 2
+    },
+    "command": {
+      ".\\src\\main.rs": 5
+    },
+    "crawler": {
+      ".\\src\\lib.rs": 3,
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "csv": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "utilidades": {
+      ".\\Cargo.toml": 1
+    },
+    "pero": {
+      ".\\README.md": 1
+    },
+    "127": {
+      ".\\src\\main.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\api.rs": 1
+    },
+    "derive": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\api.rs": 4,
+      ".\\src\\index.rs": 2,
+      ".\\Cargo.toml": 2,
+      ".\\src\\main.rs": 2
+    },
+    "other": {
+      ".\\src\\index.rs": 3
+    },
+    "como": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "api": {
+      ".\\src\\lib.rs": 2,
+      ".\\Cargo.toml": 2,
+      ".\\src\\main.rs": 5,
+      ".\\README.md": 9,
+      ".\\src\\api.rs": 4
+    },
+    "tokens": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\tokenizer.rs": 2
+    },
+    "02": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "merge": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\index.rs": 2
+    },
+    "tokeniza": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\README.md": 1
+    },
+    "insert": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\search.rs": 1
+    },
+    "su": {
+      ".\\src\\index.rs": 2
+    },
+    "error": {
+      ".\\src\\index.rs": 2
+    },
+    "128": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "paralelizar": {
+      ".\\src\\crawler.rs": 1
+    },
+    "owned": {
+      ".\\src\\api.rs": 1,
+      ".\\src\\index.rs": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "into": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\index.rs": 3,
+      ".\\src\\search.rs": 1,
+      ".\\src\\api.rs": 2
+    },
+    "interfaz": {
+      ".\\README.md": 1
+    },
+    "guarda": {
+      ".\\README.md": 1,
+      ".\\src\\main.rs": 1
+    },
+    "soporte": {
+      ".\\README.md": 1
+    },
+    "ultrarrápidas": {
+      ".\\README.md": 1,
+      ".\\src\\index.rs": 1
+    },
+    "actualiza": {
+      ".\\src\\index.rs": 1
+    },
+    "block": {
+      ".\\src\\main.rs": 1
+    },
+    "license": {
+      ".\\Cargo.toml": 1
+    },
+    "indexados": {
+      ".\\src\\index.rs": 2
+    },
+    "code": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "los": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 2
+    },
+    "ndebug": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "70": {
+      ".\\README.md": 1
+    },
+    "consulta": {
+      ".\\src\\api.rs": 1,
+      ".\\README.md": 2,
+      ".\\src\\main.rs": 2
+    },
+    "impl": {
+      ".\\src\\index.rs": 4,
+      ".\\src\\api.rs": 1
+    },
+    "description": {
+      ".\\Cargo.toml": 1
+    },
+    "las": {
+      ".\\src\\search.rs": 1
+    },
+    "compilaste": {
+      ".\\README.md": 1
+    },
+    "ripgrep": {
+      ".\\README.md": 1
+    },
+    "de": {
+      ".\\README.md": 5,
+      ".\\src\\lib.rs": 2,
+      ".\\src\\main.rs": 8,
+      ".\\src\\search.rs": 4,
+      ".\\src\\api.rs": 1,
+      ".\\src\\index.rs": 9,
+      ".\\Cargo.toml": 2,
+      ".\\src\\tokenizer.rs": 2,
+      ".\\src\\crawler.rs": 3
+    },
+    "sse": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "versión": {
+      ".\\src\\index.rs": 1
+    },
+    "indexando": {
+      ".\\src\\main.rs": 2
+    },
+    "se": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "char": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "unwind": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "mini": {
+      ".\\src\\main.rs": 1,
+      ".\\Cargo.toml": 1,
+      ".\\src\\lib.rs": 1
+    },
+    "full": {
+      ".\\Cargo.toml": 1
+    },
+    "sql": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "2026": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "longitud": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "const": {
+      ".\\src\\main.rs": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "postings": {
+      ".\\src\\search.rs": 3,
+      ".\\src\\index.rs": 1
+    },
+    "log": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "vendor": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "fs": {
+      ".\\src\\main.rs": 2,
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\api.rs": 1
+    },
+    "indexable": {
+      ".\\src\\crawler.rs": 1
+    },
+    "extension": {
+      ".\\src\\crawler.rs": 3
+    },
+    "deserializer": {
+      ".\\src\\index.rs": 3
+    },
+    "dirección": {
+      ".\\src\\main.rs": 1
+    },
+    "outputs": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "límite": {
+      ".\\src\\main.rs": 1
+    },
+    "searchresult": {
+      ".\\src\\search.rs": 4,
+      ".\\src\\api.rs": 3,
+      ".\\src\\lib.rs": 1,
+      ".\\src\\main.rs": 2
+    },
+    "ocurrencias": {
+      ".\\src\\index.rs": 1
+    },
+    "empty": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\main.rs": 1
+    },
+    "latin1": {
+      ".\\src\\crawler.rs": 1
+    },
+    "str": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\main.rs": 2,
+      ".\\src\\api.rs": 2,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "sse3": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "npacked": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "run": {
+      ".\\README.md": 8,
+      ".\\src\\main.rs": 2
+    },
+    "from": {
+      ".\\src\\main.rs": 3,
+      ".\\src\\index.rs": 3,
+      ".\\src\\api.rs": 4,
+      ".\\src\\crawler.rs": 1
+    },
+    "pudo": {
+      ".\\src\\crawler.rs": 1
+    },
+    "decode": {
+      ".\\src\\crawler.rs": 1
+    },
+    "vec": {
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\api.rs": 2,
+      ".\\src\\search.rs": 7
+    },
+    "route": {
+      ".\\src\\api.rs": 1
+    },
+    "palabra": {
+      ".\\src\\index.rs": 1
+    },
+    "test": {
+      ".\\README.md": 1,
+      ".\\src\\tokenizer.rs": 3
+    },
+    "hilo": {
+      ".\\src\\crawler.rs": 1
+    },
+    "commands": {
+      ".\\src\\main.rs": 6
+    },
+    "runtime": {
+      ".\\src\\main.rs": 2
+    },
+    "and": {
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\search.rs": 1,
+      ".\\src\\index.rs": 1
+    },
+    "pub": {
+      ".\\src\\api.rs": 13,
+      ".\\src\\crawler.rs": 1,
+      ".\\src\\index.rs": 7,
+      ".\\src\\lib.rs": 10,
+      ".\\src\\search.rs": 5,
+      ".\\src\\tokenizer.rs": 1
+    },
+    "about": {
+      ".\\src\\main.rs": 2
+    },
+    "new": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\main.rs": 1,
+      ".\\src\\api.rs": 2,
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "intenta": {
+      ".\\src\\crawler.rs": 2
+    },
+    "params": {
+      ".\\src\\api.rs": 3
+    },
+    "nproc": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "nllvm": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "modify": {
+      ".\\src\\index.rs": 1,
+      ".\\src\\search.rs": 1
+    },
+    "indexación": {
+      ".\\src\\main.rs": 2,
+      ".\\Cargo.toml": 1,
+      ".\\src\\index.rs": 1,
+      ".\\README.md": 2,
+      ".\\src\\lib.rs": 1
+    },
+    "rust": {
+      ".\\Cargo.toml": 1,
+      ".\\src\\tokenizer.rs": 2,
+      ".\\README.md": 5,
+      ".\\src\\crawler.rs": 1
+    },
+    "sync": {
+      ".\\src\\api.rs": 1
+    },
+    "yml": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1
+    },
+    "parciales": {
+      ".\\src\\crawler.rs": 1
+    },
+    "indexan": {
+      ".\\README.md": 1
+    },
+    "value": {
+      ".\\src\\main.rs": 11
+    },
+    "par": {
+      ".\\src\\crawler.rs": 1
+    },
+    "tipo": {
+      ".\\Cargo.toml": 1
+    },
+    "nrelease": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "toolchain": {
+      ".\\README.md": 1
+    },
+    "únicos": {
+      ".\\src\\index.rs": 1
+    },
+    "gc": {
+      ".\\README.md": 1
+    },
+    "extensión": {
+      ".\\README.md": 1
+    },
+    "ranking": {
+      ".\\src\\search.rs": 1,
+      ".\\README.md": 1
+    },
+    "coincidencias": {
+      ".\\src\\search.rs": 1
+    },
+    "msvc": {
+      ".\\target\\.rustc_info.json": 3
+    },
+    "sin": {
+      ".\\README.md": 2,
+      ".\\src\\main.rs": 2
+    },
+    "sumar": {
+      ".\\src\\search.rs": 1
+    },
+    "en": {
+      ".\\src\\index.rs": 4,
+      ".\\src\\main.rs": 5,
+      ".\\Cargo.toml": 1,
+      ".\\README.md": 7,
+      ".\\src\\crawler.rs": 4,
+      ".\\src\\api.rs": 4,
+      ".\\src\\search.rs": 1
+    },
+    "x86": {
+      ".\\target\\.rustc_info.json": 3
+    },
+    "crea": {
+      ".\\src\\api.rs": 1,
+      ".\\README.md": 1
+    },
+    "utf": {
+      ".\\src\\crawler.rs": 1,
+      ".\\Cargo.toml": 1
+    },
+    "lo": {
+      ".\\README.md": 1
+    },
+    "licencia": {
+      ".\\README.md": 1
+    },
+    "where": {
+      ".\\src\\index.rs": 2
+    },
+    "scores": {
+      ".\\src\\search.rs": 3
+    },
+    "xml": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 1
+    },
+    "nbinary": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "else": {
+      ".\\src\\main.rs": 2
+    },
+    "parcial": {
+      ".\\src\\crawler.rs": 1
+    },
+    "miniatura": {
+      ".\\README.md": 1
+    },
+    "stable": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "elasticsearch": {
+      ".\\README.md": 1
+    },
+    "search": {
+      ".\\README.md": 4,
+      ".\\src\\lib.rs": 4,
+      ".\\src\\search.rs": 1,
+      ".\\src\\main.rs": 5,
+      ".\\src\\api.rs": 7
+    },
+    "es": {
+      ".\\src\\crawler.rs": 1
+    },
+    "procesamiento": {
+      ".\\README.md": 1
+    },
+    "si": {
+      ".\\README.md": 1,
+      ".\\src\\crawler.rs": 2
+    },
+    "10": {
+      ".\\README.md": 1
+    },
+    "conteo": {
+      ".\\src\\index.rs": 1
+    },
+    "ignores": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "app": {
+      ".\\src\\api.rs": 2
+    },
+    "luego": {
+      ".\\README.md": 1
+    },
+    "cargo": {
+      ".\\README.md": 10
+    },
+    "to": {
+      ".\\src\\tokenizer.rs": 8,
+      ".\\src\\index.rs": 18,
+      ".\\src\\api.rs": 2,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\main.rs": 2
+    },
+    "indexes": {
+      ".\\src\\crawler.rs": 2
+    },
+    "único": {
+      ".\\src\\crawler.rs": 1
+    },
+    "serializable": {
+      ".\\src\\index.rs": 5
+    },
+    "rayon": {
+      ".\\README.md": 2,
+      ".\\Cargo.toml": 1,
+      ".\\src\\crawler.rs": 3
+    },
+    "disco": {
+      ".\\src\\crawler.rs": 1,
+      ".\\README.md": 1,
+      ".\\src\\lib.rs": 1
+    },
+    "cercano": {
+      ".\\README.md": 1
+    },
+    "serialización": {
+      ".\\Cargo.toml": 1
+    },
+    "archivo": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\main.rs": 4,
+      ".\\src\\crawler.rs": 2,
+      ".\\README.md": 2,
+      ".\\src\\search.rs": 1
+    },
+    "with": {
+      ".\\src\\search.rs": 1,
+      ".\\src\\crawler.rs": 2,
+      ".\\src\\api.rs": 1
+    },
+    "ignora": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "success": {
+      ".\\target\\.rustc_info.json": 2
+    },
+    "atomic": {
+      ".\\target\\.rustc_info.json": 6
+    },
+    "assertions": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "sobre": {
+      ".\\src\\search.rs": 1
+    },
+    "cmp": {
+      ".\\src\\search.rs": 1
+    },
+    "content": {
+      ".\\src\\index.rs": 2,
+      ".\\src\\crawler.rs": 7
+    },
+    "string": {
+      ".\\src\\api.rs": 5,
+      ".\\src\\tokenizer.rs": 8,
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\main.rs": 5,
+      ".\\src\\search.rs": 3,
+      ".\\src\\index.rs": 5
+    },
+    "appstate": {
+      ".\\src\\api.rs": 3
+    },
+    "nhost": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "terms": {
+      ".\\src\\search.rs": 3
+    },
+    "tokenización": {
+      ".\\src\\tokenizer.rs": 1
+    },
+    "software": {
+      ".\\Cargo.toml": 1
+    },
+    "save": {
+      ".\\src\\main.rs": 2
+    },
+    "doc": {
+      ".\\src\\search.rs": 3,
+      ".\\src\\main.rs": 2,
+      ".\\src\\index.rs": 12
+    },
+    "64": {
+      ".\\target\\.rustc_info.json": 5
+    },
+    "mod": {
+      ".\\src\\tokenizer.rs": 1,
+      ".\\src\\lib.rs": 5
+    },
+    "utf8": {
+      ".\\src\\crawler.rs": 1
+    },
+    "long": {
+      ".\\src\\main.rs": 9
+    },
+    "7971740275564407648": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "segura": {
+      ".\\README.md": 1
+    },
+    "files": {
+      ".\\src\\crawler.rs": 2
+    },
+    "none": {
+      ".\\src\\crawler.rs": 3,
+      ".\\src\\main.rs": 1
+    },
+    "nc": {
+      ".\\target\\.rustc_info.json": 1
+    },
+    "windows": {
+      ".\\target\\.rustc_info.json": 4,
+      ".\\src\\crawler.rs": 1
+    }
+  },
+  "doc_count": 10
+}
