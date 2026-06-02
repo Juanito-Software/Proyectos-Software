@@ -1,0 +1,30 @@
+1. Compilación (release)
+
+cargo build --release
+
+--------------------------------------------------------------------------------
+
+2. Ejecución del servidor
+
+Desde PowerShell:
+
+cd "d:\Proyectos\Proyectos-Software\Juanito_Software\Rust\MisServidores\FTP"
+.\target\release\ftp_server.exe
+
+--------------------------------------------------------------------------------
+
+Desde CMD:
+
+cd /d "d:\Proyectos\Proyectos-Software\Juanito_Software\Rust\MisServidores\FTP"
+target\release\ftp_server.exe
+
+--------------------------------------------------------------------------------
+
+3. Conexión desde cliente FTP (ej: FileZilla)
+
+Host: 127.0.0.1
+Puerto: 2121
+Usuario: cualquiera
+Contraseña: cualquiera
+Modo: PASV (pasivo)
+
