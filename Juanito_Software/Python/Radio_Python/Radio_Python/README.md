@@ -1,6 +1,10 @@
 # 📻 Radio Player — Reproductor de Radio en Streaming
 
-**Autor:** JuanitoSoftware&Games · **Versión:** 2.0 · **Licencia:** GNU GPL v3 · **Lenguaje:** Python 3
+**Autor:** JuanitoSoftware
+**Versión:** 2.0
+**Licencia:** GNU GPL v3
+**Plataforma:** Windows
+**Lenguaje:** Python 3
 
 ---
 

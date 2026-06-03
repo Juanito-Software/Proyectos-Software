@@ -1,6 +1,10 @@
 # 🖥️ PC Health Sistema — Monitor Avanzado de Salud del PC
 
-**Autor:** JuanitoSoftware · **Versión:** 1.0 · **Licencia:** GNU GPL v3 · **Plataforma:** Windows · **Lenguaje:** Python 3
+**Autor:** JuanitoSoftware
+**Versión:** 1.0
+**Licencia:** GNU GPL v3
+**Plataforma:** Windows
+**Lenguaje:** Python 3
 
 ---
 

@@ -1,6 +1,10 @@
 # 🤖 GPTDevTeam — Equipo de Desarrollo Autónomo con IA Local
 
-**Autor:** JuanitoSoftware · **Versión:** 1.0 · **Licencia:** GNU GPL v3 · **Lenguaje:** Python 3
+**Autor:** JuanitoSoftware 
+**Versión:** 1.0 
+**Licencia:** GNU GPL v3
+**Plataforma:** Windows
+**Lenguaje:** Python 3
 
 ---
 
