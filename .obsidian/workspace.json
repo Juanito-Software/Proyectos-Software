@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Consejos.md",
+                "file": "consejos/Consejos.md",
                 "mode": "source",
                 "source": false
               },
@@ -183,10 +183,19 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "4c0514cbf45bcd9d",
+  "active": "b6fa4e42e6a6896a",
   "lastOpenFiles": [
+    "Juanito_Software/Python/Simulaciones/simulacion2D/README.md",
+    "Juanito_Software/Python/Simulaciones/simulacion2D/README_Simulacion2D.md",
+    "Juanito_Software/Python/Simulaciones/Fibonacci_Simulation/README.md",
+    "Juanito_Software/Python/Simulaciones/Fibonacci_Simulation/README_FibonacciSimulation.md",
+    "Juanito_Software/Python/Simulaciones/AstroSim/README.md",
+    "Juanito_Software/Python/Simulaciones/AstroSim/README_AstroSim.md",
+    "Juanito_Software/Python/PC_Health_Sistema/Sistema/requirements.txt",
+    "Juanito_Software/Python/PC_Health_Sistema/Sistema/README.md",
+    "Juanito_Software/Python/PC_Health_Sistema/requirements.txt",
     "README.md",
-    "Consejos.md",
+    "consejos/Consejos.md",
     "Juanito_Software/Python/YoutubeToMp3/YoutubeToMp3/README_YoutubeToMp3.md",
     "Juanito_Software/Python/YoutubeToMp3/YoutubeToMp3/README.md",
     "Juanito_Software/Python/MusicWave/Readme_MusicWave.md",
@@ -194,7 +203,6 @@
     "Juanito_Software/NodeJS/unified-chat-widget/README_UnifiedChatWidget.md",
     "Juanito_Software/Python/Simulaciones/Tamagochi/README.md",
     "Juanito_Software/Python/Simulaciones/Tamagochi/README_Tamagochi.md",
-    "Juanito_Software/Python/Simulaciones/AstroSim/README.md",
     "Juanito_Software/Python/Simulaciones/AstroSim/README2.md",
     "consejos",
     "Juanito_Software/Python/SpringlessEasyBatcher/README_SpringlessEasyBatch.md",
@@ -206,12 +214,6 @@
     "Juanito_Software/Python/PC_Health_Sistema/README_PCHealthSistema.md",
     "Juanito_Software/Python/FPS-AI-Toolkit/FPS-AI-Toolkit/README_FPS-AI-Toolkit.md",
     "Juanito_Software/Python/FPS-AI-Toolkit/README_MultifuncionFPS.md",
-    "Juanito_Software/Python/GPTDevTeam/README_GPTDevTeam (1).md",
-    "Juanito_Software/Python/GPTDevTeam/README_GPTDevTeam.md",
-    "Juanito_Software/Python/FFMPEG_UI/README_FFmpegConverter (2).md",
-    "Juanito_Software/Python/FFMPEG_UI/README_FFmpegConverter (1).md",
-    "Juanito_Software/Python/Simulaciones/Conway_Life_Simulation/README.md",
-    "Juanito_Software/Python/Simulaciones/Conway_Life_Simulation/README_ConwayLifeSimulation.md",
     "docs/proyects",
     "docs/Nueva carpeta",
     "docs/Infrastruture",
@@ -219,8 +221,6 @@
     "Juanito_Software/JavaScript/JSGameChat/server/twitch-chat.js",
     "Juanito_Software/JavaScript/JSGameChat/public/game.js",
     "Juanito_Software/JavaScript/JSGameChat/Licencia/LICENSE_ES.txt",
-    "Juanito_Software/JavaScript/JSGameChat/public/game.html",
-    "Juanito_Software/JavaScript/JSGameChat/Licencia/LICENSE.txt",
     "Juanito_Software/Laravel/gym-app/proyecto_Larabel_gym-app/ScriptDemoCRUD.png",
     "Juanito_Software/Laravel/proyecto_Larabel_gym-app/ScriptDemoCRUD.png",
     "Juanito_Software/Laravel/proyecto_Larabel_gymapp/ScriptDemoCRUD.png"

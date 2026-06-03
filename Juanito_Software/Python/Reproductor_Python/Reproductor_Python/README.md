@@ -1,7 +1,7 @@
 # 🎵 Reproductor de Audio - Ficha Técnica
 
 **Versión:** 1.0  
-**Autor:** JuanitoSoftware&Games  
+**Autor:** JuanitoSoftware  
 **Licencia:** [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html)  
 **Lenguaje:** Python 3  
 **GUI:** Tkinter  
