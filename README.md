@@ -1,28 +1,46 @@
-## Repositorio Proyectos-Software – © 2025 Juanito Software
+# Repositorio Proyectos-Software – © 2025 Juanito Software
+
 Este repositorio contiene múltiples proyectos de software desarrollados por Juanito Software.
 Incluye aplicaciones, utilidades y herramientas en diversos lenguajes y plataformas.
 
-Antes de utilizar, distribuir o modificar cualquier proyecto, revisa la licencia específica que lo acompaña.
-Este repositorio no implica por sí mismo derechos de uso sobre todo su contenido. Las condiciones varían según el programa.
+Antes de utilizar, distribuir o modificar cualquier proyecto, revisa la licencia específica
+que lo acompaña. Este repositorio no implica por sí mismo derechos de uso sobre todo su
+contenido. Las condiciones varían según el programa.
 
-## 📜📌 Licencias
+## 🛠️ Tecnologías
 
-- ✅ El repositorio en su conjunto no está bajo una única licencia, este repositorio no tiene una licencia general.
-- ✅ Cada proyecto o programa incluido tiene su propia licencia individual.
-- ✅ Podrás encontrar la licencia correspondiente a cada proyecto en su directorio respectivo (archivos LICENSE.txt, LICENSE_ES.txt y README.md).
+**Backend**
+Java · Spring Boot · Spring Batch · Python · Flask · Node.js · Rust · C#
 
-## 🚀 Tipos de software incluidos 
+**Frontend**
+JavaScript · TypeScript · Next.js · Angular · React · JavaFX · Swing
 
-🔹 Software libre: Algunos proyectos están bajo licencias abiertas como GNU GPL v3, ofreciendo libertad para usar, estudiar, modificar y distribuir.
+**Bases de datos**
+MySQL · PostgreSQL · MongoDB
 
-🔹 Software de libre uso (no comercial): Otros proyectos permiten su uso gratuito con posibles limitaciones según se indique en la licencia del propio proyecto.
+**Otros**
+Inteligencia Artificial · APIs REST
 
-🔹 Software comercial: Existen proyectos diseñados para usos comerciales, con licencias personalizadas que regulan su explotación.
+## Licencias
 
-Si tienes dudas sobre el uso permitido de un proyecto concreto, consulta su documentación o contáctame. Este repositorio contiene múltiples programas y herramientas desarrolladas por Juanito Software.
+- ✅ Este repositorio no tiene una licencia general única.
+- ✅ Cada proyecto incluido tiene su propia licencia individual.
+- ✅ Encontrarás la licencia de cada proyecto en su directorio respectivo
+  (`LICENSE.txt`, `LICENSE_ES.txt` y `README.md`).
+
+## Tipos de software incluidos
+
+🔹 **Software libre** – Algunos proyectos están bajo licencias abiertas como GNU GPL v3.
+🔹 **Software de libre uso (no comercial)** – Otros permiten uso gratuito con limitaciones según se indique.
+🔹 **Software comercial** – Proyectos con licencias personalizadas que regulan su explotación.
+
+Si tienes dudas sobre el uso permitido de un proyecto concreto, consulta su documentación
+o contáctame.
 
 ## ⚠️ Advertencia
-Este repositorio contiene proyectos de investigación y experimentales.
-Las dependencias no se mantienen activamente a menos que se especifique lo contrario.
 
-## ©️ 2025 JuanitoSoftware – Contacto: bernaldezperedaj@gmail.com
+Este repositorio contiene proyectos de investigación y experimentales. Las dependencias
+no se mantienen activamente a menos que se especifique lo contrario.
+
+---
+©️ 2025 JuanitoSoftware · [bernaldezperedaj@gmail.com](mailto:bernaldezperedaj@gmail.com)

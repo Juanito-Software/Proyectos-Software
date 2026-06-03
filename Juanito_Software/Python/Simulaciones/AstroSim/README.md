@@ -1,98 +1,75 @@
-# AstroSim — Motor de simulación astronómica interactiva
+# 🌌 Simulaciones - Colección de Simulaciones Físicas en Python
 
-Simulación **N-body** con gravitación newtoniana en 2D, visualización en tiempo real con **pygame** y exportación a CSV para análisis o futuro entrenamiento de redes neuronales.
-
-## Características
-
-- **Gravitación newtoniana** entre múltiples cuerpos (\(F = G \, m_1 m_2 / r^2\))
-- **Integrador velocity-Verlet** para buena conservación de energía
-- **Visualización 2D** en tiempo real (escala automática, estelas opcionales)
-- **Control de parámetros**: masa, velocidad inicial, constante G, paso de tiempo (dt)
-- **Exportación a CSV** (tiempo, posiciones y velocidades de cada cuerpo)
-- Escenarios listos: sistema Sol–Tierra–Luna, problema de los 3 cuerpos, órbita simple
-
-## Requisitos
-
-- Python 3.10+
-- numpy, pygame, matplotlib (opcional para análisis fuera del motor)
-
-## Instalación
-
-```bash
-cd AstroSim
-pip install -r requirements.txt
-```
-
-## Uso
-
-```bash
-# Escenario por defecto (Sol, Tierra, Luna)
-python main.py
-
-# Problema de los 3 cuerpos
-python main.py --scenario three_body
-
-# Órbita simple (estrella + planeta)
-python main.py --scenario orbit
-
-# Registrar trayectoria y exportar al salir
-python main.py --export trayectorias.csv
-```
-
-### Controles en pantalla
-
-| Tecla | Acción |
-|-------|--------|
-| **P** | Pausa / reanudar |
-| **E** | Exportar trayectoria a CSV (si hay datos registrados) |
-| **+ / -** | Aumentar / disminuir constante G |
-| **\* / /** | Aumentar / disminuir paso de tiempo (dt) |
-| **T** | Activar / desactivar estelas |
-| **ESC** | Salir |
-
-## Estructura del proyecto
-
-```
-AstroSim/
-├── astro_sim/
-│   ├── body.py       # Cuerpo celeste (masa, posición, velocidad)
-│   ├── simulation.py # Integrador N-body (Verlet), parámetro G
-│   ├── visualizer.py # Ventana pygame, dibujo y controles
-│   └── export.py     # Exportación a CSV
-├── main.py           # Entrada, escenarios y bucle principal
-├── requirements.txt
-└── README.md
-```
-
-## Uso como librería
-
-```python
-from astro_sim import Body, Simulation, Visualizer
-import numpy as np
-
-cuerpos = [
-    Body("Sol", 1.0, np.array([0., 0.]), np.array([0., 0.])),
-    Body("Planeta", 0.001, np.array([1., 0.]), np.array([0., 0.8])),
-]
-sim = Simulation(cuerpos, G=1.0, dt=0.01)
-
-# Paso a paso (sin ventana)
-for _ in range(1000):
-    sim.step()
-    sim.record_snapshot()
-
-# O con visualización
-from astro_sim.visualizer import run_loop
-viz = Visualizer()
-run_loop(sim, viz, record_interval=5, export_path="datos.csv")
-```
-
-## Próximos pasos (ideas)
-
-- **3D** con moderngl o OpenGL
-- **Análisis** con matplotlib (energía, momento angular, gráficas posición/tiempo)
-- **Red neuronal** (PyTorch/TensorFlow) para predecir trayectorias a partir de datos exportados
+Colección de **simulaciones físicas e interactivas** desarrolladas en Python. Desde la gravedad newtoniana de sistemas orbitales hasta la vida emergente del autómata celular de Conway, cada simulación es visualmente atractiva e interactiva.
 
 ---
 
-*Python es ideal para prototipado científico: numpy para vectores, pygame para ver resultados al instante, y todo el ecosistema para IA y análisis.*
+## 📂 Simulaciones Disponibles
+
+### 🪐 AstroSim — Simulador Orbital de N-Cuerpos
+Simulación física de sistemas gravitatorios con múltiples cuerpos celestes. Implementa la **Ley de Gravitación Universal de Newton** para calcular en tiempo real las trayectorias orbitales de planetas, estrellas y cometas.
+
+**Modos disponibles:**
+- **Órbita simple**: Un planeta orbitando alrededor de una estrella.
+- **Sistema de 3 cuerpos**: El caótico problema de los 3 cuerpos (altamente sensible a las condiciones iniciales).
+- **AstroSim completo**: Simulación configurable con múltiples parámetros.
+
+### 🧫 Conway Life Simulation — El Juego de la Vida
+Implementación clásica del **autómata celular de John Horton Conway**. Cada célula vive o muere según el número de vecinos vivos, produciendo patrones emergentes fascinantes como planeadores, osciladores y estructuras estables.
+
+---
+
+## 🚀 Características
+
+- **Visualización en tiempo real con Pygame**: Renderizado fluido a 60 FPS con colores diferenciados por velocidad o energía.
+- **Exportación de datos**: AstroSim exporta trayectorias en `astro_trajectories.csv` para análisis posterior.
+- **Lanzadores rápidos**: Archivos `.bat` para iniciar cada simulación con doble clic.
+- **Parámetros configurables**: Masas, velocidades iniciales, tamaño del grid, etc.
+
+---
+
+## 🛠️ Requisitos del Sistema
+
+- **Python 3.9+**
+- Dependencias:
+  ```bash
+  pip install pygame numpy
+  ```
+
+---
+
+## 📦 Instalación
+
+```bash
+cd Simulaciones/AstroSim
+pip install -r requirements.txt
+```
+
+---
+
+## 💻 Uso y Ejecución
+
+### AstroSim — Lanzadores rápidos (Windows)
+- Doble clic en `Ejecutar AstroSim.bat` → Simulación completa configurable.
+- Doble clic en `Ejecutar orbita simple.bat` → Sistema de 2 cuerpos.
+- Doble clic en `Ejecutar 3 cuerpos.bat` → Problema caótico de 3 cuerpos.
+
+### AstroSim — Desde la consola
+```bash
+cd Simulaciones/AstroSim
+python main.py
+```
+
+### Conway Life Simulation
+```bash
+cd Simulaciones/Conway_Life_Simulation
+python ConwayLifeSimulation.py
+```
+
+O usa el ejecutable compilado: `ConwayLifeSimulation.exe`.
+
+---
+
+## ⚖️ Licencia
+
+Este proyecto está licenciado bajo la **Licencia Pública General de GNU versión 3 (GPLv3)**. Consulta `AstroSim/README.md` para más detalles.
