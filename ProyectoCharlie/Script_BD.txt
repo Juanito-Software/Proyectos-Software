@@ -1,0 +1,108 @@
+-- =======================================================
+--  CREACIÓN DE BASE DE DATOS
+-- =======================================================
+-- ⚠️ Ejecutar esto solo con un usuario que tenga permisos para crear bases de datos
+CREATE DATABASE app_ayudas
+    WITH ENCODING 'UTF8'
+    LC_COLLATE='es_ES.utf8'
+    LC_CTYPE='es_ES.utf8'
+    TEMPLATE template0;
+
+\c app_ayudas;
+
+-- =======================================================
+--  TABLA: Personas
+-- =======================================================
+CREATE TABLE personas (
+    id BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100),
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ultima_conexion TIMESTAMP NULL,
+    rol VARCHAR(10) DEFAULT 'user' CHECK (rol IN ('user', 'admin')),
+    activo BOOLEAN DEFAULT TRUE
+);
+
+CREATE INDEX idx_email ON personas(email);
+
+-- =======================================================
+--  TABLA: Categorías
+-- =======================================================
+CREATE TABLE categorias (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- =======================================================
+--  TABLA: Notificaciones
+-- =======================================================
+CREATE TABLE notificaciones (
+    id BIGSERIAL PRIMARY KEY,
+    persona_id BIGINT NULL,
+    categoria_id INT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    latitud NUMERIC(9,6) NOT NULL,
+    longitud NUMERIC(9,6) NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL,
+    CONSTRAINT fk_notif_persona FOREIGN KEY (persona_id)
+        REFERENCES personas(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_notif_categoria FOREIGN KEY (categoria_id)
+        REFERENCES categorias(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_persona ON notificaciones(persona_id);
+CREATE INDEX idx_categoria ON notificaciones(categoria_id);
+CREATE INDEX idx_ubicacion ON notificaciones(latitud, longitud);
+
+-- =======================================================
+--  TABLA: Contenido Multimedia
+-- =======================================================
+CREATE TABLE contenido_multimedia (
+    id BIGSERIAL PRIMARY KEY,
+    notificacion_id BIGINT NOT NULL,
+    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('imagen', 'video')),
+    url VARCHAR(255) NOT NULL,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contenido_notificacion FOREIGN KEY (notificacion_id)
+        REFERENCES notificaciones(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_notificacion ON contenido_multimedia(notificacion_id);
+
+-- =======================================================
+--  OPCIONAL: Inserción de datos iniciales
+-- =======================================================
+INSERT INTO categorias (nombre) VALUES
+('Comida'),
+('Alojamiento'),
+('Transporte'),
+('Salud'),
+('Educación'),
+('Otro');
+
+-- =======================================================
+--  USUARIO DE BASE DE DATOS SEGURO (opcional)
+-- =======================================================
+-- ⚠️ Ejecuta esto solo si quieres crear un usuario específico
+-- para tu aplicación en lugar de usar postgres
+
+-- CREATE USER app_user WITH PASSWORD 'TuContraseñaSegura123!';
+-- GRANT CONNECT ON DATABASE app_ayudas TO app_user;
+-- GRANT USAGE ON SCHEMA public TO app_user;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+-- ALTER DEFAULT PRIVILEGES IN SCHEMA public
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
+
+-- =======================================================
+--  FIN DEL SCRIPT
+-- =======================================================

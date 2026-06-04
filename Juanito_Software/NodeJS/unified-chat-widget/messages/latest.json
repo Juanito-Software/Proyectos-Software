@@ -1,30 +1,6 @@
 [
   {
     "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "yo tengo veintiseis",
-    "timestamp": 1779721286273,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:01:26.274Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "yo te echaba veintidos la verdad, pareces mas joven, que maquina",
-    "timestamp": 1779721308083,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:01:48.084Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "puedes  desbaneat a mi y a mis compas del discord ?",
-    "timestamp": 1779721319480,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:01:59.480Z"
-  },
-  {
-    "platform": "kick",
     "username": "deyirosantana",
     "message": "queremos pasarnos un rato a veces a saludar",
     "timestamp": 1779721327107,
@@ -798,5 +774,29 @@
     "timestamp": 1780184567716,
     "user": "JuanitoCanuto",
     "received_at": "2026-05-30T23:42:47.717Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "Barret33",
+    "message": "buenas noches juanito que tal",
+    "timestamp": 1780536039000,
+    "user": "Barret33",
+    "received_at": "2026-06-04T01:20:40.479Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "dwadawdad",
+    "timestamp": 1780587737000,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T15:42:15.656Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "dwadaw",
+    "timestamp": 1780587736385,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T15:42:16.385Z"
   }
 ]
