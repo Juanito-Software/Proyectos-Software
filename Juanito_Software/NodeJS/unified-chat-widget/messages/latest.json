@@ -1,54 +1,6 @@
 [
   {
     "platform": "kick",
-    "username": "deyirosantana",
-    "message": "queremos pasarnos un rato a veces a saludar",
-    "timestamp": 1779721327107,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:02:07.108Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "el que tienes atras es tony montana no ?",
-    "timestamp": 1779721337098,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T15:02:17.099Z"
-  },
-  {
-    "platform": "kick",
-    "username": "adrianmatamoros",
-    "message": "bueno maquina me tengo que ir que tengo que seguir trabajando, grande juan",
-    "timestamp": 1779721389394,
-    "user": "adrianmatamoros",
-    "received_at": "2026-05-25T15:03:09.395Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "yo decia del discord para pasar a saludar",
-    "timestamp": 1779721401989,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:03:21.990Z"
-  },
-  {
-    "platform": "kick",
-    "username": "arpickelprimo",
-    "message": "venga va dales una oportunidad hay qeu saber perdonar",
-    "timestamp": 1779721426738,
-    "user": "arpickelprimo",
-    "received_at": "2026-05-25T15:03:46.739Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "la derramo",
-    "timestamp": 1779721428869,
-    "user": "deyirosantana",
-    "received_at": "2026-05-25T15:03:48.869Z"
-  },
-  {
-    "platform": "kick",
     "username": "arpickelprimo",
     "message": "bueno @deyirosantana yo lo intente",
     "timestamp": 1779721445954,
@@ -798,5 +750,53 @@
     "timestamp": 1780587736385,
     "user": "JuanitoCanuto",
     "received_at": "2026-06-04T15:42:16.385Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "vamos gente",
+    "timestamp": 1780592861887,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T17:07:41.891Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "tener los cojones de escribir en el chat",
+    "timestamp": 1780592868376,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T17:07:48.377Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "y os bais baneados",
+    "timestamp": 1780592872643,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T17:07:52.643Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "soy adolf hitler",
+    "timestamp": 1780592876532,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T17:07:56.532Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "y esto es la alemania nazi",
+    "timestamp": 1780592896950,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T17:08:16.951Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "vais*",
+    "timestamp": 1780600099366,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-04T19:08:19.372Z"
   }
 ]

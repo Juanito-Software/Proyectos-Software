@@ -10,16 +10,105 @@ contenido. Las condiciones varían según el programa.
 ## 🛠️ Tecnologías
 
 **Backend**
-Java · Spring Boot · Spring Batch · Python · Flask · Node.js · Rust · C#
+	
+	**Java**
+		Spring Boot
+		Spring Batch
+	**Python**
+		FastAPI
+		Flask
+		Django
+	**JavaScript / TypeScript**
+		Node.js
+		Express.js
+		NestJS
 
-**Frontend**
-JavaScript · TypeScript · Next.js · Angular · React · JavaFX · Swing
+	    
+	**C#**
+		ASP.NET Core
+	
+	**Rust**
+		Axum
+		Actix Web
+	**PHP**
+		Laravel
+		Symfony
 
-**Bases de datos**
-MySQL · PostgreSQL · MongoDB
+**Frontend Desktop**
+	
+	JavaFX (Java)
+	Swing (Java)
+	Tkinter (python)
+	Qt / PyQt / PySide (Python)
+	Flutter
+	Electron
+	Tauri
+	.NET MAUI
+	WPF
 
-**Otros**
-Inteligencia Artificial · APIs REST
+**Web = stack típico de aplicaciones web (frontend + backend de apps web)**
+ 
+	**Backend**
+	JavaScript/TypeScript
+		Node.js
+		Express.js
+		NestJS
+	  
+	**Frontend UI**
+		  React
+		  Angular
+		  Vue.js
+	Meta-frameworks  
+		Next.js
+
+**Fullstack / SSR**  
+	
+	Inertia.js  
+	Blade (Laravel)
+
+
+**Bases de Datos**
+	
+	Relacionales (SQL)
+	PostgreSQL
+	MySQL
+	No Relacionales (NoSQL)
+	MongoDB
+
+**APIs**
+	
+	REST
+	GraphQL
+	WebSockets
+	gRPC
+
+DevOps / Herramientas
+	
+	Git
+	Docker
+	Linux
+	Nginx
+	CI/CD (GitHub Actions)
+
+**Inteligencia Artificial**
+
+	  Frameworks:
+	
+		PyTorch
+		TensorFlow
+	
+	  LLMs:
+	
+		Ollama
+		vLLM
+		llama.cpp
+	
+	  Orquestación:
+	
+		LangChain
+		LangGraph
+	
+	
 
 ## Licencias
 
