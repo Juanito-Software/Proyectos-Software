@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="informe" language="groovy" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="2ef592bb-0719-44c5-9e8c-92d9abb9dea2">
+	<property name="ireport.zoom" value="1.331000000000001"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Title" forecolor="#FFFFFF" fontName="Times New Roman" fontSize="50" isBold="false" pdfFontName="Times-Bold"/>
+	<style name="SubTitle" forecolor="#CCCCCC" fontName="Times New Roman" fontSize="18" isBold="false" pdfFontName="Times-Roman"/>
+	<style name="Column header" forecolor="#666666" fontName="Times New Roman" fontSize="14" isBold="true" pdfFontName="Times-Roman"/>
+	<style name="Detail" mode="Transparent" fontName="Times New Roman" pdfFontName="Times-Roman"/>
+	<style name="Row" mode="Transparent" fontName="Times New Roman" pdfFontName="Times-Roman">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT}%2 == 0]]></conditionExpression>
+			<style mode="Opaque" backcolor="#F0EFEF"/>
+		</conditionalStyle>
+	</style>
+	<queryString>
+		<![CDATA[SELECT
+    jugadores.id AS jugador_id,
+    jugadores.nombre AS nombre_jugador,
+    jugadores.email AS email_jugador,
+    jugadores.numtelefono AS telefono_jugador,
+    privacidad.nivel_de_privacidad AS nivel_de_privacidad,
+    puntuaciones.valor AS valor_puntuacion
+FROM
+    jugadores
+INNER JOIN
+    puntuaciones ON puntuaciones.jugador_id = jugadores.id
+INNER JOIN
+    privacidad ON privacidad.jugador_id=jugadores.id
+order by valor_puntuacion desc;]]>
+	</queryString>
+	<field name="jugador_id" class="java.lang.Integer"/>
+	<field name="nombre_jugador" class="java.lang.String"/>
+	<field name="email_jugador" class="java.lang.String"/>
+	<field name="telefono_jugador" class="java.lang.String"/>
+	<field name="nivel_de_privacidad" class="java.lang.Object"/>
+	<field name="valor_puntuacion" class="java.lang.Integer"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="132" splitType="Stretch">
+			<frame>
+				<reportElement mode="Opaque" x="0" y="0" width="553" height="95" backcolor="#000000" uuid="52b4a14b-5aaf-4bf0-b5d5-05ead1054fbc"/>
+				<staticText>
+					<reportElement style="Title" x="0" y="0" width="550" height="66" uuid="cc18e78f-3c05-41e8-a511-0bcafd66a1b9"/>
+					<textElement textAlignment="Center">
+						<font isBold="false"/>
+					</textElement>
+					<text><![CDATA[Informe de jugadores]]></text>
+				</staticText>
+			</frame>
+			<frame>
+				<reportElement mode="Opaque" x="0" y="100" width="553" height="32" forecolor="#000000" backcolor="#666666" uuid="35f3d389-b1f3-4afd-ac33-b7e3a1743188"/>
+				<textField pattern="EEEEE dd MMMMM yyyy">
+					<reportElement x="406" y="0" width="144" height="20" forecolor="#FFFFFF" uuid="6ee097db-8aa2-41cf-8021-42c78a54c925"/>
+					<textElement textAlignment="Right">
+						<font size="12"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="32" splitType="Stretch">
+			<frame>
+				<reportElement mode="Opaque" x="0" y="0" width="555" height="21" forecolor="#B89F7D" backcolor="#000000" uuid="b94939d4-0a4e-4fc7-aafb-f0db33a93956"/>
+				<staticText>
+					<reportElement x="471" y="0" width="79" height="20" forecolor="#FFFFFF" uuid="1be6543d-2ad3-4e0d-be5d-3274d8f15f80"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Valor puntuacion]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="2" y="1" width="74" height="20" forecolor="#FFFFFF" uuid="623753c7-d506-4eaa-8d26-ee58c80b81d5"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Jugador ID]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="87" y="1" width="81" height="20" forecolor="#FFFFFF" uuid="bad61d84-fcea-4bf6-aa54-67351313b0f2"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Nombre]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="168" y="1" width="95" height="20" forecolor="#FFFFFF" uuid="3c995cf2-7fa3-41f3-a076-3de45e33aac4"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Email]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="273" y="0" width="85" height="20" forecolor="#FFFFFF" uuid="390657b3-07d1-4883-9eb6-1a22b5062414"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Telefono]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="371" y="0" width="90" height="20" forecolor="#FFFFFF" uuid="8c7f10cd-7c9f-4ff8-a5ed-2b944f82a859"/>
+					<textElement textAlignment="Center"/>
+					<text><![CDATA[Nivel de privacidad]]></text>
+				</staticText>
+			</frame>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="471" y="0" width="75" height="20" uuid="40f9f41a-9e67-43b9-86ba-bc56cab32a54"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{valor_puntuacion}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="2" y="0" width="74" height="20" uuid="61a2df6c-29bd-44a6-a8a8-d4584618cf30"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{jugador_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="87" y="0" width="81" height="20" uuid="4dd0183a-4cc8-4cb5-bfe5-9a328cc88ad5"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{nombre_jugador}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="168" y="0" width="95" height="20" uuid="5c9c7486-5df7-47f9-9f58-30300b05db48"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{email_jugador}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="273" y="0" width="85" height="20" uuid="69c2c809-3047-480c-8b18-9abea1539453"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[$F{telefono_jugador}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="371" y="0" width="73" height="20" uuid="8cec38e8-d06a-4c2f-9f13-4ffcfaad9b76"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA[""+$F{nivel_de_privacidad}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="28" splitType="Stretch">
+			<line>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="3" width="555" height="1" uuid="c8669e18-2ea0-471c-801e-94cdccddabb1"/>
+				<graphicElement>
+					<pen lineWidth="0.5" lineColor="#999999"/>
+				</graphicElement>
+			</line>
+			<frame>
+				<reportElement style="Row" mode="Opaque" x="2" y="4" width="555" height="24" uuid="5c501075-3cdf-4146-a76c-79e2527ab1fb"/>
+			</frame>
+		</band>
+	</columnFooter>
+	<pageFooter>
+		<band height="25" splitType="Stretch">
+			<frame>
+				<reportElement mode="Opaque" x="0" y="1" width="555" height="24" forecolor="#D0B48E" backcolor="#000000" uuid="3da6fcbd-5e1a-4de4-8b9c-a6c3361ab8d6"/>
+				<textField evaluationTime="Report">
+					<reportElement style="Column header" x="513" y="0" width="40" height="20" forecolor="#FFFFFF" uuid="e5ea4cc5-b5b9-4adf-a78b-6ba4cf16c784"/>
+					<textElement verticalAlignment="Middle">
+						<font size="10" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement style="Column header" x="433" y="0" width="80" height="20" forecolor="#FFFFFF" uuid="10241641-da30-4dbb-98df-6a512939ad76"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="10" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+				</textField>
+				<textField pattern="EEEEE dd MMMMM yyyy">
+					<reportElement style="Column header" x="2" y="1" width="197" height="20" forecolor="#FFFFFF" uuid="2a6168e0-0bb1-4e53-920c-d6c142e733d9"/>
+					<textElement verticalAlignment="Middle">
+						<font size="10" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+				</textField>
+			</frame>
+		</band>
+	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

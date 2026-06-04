@@ -1,0 +1,59 @@
+curl -X POST "http://localhost:5000/puntuaciones?nombre=Juan&valor=1000"
+curl -X PUT "http://localhost:5000/puntuaciones?nombre=Juan"
+curl -X GET "http://localhost:5000/puntuaciones"
+etz
+
+
+
+
+1.##BD USAGE GUIDE##
+
+la version de postgre usada es la 17
+
+ejecutar el script PostgreSQL el cual levantara la base de datos game sus tablas y relaciones, también creara un usuario admin con todos los privilegios sobre la bd game y sus tablas y otro client con permiso de escritura lectura, actualización y conexión en game y sus tablas, client se usara en la conexión con la base de datos desde la Api Flask y admin será usado en la realización de reportes desde java.
+
+El usuario admin que tenemos creado en postgre tiene estas credenciales:  admin = P@ssw0rd1?
+El otro usuario client que tenemos creado en postgre tiene estas credenciales:  client = sesamoPass1?
+
+añadir el archivo pg_hba.conf a la carpeta C:\Program Files\PostgreSQL\17\data sobrescribiendo el archivo que allí se encuentra
+
+
+2.##API USAGE GUIDE - (For jugadores with admin role only)## 
+
+curl -X DELETE "http://localhost:5000/puntuaciones/<NOMBRE_DEL_JUGADOR>" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZXhwIjoxNzM1NTk2MzQyfQ.97VyiUkKO8rxv4Ohds_yWXH7a9ah6ZGWgR5cqqLy198"
+
+curl -X DELETE "http://localhost:5000/puntuaciones/limpiar" \ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZXhwIjoxNzM1NTk2MzQyfQ.97VyiUkKO8rxv4Ohds_yWXH7a9ah6ZGWgR5cqqLy198"
+
+garantizar privilegios de administrador
+curl -X DELETE "http://localhost:5000/jugadores/limpiar" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiZXhwIjoxNzM1NTk2MzQyfQ.97VyiUkKO8rxv4Ohds_yWXH7a9ah6ZGWgR5cqqLy198"
+
+
+en el lado de la api la gestión de el jugador que tiene rol de admin y puede realizar borrados se hace mediante un campo rol en la tabla jugadores por defecto este campo contiene el valor jugador, la única manera de generar un jugador con el campo rol admin es realizando un update directamente desde una instrucción sql a la base de datos:
+
+##GRANT ADMIN PRIVILEGES##
+
+UPDATE jugadores
+SET rol = 'admin'
+WHERE id = 20; //tu id
+
+además para usar los endpoints de borrado debes realizar las llamadas a la api mediante curl o postman manualmente(como se muestra al comienzo de este punto 3)  debido a que la interfaz no contiene métodos para realizar estas llamadas desde el cliente en unity, ademas, para garantizar la autentificación de el usuario con rol administrador se utiliza una función con decorador y @wraps(f) (esto mantiene la firma de la función original) llamada authenticate_token2(required_role="admin"):
+de esta manera nos obliga a pasar desde la llamada al curl el access_token generado mediante el nombre y la contraseña durante el inicio de sesión autentificando al admin en caso de que este realmente tenga el rol admin
+
+
+
+
+3.##USAGE GUIDE REPORTS##
+
+para crear el informe ejecutar el programa java ubicado en la sección de informes 
+..\webapp_puntuaciones\informes\JasperReportExecutor desde NetBeans 
+
+o directamente ejecutando el .jar desde cmd
+
+cd ..\webapp_puntuaciones\informes\JasperReportExecutor\target
+java -jar JasperReportExecutor-1.0-SNAPSHOT.jar
+
+
+
+
