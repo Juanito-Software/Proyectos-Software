@@ -47,7 +47,6 @@ VK_MINUS = ord('-')
 def tk_callback(fn):
     return lambda: app.root.after(0, fn)
 
-"""
 def run_matrix_effect():
     if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS
@@ -60,9 +59,6 @@ def run_matrix_effect():
         p.communicate()  # Espera a que termine
     except KeyboardInterrupt:
         p.terminate()    # Terminamos el proceso si el usuario interrumpe
-    except Exception as e:
-        print("Error al ejecutar el efecto Matrix:", e)
-"""   
 
 class MP3Player:
     def __init__(self, root):
@@ -644,6 +640,13 @@ if __name__ == "__main__":
     from pystray import Icon as TrayIcon, MenuItem as item, Menu
 
     # -----------------------------
+    # 0️⃣ Efecto Matrix en hilo separado
+    # -----------------------------
+    matrix_thread = threading.Thread(target=run_matrix_effect, daemon=True)
+    matrix_thread.start()
+    matrix_thread.join()  # Esperar a que termine antes de abrir la app
+
+    # -----------------------------
     # 1️⃣ Crear ventana principal
     # -----------------------------
     root = tk.Tk()
@@ -671,7 +674,7 @@ if __name__ == "__main__":
     #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_MINUS, lambda: app.root.after(0, vol_down))
 
     hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_L, lambda: app.root.after(0, app.toggle_loop_mode))
-    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_R, lambda: app.root.after(0, app.toggle_random_mode))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_P, lambda: app.root.after(0, app.toggle_random_mode))
     hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_O, lambda: app.root.after(0, app.toggle_order_mode))
 
     hk.start()

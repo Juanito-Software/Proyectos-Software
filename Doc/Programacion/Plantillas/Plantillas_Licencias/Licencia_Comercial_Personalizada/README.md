@@ -77,8 +77,6 @@ Los usuarios con licencia activa pueden contactar con el soporte técnico median
 
 📧 Email: benaldezperedaj@gmail.com
 
-📧 Github: soporte@juanitosoftware.com
-
 🌐 Web:
 
 Tiempo de respuesta estimado: 24–48h en días laborables.
