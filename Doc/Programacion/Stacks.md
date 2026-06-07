@@ -357,6 +357,65 @@ BD:
 
 ---
 
+**APIs**
+
+    REST
+
+    GraphQL
+
+    WebSockets
+
+    gRPC
+
+  
+
+**DevOps / Herramientas**
+
+    Git
+
+    Docker
+
+    Linux
+
+    Nginx
+
+    CI/CD (GitHub Actions)
+
+  
+
+**Inteligencia Artificial**
+
+  
+
+      Frameworks:
+
+        PyTorch
+
+        TensorFlow
+
+      LLMs:
+
+        Ollama
+
+        vLLM
+
+        llama.cpp
+
+      Orquestación:
+
+        LangChain
+
+        LangGraph
+
+
+**Documentación y gestion de proyectos**
+
+    Obsidian
+
+    Jira
+
+    Notion
+
 
 1. **TypeScript + Next.js + NestJS + PostgreSQL**
     
