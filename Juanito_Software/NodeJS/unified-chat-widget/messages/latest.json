@@ -1,30 +1,6 @@
 [
   {
     "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "ahora no llores soldado",
-    "timestamp": 1780767961340,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-06T17:46:01.340Z"
-  },
-  {
-    "platform": "kick",
-    "username": "jcreyes20",
-    "message": "21 de que fantasma a tu madre la ninfomana",
-    "timestamp": 1780767968131,
-    "user": "jcreyes20",
-    "received_at": "2026-06-06T17:46:08.131Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "sisi",
-    "timestamp": 1780767973048,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-06T17:46:13.048Z"
-  },
-  {
-    "platform": "kick",
     "username": "jcreyes20",
     "message": "ya nos veremos",
     "timestamp": 1780767973926,
@@ -798,5 +774,29 @@
     "timestamp": 1780796719533,
     "user": "JuanitoCanuto",
     "received_at": "2026-06-07T01:45:19.535Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "aaaaaa",
+    "timestamp": 1780855104447,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-07T17:58:24.448Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "es como fuck",
+    "timestamp": 1780857233939,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-07T18:33:53.941Z"
+  },
+  {
+    "platform": "rumble",
+    "username": "JuanitoCanuto",
+    "message": "iepaaa",
+    "timestamp": 1780857263000,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-07T18:34:25.191Z"
   }
 ]
