@@ -1,0 +1,739 @@
+# Copyright (C) 2025 JuanitoSoftware
+#
+# Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
+# los términos de la Licencia Pública General de GNU publicada por la Free
+# Software Foundation, ya sea la versión 3 de la Licencia o (según tu elección)
+# cualquier versión posterior.
+#
+# Este programa se distribuye con la esperanza de que sea útil, pero SIN
+# NINGUNA GARANTÍA; incluso sin la garantía implícita de COMERCIALIZACIÓN o
+# IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulta la Licencia Pública General
+# de GNU para más detalles.
+#
+# Deberías haber recibido una copia de la Licencia Pública General de GNU junto
+# con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
+
+
+import tkinter as tk
+from tkinter import filedialog, ttk, messagebox
+import vlc
+import random
+import threading
+import os
+import subprocess
+import sys
+from HotKeyManager import HotkeyManager
+from pystray import Icon as TrayIcon, MenuItem as item, Menu
+from PIL import Image, ImageDraw
+
+# virtual-key codes
+VK_RETURN = 0x0D
+VK_SPACE = 0x20
+VK_RIGHT = 0x27
+VK_LEFT  = 0x25
+VK_UP    = 0x26
+VK_DOWN  = 0x28
+VK_S     = ord('S')
+VK_L     = ord('L')
+VK_R     = ord('R')
+VK_T     = ord('T')
+VK_O     = ord('O')
+VK_P     = ord('P')
+VK_M     = ord('M')
+VK_PLUS  = ord('+')
+VK_MINUS = ord('-')
+
+
+def tk_callback(fn):
+    return lambda: app.root.after(0, fn)
+
+"""
+def run_matrix_effect():
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    exe_path = os.path.join(base_path, "matrix_effect.exe")
+    try:
+        p = subprocess.Popen([exe_path])
+        p.communicate()  # Espera a que termine
+    except KeyboardInterrupt:
+        p.terminate()    # Terminamos el proceso si el usuario interrumpe
+    except Exception as e:
+        print("Error al ejecutar el efecto Matrix:", e)
+"""   
+
+class MP3Player:
+    def __init__(self, root):
+        self._handling_end = False
+        self.user_dragging = False
+        self.root = root
+        self.root.title("Reproductor de Audio")
+        self.instance = vlc.Instance()
+        self.player = self.instance.media_player_new()
+
+        self.selected_folder = None
+        self.current_media = None
+        self.current_file = None
+        self.is_paused = False
+        self.night_mode = False
+
+        self.play_in_order = False
+        self.play_random = False
+        self.play_loop = False
+        self.last_index = None
+        self.songs = []
+        self.random_scope = []
+        self.played_random = []
+
+        self.player.event_manager().event_attach(
+            vlc.EventType.MediaPlayerEndReached, self.handle_end_reached
+        )
+
+        self.build_ui()
+        self.init_settings()
+
+    def build_ui(self):
+        self.top_frame = tk.Frame(self.root)
+        self.top_frame.pack(pady=5)
+
+        # Contenedor para treeview + scrollbar
+        self.tree_frame = tk.Frame(self.root)
+        self.tree_frame.pack(expand=True, fill="both", padx=5, pady=5)
+
+        self.night_button = tk.Button(self.top_frame, text="🌙", command=self.toggle_night_mode)
+        self.night_button.pack(side="left")
+        self.choose_folder_btn = tk.Button(self.top_frame, text="Seleccionar carpeta", command=self.select_folder)
+        self.choose_folder_btn.pack(side="left")
+        self.search_entry = tk.Entry(self.top_frame)
+        self.search_entry.pack(side="left", padx=(200, 5))
+        self.search_button = tk.Button(self.top_frame, text="Buscar", command=self.search_files)
+        self.search_button.pack(side="right")
+
+        self.tree = ttk.Treeview(self.tree_frame, columns=("path",))
+        self.tree.heading("#0", text="Nombre")
+        self.tree.heading("path", text="Ruta")
+        self.tree.column("#0", width=300)
+
+        # Scrollbar vertical
+        self.scrollbar = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self.scrollbar.set)
+
+        # Layout dentro del frame
+        self.tree.pack(side="left", expand=True, fill="both")
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.tree.bind("<Double-1>", self.on_double_click)
+
+        self.tree.bind("<MouseWheel>", self.on_mouse_wheel)
+
+        # --- Bottom Panel para controles y barra de progreso ---
+        self.bottom_panel = tk.Frame(self.root)
+        self.bottom_panel.pack(side="bottom", fill="x", pady=10)
+
+        # Barra de progreso
+        self.progress_frame = tk.Frame(self.bottom_panel)
+        self.progress_frame.pack(side="top", fill="x", padx=10)
+
+        self.time_elapsed_label = tk.Label(self.progress_frame, text="00:00")
+        self.time_elapsed_label.pack(side="left")
+
+        self.progress_var = tk.DoubleVar()
+        self.progress_scale = tk.Scale(
+            self.progress_frame, variable=self.progress_var, from_=0, to=1000,
+            orient="horizontal", showvalue=0, command=self.on_progress_move
+        )
+        self.progress_scale.pack(side="left", fill="x", expand=True, padx=5)
+
+        self.time_total_label = tk.Label(self.progress_frame, text="00:00")
+        self.time_total_label.pack(side="right")
+
+        # Controles de reproducción centrados
+        self.controls_frame = tk.Frame(self.bottom_panel)
+        self.controls_frame.pack(pady=5)
+
+        self.prev_button = tk.Button(self.controls_frame, text="⏮", command=self.play_previous)
+        self.prev_button.pack(side="left", padx=5)
+        self.play_button = tk.Button(self.controls_frame, text="▶️", command=self.play_selected)
+        self.play_button.pack(side="left", padx=5)
+        self.pause_button = tk.Button(self.controls_frame, text="⏸️", command=self.pause)
+        self.pause_button.pack(side="left", padx=5)
+        self.stop_button = tk.Button(self.controls_frame, text="⏹️", command=self.stop)
+        self.stop_button.pack(side="left", padx=5)
+        self.next_button = tk.Button(self.controls_frame, text="⏭", command=self.play_next)
+        self.next_button.pack(side="left", padx=5)
+
+        # Botones de modo centrados
+        self.mode_frame = tk.Frame(self.bottom_panel)
+        self.mode_frame.pack(side="top", pady=5)
+
+        self.order_button = tk.Button(self.mode_frame, text="Reproducción en Orden", command=self.toggle_order_mode)
+        self.order_button.pack(side="left", padx=5)
+        self.random_button = tk.Button(self.mode_frame, text="Reproducción Aleatoria", command=self.toggle_random_mode)
+        self.random_button.pack(side="left", padx=5)
+        self.loop_button = tk.Button(self.mode_frame, text="Reproducción en Bucle", command=self.toggle_loop_mode)
+        self.loop_button.pack(side="left", padx=5)
+
+
+    def on_mouse_wheel(self, event):
+        # event.delta en Windows suele ser múltiplo de 120
+        # Multiplicamos por 3 para hacerlo más rápido
+        self.tree.yview_scroll(int(-1*(event.delta/120)*3), "units")
+
+    def init_settings(self):
+        self.night_mode = False
+        self.toggle_night_mode()
+
+    def toggle_night_mode(self):
+        style = ttk.Style()
+        if not self.night_mode:
+            bg, fg, btn_bg = "black", "lime", "#222"
+            sel_bg, sel_fg = "black", "white"
+
+            # Cambios específicos para la barra de progreso
+            self.progress_scale.configure(bg="black", troughcolor="black", fg="lime", highlightbackground="black")
+            self.time_elapsed_label.configure(bg="black", fg="lime")
+            self.time_total_label.configure(bg="black", fg="lime")
+        else:
+            bg, fg, btn_bg = "SystemButtonFace", "black", "SystemButtonFace"
+            sel_bg, sel_fg = "#0078d7", "white"
+
+            # Restaurar estilo por defecto para la barra y etiquetas
+            self.progress_scale.configure(bg="SystemButtonFace", troughcolor="SystemButtonFace", fg="black", highlightbackground="SystemButtonFace")
+            self.time_elapsed_label.configure(bg=self.progress_frame.cget("bg"), fg="white")
+            self.time_total_label.configure(bg=self.progress_frame.cget("bg"), fg="white")
+
+        style.configure("Treeview", background=bg, foreground=fg, fieldbackground=bg)
+        style.configure("Treeview.Heading", background=bg, foreground=fg, font=('TkDefaultFont', 10, 'bold'))
+        style.map("Treeview", background=[("selected", sel_bg)], foreground=[("selected", sel_fg)])
+
+        # incluir bottom_panel y cualquier frame creado dinámicamente
+        frames = [self.root, self.top_frame, getattr(self, "bottom_panel", None),
+                self.controls_frame, self.mode_frame, self.progress_frame]
+
+        for frame in frames:
+            if frame is None:
+                continue
+            try:
+                frame.configure(bg=bg)
+            except Exception:
+                pass
+
+        for widget in [
+            self.play_button, self.pause_button, self.stop_button, self.prev_button, self.next_button,
+            self.night_button, self.choose_folder_btn, self.search_button,
+            self.order_button, self.random_button, self.loop_button
+        ]:
+            try:
+                widget.configure(bg=btn_bg, fg=fg)
+            except Exception:
+                pass
+
+        # entrada especial
+        try:
+            self.search_entry.configure(bg=btn_bg, fg=fg, insertbackground=fg)
+        except Exception:
+            pass
+
+        self.night_mode = not self.night_mode
+
+
+    def select_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.selected_folder = folder
+            self.populate_tree(folder)
+            self.songs = self.get_all_audio_items()
+            self.played_random = []
+
+    def populate_tree(self, folder):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.insert_items("", folder)
+
+    def insert_items(self, parent, path):
+        try:
+            items = os.listdir(path)
+        except PermissionError:
+            return
+        # Primero carpetas (orden alfabético), luego canciones (orden alfabético)
+        dirs = []
+        files = []
+        for item in items:
+            abs_path = os.path.join(path, item)
+            if os.path.isdir(abs_path):
+                dirs.append((item, abs_path))
+            elif os.path.isfile(abs_path) and abs_path.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
+                files.append((item, abs_path))
+
+        for name, abs_path in sorted(dirs, key=lambda x: x[0].lower()):
+            node = self.tree.insert(parent, "end", text=name, values=(abs_path,))
+            self.insert_items(node, abs_path)
+
+        for name, abs_path in sorted(files, key=lambda x: x[0].lower()):
+            self.tree.insert(parent, "end", text=name, values=(abs_path,))
+
+    def get_all_audio_items(self):
+        items = []
+        def recurse(parent=""):
+            for child in self.tree.get_children(parent):
+                file_path = self.tree.item(child, "values")[0]
+                if file_path.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
+                    items.append(child)
+                else:
+                    recurse(child)
+        recurse("")
+        return items
+
+    def node_exists(self, node_id):
+        try:
+            self.tree.item(node_id)
+            return True
+        except tk.TclError:
+            return False
+
+    def search_files(self):
+        query = self.search_entry.get().lower()
+        if self.selected_folder and query:
+            # Limpiar el treeview
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            # Buscar archivos que coincidan con la consulta
+            self.search_in_directory("", self.selected_folder, query)
+            # Actualizar la lista de canciones visibles tras la búsqueda
+            self.songs = self.get_all_audio_items()
+            self.played_random = []
+        elif not self.selected_folder:
+            print("Por favor, selecciona una carpeta primero.")
+        elif not query:
+            # Si la consulta está vacía, repoblar el treeview con todos los archivos
+            self.populate_tree(self.selected_folder)
+            self.songs = self.get_all_audio_items()
+            self.played_random = []
+
+    def search_in_directory(self, parent, path, query):
+        try:
+            items = os.listdir(path)
+        except PermissionError:
+            # En caso de no tener permisos para acceder a alguna carpeta
+            return
+        for item in sorted(items, key=str.lower):
+            abs_path = os.path.join(path, item)
+            if os.path.isdir(abs_path):
+                # Insertamos la carpeta y llamamos recursivamente para sus contenidos
+                node = self.tree.insert(parent, "end", text=item, values=(abs_path,))
+                self.search_in_directory(node, abs_path, query)
+            elif os.path.isfile(abs_path) and item.lower().endswith((".mp3", ".wav", ".flac", ".ogg", ".aac")):
+                if query in item.lower():
+                    self.tree.insert(parent, "end", text=item, values=(abs_path,))
+
+    def play_selected(self):
+        selected = self.tree.selection()
+        if selected:
+            file_path = self.tree.item(selected[0], "values")[0]
+            if not os.path.isfile(file_path):
+                print("Archivo no encontrado:", file_path)
+                return
+            self.current_file = file_path
+            new_media = self.instance.media_new(file_path)
+            if self.is_paused and self.current_media and self.current_media.get_mrl() == new_media.get_mrl():
+                self.player.set_pause(False)
+            else:
+                self.current_media = new_media
+                self.player.set_media(new_media)
+                self.player.play()
+                self.update_progress()
+            self.is_paused = False
+
+    def pause(self):
+        if self.player.is_playing():
+            self.player.set_pause(True)
+            self.is_paused = True
+
+    def stop(self):
+        self.player.stop()
+
+    def toggle_play_pause(self, event=None):
+        if self.player.is_playing():
+            self.pause()
+        else:
+            self.play_selected()
+
+    def on_double_click(self, event): self.play_selected()
+    def on_enter(self, event): self.search_files()
+    def play_next(self): self._play_relative(1)
+    def play_previous(self): self._play_relative(-1)
+
+    def _play_relative(self, direction):
+        if not self.songs or not self.current_file:
+            return
+
+        # Filtramos solo nodos que existen
+        valid_songs = [item for item in self.songs if self.node_exists(item)]
+
+        current_index = next(
+            (i for i, item in enumerate(valid_songs)
+            if self.tree.item(item, "values")[0] == self.current_file),
+            None
+        )
+        if current_index is not None:
+            new_index = current_index + direction
+            if 0 <= new_index < len(valid_songs):
+                target = valid_songs[new_index]
+                self.tree.selection_set(target)
+                self.tree.see(target)
+                self.play_selected()
+
+
+    def disable_other_modes(self, exclude):
+        if exclude != 'order':
+            self.play_in_order = False
+            self.order_button.config(relief="raised")
+        if exclude != 'random':
+            self.play_random = False
+            self.random_button.config(relief="raised")
+        if exclude != 'loop':
+            self.play_loop = False
+            self.loop_button.config(relief="raised")
+
+    def toggle_order_mode(self):
+        self.play_in_order = not self.play_in_order
+        self.disable_other_modes('order' if self.play_in_order else '')
+        self.order_button.config(relief="sunken" if self.play_in_order else "raised")
+        messagebox.showinfo("Modo Reproducción", f"{'Activando' if self.play_in_order else 'Desactivando'} reproducción en orden")
+
+    def toggle_random_mode(self):
+        self.play_random = not self.play_random
+        self.disable_other_modes('random' if self.play_random else '')
+        self.random_button.config(relief="sunken" if self.play_random else "raised")
+        if self.play_random:
+            # Aseguramos que la lista global de canciones esté actualizada
+            self.songs = self.get_all_audio_items()
+
+            # Determinar la carpeta "actual" para el modo aleatorio
+            base_path = None
+
+            # 1) Si hay una canción en reproducción, usamos su carpeta
+            if self.current_file:
+                base_path = os.path.dirname(self.current_file)
+            else:
+                # 2) Si no hay canción actual, usamos la selección del árbol
+                selected = self.tree.selection()
+                if selected:
+                    sel_path = self.tree.item(selected[0], "values")[0]
+                    if os.path.isdir(sel_path):
+                        base_path = sel_path
+                    else:
+                        base_path = os.path.dirname(sel_path)
+
+            # 3) Si aún no tenemos carpeta, usamos la carpeta raíz seleccionada
+            if not base_path and self.selected_folder:
+                base_path = self.selected_folder
+
+            # Construimos el ámbito aleatorio SOLO con canciones de esa carpeta (no recursivo)
+            if base_path:
+                self.random_scope = [
+                    item for item in self.songs
+                    if os.path.dirname(self.tree.item(item, "values")[0]) == base_path
+                ]
+            else:
+                # Fallback: si por algún motivo no tenemos carpeta, usamos todas
+                self.random_scope = self.songs.copy()
+
+            # Reiniciamos historial de aleatorio
+            self.played_random = []
+        else:
+            # Al desactivar el modo aleatorio limpiamos su ámbito e historial
+            self.random_scope = []
+            self.played_random = []
+        messagebox.showinfo("Modo Reproducción", f"{'Activando' if self.play_random else 'Desactivando'} reproducción aleatoria")
+
+    def toggle_loop_mode(self):
+        self.play_loop = not self.play_loop
+        self.disable_other_modes('loop' if self.play_loop else '')
+        self.loop_button.config(relief="sunken" if self.play_loop else "raised")
+        messagebox.showinfo("Modo Reproducción", f"{'Activando' if self.play_loop else 'Desactivando'} reproducción en bucle")
+
+    def handle_end_reached(self, event):
+        self.root.after(0, self._handle_end)
+
+    def _handle_end(self):
+        if self.play_in_order:
+            self.play_next()
+        elif self.play_random:
+            self.play_random_after()
+        elif self.play_loop:
+            self.play_loop_current()
+
+    def play_random_after(self):
+        # Usamos solo las canciones del ámbito aleatorio (carpeta actual).
+        scope = self.random_scope if self.random_scope else self.songs
+
+        # Filtramos nodos que sigan existiendo en el treeview
+        scope = [item for item in scope if self.node_exists(item)]
+
+        if not scope:
+            return
+
+        available = [item for item in scope if item not in self.played_random]
+        if not available:
+            self.played_random = []
+            available = scope.copy()
+
+        if not available:
+            return
+
+        chosen = random.choice(available)
+        file_path = self.tree.item(chosen, "values")[0]
+        self.played_random.append(chosen)
+        self.tree.selection_set(chosen)
+        self.tree.see(chosen)
+        self.play_selected()
+
+    def handle_end_reached(self, event):
+        # Se hace el after en el hilo principal para evitar problemas desde el hilo VLC
+        try:
+            self.root.after(0, self._handle_end)
+        except Exception as e:
+            print("Error programando _handle_end:", e)
+
+    def _handle_end(self):
+        # Protección ante reentradas simultáneas
+        if self._handling_end:
+            return
+        self._handling_end = True
+        try:
+            if self.play_in_order:
+                self.play_next()
+            elif self.play_random:
+                self.play_random_after()
+            elif self.play_loop:
+                self.play_loop_current()
+        finally:
+            # Pequeño delay para evitar múltiples triggers casi simultáneos
+            self.root.after(100, lambda: setattr(self, "_handling_end", False))
+
+    # Reemplaza play_loop_current por esta implementación robusta:
+    def play_loop_current(self):
+        """
+        Reproduce de nuevo la misma pista actual. Usa current_media si está disponible
+        (manteniendo el mismo MRL) o crea un nuevo media si hace falta.
+        También intenta seleccionar el item correspondiente en el treeview para la UI.
+        """
+        if not self.current_file:
+            return
+
+        # Intentar seleccionar el item en el treeview (para UI)
+        try:
+            matching_item = next(
+                (item for item in self.songs
+                if self.node_exists(item) and self.tree.item(item, "values")[0] == self.current_file),
+                None
+            )
+            if matching_item:
+                self.tree.selection_set(matching_item)
+                self.tree.see(matching_item)
+        except Exception:
+            # No crítico si falla la UI
+            pass
+
+        # Si tenemos current_media reutilizarlo y reiniciar posición
+        try:
+            if self.current_media:
+                # Si VLC mantiene media: volver al inicio y reproducir
+                # set_time(0) puede fallar si el media ya está cerrado, por eso probamos con play/reset
+                try:
+                    self.player.stop()
+                    # re-assign the same media object to be safe
+                    self.player.set_media(self.current_media)
+                    # reset to 0 ms if supported
+                    try:
+                        self.player.set_time(0)
+                    except Exception:
+                        pass
+                    self.player.play()
+                except Exception as e:
+                    # Fallback: recrear media desde ruta
+                    print("Fallback loop (recrear media):", e)
+                    if os.path.isfile(self.current_file):
+                        new_media = self.instance.media_new(self.current_file)
+                        self.current_media = new_media
+                        self.player.set_media(new_media)
+                        self.player.play()
+            else:
+                # No hay current_media: crear nuevo
+                if os.path.isfile(self.current_file):
+                    new_media = self.instance.media_new(self.current_file)
+                    self.current_media = new_media
+                    self.player.set_media(new_media)
+                    self.player.play()
+        except Exception as e:
+            print("Error intentando reproducir en bucle:", e)
+    
+    def format_time(self, ms):
+        seconds = int(ms / 1000)
+        m, s = divmod(seconds, 60)
+        return f"{m:02d}:{s:02d}"
+    
+    def on_progress_move(self, value):
+        if self.player.is_playing():
+            self.user_dragging = True
+            # El valor viene entre 0 y 1000, lo normalizamos a duración real
+            pos = float(value) / 1000.0
+            length = self.player.get_length() / 1000  # duración en segundos
+            new_time = pos * length * 1000  # en ms
+            self.player.set_time(int(new_time))
+            self.user_dragging = False
+
+    def update_progress(self):
+        if self.player is not None and self.player.get_length() > 0:
+            length = self.player.get_length()  # en ms
+            current_time = self.player.get_time()  # en ms
+
+            if not self.user_dragging:
+                pos = current_time / length
+                self.progress_var.set(pos * 1000)
+
+            self.time_elapsed_label.config(text=self.format_time(current_time))
+            self.time_total_label.config(text=self.format_time(length))
+        self.root.after(500, self.update_progress)
+
+
+# Alternativa usando pynput (menos robusta que HotKeyManager)
+"""
+class HotkeyListener:
+    def __init__(self, app):
+        self.app = app
+        self.ctrl_pressed = False
+
+    def on_press(self, key):
+        try:
+            if key == pynput_keyboard.Key.ctrl_l or key == pynput_keyboard.Key.ctrl_r:
+                self.ctrl_pressed = True
+            elif self.ctrl_pressed:
+                if key == pynput_keyboard.Key.space:
+                    self.app.toggle_play_pause()
+                elif key == pynput_keyboard.Key.right:
+                    self.app.play_next()
+                elif key == pynput_keyboard.Key.left:
+                    self.app.play_previous()
+                elif key == pynput_keyboard.Key.up:
+                    vol = min(self.app.player.audio_get_volume() + 10, 100)
+                    self.app.player.audio_set_volume(vol)
+                elif key == pynput_keyboard.Key.down:
+                    vol = max(self.app.player.audio_get_volume() - 10, 0)
+                    self.app.player.audio_set_volume(vol)
+        except AttributeError:
+            pass
+
+    def on_release(self, key):
+        if key == pynput_keyboard.Key.ctrl_l or key == pynput_keyboard.Key.ctrl_r:
+            self.ctrl_pressed = False
+
+    def start(self):
+        listener = pynput_keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        listener.start()
+    """
+
+
+if __name__ == "__main__":
+    import threading
+    import tkinter as tk
+    from PIL import Image, ImageDraw
+    from pystray import Icon as TrayIcon, MenuItem as item, Menu
+
+    # -----------------------------
+    # 1️⃣ Crear ventana principal
+    # -----------------------------
+    root = tk.Tk()
+    root.title("MP3 Player")
+
+    # Crear tu app
+    app = MP3Player(root)
+
+    # -----------------------------
+    # 2️⃣ Crear gestor de hotkeys
+    # -----------------------------
+    hk = HotkeyManager(app)
+
+    # Registrar hotkeys
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_RETURN, lambda: app.root.after(0, app.search_files))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_SPACE, lambda: app.root.after(0, app.toggle_play_pause))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_RIGHT, lambda: app.root.after(0, app.play_next))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_LEFT,  lambda: app.root.after(0, app.play_previous))
+
+    def vol_up(): app.player.audio_set_volume(min(app.player.audio_get_volume() + 10, 100))
+    def vol_down(): app.player.audio_set_volume(max(app.player.audio_get_volume() - 10, 0))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_UP, lambda: app.root.after(0, vol_up))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_DOWN, lambda: app.root.after(0, vol_down))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_PLUS, lambda: app.root.after(0, vol_up))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_MINUS, lambda: app.root.after(0, vol_down))
+
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_L, lambda: app.root.after(0, app.toggle_loop_mode))
+    #hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_R, lambda: app.root.after(0, app.toggle_random_mode))
+    hk.register_hotkey(HotkeyManager.MOD_CONTROL, VK_O, lambda: app.root.after(0, app.toggle_order_mode))
+
+    hk.start()
+
+    # ---------------------------------------------
+    # 3️⃣ Funciones para bandeja de iconos windows
+    # ---------------------------------------------
+    def create_image():
+        # Icono simple en memoria (32x32)
+        image = Image.new('RGB', (32, 32), "black")
+        dc = ImageDraw.Draw(image)
+        dc.rectangle((8, 8, 24, 24), fill="lime")
+        return image
+
+    def restore_from_tray(icon, item=None):
+        icon.stop()       # Cerramos el icono actual
+        root.deiconify()  # Mostramos la ventana
+
+    def quit_app(icon, item=None):
+        icon.stop()
+        hk.stop()
+        app.stop()
+        root.destroy()
+
+    def minimize_to_tray():
+        root.withdraw()  # Ocultamos ventana
+        # Creamos un nuevo TrayIcon cada vez
+        global tray_icon
+        tray_icon = TrayIcon(
+            "MP3 Player",
+            create_image(),
+            "MP3 Player",
+            Menu(
+                item("Open", restore_from_tray),
+                item("Play/pause", app.toggle_play_pause),
+                item("Exit", quit_app)
+            ), 
+            on_double_click=restore_from_tray  # <-- Esto hace que doble click abra la ventana
+        )
+        # Ejecutarlo en un hilo para que no bloquee Tkinter
+        threading.Thread(target=tray_icon.run, daemon=True).start()
+    
+    # -----------------------------
+    # 4️⃣ Menú del icono
+    # -----------------------------
+    menu_options = Menu(
+        item("Open", restore_from_tray),
+        item("Play/pause", app.toggle_play_pause),
+        item("Exit", quit_app)
+    )
+
+    tray_icon = TrayIcon("MP3 Player", create_image(), "MP3 Player", menu_options)
+
+    # -----------------------------
+    # 5️⃣ Sobrescribir cierre de ventana
+    # -----------------------------
+    def on_close():
+        minimize_to_tray()
+
+    root.protocol("WM_DELETE_WINDOW", on_close)
+
+    # -----------------------------
+    # 6️⃣ Ejecutar ventana principal
+    # -----------------------------
+    root.mainloop()

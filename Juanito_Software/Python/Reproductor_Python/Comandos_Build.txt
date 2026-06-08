@@ -1,0 +1,2 @@
+pyinstaller --onefile --windowed --noconsole MP3Player.py       
+pyinstaller --onefile --windowed --noconsole --add-binary "matrix_effect.exe;." MP3Player_matrix.py          

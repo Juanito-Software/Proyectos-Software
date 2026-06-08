@@ -44,14 +44,15 @@ def run_matrix_effect():
     exe_path = os.path.join(base_path, "matrix_effect.exe")
 
     if os.path.exists(exe_path):
-        print("🎬 Iniciando animación de Matrix. Pulsa ESC o cierra la ventana para continuar...")
+        print("🎬 Iniciando animación de Matrix. Pulsa Espacio o cierra la ventana para continuar...")
         try:
-            subprocess.run([exe_path], check=False)
+            result = subprocess.run([exe_path], check=False)
+            #print(f"[DEBUG] matrix_effect.exe terminó con código: {result.returncode}")
         except Exception as e:
             print(f"❌ Error ejecutando matrix_effect.exe: {e}")
     else:
         print("❌ No se encontró matrix_effect.exe, se saltará la animación.")
-
+        
 
 def limpiar_nombre(nombre):
     """Elimina caracteres no válidos para nombres de archivos."""
@@ -228,8 +229,12 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
 def descargar_video_mp4(url, carpeta_salida=None):
     # Si no se especifica carpeta, usar "descargas" en el mismo directorio del script
     if carpeta_salida is None:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        script_dir = os.path.dirname(sys.executable)
         carpeta_salida = os.path.join(script_dir, "descargas")
+    else:
+            # Desarrollo: usar el directorio del script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            carpeta_salida = os.path.join(script_dir, "descargas")
     if not HAS_PYTUBE:
         raise RuntimeError('pytube no está instalado en este entorno.')
     return descargar_con_pytube(url, carpeta_salida)
@@ -286,7 +291,12 @@ def proceso_interactivo():
 
 if __name__ == "__main__":
     # Animación opcional
-    if os.path.exists("matrix_effect.exe"):
+    if hasattr(sys, '_MEIPASS'):
+        _base = sys._MEIPASS
+    else:
+        _base = os.path.dirname(os.path.abspath(__file__))
+
+    if os.path.exists(os.path.join(_base, "matrix_effect.exe")):
         ver_intro = input("¿Quieres ver la animación de Matrix? (s/n): ").strip().lower()
         if ver_intro == "s":
             run_matrix_effect()
