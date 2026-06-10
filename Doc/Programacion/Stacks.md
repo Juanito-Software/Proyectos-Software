@@ -1,4 +1,13 @@
 
+- Java = ecosistema JVM
+- Laravel = ecosistema PHP
+- NodeJS = runtime JS
+- Python = scripting / data / ML
+- Rust = systems programming
+- libraries = código reutilizable
+
+---
+
 - **Runtime** → dónde se ejecuta el código.
     
 - **Backend Framework** → cómo construyes la API.
