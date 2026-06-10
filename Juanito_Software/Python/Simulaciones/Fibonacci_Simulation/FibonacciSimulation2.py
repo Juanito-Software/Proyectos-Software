@@ -18,10 +18,18 @@ import numpy as np
 
 # Función para generar n números de Fibonacci
 def fibonacci(n):
-    fib = [0, 1]
-    for i in range(2, n+1):
-        fib.append(fib[-1] + fib[-2])
-    return np.array(fib[1:])
+    if n <= 0:
+        return np.array([])
+
+    result = np.empty(n, dtype=int)
+    result[0] = 0
+    if n > 1:
+        result[1] = 1
+
+    for i in range(2, n):
+        result[i] = result[i - 1] + result[i - 2]
+
+    return result
 
 n = 20
 angle = np.radians(137.5)
