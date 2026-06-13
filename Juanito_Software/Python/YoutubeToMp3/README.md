@@ -14,13 +14,13 @@ Construida sobre **yt_dlp**, un mantenedor activo y más confiable que pytube, g
 
 ## 🚀 Características
 
-- 🎧 **Descarga de audio de alta calidad**: extrae el stream de audio en la máxima calidad disponible (típicamente 320 kbps) y convierte automáticamente a MP3 usando FFmpeg
-- 📋 **Descarga masiva por CSV**: carga una lista de URLs desde `descargas.csv` para descargar múltiples pistas de una sola vez
-- 🔄 **Librería confiable**: usa `yt_dlp`, un fork activamente mantenido de youtube-dl con mejor compatibilidad
-- 🖱️ **Interfaz flexible**: modo consola interactivo para uso manual y modo automático para procesamiento de lotes
-- 🎨 **Efecto visual opcional**: efecto "Matrix" al inicio (matriz_effect.exe) para experiencia visual atractiva
-- 📝 **Registro automático**: guarda historial de descargas y metadatos en `descargas.csv`
-- 📦 **Empaquetable**: compilable a `.exe` con PyInstaller para distribución sin dependencias de Python
+-  **Descarga de audio de alta calidad**: extrae el stream de audio en la máxima calidad disponible (típicamente 320 kbps) y convierte automáticamente a MP3 usando FFmpeg
+-  **Descarga masiva por CSV**: carga una lista de URLs desde `descargas.csv` para descargar múltiples pistas de una sola vez
+-  **Librería confiable**: usa `yt_dlp`, un fork activamente mantenido de youtube-dl con mejor compatibilidad
+-  **Interfaz flexible**: modo consola interactivo para uso manual y modo automático para procesamiento de lotes
+-  **Efecto visual opcional**: efecto "Matrix" al inicio (matriz_effect.exe) para experiencia visual atractiva
+-  **Registro automático**: guarda historial de descargas y metadatos en `descargas.csv`
+-  **Empaquetable**: compilable a `.exe` con PyInstaller para distribución sin dependencias de Python
 
 ---
 
@@ -52,7 +52,7 @@ cd YoutubeToMp3
 # Instalar yt_dlp (recomendado)
 pip install yt_dlp
 
-# Opcional: instalar matriz_effect.exe para efecto visual
+# Opcional: instalar matrix_effect.exe para efecto visual
 # (descárgalo o cópialo en la misma carpeta)
 ```
 
@@ -157,7 +157,7 @@ OUTPUT_DIR = "./"            # Carpeta donde guardar los MP3
 
 # Mostrar efecto Matrix
 SHOW_MATRIX_EFFECT = True    # True o False
-MATRIX_EFFECT_PATH = "matriz_effect.exe"
+MATRIX_EFFECT_PATH = "matrix_effect.exe"
 
 # Timeout de descarga (segundos)
 DOWNLOAD_TIMEOUT = 300       # Aumentar si descargas muy lentas
@@ -202,31 +202,25 @@ Las columnas adicionales (duración, notas) son informativas y se ignoran.
 
 ## 🎬 Efecto Matrix (Opcional)
 
-Si incluyes `matriz_effect.exe` en el directorio, se mostrará un efecto visual estilo Matrix al inicio:
+Si incluyes `matrix_effect.exe` en el directorio, se mostrará un efecto visual estilo Matrix al inicio:
 
 ```python
 SHOW_MATRIX_EFFECT = True
 ```
 
-Presiona <kbd>Esc</kbd> en la ventana Matrix para continuar con la descarga.
+Presiona <kbd>Espace</kbd> en la ventana Matrix para continuar con la descarga.
 
 ---
 
-## 🔧 Compilación a Ejecutable (.exe)
+## 🔧 Compilación a Ejecutable .exe  (opcional)
 
 Si quieres distribuir sin requerir Python:
 
 ```bash
 pip install pyinstaller
 
-# Compilación simple
-pyinstaller --onefile YoutubeToMp3.py
-
-# Compilación sin consola (Windows)
-pyinstaller --onefile --noconsole YoutubeToMp3.py
-
-# Con icono personalizado
-pyinstaller --onefile --icon=icono.ico YoutubeToMp3.py
+# Build (opcional)
+pyinstaller --onefile --console --add-binary "matrix_effect.exe;." YoutubeToMp3.py 
 ```
 
 El ejecutable se generará en la carpeta `dist/`.
