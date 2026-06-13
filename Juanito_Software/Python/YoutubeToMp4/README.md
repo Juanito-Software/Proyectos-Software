@@ -1,5 +1,8 @@
 # 🎬 YoutubeToMp4 - Descargador de Vídeos de YouTube en Alta Calidad
 
+---
+
+## 🧾 Descripción
 Herramienta para **descargar vídeos de YouTube en la máxima resolución disponible** (hasta 4K) en formato MP4. Gestiona automáticamente el merge de streams de vídeo y audio cuando YouTube los separa en diferentes flujos, usando **FFmpeg** como motor de procesamiento.
 
 ---
@@ -74,6 +77,32 @@ YoutubeToMp4/
     ├── Video1.mp4
     └── Video2.mp4
 ```
+---
+
+## 🎬 Efecto Matrix (Opcional)
+
+Si incluyes `matrix_effect.exe` en el directorio, se mostrará un efecto visual estilo Matrix al inicio:
+
+```python
+SHOW_MATRIX_EFFECT = True
+```
+
+Presiona <kbd>Espace</kbd> en la ventana Matrix para continuar con la descarga.
+
+---
+
+## 🔧 Compilación a Ejecutable .exe  (opcional)
+
+Si quieres distribuir sin requerir Python:
+
+```bash
+pip install pyinstaller
+
+# Build (opcional)
+pyinstaller --onefile --console --add-binary "matrix_effect.exe;." YoutubeToMp4.py 
+```
+
+El ejecutable se generará en la carpeta `dist/`.
 
 ---
 

@@ -109,7 +109,7 @@ pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121
 # 2. Instalar el resto de dependencias
 pip install -r requirements.txt
 
-# Comando para Build
+# Comando para Build (opcional)
 python -m PyInstaller MultifuncionFPS.py --noconfirm --onedir --windowed --clean --noupx --hidden-import=torchaudio --hidden-import=torchaudio._extension --collect-all torch --collect-all torchvision --collect-all ultralytics --collect-all cv2 --hidden-import=keyboard --hidden-import=dxcam --hidden-import=win32gui --hidden-import=win32con --hidden-import=winreg --add-binary "matrix_effect.exe;." --add-data "crosshairs;crosshairs" --add-data "FloatTrans;FloatTrans" --add-data "runs/detect/train/weights/best.pt;runs/detect/train/weights"
 ```
 

@@ -56,10 +56,19 @@ pip install python-vlc pynput
 Ejecuta el programa con:
 
 ```bash
-python reproductor.py
+python MP3Player.py
 ```
 
-Si el archivo `matrix_effect.exe` está presente en el mismo directorio, se ejecutará automáticamente al inicio como efecto visual. Puedes omitirlo sin afectar el funcionamiento principal del reproductor.
+o
+
+```bash
+python MP3Player_matrix.py
+```
+
+
+## 🎬 Efecto Matrix (Opcional)
+
+Si el archivo `matrix_effect.exe` está presente en el mismo directorio, se ejecutará automáticamente al inicio como efecto visual siempre que ejecutes la version MP3Player_matrix.py. Puedes omitirlo con la tecla "Space" sin afectar el funcionamiento principal del reproductor.
 
 ---
 
@@ -87,6 +96,29 @@ Si el archivo `matrix_effect.exe` está presente en el mismo directorio, se ejec
 ├── matrix_effect.exe         # Opcional
 └── README.md
 ```
+
+---
+
+## 🔧 Compilación a Ejecutable .exe  (opcional)
+
+Si quieres distribuir sin requerir Python:
+
+```bash
+pip install pyinstaller
+
+# Build (opcional)
+
+pyinstaller --onefile --windowed --noconsole MP3Player.py
+
+##with matrix_effect
+
+pyinstaller --onefile --windowed --noconsole --add-binary "matrix_effect.exe;." MP3Player_matrix.py 
+
+```
+
+El ejecutable se generará en la carpeta `dist/`.
+
+---
 
 ---
 

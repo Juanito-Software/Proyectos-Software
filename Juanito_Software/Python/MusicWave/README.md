@@ -8,7 +8,7 @@
 
 Suite de visualizadores de audio en tiempo real que capturan el sonido que reproduce tu ordenador y lo transforman en **representaciones visuales reactivas**. Dos enfoques complementarios:
 
-1. **Analizador de Espectro Multiformato** (`main.py`): análisis profesional con múltiples vistas simultáneas
+1. **Analizador de Espectro Multiformato** (`MusicWave.py`): análisis profesional con múltiples vistas simultáneas
 2. **Simulación de Partículas Reactiva** (`EfectoAudioEspacio.py`): simulación física emergente basada en física orbital
 
 Ambas usan **captura de audio del sistema** mediante `soundcard`, sin necesidad de micrófono.
@@ -30,7 +30,7 @@ Ambas usan **captura de audio del sistema** mediante `soundcard`, sin necesidad 
 
 ### 📊 v1: Analizador de Espectro Multiformato
 
-**Archivo:** `main.py`
+**Archivo:** `MusicWave`
 
 Visualizador **profesional de audio** con múltiples representaciones simultáneas de la misma señal de audio:
 
@@ -139,7 +139,7 @@ pip install numpy soundcard pygame
 ### 📊 Versión 1: Analizador de Espectro
 
 ```bash
-python main.py
+python MusicWave.py
 ```
 
 **Flujo:**
