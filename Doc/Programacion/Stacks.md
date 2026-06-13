@@ -109,11 +109,10 @@ Son combinaciones concretas del ecosistema JavaScript.
 - Node.js
     
 
-Hace años eran muy populares. Hoy en día se ve más:
+## MODERNO
 
 **PostgreSQL + NestJS + React/Next.js**
 
-que un MERN puro.
 
 ---
 
