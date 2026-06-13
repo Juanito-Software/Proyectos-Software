@@ -38,6 +38,12 @@ import numpy as np
 import keyboard
 from PIL import Image, ImageDraw, ImageFont
 import dxcam 
+import sys
+import os
+
+def resource_path(relative_path):
+    base = getattr(sys, "_MEIPASS", os.path.abspath("."))
+    return os.path.join(base, relative_path)
 
 def run_matrix_effect():
     if hasattr(sys, '_MEIPASS'):
@@ -380,9 +386,9 @@ class App:
         self.next_crosshair()
 
     def run_motion_detection_CS2(self):
-    # Cargar modelo YOLO
-        model = YOLO("yolov8s.pt")
-        #model = YOLO("runs/detect/train/weights/best.pt")
+    # Cargar modelo YOLO aprendizaje profundo entrenado para CS2
+        #model = YOLO("yolov8s.pt")
+        model = YOLO(resource_path("runs/detect/train/weights/best.pt"))
         model.to('cuda')  # usar GPU si está disponible
 
         # Fuente para overlay
