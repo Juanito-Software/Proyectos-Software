@@ -3,36 +3,6 @@
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
-    "username": "paguiitasypolen23",
-    "message": "bjalee ala musica porros",
-    "timestamp": 1781270685081,
-    "user": "paguiitasypolen23",
-    "received_at": "2026-06-12T13:24:45.082Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "paguiitasypolen23",
-    "message": "juanito porros",
-    "timestamp": 1781270688854,
-    "user": "paguiitasypolen23",
-    "received_at": "2026-06-12T13:24:48.854Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "paguiitasypolen23",
-    "message": "bajale ala musicaa",
-    "timestamp": 1781270693204,
-    "user": "paguiitasypolen23",
-    "received_at": "2026-06-12T13:24:53.204Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
     "username": "barreiross_",
     "message": "pitiseCara pitiseCara pitiseCara",
     "timestamp": 1781270708705,
@@ -882,5 +852,35 @@
     "timestamp": 1781367955314,
     "user": "midoff_6",
     "received_at": "2026-06-13T16:25:55.315Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "grande midoff",
+    "timestamp": 1781368129810,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-13T16:28:49.811Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "sisisisi",
+    "timestamp": 1781368131536,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-13T16:28:51.536Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "esta noche le damos sin falta",
+    "timestamp": 1781368138011,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-13T16:28:58.011Z"
   }
 ]

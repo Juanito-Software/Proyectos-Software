@@ -1,0 +1,20 @@
+PyInstaller Resource Path Helper
+
+This utility function resolves file paths correctly both during development
+(running from source code) and after packaging the application with PyInstaller.
+
+When PyInstaller builds an executable, it extracts bundled files into a temporary
+directory referenced by sys._MEIPASS. This function detects that environment
+and adjusts file paths accordingly.
+
+If the application is running normally (not bundled), it falls back to the
+current working directory.
+
+This ensures that external assets such as models, images, configuration files,
+or weights can be accessed reliably in both environments.
+
+Function:
+
+def resource_path(relative_path):
+    base = getattr(sys, "_MEIPASS", os.path.abspath("."))
+    return os.path.join(base, relative_path)
