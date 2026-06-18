@@ -2,7 +2,7 @@
 # Core ML / LLM Stack
 # =========================
 
-torch==2.7.1+cu118
+torch==2.8.0
 transformers==4.53.0
 accelerate==1.8.1
 huggingface-hub==0.33.1
