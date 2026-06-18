@@ -1,9 +1,11 @@
 
 Preparar programas 1 a 1 añadiendo a cada uno su requirements.txt con las dependencias necesarias
 
-Preparar programas 1 a 1 con scripts que recreen el entorno e instalen los requirements.txt mediante un setup.bat
+Preparar programas 1 a 1 añadiendo setup.bat
 
-mirar que todos los programas tengan readme y añadir a los readme el comando para buildear en cada caso 
+Preparar programas 1 a 1 añadiendo build.bat
+
+mirar que todos los programas tengan readme
 
 Montar agentes IA Controladores del PC estilo openclaw
 
