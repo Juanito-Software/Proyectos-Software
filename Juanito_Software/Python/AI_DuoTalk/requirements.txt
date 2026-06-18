@@ -1,35 +1,48 @@
-# Dependencias principales para el sistema de IAs de voz
+# ============================================================
+# Sistema de IAs de Voz Local
+# ============================================================
 
-# PyTorch con soporte CUDA (opcional, pero recomendado)
-# Para Windows con CUDA 11.8:
-# torch --index-url https://download.pytorch.org/whl/cu118
+#dependencias pip
+pydub==0.25.1
+
+# ------------------------------------------------------------
+# PyTorch
+# ------------------------------------------------------------
+# CUDA 11.8:
+# pip install torch==2.7.1+cu118 --index-url https://download.pytorch.org/whl/cu118
+#
 # Para CPU solamente:
-torch>=2.0.0
+# pip install torch==2.7.1
 
-# Whisper para Speech-to-Text
-openai-whisper>=20231117
+torch==2.7.1+cu118
 
+# ------------------------------------------------------------
+# Speech-to-Text (Whisper)
+# ------------------------------------------------------------
+openai-whisper==20250625
+
+# ------------------------------------------------------------
+# LLM Local
+# ------------------------------------------------------------
 # GPT4All para LLM local
-gpt4all>=2.5.0
+gpt4all==2.8.2
 
-# Silero TTS (se carga vía torch.hub, pero necesitamos estas dependencias)
-sounddevice>=0.4.6
-numpy>=1.24.0
-soundfile>=0.12.1
-omegaconf>=2.3.0
-pyyaml>=5.1.0
+# ------------------------------------------------------------
+# Text-to-Speech (Silero)
+# ------------------------------------------------------------
+sounddevice==0.5.3
+soundfile==0.13.1
+omegaconf==2.3.0
+librosa==0.11.0
+PyYAML==6.0.3
 
-# Utilidades de audio
-pydub>=0.25.1
-librosa>=0.10.0  # Para cargar audio sin depender de FFmpeg
 
-# API web (opcional, para futuras extensiones)
-fastapi>=0.104.0
-uvicorn>=0.24.0
+# ------------------------------------------------------------
+# API Web
+# ------------------------------------------------------------
+fastapi==0.121.3
+uvicorn==0.38.0
 
-# Utilidades adicionales
-scipy>=1.11.0
 
 # Detección de teclado para atajos (Ctrl+B para parar debate)
-keyboard>=0.13.5
-
+keyboard==0.13.5

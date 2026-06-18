@@ -1,32 +1,48 @@
-# 🌍 Sistema Solar Emergente 2D — Simulación Gravitatoria Newtoniana
+# Sistema Solar Emergente 2D — Simulación Gravitatoria Newtoniana
+
+**© 2025 JuanitoSoftware** — Licencia GNU GPL v3 — Python 3
 
 **Autor:** JuanitoSoftware · **Licencia:** GNU GPL v3 · **Lenguaje:** Python 3
 
 ---
 
-## 🧾 Descripción
+## Descripción
 
-Colección de tres simulaciones de **sistemas solares emergentes** basadas en **gravitación newtoniana 2D**. Cada versión representa una evolución progresiva en complejidad y fidelidad física, desde un sistema simple hasta una simulación con rastros visuales, órbitas elípticas y parámetros altamente configurables.
+Colección de tres simulaciones de  **sistemas solares emergentes** basadas en **gravitación newtoniana 2D**. Cada versión representa una evolución progresiva en complejidad y fidelidad física, desde un sistema simple hasta una simulación con rastros visuales, órbitas elípticas y parámetros altamente configurables.
 
 Observa cómo múltiples partículas con masas variables orbitan un sol central masivo, interaccionan gravitatoriamente entre sí y generan dinámicas complejas y emergentes a partir de reglas físicas simples.
 
 ---
 
-## 🚀 Características Generales
+## Versiones de un vistazo
 
-- ⭐ **Sol central masivo**: punto de atracción gravitatoria dominante
-- 🪐 **N partículas en órbita**: con masas variables y física newtoniana
-- 🎬 **Renderizado en tiempo real**: 60 FPS con pygame
-- 📊 **Gravitación realista**: \(F = G \cdot m_1 \cdot m_2 / r^2\)
-- 🛡️ **Suavizado (Softening)**: evita singularidades cuando las partículas están muy cerca
-- 🔄 **Interacción N-body**: cada partícula interactúa con todas las demás
-- 🎨 **Visualización clara**: colores diferenciados por tipo (sol dorado, partículas blancas)
+| | v1 — Básica | v2 — Órbitas circulares | v3 — Avanzada |
+|---|---|---|---|
+| Archivo | `Simulacion2D.py` | `Simulacion2D_v2.py` | `Simulacion2D_v3.py` |
+| Spawn partículas | Posición aleatoria | Órbita circular calculada | Órbita elíptica perturbada |
+| Softening sol | No | No | Sí (`SOL_SOFTENING = 20`) |
+| Softening partículas | No | Sí (`SOFTENING = 5`) | Sí (`PART_SOFTENING = 5`) |
+| Rastros visuales | No | No | Sí (deque + surface alpha) |
+| Estabilidad | Baja | Media | Alta |
+| Ejecutable | `Simulacion2D.exe` | `Simulacion2D_v2.exe` | `Simulacion2D_v3.exe` |
 
 ---
 
-## 📂 Las Tres Versiones
+## Características Generales
 
-### 📍 v1: Simulacion2D.py — Sistema Básico
+- **Sol central masivo**: punto de atracción gravitatoria dominante
+- **N partículas en órbita**: con masas variables y física newtoniana
+- **Renderizado en tiempo real**: 60 FPS con pygame
+- **Gravitación realista**: \(F = G \cdot m_1 \cdot m_2 / r^2\)
+- **Suavizado (Softening)**: evita singularidades cuando las partículas están muy cerca
+- **Interacción N-body**: cada partícula interactúa con todas las demás
+- **Visualización clara**: colores diferenciados por tipo (sol dorado, partículas blancas)
+
+---
+
+## Las Tres Versiones
+
+### v1: Simulacion2D.py — Sistema Básico
 
 **Características:**
 - Partículas colocadas **aleatoriamente** en la pantalla
@@ -45,17 +61,29 @@ Observa cómo múltiples partículas con masas variables orbitan un sol central 
 - Demostración de cómo funcionan los rebotes y colisiones
 - Punto de partida para aprender la estructura
 
+**Parámetros clave:**
+```python
+N = 50          # número de partículas
+G = 0.5         # constante gravitatoria
+VEL_MAX = 5     # límite de velocidad
+```
+
+
 ---
 
-### 🌀 v2: Simulacion2D_v2.py — Órbitas Circulares Iniciales
+### v2: Simulacion2D_v2.py — Órbitas Circulares Iniciales
 
 **Mejoras respecto a v1:**
+La diferencia principal está en el **spawn inicial**: cada partícula se coloca a un radio aleatorio entre 100 y 300 px del sol y recibe la velocidad orbital circular exacta para ese radio.
+
 - Partículas nacen en **órbitas circulares estables** (radio y ángulo aleatorios)
 - Velocidades orbitales calculadas correctamente: \(v_{circ} = \sqrt{G \cdot M_{sol} / r}\)
 - **Softening** en interacciones partícula-partícula para evitar fuerzas infinitas
 - Sistema más realista y predecible
 
 **Comportamiento esperado:**
+ el sistema arranca ordenado, con partículas describiendo órbitas aproximadamente circulares. Las perturbaciones mutuas van introduciendo excentricidad con el tiempo, pero el sistema permanece estable durante mucho más tiempo que v1.
+
 - Órbitas circulares estables alrededor del sol
 - Algunas perturbaciones por interacción entre partículas
 - Dinámica ordenada y visualmente satisfactoria
@@ -65,11 +93,24 @@ Observa cómo múltiples partículas con masas variables orbitan un sol central 
 - Comparación con simulaciones realistas
 - Uso educativo intermedio
 
+**Parámetros clave:**
+```python
+N = 50
+G = 0.5
+VEL_MAX = 5
+INTER_PARTICLE_FORCE = 0.05
+# (spawn)
+r = random.uniform(100, 300)
+v = math.sqrt(G * sol[4] / r)
+```
+
 ---
 
-### ✨ v3: Simulacion2D_v3.py — Sistema Avanzado con Rastros y Órbitas Elípticas
+### v3: Simulacion2D_v3.py — Sistema Avanzado con Rastros y Órbitas Elípticas
 
 **Mejoras respecto a v2:**
+La versión más completa. Incorpora rastros visuales por partícula, órbitas elípticas controladas, suavizado separado para el sol y las partículas, masa del sol aumentada a 200 para mayor estabilidad, y un sistema de parámetros exhaustivo.
+
 - **Rastros visuales (trails)**: cada partícula deja una estela que se desvanece gradualmente
 - **Órbitas elípticas**: perturbaciones controladas en velocidad tangencial y radial
 - **Parámetros extremadamente configurables** (ver sección más abajo)
@@ -91,18 +132,18 @@ Observa cómo múltiples partículas con masas variables orbitan un sol central 
 
 ---
 
-## ⚙️ Requisitos del Sistema
+## Requisitos del Sistema
 
-- **Python:** 3.7 o superior
+- **Python 3.7+** — probado con Python 3.12 y 3.13.
 - **Dependencias:**
-  ```bash
-  pip install pygame
-  ```
+```bash
+pip install pygame
+```
   Módulos estándar: `random`, `math`, `collections`
 
 ---
 
-## 📦 Instalación
+## Instalación
 
 ```bash
 pip install pygame
@@ -110,7 +151,7 @@ pip install pygame
 
 ---
 
-## 💻 Uso y Ejecución
+## Uso y Ejecución
 
 ### Versión 1 (Básica)
 ```bash
@@ -131,7 +172,7 @@ python Simulacion2D_v3.py
 
 ---
 
-## 🎛️ Parámetros Configurables (v3)
+## Parámetros Configurables (v3)
 
 Edita `Simulacion2D_v3.py` para ajustar:
 
@@ -165,13 +206,14 @@ radial_frac = random.uniform(-0.06, 0.06)      # Componente radial
 
 **Ejemplos de ajuste:**
 - **Más caos**: `↑ INTER_PARTICLE_FORCE`, `↓ G`
+- **Órbitas más excéntricas**: `↑ tangential_scale` y `radial_frac`
 - **Órbitas más estables**: `↑ SOL_SOFTENING`, `↓ INTER_PARTICLE_FORCE`
-- **Rastros más cortos**: `↓ TRAIL_LENGTH`
+- **Rastros más cortos**: `↑ TRAIL_LENGTH a 300+`  `↓ TRAIL_FADE_ALPHA`
 - **Sistema más rápido**: `↓ DT`, `↑ FPS`
 
 ---
 
-## 🔬 Conceptos Físicos
+## Conceptos Físicos
 
 ### Gravitación Newtoniana
 ```
@@ -188,19 +230,19 @@ F = G · m₁ · m₂ / (r² + softening²)
 ```
 
 ### Órbitas Circulares
-Para mantener una órbita circular:
+Para mantener una órbita circular (equilibrio entre gravedad y fuerza centrífuga):
 ```
-v_circular = √(G·M / r)
+v_circular = √(G · M_sol / r)
 ```
 
 ### Órbitas Elípticas
 Se logran con pequeñas perturbaciones en la velocidad:
-- **Componente tangencial** ≠ 1.0 → excentricidad
-- **Componente radial** ≠ 0 → rotación de ápside
+- **Componente tangencial** ≠ 1.0 → excentricidad (cambia el semilatus rectum)
+- **Componente radial** ≠ 0 → rotación de ápside (introduce excentricidad y rotación del ápside)
 
 ---
 
-## 📊 Comparación de Versiones
+## Comparación de Versiones
 
 | Aspecto | v1 | v2 | v3 |
 |---|:---:|:---:|:---:|
@@ -213,7 +255,7 @@ Se logran con pequeñas perturbaciones en la velocidad:
 
 ---
 
-## 🎨 Sugerencias Creativas
+## Sugerencias Creativas
 
 1. **Captura de imágenes**: configura v3 con `TRAIL_LENGTH = 300` y deja correr 5 minutos
 2. **Registro de vídeo**: usa software como OBS para grabar la salida
@@ -223,7 +265,7 @@ Se logran con pequeñas perturbaciones en la velocidad:
 
 ---
 
-## 🔮 Próximos Pasos
+## Próximos Pasos
 
 - **Exportación de datos**: guardar posiciones/velocidades a CSV para análisis
 - **Integrador más preciso**: RK4 (Runge-Kutta de 4º orden) en lugar de semi-implícito
@@ -234,7 +276,7 @@ Se logran con pequeñas perturbaciones en la velocidad:
 
 ---
 
-## ⚖️ Licencia
+## Licencia
 
 Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos de la **Licencia Pública General de GNU versión 3 (GPLv3)** o cualquier versión posterior.
 
@@ -244,6 +286,6 @@ Más información: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.o
 
 ---
 
-## 📬 Contacto
+## Contacto
 
-📧 bernaldezperedaj@gmail.com
+bernaldezperedaj@gmail.com

@@ -14,35 +14,21 @@
 # con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
 
 # GPTDevTeam
-from transformers import AutoTokenizer
+import ast
 import subprocess
 import threading
 import requests
-import torch
 import os
 import time
 import re
 import textwrap
+import tempfile
+import shutil
 
-from gptqmodel import GPTQModel
-import huggingface_hub
-print("huggingface_hub:", huggingface_hub.__version__)
-
-import triton
-print("triton:", triton.__version__)
-
-print(f"CUDA disponible: {torch.cuda.is_available()}, versión: {torch.version.cuda}")
-if torch.cuda.is_available():
-    print(f"GPU: {torch.cuda.get_device_name(0)}")
-
-# Carga única del modelo CodeLlama GPTQ
-model_id = "TheBloke/CodeLlama-7B-Python-GPTQ"
-tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
-model = GPTQModel.from_quantized(
-    model_id,
-    device="cuda:0",
-    trust_remote_code=True
-)
+OLLAMA_MODEL = "codegemma:7b-instruct"
+TIMEOUT_EJECUCION = 30
+TIMEOUT_ARRANQUE = 10
+SCORE_MINIMO_EXITO = 8
 
 def extraer_codigo_puro(texto):
     """
@@ -65,19 +51,7 @@ def extraer_codigo_puro(texto):
     # Desindenta en caso de que todo el bloque esté indentado por error
     return textwrap.dedent(codigo).strip()
 
-def codellama_generate(prompt: str, max_tokens=2048):
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=max_tokens,
-        do_sample=True,
-        temperature=0.1,
-        top_p=0.9,
-        repetition_penalty=1.1
-    )
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-def build_codellama_prompt(code_snippet):
+def build_refactor_prompt(code_snippet):
     instrucciones = (
         "Corrige y refactoriza el siguiente código Python.\n"
         "- Asegúrate de que no tenga errores de ejecución.\n"
@@ -87,45 +61,179 @@ def build_codellama_prompt(code_snippet):
     )
     return instrucciones
 
-def ejecutar_codigo_py(path):
+def build_debug_prompt(codigo: str, informe: str, historial_errores: list[str]) -> str:
+    historial_txt = ""
+    if historial_errores:
+        previos = "\n---\n".join(historial_errores[-3:])
+        historial_txt = f"\n\nErrores previos en intentos anteriores:\n{previos}"
+
+    return (
+        "# --- INSTRUCCIONES PARA DEPURAR EL SIGUIENTE CÓDIGO ---\n"
+        "Analiza el error de ejecución.\n"
+        "Devuelve una versión corregida del código.\n"
+        "Mantén la estructura original.\n"
+        "No introduzcas dependencias nuevas.\n"
+        "Prioriza estabilidad sobre optimización.\n"
+        f"\n```python\n{codigo}\n```\n\n"
+        f"Informe de ejecución:\n{informe}"
+        f"{historial_txt}"
+    )
+
+def validar_sintaxis_ast(codigo: str) -> tuple[bool, str]:
     try:
+        ast.parse(codigo)
+        return True, ""
+    except SyntaxError as e:
+        return False, f"Error de sintaxis (AST): {e}"
+
+def evaluar_salida(stdout: str, stderr: str, exit_code: int | None, validar_output=None) -> int:
+    score = 0
+    if exit_code == 0:
+        score += 5
+    if len(stderr.strip()) == 0:
+        score += 3
+    if len(stdout.strip()) > 0:
+        score += 2
+    if validar_output is not None:
+        cumple = (
+            validar_output(stdout)
+            if callable(validar_output)
+            else validar_output in stdout
+        )
+        score += 2 if cumple else -3
+    return score
+
+def _env_sandbox() -> dict[str, str]:
+    env = {
+        "PATH": os.environ.get("PATH", ""),
+        "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),
+        "PYTHONIOENCODING": "utf-8",
+    }
+    if os.name == "nt":
+        env["COMSPEC"] = os.environ.get("COMSPEC", "")
+    return env
+
+def ejecutar_codigo_py(
+    path: str,
+    timeout: int = TIMEOUT_EJECUCION,
+    startup_timeout: int = TIMEOUT_ARRANQUE,
+    validar_output=None,
+) -> dict:
+    temp_dir = tempfile.mkdtemp(prefix="gptdevteam_")
+    proceso = None
+
+    try:
+        script_name = os.path.basename(path)
+        shutil.copy2(path, os.path.join(temp_dir, script_name))
+
         proceso = subprocess.Popen(
-            ["python", path],
+            ["python", "-I", "-u", script_name],
+            cwd=temp_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            env=_env_sandbox(),
         )
 
-        stdout_lines = []
-        stderr_lines = []
-        start_time = time.time()
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
+        lock = threading.Lock()
 
-        def leer_salida():
-            for line in proceso.stdout:
-                stdout_lines.append(line)
-                if "Bienvenido al Tamagochi" in line:
-                    proceso.terminate()  # Simula Ctrl+C en cuanto arranca
-                    break
+        def leer_stream(stream, destino: list[str]):
+            for line in stream:
+                with lock:
+                    destino.append(line)
 
-        hilo_salida = threading.Thread(target=leer_salida)
-        hilo_salida.start()
+        hilo_stdout = threading.Thread(target=leer_stream, args=(proceso.stdout, stdout_lines), daemon=True)
+        hilo_stderr = threading.Thread(target=leer_stream, args=(proceso.stderr, stderr_lines), daemon=True)
+        hilo_stdout.start()
+        hilo_stderr.start()
 
-        while hilo_salida.is_alive():
-            hilo_salida.join(timeout=1)
-            if time.time() - start_time > 60:
+        inicio = time.time()
+        exit_code = None
+        motivo = ""
+
+        while True:
+            elapsed = time.time() - inicio
+            exit_code = proceso.poll()
+
+            with lock:
+                stdout_parcial = "".join(stdout_lines)
+                stderr_parcial = "".join(stderr_lines)
+
+            if exit_code is not None:
+                break
+
+            if elapsed >= startup_timeout and not stderr_parcial.strip() and stdout_parcial.strip():
+                proceso.terminate()
+                try:
+                    proceso.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proceso.kill()
+                exit_code = 0
+                motivo = "Arranque interactivo validado (salida sin errores en stderr)."
+                break
+
+            if elapsed >= timeout:
                 proceso.kill()
-                return False, "".join(stdout_lines), "Timeout: el programa tardó más de 60 segundos en iniciar."
+                exit_code = -1
+                motivo = f"Timeout: ejecución superó {timeout} segundos."
+                break
 
-        stdout, stderr = proceso.communicate(timeout=5)
+            time.sleep(0.2)
 
-        return True, "".join(stdout_lines) + stdout, stderr
+        hilo_stdout.join(timeout=2)
+        hilo_stderr.join(timeout=2)
 
-    except subprocess.TimeoutExpired:
-        proceso.kill()
-        return False, "", "Timeout: ejecución demasiado larga."
+        if proceso.poll() is not None:
+            try:
+                rest_out, rest_err = proceso.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                rest_out, rest_err = "", ""
+            stdout = "".join(stdout_lines) + (rest_out or "")
+            stderr = "".join(stderr_lines) + (rest_err or "")
+        else:
+            stdout = "".join(stdout_lines)
+            stderr = "".join(stderr_lines)
+
+        if motivo and not stderr.strip():
+            stderr = motivo
+
+        score = evaluar_salida(stdout, stderr if exit_code != 0 else "", exit_code, validar_output)
+        exito = exit_code == 0 and score >= SCORE_MINIMO_EXITO
+
+        return {
+            "exito": exito,
+            "exit_code": exit_code,
+            "stdout": stdout,
+            "stderr": stderr,
+            "score": score,
+            "motivo": motivo,
+        }
 
     except Exception as e:
-        return False, "", f"Error durante ejecución: {e}"
+        return {
+            "exito": False,
+            "exit_code": -1,
+            "stdout": "",
+            "stderr": f"Error durante ejecución: {e}",
+            "score": 0,
+            "motivo": str(e),
+        }
+
+    finally:
+        if proceso and proceso.poll() is None:
+            proceso.kill()
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+def formatear_informe_ejecucion(resultado: dict) -> str:
+    return (
+        f"Exit code: {resultado['exit_code']}\n"
+        f"Score: {resultado['score']}/{SCORE_MINIMO_EXITO} mínimo\n"
+        f"Motivo: {resultado.get('motivo') or 'N/A'}\n"
+        f"stdout:\n{resultado['stdout'] or '(vacío)'}\n"
+        f"stderr:\n{resultado['stderr'] or '(vacío)'}"
+    )
 
 def ollama_generate(model: str, prompt: str):
     try:
@@ -144,7 +252,7 @@ def documentar_codigo(codigo: str):
         "IMPORTANTE: Utiliza siempre # para los comentarios\n"
         f"Codigo a documentar:\n"+codigo.strip()
     )
-    return ollama_generate("codegemma:7b-instruct", prompt)
+    return ollama_generate(OLLAMA_MODEL, prompt)
 
 def limpiar_docstring_inicial(codigo: str) -> str:
     codigo = codigo.lstrip()
@@ -192,7 +300,7 @@ def main():
         "Importante mostrar una guía de uso al inicio del programa."
     )
 
-    print("🧠 Generando código con CodeLlama...")
+    print("🧠 Generando código con CodeGemma (Ollama)...")
 
     prompt = (
         "Genera un script completo, limpio y funcional en Python\n"
@@ -200,24 +308,23 @@ def main():
         f"Objetivo del script:\n{entrada_prompt}"
     )
 
-    generated_code = codellama_generate(prompt, max_tokens=2048)
+    generated_code = ollama_generate(OLLAMA_MODEL, prompt)
     # 🧹 Limpieza inicial
     generated_code = limpiar_docstring_inicial(generated_code)
     
 
-    prompt = build_codellama_prompt(generated_code)
     codigo_actual = generated_code
     max_intentos = 4
     intentos = 0
+    prompt_depuracion = None
+    historial_errores: list[str] = []
+    mejor_version = {"codigo": None, "score": -1}
+    validar_output = None  # opcional: str o callable(stdout) -> bool
 
     while intentos < max_intentos:
-        if intentos > 0 and 'stderr' in locals():
-            # Reutiliza el prompt de depuración anterior
-            full_prompt = prompt
-        else:
-            full_prompt = build_codellama_prompt(codigo_actual)
+        full_prompt = prompt_depuracion or build_refactor_prompt(codigo_actual)
 
-        codigo_mejorado = codellama_generate(full_prompt, max_tokens=2048)
+        codigo_mejorado = ollama_generate(OLLAMA_MODEL, full_prompt)
         codigo_ejecutable = extraer_codigo_puro(codigo_mejorado)
         codigo_ejecutable = limpiar_docstring_inicial(codigo_ejecutable)
 
@@ -228,25 +335,43 @@ def main():
             intentos += 1
             continue
 
+        valido_ast, error_ast = validar_sintaxis_ast(codigo_ejecutable)
+        if not valido_ast:
+            print(f"❌ Error de sintaxis detectado (AST):\n{error_ast}")
+            historial_errores.append(error_ast)
+            prompt_depuracion = build_debug_prompt(codigo_ejecutable, error_ast, historial_errores)
+            codigo_actual = codigo_ejecutable
+            intentos += 1
+            continue
+
         with open("codigo_actual.py", "w", encoding="utf-8") as f:
             f.write(codigo_ejecutable)
-        
-        print(f"🧪 Intento {intentos + 1}: ejecutando código...")
-        exito, stdout, stderr = ejecutar_codigo_py("codigo_actual.py")
 
-        if exito:
+        print(f"🧪 Intento {intentos + 1}: ejecutando en sandbox...")
+        resultado = ejecutar_codigo_py("codigo_actual.py", validar_output=validar_output)
+        informe = formatear_informe_ejecucion(resultado)
+        print(f"📊 Score: {resultado['score']} | Exit code: {resultado['exit_code']}")
+
+        if resultado["score"] > mejor_version["score"]:
+            mejor_version = {"codigo": codigo_ejecutable, "score": resultado["score"]}
+
+        if resultado["exito"]:
             print("✅ Código ejecutado correctamente.")
             codigo_actual = codigo_ejecutable
             break
-        else:
-            print(f"❌ Error en ejecución:\n{stderr}")
-            prompt = (
-                "# --- INSTRUCCIONES PARA DEPURAR EL SIGUIENTE CÓDIGO ---\n"
-                "Corrige el error para que el código funcione correctamente.\n"
-                f"\n```python\n{codigo_ejecutable}\n```\n\nError:\n{stderr}"
+
+        print(f"❌ Ejecución insuficiente:\n{informe}")
+        historial_errores.append(informe)
+        prompt_depuracion = build_debug_prompt(codigo_ejecutable, informe, historial_errores)
+        codigo_actual = codigo_ejecutable
+        intentos += 1
+    else:
+        if mejor_version["codigo"]:
+            print(
+                f"📊 Usando mejor versión acumulada "
+                f"(score {mejor_version['score']}/{SCORE_MINIMO_EXITO})."
             )
-            codigo_actual = codigo_ejecutable
-            intentos += 1
+            codigo_actual = mejor_version["codigo"]
 
     print("📝 Generando documentación con CodeGemma...")
     documentacion = documentar_codigo(codigo_actual)

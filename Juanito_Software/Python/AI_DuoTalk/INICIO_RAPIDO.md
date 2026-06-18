@@ -21,7 +21,7 @@ source iaenv/bin/activate
 ### 2. Ejecutar el Sistema en Tiempo Real (RECOMENDADO)
 
 **Opción A: Doble clic (Más fácil)**
-- Haz doble clic en `iniciar_moderador.bat`
+- Haz doble clic en `run.bat`
 - El sistema se iniciará automáticamente
 
 **Opción B: Desde terminal**
@@ -137,10 +137,10 @@ Por defecto, el sistema graba **30 segundos** de audio. Puedes cambiarlo:
 
 Para facilitar el inicio del programa, se incluye un archivo `.bat`:
 
-- **`iniciar_moderador.bat`**: Inicia el Modo Moderador en tiempo real
+- **`run.bat`**: Inicia el Modo Moderador en tiempo real
 
 **Uso:**
-1. Haz doble clic en `iniciar_moderador.bat`
+1. Haz doble clic en `run.bat`
 2. El sistema se iniciará automáticamente
 3. No necesitas abrir la terminal manualmente
 

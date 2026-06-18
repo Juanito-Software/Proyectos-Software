@@ -1,0 +1,4 @@
+# File Transfer App
+# Runtime dependencies only
+
+keyboard==0.13.5

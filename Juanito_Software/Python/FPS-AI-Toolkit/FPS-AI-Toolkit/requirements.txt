@@ -1,17 +1,49 @@
-# Core
-numpy<2
-opencv-python
-Pillow
-mss
-ultralytics
-keyboard
+# ============================================================
+# Core Vision / UI
+# ============================================================
 
-# Win32 APIs
-pywin32
+numpy==1.26.4
+opencv-python==4.13.0.92
+Pillow==12.2.0
+mss==10.2.0
 
-# Audio
-# Torch CUDA (instalar manualmente con index-url)
-# pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+ultralytics==8.4.58
+ultralytics-thop==2.0.19
+lap==0.5.13
+
+keyboard==0.13.5
+
+
+# ============================================================
+# Windows / sistema
+# ============================================================
+
+pywin32==311
+psutil==7.2.2
+comtypes==1.4.16
+
+
+# ============================================================
+# ML / Torch stack (CRÍTICO)
+# ============================================================
+# IMPORTANTE: instalar manualmente con CUDA index-url
+
+torch==2.1.0+cu121
+torchvision==0.16.0+cu121
+torchaudio==2.1.0+cu121
+
+
+# ============================================================
+# Utilidades (si realmente las usas en runtime)
+# ============================================================
+
+requests==2.34.2
+PyYAML==6.0.3
+typing_extensions==4.15.0
+sympy==1.13.1
+networkx==3.6.1
+filelock==3.29.0
+fsspec==2026.4.0
 
 # Módulos locales (no PyPI; mantenlos en tu repo)
 # FloatTrans

@@ -1,103 +1,57 @@
-# Copyright (C) 2025 JuanitoSoftware
-#
-# Este programa es software libre: puedes redistribuirlo y/o modificarlo bajo
-# los términos de la Licencia Pública General de GNU publicada por la Free
-# Software Foundation, ya sea la versión 3 de la Licencia o (según tu elección)
-# cualquier versión posterior.
-#
-# Este programa se distribuye con la esperanza de que sea útil, pero SIN
-# NINGUNA GARANTÍA; incluso sin la garantía implícita de COMERCIALIZACIÓN o
-# IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulta la Licencia Pública General
-# de GNU para más detalles.
-#
-# Deberías haber recibido una copia de la Licencia Pública General de GNU junto
-# con este programa. Si no es así, visita <https://www.gnu.org/licenses/>.
+# Importa las funciones necesarias
+import sys
 
-# Importar el módulo random para funciones aleatorias
-import random
+# Define una lista de estados posibles
+ESTADOS = ["triste", "normal", "feliz"]
 
-# Estado inicial del tamagochi
-energia = 100
-estado_actual = {
-    "energia": energia
-}
+# Define la energía inicial
+ENERGIA_INICIAL = 100
 
-# Función saludar
-def saludar():
-    print("¡Hola, soy un tamagochi!")
+class Tamagotchi:
+    def __init__(self):
+        self.estado_actual = "normal"
+        self.energia_actual = ENERGIA_INICIAL
 
-# Función estado
-def estado():
-    print(f"Estado actual:\n\tEnergía: {energia}")
+    def mostrar_guia(self):
+        print("Guía de Uso:")
+        print("Para alimentar al Tamagotchi, escribe 'comer'.")
+        print("Para recargar la energía, escribe 'cargar'.")
+        print("Para ver el estado de ánimo actual, escribe 'estado'.")
+        print("Para salir, escribe 'salir'.")
 
-# Función comer
-def comer(cantidad):
-    global energia
-    energia += cantidad
-    print(f"Energía incrementada en {cantidad} puntos.")
+    def alimentar(self):
+        self.energia_actual += 20
+        if self.energia_actual > 100:
+            self.energia_actual = 100
 
-# Función dormir
-def dormir(cantidad):
-    global energia
-    energia -= cantidad
-    print(f"Energía disminuida en {cantidad} puntos.")
+    def cargar(self):
+        self.energia_actual = ENERGIA_INICIAL
 
-# Función jugar
-def jugar(cantidad):
-    global energia
-    energia -= cantidad*2
-    print(f"Energía disminuida en {cantidad*2} puntos.")
+    def estado(self):
+        print("El estado de ánimo actual es:", self.estado_actual)
 
-# Comandos disponibles
-comandos = {
-    "saludar": saludar,
-    "estado": estado,
-    "comer": comer,
-    "dormir": dormir,
-    "jugar": jugar
-}
+# Crea un Tamagotchi
+tamagotchi = Tamagotchi()
 
-# Función menu
-def menu():
-    print("Bienvenido al Tamagochi!\nPara comenzar, escribe 'ayuda' para ver los comandos disponibles.")
+# Muestra la guía de uso
+tamagotchi.mostrar_guia()
 
-# Función ayuda
-def ayuda():
-    print("Comandos disponibles:\n - comer <cantidad>: aumenta la energía del tamagochi en <cantidad> puntos.\n - dormir <cantidad>: disminuye la energía del tamagochi en <cantidad> puntos.\n - jugar <cantidad>: disminuye la energía del tamagochi en <cantidad> puntos.\n - saludar: muestra un mensaje amigable.\n - estado: muestra el estado actual del tamagochi.\n - ayuda: muestra esta ayuda.\n - exit: termina la ejecución del programa.")
+# Bucle principal del juego
+while True:
+    # Solicita al usuario un comando
+    comando = input("Ingresa un comando: ")
 
-# Función parse_command
-def parse_command(entrada):
-    """
-    Parsea la entrada recibida por el usuario y devuelve una función y sus argumentos correspondientes a llamarla.
-    Si no se reconoce el comando, devuelve None.
-    """
-    args = entrada.split()
-    if len(args) == 0:
-        return None
-    cmd = args[0]
-    if cmd not in comandos:
-        return None
+    # Procesa el comando
+    if comando == "comer":
+        tamagotchi.alimentar()
+    elif comando == "cargar":
+        tamagotchi.cargar()
+    elif comando == "estado":
+        tamagotchi.estado()
+    elif comando == "salir":
+        break
     else:
-        return (cmd, args[1:])
+        print("Comando inválido.")
 
-# Función run
-def run():
-    menu()
-    while True:
-        entrada = input("\n>> ")
-        if entrada == "exit":
-            break
-        cmd = parse_command(entrada)
-        if cmd is None:
-            print("Comando desconocido. Escribe 'ayuda' para ver los comandos disponibles.")
-        else:
-            cmd, args = cmd
-            try:
-                comandos[cmd](*args)
-            except TypeError as e:
-                print(e)
-                print("Uso incorrecto del comando. Escribe 'ayuda' para ver los comandos disponibles.")
-
-
-if __name__ == "__main__":
-    run()
+# Muestra un mensaje de agradecimiento
+print("Gracias por jugar.")

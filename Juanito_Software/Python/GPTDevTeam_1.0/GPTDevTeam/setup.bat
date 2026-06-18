@@ -2,13 +2,13 @@
 setlocal
 
 echo Creando entorno virtual...
-python -m venv iaenv
+python -m venv venv
 
 echo Actualizando pip...
-iaenv\Scripts\python -m pip install --upgrade pip
+venv\Scripts\python -m pip install --upgrade pip
 
 echo Instalando dependencias...
-iaenv\Scripts\python -m pip install -r requirements.txt
+venv\Scripts\python -m pip install -r requirements.txt
 
 echo Listo.
 pause
