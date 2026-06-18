@@ -9,7 +9,8 @@ docs/
 coqui_env/
 iaenv/
 
-# Proyectos/entornos/carpetas específicas/dependecias externas/librerias
+# Proyectos/entornos/carpetas específicas/dependecias externas/librerias requirements-lock
+requirements-lock.txt
 FloatTrans/
 frames/
 AIClipCreator_env/
