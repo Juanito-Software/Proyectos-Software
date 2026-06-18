@@ -286,3 +286,13 @@ Formato, espacios, etc.
 style: format code with rustfmt
 
 
+| tipo     | uso                               |
+| -------- | --------------------------------- |
+| feat     | nueva funcionalidad               |
+| fix      | bug                               |
+| refactor | cambios sin cambiar funcionalidad |
+| chore    | mantenimiento                     |
+| docs     | documentación                     |
+| test     | tests                             |
+| archive  | mover a archive/                  |
+

@@ -6,9 +6,6 @@ if not exist venv (
     python -m venv venv
 )
 
-echo Creando entorno virtual...
-python -m venv venv
-
 if errorlevel 1 (
     echo Error al crear el entorno virtual.
     pause
