@@ -1,3 +1,0 @@
-# requirements-lock.txt
-# No external dependencies required.
-# Python >= 3.10
