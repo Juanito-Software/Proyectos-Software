@@ -7,6 +7,6 @@ REM Activar entorno virtual
 call venv\Scripts\activate.bat
 
 REM Ejecutar script
-python GPTDevTeam.py
+python GPTDevTeam_v2.0.py
 
 pause
