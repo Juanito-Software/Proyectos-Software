@@ -2,7 +2,10 @@
 title AstroSim
 cd /d "%~dp0"
 
-pip install -r requirements.txt -q
+REM Activar entorno virtual
+call venv\Scripts\activate.bat
+
+REM Ejecutar script
 python main.py
 
 pause

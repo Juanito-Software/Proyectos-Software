@@ -1,4 +1,3 @@
-tk
 nltk
 clipsai
 pyannote.audio

@@ -1,52 +1,127 @@
-+-----------------+         +----------------------+         
-|                 | 1.Prompt|                      |         
-|   Usuario       +-------->|   Generador IA       |         
-| (Tú o cliente)  |         | (CodeLlama GPTQ)     |         
-+-----------------+         +----------------------+         
-                                        |                                   
-                           2. Código base generado                     
-                                        |                                   
-                                        v                                   
-                            +-------------------------+                  
-                            |  Limpiador de Docstring |                  
-                            |  (limpia encabezado)    |                  
-                            +------------+------------+                  
-                                        |                                   
-                            3. Mejora y refactoriza                       
-                                        v                                   
-                            +--------------------------+                  
-                            | Revisor de código IA     |                  
-                            | (CodeLlama: refactor)    |                  
-                            +------------+-------------+                  
-                                        |                                   
-                            4. Ejecuta y depura el código                
-                                        v                                   
-                            +-----------------------------+               
-                         +->|   Evaluador de ejecución    |>>-------+              
-                         |  |subprocess con timeout+CtrlC |         |         
-                         |  +-------------+---------------+         |           
-                         |                |			    |
-                         |                |            		    |             
-                         |         Si hay errores                   v
-			 |     reintenta hasta 4 veces         Si funciona      
-                         |                v                         v             
-                         |  +-----------------------------+         |           
-                         |  |     Depurador IA (CodeLlama)|         |          
-                         |  +-----------------------------+         |          
-                         |                |                         |          
-                         |                |                         |          
-                         +----------------+     +-------------------+          
-                             		      	|
-                                                v                          
-                         5. Documentación con comentarios (#)            
-                                      v                                   
-                          +-----------------------------+               
-                          |   Documentador IA (CodeGemma)|               
-                          +-------------+---------------+               
-                                        |                                   
-                          6. Guarda resultado final                      
-                                        v                                   
-                          +------------------------------+              
-                          |     Archivo final generado   |              
-                          |       (CodigoFinal.py)       |              
-                          +------------------------------+              
++------------------+
+|     Usuario      |
+| (prompt inicial) |
++--------+---------+
+         | 1. Prompt
+         v
++--------------------------------+
+| Planner (qwen3:8b)             |
+| Plan + NOMBRES CANÓNICOS       |
+| + semántica de cada atributo   |
+| (qué sube/baja cada acción)    |
++----------------+----------------+
+                 | 2. Plan estructurado
+                 v
++--------------------------------+
+| Coder (qwen2.5-coder:7b)       |
+| Código desde el plan. Nombres  |
+| EXACTOS obligatorios, sin self.X|
+| fantasma, sin invertir semántica|
++----------------+----------------+
+                 | 3. Código generado
+                 v
++--------------------------------+
+| Limpiador de docstring inicial |
+| (determinista, sin LLM)        |
++----------------+----------------+
+                 |
+                 v
+  ===================================================
+  ||              BUCLE (hasta 4 intentos)          ||
+  ===================================================
+                 |
+                 v
+  +-------------------------------+
+  | Validación de sintaxis (AST)  |
+  +---------------+----------------+
+        error? --> ¿hay mejor_version conocida?
+                      si: la retoma directamente
+                      no: Reflector intenta arreglarlo
+                 | ok
+                 v
+  +-------------------------------+
+  | extraer_api_estatica (AST)    |
+  | clases / métodos / atributos  |
+  +---------------+----------------+
+                 v
+  +-------------------------------+  hasta 3
+  | Tester (qwen2.5-coder:7b)     |<-+ reintentos
+  | genera asserts dinámicos,     | -+ si el AST
+  | validados contra la API real  |   rechaza algo
+  | (rechaza símbolos inventados, |
+  |  threading, sleep, etc.)      |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  | Chequeos estáticos AST:       |
+  | - bucles "while True"         |
+  | - atributos fantasma          |
+  |   (self.X leído pero jamás    |
+  |    asignado en la clase)      |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  | SANDBOX: python -I + runpy    |
+  | - import bloqueado consciente |
+  |   del llamador (no rompe      |
+  |   imports internos de stdlib) |
+  | - rlimits de CPU y memoria    |
+  | - corre los tests             |
+  | - corre el main: stdin con    |
+  |   comandos de salida +        |
+  |   heurística de arranque      |
+  |   interactivo (ya no muere    |
+  |   con EOFError)               |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  | Judge (qwen3:8b)               |
+  | cumple_requisitos + score 1-10 |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  | EvaluationDecision:            |
+  | runtime_ok AND sem_ok          |
+  | AND no_warnings                |
+  +-------+---------------+--------+
+          |               |
+       éxito           fallo
+          |               |
+          |     ¿este intento mejora el score
+          |      global respecto a la mejor
+          |      versión conocida?
+          |        no -> se descarta y se
+          |             retoma mejor_version
+          |             (mejora monótona, no
+          |             un paseo aleatorio)
+          |               |
+          |               v
+          |   +---------------------------+
+          |   | Reflector (qwen3:8b)      |
+          |   | corrige + unifica nombres |
+          |   | de atributos fantasma     |
+          |   +-------------+-------------+
+          |                 |
+          |                 +--> reintenta (vuelve
+          |                      al inicio del bucle)
+          v
+  ===================================================
+   (éxito, o se agotan los 4 intentos y se usa
+    la mejor_version conocida igualmente)
+  ===================================================
+                 |
+                 v
+  +-------------------------------+
+  | Documenter (qwen3:8b)         |
+  | añade comentarios finales (#) |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  |        CodigoFinal.py          |
+  +---------------+----------------+
+                 v
+  +-------------------------------+
+  | Limpieza de carpetas temporales|
+  | de TODOS los intentos          |
+  | (antes se quedaban huérfanas)  |
+  +-------------------------------+

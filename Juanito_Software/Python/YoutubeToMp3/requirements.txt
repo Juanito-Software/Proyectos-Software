@@ -1,0 +1,4 @@
+# YoutubeToMp3
+# Requiere también el binario externo ffmpeg en el PATH (no se instala con pip)
+
+yt-dlp>=2024.1.0

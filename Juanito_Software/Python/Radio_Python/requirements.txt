@@ -1,0 +1,4 @@
+# Radio_Python
+# tkinter es parte de la librería estándar de Python (no se instala con pip)
+
+python-vlc>=3.0.0

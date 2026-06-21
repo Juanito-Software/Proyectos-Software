@@ -1,11 +1,10 @@
 
-Preparar programas 1 a 1 añadiendo a cada uno su requirements.txt con las dependencias necesarias
-
-Preparar programas 1 a 1 añadiendo setup.bat
 
 Preparar programas 1 a 1 añadiendo build.bat
 
-mirar que todos los programas tengan readme
+empezar a usar poetry para la gestion de dependencias
+
+refactorizar GPTDEVTEAM y mirar a ver si podemos ampliarlo a programar en mas lenguajes de programacion
 
 Montar agentes IA Controladores del PC estilo openclaw
 
@@ -13,7 +12,7 @@ Simulacion mundo 2D
 
 Crear un IDE con IA integrada basado en VSCode
 
-levantar IAs Wan2.2 o hunyuanvideo usando confyAI, tambien alguna voz de trascrippcion de voz a texto
+hunyuanvideo usando confyAI, tambien alguna voz de trascrippcion de voz a texto
 
 Lenguaje + SO de 0
 

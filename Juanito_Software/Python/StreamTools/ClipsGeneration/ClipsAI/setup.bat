@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-if not exist venv (
+if not exist ClipsAI_env (
     echo Creando entorno virtual...
-    python -m venv venv
+    python -m venv ClipsAI_env
 )
 
 if errorlevel 1 (
@@ -13,10 +13,10 @@ if errorlevel 1 (
 )
 
 echo Actualizando pip...
-venv\Scripts\python -m pip install --upgrade pip
+ClipsAI_env\Scripts\python -m pip install --upgrade pip
 
 echo Instalando dependencias...
-venv\Scripts\python -m pip install -r requirements.txt -q
+ClipsAI_env\Scripts\python -m pip install -r requirements.txt
 
 echo Listo.
 pause

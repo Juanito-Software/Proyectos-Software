@@ -4,9 +4,9 @@ setlocal
 cd /d "%~dp0"
 
 REM Activar entorno virtual
-call venv\Scripts\activate.bat
+call AIClipCreator_env\Scripts\activate.bat
 
 REM Ejecutar script
-python SistemaProExtreme.py
+python AI-clip-creator\main.py
 
 pause

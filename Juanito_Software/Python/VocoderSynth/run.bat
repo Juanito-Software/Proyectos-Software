@@ -1,12 +1,14 @@
 @echo off
-setlocal
-
+REM Cambia al directorio donde está este archivo .bat
 cd /d "%~dp0"
 
-REM Activar entorno virtual
-call venv\Scripts\activate.bat
+echo Iniciando vocoder en tiempo real...
+echo Cierra esta ventana o pulsa Ctrl+C para detener.
+echo.
 
-REM Ejecutar script
-python programapython.py
+REM Ejecuta el script de Python
+py vocoder_realtime.py
 
+echo.
+echo El programa ha finalizado.
 pause

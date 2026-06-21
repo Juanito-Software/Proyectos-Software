@@ -97,12 +97,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Programacion/Lista de tareas.md",
+                "file": "Programacion/Plantillas/get_requirements.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Lista de tareas"
+              "title": "get_requirements"
             }
           }
         ],
@@ -296,24 +296,25 @@
   },
   "active": "7ff8c3a68e791f40",
   "lastOpenFiles": [
+    "Programacion/Plantillas/Plantilla_readme_project.org.md",
+    "Programacion/Plantillas/upgrade_setup_build.md",
+    "Programacion/Plantillas/get_requirements.md",
+    "Programacion/Lista de tareas.md",
     "Programacion/Plantillas/build.bat",
     "Programacion/Plantillas/setup.bat",
     "Programacion/Plantillas/pysetup.bat",
     "Programacion/Plantillas/pysetup.md",
     "Programacion/Plantillas/setup - copia.md",
-    "Programacion/Plantillas/upgrade_setup_build.md",
     "Programacion/Plantillas/upgrade_setup_build.txt",
     "Programacion/Plantillas/Nuevo Documento de texto.txt",
     "Programacion/Plantillas/Nuevo Texto OpenDocument.odt",
     "Programacion/Plantillas/build.md",
     "Programacion/Plantillas/create_project.bat",
-    "Programacion/Plantillas/get_requirements.md",
     "Programacion/Plantillas/getRequeriments.md",
     "Programacion/Plantillas/Nueva carpeta",
     "Programacion/README_Repo.md",
     "Programacion/Plantillas/setup.md",
     "Programacion/Stacks.md",
-    "Programacion/Lista de tareas.md",
     "Table.base",
     "Programacion/Learn_Obsidian.md",
     "Fisica y Filosofia/Fisica/Notas sobre Fisica 1.md",
@@ -330,7 +331,6 @@
     "Fisica y Filosofia/Filosofia/Notas sobre Filosofia 1.md",
     "Programacion/Consejos.md",
     "Fisica y Filosofia/Fisica/Resumen Fisica.md",
-    "Programacion/IA/ML/DL",
-    "Programacion/IA"
+    "Programacion/IA/ML/DL"
   ]
 }

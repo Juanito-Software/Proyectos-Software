@@ -1,0 +1,3 @@
+# Simulacion2D
+
+pygame>=2.5.0

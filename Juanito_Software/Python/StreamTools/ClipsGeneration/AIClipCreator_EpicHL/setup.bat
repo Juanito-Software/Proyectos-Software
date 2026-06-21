@@ -1,9 +1,9 @@
 @echo off
 setlocal
 
-if not exist venv (
+if not exist AIClipCreator_env (
     echo Creando entorno virtual...
-    python -m venv venv
+    python -m venv AIClipCreator_env
 )
 
 if errorlevel 1 (
@@ -13,10 +13,10 @@ if errorlevel 1 (
 )
 
 echo Actualizando pip...
-venv\Scripts\python -m pip install --upgrade pip
+AIClipCreator_env\Scripts\python -m pip install --upgrade pip
 
 echo Instalando dependencias...
-venv\Scripts\python -m pip install -r requirements.txt -q
+AIClipCreator_env\Scripts\python -m pip install -r requirements.txt
 
 echo Listo.
 pause

@@ -7,6 +7,6 @@ REM Activar entorno virtual
 call venv\Scripts\activate.bat
 
 REM Ejecutar script
-python SistemaProExtreme.py
+python ConwayLifeSimulation2.py
 
 pause

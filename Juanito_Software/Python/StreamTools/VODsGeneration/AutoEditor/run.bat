@@ -7,6 +7,6 @@ REM Activar entorno virtual
 call venv\Scripts\activate.bat
 
 REM Ejecutar script
-python programapython.py
+python clip_voice_only.py
 
 pause
