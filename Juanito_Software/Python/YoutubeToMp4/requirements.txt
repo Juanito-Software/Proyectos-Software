@@ -1,0 +1,4 @@
+# YoutubeToMp4
+# Requiere también el binario externo ffmpeg en el PATH para mergear streams adaptativos (no se instala con pip)
+
+pytubefix>=6.0.0

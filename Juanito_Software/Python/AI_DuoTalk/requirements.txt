@@ -14,7 +14,7 @@ pydub==0.25.1
 # Para CPU solamente:
 # pip install torch==2.7.1
 
-torch==2.7.1+cu118
+torch==2.7.1    #+cu118 para soporte cuda
 
 # ------------------------------------------------------------
 # Speech-to-Text (Whisper)

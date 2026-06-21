@@ -1,0 +1,6 @@
+# Conway Life Simulation
+# ConwayLifeSimulation.py usa solo librería estándar (random, time, os, subprocess, sys)
+# ConwayLifeSimulation2.py necesita numpy y matplotlib
+
+numpy>=1.24.0
+matplotlib>=3.7.0
