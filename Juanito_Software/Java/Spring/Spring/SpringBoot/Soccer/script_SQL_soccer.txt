@@ -1,0 +1,25 @@
+CREATE TABLE Equipo (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    ciudad VARCHAR(255) NOT NULL,
+    fecha_fundacion DATE NOT NULL
+);
+
+CREATE TABLE Jugador (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    apellido VARCHAR(255) NOT NULL,
+    fecha_nac DATE NOT NULL,
+    posicion VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Participacion (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    jugador_id BIGINT NOT NULL,
+    equipo_id BIGINT NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE,
+    dorsal INT NOT NULL,
+    FOREIGN KEY (jugador_id) REFERENCES Jugador(id),
+    FOREIGN KEY (equipo_id) REFERENCES Equipo(id)
+);

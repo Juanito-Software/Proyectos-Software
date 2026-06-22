@@ -1,0 +1,39 @@
+// Definimos el "job" base, sin pasos, y le agregamos solo el listener "listenerOne"
+    @Bean
+    public Job baseJob() {
+        return jobBuilderFactory.get("baseJob")
+                .preventRestart() // Evitamos que se ejecute por sí solo
+                .listener(listenerOne)
+                .build();
+    }
+
+    // Definimos el step base "standaloneStep"
+    @Bean
+    public Step standaloneStep() {
+        return stepBuilderFactory.get("standaloneStep")
+                .tasklet((contribution, chunkContext) -> {
+                    System.out.println("Ejecutando el paso standaloneStep");
+                    return null;
+                })
+                .build();
+    }
+
+    // Creamos "job1", que hereda de "baseJob" y agrega "step1" con listenerTwo
+    @Bean
+    public Job job1() {
+        return jobBuilderFactory.get("job1")
+                .parent(baseJob()) // Heredamos de baseJob que solo define listenerOne
+                .listener(listenerTwo) // Agregamos listenerTwo
+                .start(step1()) // Iniciamos job1 con step1
+                .build();
+    }
+
+    // step1 usa standaloneStep como base al reutilizar su configuración
+    @Bean
+    public Step step1() {
+        Step standaloneStep = standaloneStep(); // Usamos standaloneStep como base
+        return stepBuilderFactory.get("step1")
+                .tasklet(standaloneStep.getTasklet()) // Utilizamos el mismo Tasklet que en standaloneStep
+                .listener(standaloneStep.getStepExecutionListeners()[0]) // Reutilizamos cualquier listener
+                .build();
+    }

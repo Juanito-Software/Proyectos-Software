@@ -1,0 +1,837 @@
+// El controlador nos permite deserializar datos en la base de datos usando los dtos y el assembler para convertir los dtos a entidad y viceversa (serializar los datos de la base de datos en un archivo, deserializar de un archivo json a un objeto en la base de datos)
+
+
+
+
+Tambien podemos deserializar directamente en la entidad sin pasar a dto, en este caso no hace falta icluir los ids ya que se autogeneraran y tampoco debemos añadir los id de referencia
+
+
+deserializar directamente desde la entidad:
+
+
+{
+    "config": {
+        "description": "Main Config",
+        "is_custom": true,
+        "default_value": "Default",
+        "application_node": "Node1",
+        "parent": 0,
+        "attributes": [
+            {
+                "name": "Attribute 1",
+                "attributeType": {
+                    "enumDescription": "Type 1",
+                    "isEnum": true,
+                    "isList": false,
+                    "type": "String",
+                    "attributeTypeValues": [
+                        {
+                            "description": "Description for Value 1A",
+                            "value": "Value 1A"
+                        },
+                        {
+                            "description": "Description for Value 1B",
+                            "value": "Value 1B"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Attribute 2",
+                "attributeType": {
+                    "enumDescription": "Type 2",
+                    "isEnum": true,
+                    "isList": false,
+                    "type": "String",
+                    "attributeTypeValues": [
+                        {
+                            "description": "Description for Value 1C",
+                            "value": "Value 1C"
+                        },
+                        {
+                            "description": "Description for Value 1D",
+                            "value": "Value 1D"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Attribute 3",
+                "attributeType": {
+                    "enumDescription": "Type 3",
+                    "isEnum": true,
+                    "isList": false,
+                    "type": "String",
+                    "attributeTypeValues": [
+                        {
+                            "description": "Description for Value 1F",
+                            "value": "Value 1F"
+                        },
+                        {
+                            "description": "Description for Value 1G",
+                            "value": "Value 1G"
+                        },
+                        {
+                            "description": "Description for Value 1H",
+                            "value": "Value 1H"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+
+
+
+
+
+Serializar directamente desde la entidad:
+
+{
+  "configs" : [ {
+    "versionLock" : 2,
+    "deleted" : false,
+    "createdAt" : "2024-11-05T17:44:18.025Z",
+    "modifiedAt" : "2024-11-05T17:44:18.090Z",
+    "id" : 1,
+    "description" : "Main Config",
+    "isCustom" : true,
+    "defaultValue" : "Default",
+    "applicationNode" : "Node1",
+    "parent" : 0,
+    "attributes" : [ ]
+  } ]
+}
+
+solo se muestra config
+
+porque habría que descomentar el resto de nodos que están comentados en el método serialice
+
+
+
+
+
+Serializar pasando por dto y usando los assemblers:
+
+{
+  "attributes" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "name" : "Attribute 1",
+    "attributeTypeId" : 1,
+    "configId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "name" : "Attribute 2",
+    "attributeTypeId" : 2,
+    "configId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "name" : "Attribute 3",
+    "attributeTypeId" : 3,
+    "configId" : null
+  } ],
+  "configs" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "description" : "Main Config",
+    "attributeIds" : [ ],
+    "is_custom" : true,
+    "default_value" : "Default",
+    "application_node" : "Node1",
+    "parent" : 0
+  } ],
+  "attributeTypes" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "enumDescription" : "Type 1",
+    "isEnum" : true,
+    "isList" : false,
+    "type" : "String",
+    "attributeIds" : [ 1 ],
+    "attributeTypeValueIds" : [ ]
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "enumDescription" : "Type 2",
+    "isEnum" : true,
+    "isList" : false,
+    "type" : "String",
+    "attributeIds" : [ 2 ],
+    "attributeTypeValueIds" : [ ]
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "enumDescription" : "Type 3",
+    "isEnum" : true,
+    "isList" : false,
+    "type" : "String",
+    "attributeIds" : [ 3 ],
+    "attributeTypeValueIds" : [ ]
+  } ],
+  "attributeTypeValues" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "description" : "Description for Value 1A",
+    "value" : "Value 1A",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "description" : "Description for Value 1B",
+    "value" : "Value 1B",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "description" : "Description for Value 1C",
+    "value" : "Value 1C",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 4,
+    "description" : "Description for Value 1D",
+    "value" : "Value 1D",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 5,
+    "description" : "Description for Value 1F",
+    "value" : "Value 1F",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 6,
+    "description" : "Description for Value 1G",
+    "value" : "Value 1G",
+    "attributeTypeId" : null
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 7,
+    "description" : "Description for Value 1H",
+    "value" : "Value 1H",
+    "attributeTypeId" : null
+  } ]
+}
+
+como se puede apreciar faltan los id de referencia que relacionan las clases
+
+---------------------------------------------------
+
+
+
+La forma mas recomendada para deserializar es usar los DTOs que utilizan los Assemblers para convertir a entidad, de tal forma que nosotros introducimos los objetos separados por comas, y los ids de referencia que requieren cada uno y listo
+de esta manera quedan relacionadas las clases
+
+Deserializar usando DTOs:
+
+
+
+{
+    "config": {
+        "id": 1,
+        "description": "Main Config",
+        "is_custom": true,
+        "default_value": "Default",
+        "application_node": "Node1",
+        "parent": 0,
+        "attributeIds": [
+            1,
+            2,
+            3
+        ]
+    },
+    "attributeType": [
+        {
+            "id": 1,
+            "enumDescription": "Type 1",
+            "isEnum": true,
+            "isList": false,
+            "type": "String",
+            "attributeTypeValueIds": [
+                1,
+                2
+            ]
+        },
+        {
+            "id": 2,
+            "enumDescription": "Type 2",
+            "isEnum": true,
+            "isList": false,
+            "type": "Int",
+            "attributeTypeValueIds": [
+                3,
+                4
+            ]
+        },
+        {
+            "id": 3,
+            "enumDescription": "Type 3",
+            "isEnum": true,
+            "isList": false,
+            "type": "Boolean",
+            "attributeTypeValueIds": [
+                5,
+                6,
+                7,
+                8,
+                9,
+		10
+            ]
+        }
+    ],
+    "attribute": [
+        {
+            "id": 1,
+            "name": "Attribute 1",
+            "attributeTypeId": 1,
+            "configId": 1
+        },
+        {
+            "id": 2,
+            "name": "Attribute 2",
+            "attributeTypeId": 2,
+            "configId": 1
+        },
+        {
+            "id": 3,
+            "name": "Attribute 3",
+            "attributeTypeId": 3,
+            "configId": 1
+        }
+    ],
+    "attributeTypeValue": [
+        {
+            "id": 1,
+            "description": "Description for Value 1A",
+            "value": "Value 1A",
+            "attributeTypeId": 1
+        },
+        {
+            "id": 2,
+            "description": "Description for Value 1B",
+            "value": "Value 1B",
+            "attributeTypeId": 1
+        },
+        {
+            "id": 3,
+            "description": "Description for Value 1C - 3",
+            "value": 3,
+            "attributeTypeId": 2
+        },
+        {
+            "id": 4,
+            "description": "Description for Value 1D - 4",
+            "value": 4,
+            "attributeTypeId": 2
+        },
+        {
+            "id": 5,
+            "description": "Description for Value 1F - true",
+            "value": true,
+            "attributeTypeId": 3
+        },
+        {
+            "id": 6,
+            "description": "Description for Value 1G - false",
+            "value": false,
+            "attributeTypeId": 3
+        },
+        {
+            "id": 7,
+            "description": "Description for Value 1H - true",
+            "value": true,
+            "attributeTypeId": 3
+        },
+        {
+            "id": 8,
+            "description": "Description for Value 1I - true",
+            "value": true,
+            "attributeTypeId": 3
+        },
+        {
+            "id": 9,
+            "description": "Description for Value 1J - false",
+            "value": false,
+            "attributeTypeId": 3
+        },
+        {
+            "id": 10,
+            "description": "Description for Value 1K - false",
+            "value": false,
+            "attributeTypeId": 3
+        }
+    ]  
+}
+
+
+
+Serializar directamente desde la entidad:
+
+{
+  "configs" : [ {
+    "versionLock" : 2,
+    "deleted" : false,
+    "createdAt" : "2024-11-05T17:48:31.851Z",
+    "modifiedAt" : "2024-11-05T17:48:31.882Z",
+    "id" : 1,
+    "description" : "Main Config",
+    "isCustom" : true,
+    "defaultValue" : "Default",
+    "applicationNode" : "Node1",
+    "parent" : 0,
+    "attributes" : [ {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-05T17:48:31.916Z",
+      "modifiedAt" : "2024-11-05T17:48:31.916Z",
+      "id" : 1,
+      "name" : "Attribute 1",
+      "attributeType" : {
+        "versionLock" : 2,
+        "deleted" : false,
+        "createdAt" : "2024-11-05T17:48:31.906Z",
+        "modifiedAt" : "2024-11-05T17:48:31.909Z",
+        "id" : 1,
+        "enumDescription" : "Example",
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "prueba",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:31.979Z",
+          "modifiedAt" : "2024-11-05T17:48:31.979Z",
+          "id" : 1,
+          "description" : "Description for Value 1A",
+          "value" : "Value 1A"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:31.988Z",
+          "modifiedAt" : "2024-11-05T17:48:31.988Z",
+          "id" : 2,
+          "description" : "Description for Value 1B",
+          "value" : "Value 1B"
+        } ]
+      }
+    }, {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-05T17:48:31.935Z",
+      "modifiedAt" : "2024-11-05T17:48:31.935Z",
+      "id" : 2,
+      "name" : "Attribute 2",
+      "attributeType" : {
+        "versionLock" : 2,
+        "deleted" : false,
+        "createdAt" : "2024-11-05T17:48:31.929Z",
+        "modifiedAt" : "2024-11-05T17:48:31.931Z",
+        "id" : 2,
+        "enumDescription" : "Example",
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "prueba",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:31.997Z",
+          "modifiedAt" : "2024-11-05T17:48:31.997Z",
+          "id" : 3,
+          "description" : "Description for Value 1C",
+          "value" : "Value 1C"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:32.006Z",
+          "modifiedAt" : "2024-11-05T17:48:32.006Z",
+          "id" : 4,
+          "description" : "Description for Value 1D",
+          "value" : "Value 1D"
+        } ]
+      }
+    }, {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-05T17:48:31.952Z",
+      "modifiedAt" : "2024-11-05T17:48:31.952Z",
+      "id" : 3,
+      "name" : "Attribute 3",
+      "attributeType" : {
+        "versionLock" : 2,
+        "deleted" : false,
+        "createdAt" : "2024-11-05T17:48:31.946Z",
+        "modifiedAt" : "2024-11-05T17:48:31.948Z",
+        "id" : 3,
+        "enumDescription" : "Example",
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "prueba",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:32.014Z",
+          "modifiedAt" : "2024-11-05T17:48:32.014Z",
+          "id" : 5,
+          "description" : "Description for Value 1F",
+          "value" : "Value 1F"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:32.022Z",
+          "modifiedAt" : "2024-11-05T17:48:32.022Z",
+          "id" : 6,
+          "description" : "Description for Value 1G",
+          "value" : "Value 1G"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-05T17:48:32.029Z",
+          "modifiedAt" : "2024-11-05T17:48:32.029Z",
+          "id" : 7,
+          "description" : "Description for Value 1H",
+          "value" : "Value 1H"
+        } ]
+      }
+    } ]
+  } ]
+}
+
+Como se puede apreciar muestra todos los nodos debidamente anidados dentro del nodo config
+
+
+
+Serializar pasando por dto y usando los assemblers:
+
+
+{
+  "attributes" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "name" : "Attribute 1",
+    "attributeTypeId" : 1,
+    "configId" : 1
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "name" : "Attribute 2",
+    "attributeTypeId" : 2,
+    "configId" : 1
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "name" : "Attribute 3",
+    "attributeTypeId" : 3,
+    "configId" : 1
+  } ],
+  "configs" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "description" : "Main Config",
+    "attributeIds" : [ 1, 2, 3 ],
+    "is_custom" : true,
+    "default_value" : "Default",
+    "application_node" : "Node1",
+    "parent" : 0
+  } ],
+  "attributeTypes" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "enumDescription" : "Example",
+    "isEnum" : false,
+    "isList" : false,
+    "type" : "prueba",
+    "attributeIds" : [ 1 ],
+    "attributeTypeValueIds" : [ 1, 2 ]
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "enumDescription" : "Example",
+    "isEnum" : false,
+    "isList" : false,
+    "type" : "prueba",
+    "attributeIds" : [ 2 ],
+    "attributeTypeValueIds" : [ 3, 4 ]
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "enumDescription" : "Example",
+    "isEnum" : false,
+    "isList" : false,
+    "type" : "prueba",
+    "attributeIds" : [ 3 ],
+    "attributeTypeValueIds" : [ 5, 6, 7 ]
+  } ],
+  "attributeTypeValues" : [ {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 1,
+    "description" : "Description for Value 1A",
+    "value" : "Value 1A",
+    "attributeTypeId" : 1
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 2,
+    "description" : "Description for Value 1B",
+    "value" : "Value 1B",
+    "attributeTypeId" : 1
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 3,
+    "description" : "Description for Value 1C",
+    "value" : "Value 1C",
+    "attributeTypeId" : 2
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 4,
+    "description" : "Description for Value 1D",
+    "value" : "Value 1D",
+    "attributeTypeId" : 2
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 5,
+    "description" : "Description for Value 1F",
+    "value" : "Value 1F",
+    "attributeTypeId" : 3
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 6,
+    "description" : "Description for Value 1G",
+    "value" : "Value 1G",
+    "attributeTypeId" : 3
+  }, {
+    "versionLock" : 1,
+    "deleted" : false,
+    "createdAt" : null,
+    "modifiedAt" : null,
+    "id" : 7,
+    "description" : "Description for Value 1H",
+    "value" : "Value 1H",
+    "attributeTypeId" : 3
+  } ]
+}
+
+Muestra las entidades separadas con sus respectivos ids de referencia
+
+
+
+--------------------------------------------------------------------------------------------
+
+
+¿Qué pasa en una relación bidireccional?
+Cascada:
+
+En este ejemplo, la anotación @ManyToOne en Attribute está configurada con cascade = CascadeType.PERSIST, lo que significa que cuando un Attribute se guarda, también se guarda su AttributeType si no está ya presente.
+Por otro lado, la anotación @OneToMany en AttributeType está configurada con cascade = CascadeType.PERSIST, lo que garantiza que cuando se persista un AttributeType, sus Attributes también se persistan.
+Mantenimiento de la relación bidireccional:
+
+Para evitar inconsistencias, debes asegurarte de que cuando estableces una relación entre las entidades, ambas entidades reflejen ese cambio. En el ejemplo, en el método setAttributeType de Attribute, cuando se establece el AttributeType, también se agrega el Attribute a la lista de atributos de AttributeType mediante attributeType.getAttributes().add(this);.
+El orden de persistencia:
+
+Si ambos lados de la relación están configurados para manejar las operaciones en cascada, se garantiza que los cambios en un lado de la relación (por ejemplo, persisten Attributes) también afecten al otro lado de la relación (en este caso, AttributeType).
+Sin embargo, debes tener cuidado al manejar las relaciones bidireccionales, porque si las entidades no están correctamente configuradas, podrías terminar con duplicados, o en el peor caso, una excepción de persistencia debido a la falta de sincronización entre las entidades.
+Eliminación de datos:
+
+En una relación bidireccional, cuando se elimina una entidad (por ejemplo, Attribute), debes asegurarte de que la relación se actualice en ambas direcciones. De lo contrario, podrías terminar con datos huérfanos o inconsistentes en tu base de datos.
+Puedes usar CascadeType.REMOVE en las relaciones de tipo @OneToMany si deseas que la eliminación de un AttributeType también elimine automáticamente sus Attributes.
+Consideraciones adicionales:
+Persistencia de ambos lados: Aunque la relación es bidireccional, solo uno de los lados necesita manejar la persistencia en la mayoría de los casos, es decir, solo uno de los lados debe tener configurada la cascada. Sin embargo, ambos lados deben ser actualizados para reflejar correctamente la relación.
+
+Recursión y ciclos infinitos: Si tienes una relación recursiva o ciclos en tu modelo de datos (por ejemplo, entidades relacionadas de forma circular), esto puede generar problemas de recursión infinita cuando intentas serializar las entidades en JSON. Esto puede evitarse usando anotaciones como @JsonIgnore o @JsonManagedReference y @JsonBackReference si estás usando Jackson para serializar objetos.
+
+Actualización de las entidades relacionadas: Si una de las entidades en la relación bidireccional cambia (por ejemplo, el AttributeType se cambia para un Attribute), debes asegurarte de que el cambio se refleje en ambas entidades. JPA no realiza esta sincronización automáticamente, así que esto debe hacerse manualmente en el código.
+
+Conclusión
+Las relaciones bidireccionales en JPA se deben manejar con especial cuidado, especialmente cuando se usan cascadas, para evitar que los cambios se propaguen de manera incorrecta o para prevenir inconsistencias en la base de datos. Como regla general, debes asegurarte de mantener ambas direcciones de la relación sincronizadas correctamente al insertar, actualizar o eliminar datos. Esto implica manejar las relaciones manualmente en algunos casos, asegurando que ambas entidades se actualicen de forma consistente.
+
+En las entidades que has definido, tienes relaciones bidireccionales, como @OneToMany en Config con Attribute, y @ManyToOne en Attribute con Config. Lo mismo ocurre con las relaciones entre AttributeType y Attribute, así como con AttributeTypeValue y AttributeType.
+
+Para evitar los problemas de recursión infinita cuando se serializan estas entidades (por ejemplo, cuando Config tiene una lista de Attribute y cada Attribute tiene una referencia a Config), estás usando las anotaciones @JsonManagedReference y @JsonBackReference.
+
+Explicación de las anotaciones:
+@JsonManagedReference: Se usa en el lado "dueño" de la relación (la entidad que contiene la colección o lista de la otra). Indica que esta parte de la relación se serializa, pero la otra parte no.
+@JsonBackReference: Se usa en el lado "inverso" de la relación (la entidad que tiene la referencia a la otra entidad). Impide la serialización en la parte "de atrás", lo que ayuda a evitar la recursión infinita.
+Por ejemplo:
+
+En Config (dueño de la relación), la lista de Attribute está marcada con @JsonManagedReference, lo que significa que esta lista será serializada.
+En Attribute (parte inversa de la relación), la propiedad config está marcada con @JsonBackReference, lo que significa que no se serializará cuando se serialice la entidad Config.
+¿Qué sucede cuando son bidireccionales?
+Cuando las relaciones son bidireccionales, la anotación @JsonManagedReference en un lado de la relación asegura que solo esa parte se serializa, mientras que la parte inversa se desactiva con @JsonBackReference para evitar un ciclo infinito durante la serialización.
+
+Ejemplo de flujo de serialización:
+Config tiene una lista de Attribute.
+
+Cuando serializas un objeto Config, el campo attributes será serializado gracias a @JsonManagedReference.
+Cada Attribute tendrá un enlace de vuelta a Config a través del campo config, pero como está anotado con @JsonBackReference, no se serializará.
+Attribute tiene un enlace a AttributeType y Config.
+
+El attributeType será serializado gracias a @JsonManagedReference, pero el enlace de vuelta a AttributeType en AttributeTypeValue no se serializará, ya que está marcado con @JsonBackReference.
+¿Qué pasa si necesitas controlar más aspectos de la serialización?
+Si las relaciones son más complejas o necesitas un control más granular sobre la serialización/deserialización, puedes utilizar el @JsonIgnoreProperties o @JsonIgnore en campos específicos, o utilizar anotaciones personalizadas de Jackson para el manejo de objetos relacionados.
+
+En resumen, en las relaciones bidireccionales como las que tienes, las anotaciones @JsonManagedReference y @JsonBackReference aseguran que no haya problemas de recursión infinita y que la serialización sea más eficiente, eliminando los ciclos.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Retrieve all Config objects from the repository
+        List<Config> configs = configRepository.findAll();
+        List<Attribute> attributes = attributeRepository.findAll();
+        List<AttributeType> attributeTypes = attributeTypeRepository.findAll();
+        List<AttributeTypeValue> attributeTypeValues = attributeTypeValueRepository.findAll();
+
+        // Crear un ArrayNode para cada tipo de datos
+        ArrayNode configArray = rootNode.putArray("configs");
+        ArrayNode attributeArray = rootNode.putArray("attributes");
+        ArrayNode attributeTypeArray = rootNode.putArray("attributeTypes");
+        ArrayNode attributeTypeValueArray = rootNode.putArray("attributeTypeValues");
+
+        for (Config config : configs) {
+            configArray.add(mapper.valueToTree(config));
+        }
+
+        for (Attribute attribute : attributes) {
+            attributeArray.add(mapper.valueToTree(attribute));
+        }
+
+        for (AttributeType attributeType : attributeTypes) {
+            attributeTypeArray.add(mapper.valueToTree(attributeType));
+        }
+
+        for (AttributeTypeValue attributeTypeValue : attributeTypeValues) {
+            attributeTypeValueArray.add(mapper.valueToTree(attributeTypeValue));
+        }
+
+
+
+

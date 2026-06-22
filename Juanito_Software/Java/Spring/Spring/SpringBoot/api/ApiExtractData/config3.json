@@ -1,0 +1,429 @@
+{
+  "API_BASE_URI" : "https://desarrollo.emisuite.es",
+  "ATTENDANCE" : {
+    "BASE" : "https://servicios.soincon.es/snc-att-mgt-ws"
+  },
+  "AUTH" : {
+    "BASE" : "https://desarrollo.emisuite.es/snc-security-ws"
+  },
+  "BOM" : {
+    "SEMIFINISHED_MATERIALS" : {
+      "BASE" : "semi-finished-materials"
+    },
+    "BASE" : "https://desarrollo.emisuite.es/snc-bom-api",
+    "ROADMAPS" : {
+      "BASE" : "roadmaps"
+    },
+    "MATERIALS" : {
+      "BASE" : "materials"
+    },
+    "PARAMETERS" : {
+      "BASE" : "parameters"
+    },
+    "MACHINE_MATERIALS" : {
+      "BASE" : "machine-materials"
+    },
+    "PROCESSES" : {
+      "BASE" : "processes"
+    }
+  },
+  "CERTIFICATIONS" : {
+    "BASE" : "http://192.168.0.11:7070/snc-vt-deck-commercial-api"
+  },
+  "DEMOS" : {
+    "BASE" : "https://desarrollo.soincon.es/snc-visual-tracking-ws"
+  },
+  "DOCUMENT_MANAGER" : {
+    "FILES" : {
+      "BASE" : "files"
+    },
+    "ROOT_PATH_BASE" : "C:/Program Files/Apache Software Foundation/Tomcat 9.0_SNC.Tomcat9",
+    "BASE" : "https://desarrollo.emisuite.es"
+  },
+  "LAUNCHER_URL" : "https://desarrollo.emisuite.es/launcherr",
+  "LEADS" : {
+    "BASE" : "http://192.168.0.11:7070/snc-vt-lead-ws"
+  },
+  "LOGIN" : {
+    "REDIRECT" : "https://desarrollo.emisuite.es",
+    "AUTH_LDAP_URI" : "https://desarrollo.emisuite.es/snc-security-ws/ldap_authenticate",
+    "BG_IMG" : "assets/login-bg.png",
+    "AUTH_URI" : "https://desarrollo.emisuite.es/snc-security-ws/authenticate",
+    "COMPANY_IMG" : "assets/company-logo.svg"
+  },
+  "LOGIN_URL" : "https://desarrollo.emisuite.es/login",
+  "NOTIFICATIONS" : {
+    "BASE" : "https://desarrollo.emisuite.es/snc-notifications-api"
+  },
+  "ORCHESTRATOR" : {
+    "BASE" : "https://desarrollo.emisuite.es/snc-vt-master-api",
+    "CLIENTID" : 1
+  },
+  "REJECTIONS" : {
+    "api" : "http://188.85.34.36:7081/snc-maflow-rejections-api",
+    "MAF_API" : "http://188.85.34.36:7081/snc-maf-api"
+  },
+  "REPORTS" : {
+    "BASE" : "https://desarrollo.emisuite.es/snc-reports-api"
+  },
+  "REPORTING" : {
+    "BASE" : "https://desarrollo.emisuite.es/snc-reporting-api"
+  },
+  "REQUEST_TIMEOUT" : "60",
+  "SCHEDULER" : {
+    "BASE" : "http://192.168.0.11:8000"
+  },
+  "SOCKETS" : {
+    "NOTIFIER" : "notifier",
+    "BASE" : "https://emi.soincon.es/snc-vt-notifier",
+    "UPDATE" : "wss://desarrollo.emisuite.es:15673"
+  },
+  "WORK_ORDER" : {
+    "BASE" : "https://desarrollo.emisuite.es"
+  },
+  "countries" : {
+    "api" : "https://desarrollo.emisuite.es/snc-country-api"
+  },
+  "vt" : {
+    "demo" : {
+      "showProduction" : false,
+      "showProductionLine" : false,
+      "showNeeds" : false,
+      "showDowntime" : false
+    },
+    "newItem" : {
+      "closeOnAdd" : true,
+      "redirectDashboardOnClose" : true,
+      "redirectDashboardOnAdd" : true,
+      "editableNewItemCode" : true,
+      "assistent" : {
+        "dialogOnStart" : "generateNewCodeDialog",
+        "api" : "https://desarrollo.emisuite.es/snc-mecaprec-code/generate"
+      }
+    },
+    "menubar" : {
+      "showListOffers" : true,
+      "showReports" : false,
+      "showTracking" : {
+        "indirectReport" : true,
+        "activityReport" : true,
+        "productionOfOverview" : true,
+        "stopsReport" : true,
+        "breaksReport" : true
+      },
+      "showProductionMenu" : {
+        "productionOf" : true,
+        "productionOt" : true
+      },
+      "showToolsMenu" : {
+        "showGenerator" : true,
+        "showGeneratorRecursive" : true,
+        "showSecuencer" : true,
+        "showOldSecuencer" : false,
+        "showScheduler" : false
+      },
+      "showWorkReport" : {
+        "showWeekly" : true,
+        "showMonthly" : true,
+        "showReportLog" : true,
+        "showMassiveLoad" : true,
+        "showCloseMonth" : true
+      }
+    },
+    "dashboard" : { },
+    "lead" : { },
+    "budget" : {
+      "summaryComplete" : true,
+      "machineTab" : true,
+      "auxiliarsTab" : true,
+      "resourcesTab" : true,
+      "risksTab" : true,
+      "interventionsTab" : true,
+      "travelsTab" : true,
+      "schedulingTab" : true,
+      "materialsTab" : true,
+      "externalsTab" : true
+    },
+    "validation" : { },
+    "order" : { },
+    "orderOT" : {
+      "createOrderMaxItems" : 15,
+      "isCreateOrderParallel" : false
+    },
+    "modeling" : {
+      "showWorkstations" : true,
+      "showGuidelines" : true,
+      "showMaterials" : true,
+      "showDimensions" : true,
+      "showTools" : true,
+      "enableDeviation" : true
+    },
+    "assignment" : {
+      "autosequence" : false
+    },
+    "scheduler" : {
+      "showOperators" : false
+    },
+    "sequencer" : {
+      "defaultDatesRange" : "DAY",
+      "itemsLoaded" : 50,
+      "entirePieces" : true,
+      "autoAdjust" : false,
+      "machinesAutoScroll" : true,
+      "productionAutoadvance" : true
+    },
+    "ofGenerator" : {
+      "increaseItemCode" : true
+    },
+    "manufacturing" : {
+      "scrappedReportedInProduction" : true,
+      "createSplitFromRemainingPieces" : true,
+      "splitMachineMode" : "STRICT_SPLITS",
+      "showTurns" : true,
+      "enableBatchAllRouteSteps" : false,
+      "phase" : {
+        "overviewTab" : true,
+        "activityTab" : true,
+        "consumablesTab" : true,
+        "processesTab" : true,
+        "outputsTab" : true,
+        "indirectTab" : true,
+        "scrapsTab" : true,
+        "materialsTab" : true,
+        "dimensionsTab" : true,
+        "guidelinesTab" : true,
+        "microstopsTab" : true,
+        "costTab" : false
+      },
+      "operatorPanelOf" : {
+        "overviewTab" : true,
+        "activityTab" : true,
+        "customFieldsTab" : true,
+        "toolsTab" : true,
+        "workstationParamsTab" : true,
+        "consumablesTab" : true,
+        "processesTab" : true,
+        "outputsTab" : true,
+        "indirectTab" : true,
+        "scrapsTab" : true,
+        "materialsTab" : true,
+        "dimensionsTab" : true,
+        "guidelinesTab" : true,
+        "comentsTab" : true,
+        "documentsTab" : true,
+        "carousel" : {
+          "chart" : false,
+          "plan" : false,
+          "kpi" : true,
+          "observations" : true,
+          "instructions" : true,
+          "configIndicators" : true,
+          "weighingScales" : [ {
+            "id" : 20,
+            "name" : "V 01"
+          }, {
+            "id" : 17,
+            "name" : "V 02"
+          }, {
+            "id" : 19,
+            "name" : "V 03"
+          }, {
+            "id" : 16,
+            "name" : "V 04"
+          }, {
+            "id" : 14,
+            "name" : "V 05"
+          }, {
+            "id" : 13,
+            "name" : "V 06"
+          }, {
+            "id" : 12,
+            "name" : "V 07"
+          }, {
+            "id" : 15,
+            "name" : "V 08"
+          }, {
+            "id" : 18,
+            "name" : "V 09"
+          }, {
+            "id" : 21,
+            "name" : "V 10"
+          } ]
+        },
+        "materialsTabColors" : {
+          "selectedRowColor" : "#b3cde0",
+          "quantityIconColor" : "#99cc33",
+          "invalidQuantityColor" : "#ffcc00"
+        },
+        "operatorsGroup" : 91,
+        "dimensionsFamily" : 5,
+        "itemFieldsDescriptionIds" : [ 4, 5 ],
+        "dimensionsDefaultType" : 20,
+        "outputsDefaultQuantity" : 0,
+        "exceedingWorkOrderLimit" : true,
+        "sumaryOnPause" : true,
+        "sumaryOnStop" : true,
+        "barcodeClient" : "FUSHIMA",
+        "enableInputAllMaterial" : true,
+        "fullCard" : true,
+        "loadLastOperator" : true,
+        "loadLastSplit" : true,
+        "showMaterialsCode" : false,
+        "showAllDimensions" : true,
+        "ofPickerDebounceTime" : 1500,
+        "groupedIndirects" : true,
+        "groupedBreaks" : true,
+        "operatorMultipleOrdersWarning" : true,
+        "disablePanelOnPause" : true,
+        "logo" : "/assets/VT-03.png",
+        "fullCardFields" : {
+          "showClient" : true,
+          "showTags" : true,
+          "showProdUnits" : true,
+          "showProdTime" : true,
+          "showBar" : true,
+          "showItemFields" : true,
+          "showFinishedMaterials" : true
+        },
+        "autoMaterialOnFinish" : "INDIVIDUAL",
+        "operatorPickerOnOpen" : false,
+        "batchValidationFuco" : false,
+        "enabledPausedPanelTabs" : {
+          "documentsTab" : true
+        },
+        "enabledStoppedPanelTabs" : {
+          "documentsTab" : true
+        },
+        "disableRequiredQuantityValidation" : true,
+        "disableNoRequiredMaterialsQuantityValidation" : false,
+        "strictTolerance" : true,
+        "enableOFsTree" : true,
+        "indicators" : [ "STEP", "SPLIT", "LAST_HOUR" ],
+        "configIndicators" : true
+      },
+      "operatorPanelOt" : {
+        "outputsTab" : true,
+        "scrapsTab" : true,
+        "materialsTab" : true,
+        "dimensionsTab" : true,
+        "activityTab" : true,
+        "consumablesTab" : true,
+        "documentsTab" : true
+      }
+    },
+    "quality" : {
+      "tabBlueTest" : true,
+      "tabDimensions" : true,
+      "tabGuidelines" : true
+    }
+  },
+  "gmao" : {
+    "api" : "https://desarrollo.emisuite.es/snc-eg-api",
+    "newTask" : "https://desarrollo.emisuite.es/easy-gmao/operator/new-task",
+    "history" : "https://desarrollo.emisuite.es/easy-gmao/operator/history",
+    "skipMap" : true,
+    "mrFactoryId" : 1,
+    "directory" : "6d44b088-2324-4afd-b186-514f150205cb",
+    "priorityTagIds" : [ 100, 101, 102 ],
+    "PLAY_PAUSE" : true,
+    "MASIVE_IMPUTATION" : true,
+    "CONTACT_INFO_REQUIRED" : true,
+    "MAINTENANCE_REQUEST_DEFAULT_USER_DISABLED" : true,
+    "MAINTENANCE_REQUEST_DESCRIPTION_BLOCK" : true,
+    "NEW_TASK_AUTOASSIGN" : true,
+    "HIDE_IMPUTATION_BUTTONS" : true,
+    "WITH_COORDINATES" : true,
+    "dateHour" : 6,
+    "FILTER_ASSETS_TYPES" : [ {
+      "type" : "FACTORY",
+      "use" : true
+    }, {
+      "type" : "SECTION",
+      "use" : true
+    }, {
+      "type" : "COMMAND_CENTER",
+      "use" : true
+    }, {
+      "type" : "PRODUCTION_LINE_GENERIC",
+      "use" : true
+    }, {
+      "type" : "WORKSTATION_GENERIC",
+      "use" : true
+    }, {
+      "type" : "MACHINE_GENERIC",
+      "use" : true
+    }, {
+      "type" : "LUMINARIE",
+      "use" : true
+    }, {
+      "type" : "TOOL_GENERIC",
+      "use" : true
+    }, {
+      "type" : "MOLD",
+      "use" : true
+    } ],
+    "rolesIds" : [ 110, 111, 131, 132 ],
+    "app_id" : 11
+  },
+  "launcher" : {
+    "app_id" : 3,
+    "launcher_id" : 1,
+    "api" : "https://desarrollo.emisuite.es/snc-launcher-api",
+    "showRolesTab" : true,
+    "showAssignmentGroups" : true
+  },
+  "mf" : {
+    "api" : "https://desarrollo.emisuite.es/snc-mf-api",
+    "isSGAInstalled" : true,
+    "allowedUserGroupId" : 1
+  },
+  "digitalPeople" : {
+    "api" : "https://desarrollo.emisuite.es/snc-dp-api",
+    "settlement" : {
+      "dateRange" : "week"
+    }
+  },
+  "sam" : {
+    "workControlTypeId" : 1,
+    "clientId" : 1,
+    "api" : "https://desarrollo.emisuite.es/snc-att-mgt-ws",
+    "controlPointId" : 78
+  },
+  "mom" : {
+    "api" : "https://desarrollo.emisuite.es/snc-mom-api"
+  },
+  "wms" : {
+    "app_id" : 9,
+    "api" : "https://desarrollo.emisuite.es/snc-vs-api",
+    "STOCK_REQUIRED" : true,
+    "SAP_WS" : false,
+    "REQUEST_EDITABLE_UNITS" : false,
+    "PROCESSING_CLOSE_WHEN_PACKED" : false,
+    "PROCESSING_OPTIONS" : {
+      "WITHOUT_STOCK" : [ "REQUESTED" ],
+      "REQUESTED" : [ "WITHOUT_STOCK", "RECEIVED" ],
+      "RECEIVED" : [ "WITHOUT_STOCK", "REQUESTED", "PACKED" ],
+      "PACKED" : [ "RECEIVED", "SHIPPED" ],
+      "SHIPPED" : [ "PACKED" ],
+      "DELIVERED" : [ ],
+      "DELIVERED_INCOMPLETE" : [ ]
+    }
+  },
+  "vtlite" : {
+    "api" : "https://desarrollo.emisuite.es/vt-lite-api"
+  },
+  "fuco" : {
+    "url" : "http://172.27.0.85:8000"
+  },
+  "evobus" : {
+    "api" : "ffdf"
+  },
+  "_meta" : {
+    "signature" : "e9e56f3f6ba12f535ba69c4efc169ee82928b20e5b240d5fa88dbe07f4c34fc6",
+    "version" : 1
+  },
+  "testR" : "test",
+  "LAUNCHER" : {
+    "BG_IMG" : "assets/launcher-bg.png"
+  }
+}

@@ -1,23 +1,5 @@
 [
   {
-    "platform": "kick",
-    "username": "ameloblastos",
-    "message": "buenas",
-    "timestamp": 1781451577687,
-    "user": "ameloblastos",
-    "received_at": "2026-06-14T15:39:37.688Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "Bordeh",
-    "message": "En que dificultad estas?",
-    "timestamp": 1781456162368,
-    "user": "Bordeh",
-    "received_at": "2026-06-14T16:56:02.370Z"
-  },
-  {
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
@@ -934,5 +916,25 @@
     "timestamp": 1782095290293,
     "user": "aytha1",
     "received_at": "2026-06-22T02:28:10.293Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "barreiross_",
+    "message": "juanito hay un tio diciendo que tus streams una mierda y es del psoe y quiere debatir contigo esta en directo en twitch se llama Paul1nho_02",
+    "timestamp": 1782136346688,
+    "user": "barreiross_",
+    "received_at": "2026-06-22T13:52:26.694Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "barreiross_",
+    "message": "y a dicho que hitler es una ruina y to",
+    "timestamp": 1782136360280,
+    "user": "barreiross_",
+    "received_at": "2026-06-22T13:52:40.283Z"
   }
 ]

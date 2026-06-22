@@ -1,0 +1,21 @@
+Imagina que tenemos una aplicación que permite dar de alta equipos y jugadores. Necesitamos poder dar de alta jugadores, equipos y la relación entre ambos, con los dorsales (Es decir, un jugador entre dos fechas, forma parte de un equipo con un dorsal)
+
+La idea es hacer un proceso Java, que dado un archivo csv (con 3 formatos diferentes, uno para cada entidad), de de alta o modifique los registros.
+
+ 
+
+La estructura e implementación te la dejo de libre elección (lo que hayas dado). Así veo que sabes hacer y de dónde partimos.
+
+La base de datos en MySQL
+
+ 
+
+Puntos "extra":
+- Que el código este bien indexado y comentado.
+- Que utilices un sistema de gestión de dependencias en vez de importarlas directamente como jar al proyecto (con Maven o Gradle)
+- Que la aplicación tenga un log donde pueda volcar la traza de lo que va haciendo (log4j o similares)
+- Que la configuración sea editable (por ejemplo la cadena y datos de conexión a base de datos, o el path de dónde se leen los ficheros) en un fichero .properties
+- Que utilices un framework de persistencia (Hibernate por ejemplo) en vez de JDBC puro.
+- Buscar una librería adecuada para gestionar archivos CSV, no es necesario que uséis java.io
+
+Haz lo que sepas y puedas, mejor tener algo funcional y bien; que no empieces y desistas por meter cosas que no sabes usar, aún buscando documentación.

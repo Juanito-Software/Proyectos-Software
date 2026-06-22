@@ -1,0 +1,152 @@
+{
+  "configs" : [ {
+    "versionLock" : 2,
+    "deleted" : false,
+    "createdAt" : "2024-11-11T23:06:30.935Z",
+    "modifiedAt" : "2024-11-11T23:06:31.020Z",
+    "id" : 1,
+    "description" : "Main Config",
+    "isCustom" : true,
+    "defaultValue" : "Default",
+    "applicationNode" : "Node1",
+    "parent" : 0,
+    "attributes" : [ {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-11T23:06:30.986Z",
+      "modifiedAt" : "2024-11-11T23:06:30.986Z",
+      "id" : 1,
+      "name" : "Attribute 1",
+      "attributeType" : {
+        "versionLock" : 1,
+        "deleted" : false,
+        "createdAt" : "2024-11-11T23:06:30.964Z",
+        "modifiedAt" : "2024-11-11T23:06:30.964Z",
+        "id" : 1,
+        "enumDescription" : "Type 1",
+        "isEnum" : true,
+        "isList" : false,
+        "type" : "String",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:30.994Z",
+          "modifiedAt" : "2024-11-11T23:06:30.994Z",
+          "id" : 1,
+          "description" : "Description for Value 1A",
+          "value" : "Value 1A"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:30.997Z",
+          "modifiedAt" : "2024-11-11T23:06:30.997Z",
+          "id" : 2,
+          "description" : "Description for Value 1B",
+          "value" : "Value 1B"
+        } ]
+      }
+    }, {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-11T23:06:30.988Z",
+      "modifiedAt" : "2024-11-11T23:06:30.988Z",
+      "id" : 2,
+      "name" : "Attribute 2",
+      "attributeType" : {
+        "versionLock" : 1,
+        "deleted" : false,
+        "createdAt" : "2024-11-11T23:06:30.973Z",
+        "modifiedAt" : "2024-11-11T23:06:30.973Z",
+        "id" : 2,
+        "enumDescription" : "Type 2",
+        "isEnum" : true,
+        "isList" : false,
+        "type" : "Int",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.000Z",
+          "modifiedAt" : "2024-11-11T23:06:31.000Z",
+          "id" : 3,
+          "description" : "Description for Value 1C - 3",
+          "value" : "3"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.002Z",
+          "modifiedAt" : "2024-11-11T23:06:31.002Z",
+          "id" : 4,
+          "description" : "Description for Value 1D - 4",
+          "value" : "4"
+        } ]
+      }
+    }, {
+      "versionLock" : 1,
+      "deleted" : false,
+      "createdAt" : "2024-11-11T23:06:30.990Z",
+      "modifiedAt" : "2024-11-11T23:06:30.990Z",
+      "id" : 3,
+      "name" : "Attribute 3",
+      "attributeType" : {
+        "versionLock" : 1,
+        "deleted" : false,
+        "createdAt" : "2024-11-11T23:06:30.980Z",
+        "modifiedAt" : "2024-11-11T23:06:30.980Z",
+        "id" : 3,
+        "enumDescription" : "Type 3",
+        "isEnum" : true,
+        "isList" : false,
+        "type" : "Boolean",
+        "attributeTypeValues" : [ {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.005Z",
+          "modifiedAt" : "2024-11-11T23:06:31.005Z",
+          "id" : 5,
+          "description" : "Description for Value 1F - true",
+          "value" : "true"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.006Z",
+          "modifiedAt" : "2024-11-11T23:06:31.006Z",
+          "id" : 6,
+          "description" : "Description for Value 1G - false",
+          "value" : "false"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.008Z",
+          "modifiedAt" : "2024-11-11T23:06:31.008Z",
+          "id" : 7,
+          "description" : "Description for Value 1H - true",
+          "value" : "true"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.010Z",
+          "modifiedAt" : "2024-11-11T23:06:31.010Z",
+          "id" : 8,
+          "description" : "Description for Value 1I - true",
+          "value" : "true"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.012Z",
+          "modifiedAt" : "2024-11-11T23:06:31.012Z",
+          "id" : 9,
+          "description" : "Description for Value 1J - false",
+          "value" : "false"
+        }, {
+          "versionLock" : 1,
+          "deleted" : false,
+          "createdAt" : "2024-11-11T23:06:31.013Z",
+          "modifiedAt" : "2024-11-11T23:06:31.013Z",
+          "id" : 10,
+          "description" : "Description for Value 1K - false",
+          "value" : "false"
+        } ]
+      }
+    } ]
+  } ]
+}
