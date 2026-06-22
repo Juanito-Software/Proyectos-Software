@@ -1,0 +1,22 @@
+Procesamiento de Archivos CSV
+GET /procesar-jugadores: Procesa el archivo CSV de jugadores y los guarda en la base de datos.
+GET /procesar-equipos: Procesa el archivo CSV de equipos y los guarda en la base de datos.
+GET /procesar-participaciones: Procesa el archivo CSV de participaciones y las guarda en la base de datos.
+
+Jugadores
+GET /api/jugadores: Recupera la lista de todos los jugadores.
+GET /api/jugadores/{id}: Recupera un jugador específico por su ID.
+PUT /api/jugadores/{id}: Actualiza un jugador existente basado en su ID.
+DELETE /api/jugadores/{id}: Elimina un jugador específico por su ID.
+
+Equipos
+GET /api/equipos: Recupera la lista de todos los equipos.
+GET /api/equipos/{id}: Recupera un equipo específico por su ID.
+PUT /api/equipos/{id}: Actualiza un equipo existente basado en su ID.
+DELETE /api/equipos/{id}: Elimina un equipo específico por su ID.
+
+Participaciones
+GET /api/participaciones: Recupera la lista de todas las participaciones.
+GET /api/participaciones/{id}: Recupera una participación específica por su ID.
+PUT /api/participaciones/{id}: Actualiza una participación existente basada en su ID.
+DELETE /api/participaciones/{id}: Elimina una participación específica por su ID.

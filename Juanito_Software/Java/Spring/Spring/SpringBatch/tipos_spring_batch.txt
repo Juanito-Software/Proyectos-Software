@@ -1,0 +1,62 @@
+Estrategias de procesamiento por lotes
+Para ayudar a diseñar e implementar sistemas por lotes, se deben proporcionar a los diseñadores y programadores bloques y patrones básicos de construcción de aplicaciones por lotes en forma de diagramas de estructura de muestra y capas de código. Al comenzar a diseñar un trabajo por lotes, la lógica empresarial se debe descomponer en una serie de pasos que se puedan implementar utilizando los siguientes bloques de construcción estándar:
+
+
+Aplicaciones de conversión: Para cada tipo de archivo suministrado por un sistema externo o generado para él, se debe crear una aplicación de conversión para convertir los registros de transacciones suministrados a un formato estándar necesario para su procesamiento. Este tipo de aplicación por lotes puede constar total o parcialmente de módulos de utilidad de traducción (consulte Servicios por lotes básicos).
+
+Aplicaciones de validación: una aplicación de validación garantiza que todos los registros de entrada y salida sean correctos y coherentes. La validación se basa normalmente en encabezados y finales de archivos, sumas de comprobación y algoritmos de validación, y comprobaciones cruzadas a nivel de registro.
+
+Aplicaciones de extracción: una aplicación de extracción lee un conjunto de registros de una base de datos o un archivo de entrada, selecciona registros según reglas predefinidas y escribe los registros en un archivo de salida.
+
+Aplicaciones de extracción/actualización: una aplicación de extracción/actualización lee registros de una base de datos o un archivo de entrada y realiza cambios en una base de datos o un archivo de salida, en función de los datos que se encuentran en cada registro de entrada.
+
+Aplicaciones de procesamiento y actualización: una aplicación de procesamiento y actualización procesa transacciones de entrada de una aplicación de validación o de extracción. El procesamiento generalmente implica leer una base de datos para obtener los datos necesarios para el procesamiento, actualizar potencialmente la base de datos y crear registros para el procesamiento de salida.
+
+Aplicaciones de salida/formato: Una aplicación de salida/formato lee un archivo de entrada, reestructura los datos de este registro según un formato estándar y produce un archivo de salida para imprimir o transmitir a otro programa o sistema.
+
+Además, se debe proporcionar un shell de aplicación básico para la lógica empresarial que no se puede construir utilizando los bloques de construcción mencionados anteriormente.
+
+
+Además de los bloques de construcción principales, cada aplicación puede utilizar uno o más pasos de utilidad estándar, como:
+
+Ordenar: programa que lee un archivo de entrada y produce un archivo de salida en el que los registros se han vuelto a ordenar según un campo de clave de ordenación en los registros. Las ordenaciones suelen realizarse mediante utilidades estándar del sistema.
+
+División: programa que lee un único archivo de entrada y escribe cada registro en uno de varios archivos de salida en función de un valor de campo. Las divisiones se pueden personalizar o realizar mediante utilidades de sistema estándar controladas por parámetros.
+
+Fusionar: programa que lee registros de varios archivos de entrada y produce un archivo de salida con datos combinados de los archivos de entrada. Las fusiones se pueden personalizar o realizar mediante utilidades de sistema estándar controladas por parámetros.
+
+
+Las aplicaciones por lotes también se pueden clasificar según su fuente de entrada:
+
+Las aplicaciones basadas en bases de datos se controlan mediante filas o valores recuperados de la base de datos.
+
+Las aplicaciones controladas por archivos se controlan mediante registros o valores recuperados de un archivo.
+
+Las aplicaciones basadas en mensajes se controlan mediante mensajes recuperados de una cola de mensajes.
+
+La base de cualquier sistema de procesamiento por lotes es la estrategia de procesamiento. Los factores que afectan la selección de la estrategia incluyen: el volumen estimado del sistema de procesamiento por lotes, la concurrencia con sistemas en línea o con otros sistemas de procesamiento por lotes y las ventanas de procesamiento por lotes disponibles. (Tenga en cuenta que, a medida que más empresas desean estar en funcionamiento las 24 horas del día, los 7 días de la semana, las ventanas de procesamiento por lotes libres están desapareciendo).
+
+
+Las opciones de procesamiento típicas para lotes son (en orden creciente de complejidad de implementación):
+
+Procesamiento normal durante una ventana de lote en modo fuera de línea.
+
+Procesamiento simultáneo por lotes o en línea.
+
+Procesamiento paralelo de muchos lotes o trabajos diferentes al mismo tiempo.
+
+Particionado (procesamiento de muchas instancias del mismo trabajo al mismo tiempo).
+
+Una combinación de las opciones anteriores.
+
+
+
+Es posible que un programador comercial admita algunas o todas estas opciones.
+
+En el resto de esta sección se analizan estas opciones de procesamiento con más detalle. Tenga en cuenta que, como regla general, la estrategia de confirmación y bloqueo adoptada por los procesos por lotes depende del tipo de procesamiento realizado y que la estrategia de bloqueo en línea también debe utilizar los mismos principios. Por lo tanto, la arquitectura por lotes no puede ser simplemente una idea de último momento al diseñar una arquitectura general.
+
+La estrategia de bloqueo puede consistir en utilizar únicamente bloqueos de bases de datos normales o en implementar un servicio de bloqueo personalizado adicional en la arquitectura. El servicio de bloqueo haría un seguimiento del bloqueo de la base de datos (por ejemplo, almacenando la información necesaria en una tabla de base de datos dedicada) y otorgaría o denegaría permisos a los programas de aplicación que solicitan una operación de base de datos. Esta arquitectura también podría implementar una lógica de reintento para evitar la interrupción de un trabajo por lotes en caso de una situación de bloqueo.
+
+1. Procesamiento normal en una ventana de lotes Para procesos de lotes simples que se ejecutan en una ventana de lotes separada donde los datos que se actualizan no son requeridos por usuarios en línea u otros procesos de lotes, la simultaneidad no es un problema y se puede realizar una única confirmación al final de la ejecución del lote.
+
+En la mayoría de los casos, es más apropiado adoptar un enfoque más sólido. Tenga en cuenta que los sistemas por lotes tienden a crecer con el paso del tiempo, tanto en términos de complejidad como de los volúmenes de datos que manejan. Si no se implementa una estrategia de bloqueo y el sistema aún depende de un único punto de confirmación, modificar los programas por lotes puede resultar complicado. Por lo tanto, incluso con los sistemas por lotes más simples, considere la necesidad de una lógica de confirmación para las opciones de reinicio y recuperación, así como la información sobre los casos más complejos que se describen más adelante en esta sección.

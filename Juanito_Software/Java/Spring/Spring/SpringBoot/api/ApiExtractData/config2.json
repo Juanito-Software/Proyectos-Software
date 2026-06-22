@@ -1,0 +1,315 @@
+{
+  "configs" : [ {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 1,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "https://desarrollo.emisuite.es",
+    "applicationNode" : null,
+    "parentId" : null,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 1,
+      "name" : "API_BASE_URI",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 1,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "STRING"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 2,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : null,
+    "applicationNode" : null,
+    "parentId" : null,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 2,
+      "name" : "ATTENDANCE",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 4,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "OBJECT"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 3,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "https://desarrollo.emisuite.es/snc-att-mgt-ws",
+    "applicationNode" : null,
+    "parentId" : 2,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 3,
+      "name" : "BASE",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 1,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "STRING"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 4,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : null,
+    "applicationNode" : null,
+    "parentId" : null,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 4,
+      "name" : "AUTH",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 4,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "OBJECT"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 5,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "https://desarrollo.emisuite.es/snc-security-ws",
+    "applicationNode" : null,
+    "parentId" : 4,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 5,
+      "name" : "BASE",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 1,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "STRING"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 6,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : null,
+    "applicationNode" : null,
+    "parentId" : null,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 6,
+      "name" : "BOM",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 4,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "OBJECT"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 7,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : null,
+    "applicationNode" : null,
+    "parentId" : 6,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 7,
+      "name" : "SEMIFINISHED_MATERIALS",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 4,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "OBJECT"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 8,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "semi-finished-materials",
+    "applicationNode" : null,
+    "parentId" : 7,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 8,
+      "name" : "BASE",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 1,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "STRING"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 9,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "https://desarrollo.emisuite.es/snc-bom-api",
+    "applicationNode" : null,
+    "parentId" : 6,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 9,
+      "name" : "BASE",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 1,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "STRING"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 10,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : null,
+    "applicationNode" : null,
+    "parentId" : 6,
+    "attribute" : {
+      "versionLock" : 0,
+      "deleted" : false,
+      "createdAt" : "2024-11-13T13:47:14.925Z",
+      "modifiedAt" : "2024-11-13T13:47:14.925Z",
+      "id" : 10,
+      "name" : "ROADMAPS",
+      "attributeType" : {
+        "versionLock" : 0,
+        "deleted" : false,
+        "createdAt" : "2024-11-13T13:47:14.925Z",
+        "modifiedAt" : "2024-11-13T13:47:14.925Z",
+        "id" : 4,
+        "enumDescription" : null,
+        "isEnum" : false,
+        "isList" : false,
+        "type" : "OBJECT"
+      }
+    }
+  }, {
+    "versionLock" : 0,
+    "deleted" : false,
+    "createdAt" : "2024-11-13T13:47:14.925Z",
+    "modifiedAt" : "2024-11-13T13:47:14.925Z",
+    "id" : 11,
+    "description" : null,
+    "isCustom" : false,
+    "defaultValue" : "roadmaps",
+    "applicationNode" : null,
+    "parentId" : 10,
+    "attribute" : null
+  } ]
+}

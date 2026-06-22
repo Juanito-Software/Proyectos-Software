@@ -1,0 +1,7 @@
+añadir sistema copias de seguridad base de datos Games postgre17 del proyecto
+
+
+
+en apiextract data:
+
+pedir a chat gpt qu refactorice el codigo de la clase service de manera que se repita la menor cantidad de codigo posible y a poder ser unificando el procesamiento de nodos

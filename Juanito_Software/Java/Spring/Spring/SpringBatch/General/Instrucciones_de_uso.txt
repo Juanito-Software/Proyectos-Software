@@ -1,0 +1,525 @@
+Instrucciones de uso:
+
+1:
+define tu clase entidad Especifica
+
+
+2:
+define la ruta csv con los datos a procesar desde el archivo aplication.properties que se encuentra en java/resources (en caso de leer o escribir de un csv) 
+propiedades a modificar:
+
+csv.file.path=input.csv
+csv.output.file.path=BatchProcessor//src//main//resources//output.csv
+
+
+o define la url del endpoint al que atacamos desde el archivo aplication.properties que se encuentra en java/resources (en caso de leer o escribir de una api) 
+propiedades a modificar:
+
+apiToReadUrl=http://localhost:8081/batch/personas
+apiToWriteUrl=http://localhost:8081/batch/SavePersonas
+ 
+//En el caso de leer de la api no hace falta configurar la entidad de job parameters podemos dejar la generica 
+//y es obligatorio usar el bean personaItemProcessor salvo cuando leemos de api y escribamos en api a no ser que los datos del modelo no coincidan entre ambas apis
+//si utilizas otra clase especifica deberas crear un procesor que mapee la respuesta para que tenga el formato rquerido
+
+
+3:
+Define el tipo de entidad desde el archivo aplication.properties que se encuentra en java/resources, de esta manera especificamos el tipo de entidad que se debe guardar en los .jobparameters
+propiedades a modificar:
+
+entityClass=com.example.BatchProcessor.model.GenericEntity //para clase generica    o   .Persona  //para clase Persona
+
+ 
+ahora el programa consultara el jobparameter cuando necesite saber a que entidad debe mapear
+
+
+4:
+Finalmente ejecutamos, abrimos la direccion del swagger y enviamos el siguiente post, modificando "Bean" por un nombre valido:
+
+
+
+{
+    "reader": "Bean",
+    "processor": "Bean",
+    "writer": "Bean"
+}
+
+
+
+
+//Datos pruebas para las tablas genericentity y persona
+// Lectura generica
+id,data
+1,Producto A
+2,Producto B
+3,Producto C
+4,Producto D
+5,Producto E
+
+
+// Lectura para personas
+personaId,nombreCompleto,empleo
+1,Juan Pérez, 
+2,Ana García,Diseñador
+3,Luis López,Desarrollador
+4,Marta Fernández,Analista
+5,Carlos Gómez,Desarrollador
+6,Elena Ruiz,Diseñador
+7,Roberto Sánchez,Analista
+8,Lucía Moreno,Gerente
+9,Mario Ramírez,Gerente
+10,Sofía Castro,Diseñador
+
+
+
+
+
+
+
+//Beans disponibles
+en la parte inferior de la clase BatchConfig tenemos los siguientes beans para usar:
+
+    //Archivo
+    @Bean(name = "csvItemReader")
+    public CsvItemReader<?> csvItemReader() {
+        return new CsvItemReader<>();
+    }
+
+    @Bean(name = "csvItemWriter")
+    public CsvItemWriter<GenericEntity> csvItemWriter() {
+        return new CsvItemWriter<>();
+    }
+
+
+    //DB
+    @StepScope
+    @Bean(name = "databaseItemReader")
+    public JpaPagingItemReader<?> databaseReader(EntityManagerFactory entityManagerFactory,
+                                                 @Value("#{jobParameters['entityClass']}") String entityClassName) throws ClassNotFoundException {
+        return new DatabaseReader().databaseReader(entityManagerFactory, entityClassName);
+    }
+
+    @Bean(name = "databaseItemWriter")
+    public ItemWriter<GenericEntity> databaseItemWriter(GenericRepository genericRepository) {
+        return new DatabaseWriter.ManualItemWriter<>(genericRepository);
+    }
+
+
+    //API
+    // Bean para ApiItemReader genérico
+    @Bean(name = "apiItemReader")
+    public ApiItemReader<?> apiItemReader(RestTemplateBuilder restTemplateBuilder) {
+        return new ApiItemReader<>(restTemplateBuilder);
+    }
+
+    // Bean para ApiItemWriter genérico
+    @Bean(name = "apiItemWriter")
+    public ApiItemWriter<?> apiItemWriter(RestTemplateBuilder restTemplateBuilder) {
+        return new ApiItemWriter<>(restTemplateBuilder);
+    }
+
+
+
+
+    //Processor
+    @Bean(name = "genericProcessor")
+    public <T> GenericProcessor<T> genericProcessor() {
+        return new GenericProcessor<>();
+    }
+	
+    // Bean para PersonaItemProcessor
+    @Bean(name = "personaItemProcessor")
+    public ItemProcessor<Map<String, Object>, Persona> personaItemProcessor() {
+        return new PersonaItemProcessor();
+    }
+
+
+
+
+
+
+
+avances:
+
+se lee de un csv genérico(o especifico) y se escribe en otro csv igual
+se lee de un csv genérico(o especifico) y se escribe en una tabla de la base de datos igual
+se lee de un csv genérico(o especifico) y se escribe en una api igual
+
+falta leer de DB a DB
+se lee de una tabla genérica(o especifica) de la base de datos y se escribe en un csv igual
+se lee de una tabla genérica(o especifica) de la base de datos y se escribe en una api igual
+
+Se lee de una api y se escribe en otra igual
+se lee de una api y se escribe en un csv igual //requiere usar PersonaItemProcessor
+se lee de una api y se escribe en una tabla de la base de datos //requiere usar PersonaItemProcessor
+
+
+
+
+falta:
+
+se lee de una base de datos y se escribe en otra
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+package com.example.BatchProcessor.config;
+
+import com.example.BatchProcessor.model.GenericEntity;
+import com.example.BatchProcessor.reader.CsvItemReader;
+import com.example.BatchProcessor.reader.DatabaseReader;
+import com.example.BatchProcessor.repository.GenericRepository;
+import com.example.BatchProcessor.service.GenericProcessor;
+import com.example.BatchProcessor.writer.CsvItemWriter;
+import com.example.BatchProcessor.writer.DatabaseWriter;
+import jakarta.persistence.EntityManagerFactory;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JpaItemWriter;
+import org.springframework.batch.item.database.JpaPagingItemReader;
+import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.sql.DataSource;
+
+
+/**
+ * Configuración de la ejecución de trabajos por lotes utilizando Spring Batch.
+ * Esta clase configura los componentes principales para ejecutar un trabajo por lotes,
+ * incluyendo el repositorio de trabajos, el lanzador de trabajos y la gestión de transacciones.
+ */
+@EnableScheduling
+@Configuration
+@EnableTransactionManagement
+@PropertySource("classpath:application.properties")
+public class BatchConfig {
+
+    private final DataSource primaryDataSource;
+    private final DataSource secondaryDataSource;
+
+    public BatchConfig( @Qualifier("secondaryDataSource") DataSource primaryDataSource,  @Qualifier("secondaryDataSource") DataSource secondaryDataSource) {
+        this.primaryDataSource = primaryDataSource;
+        this.secondaryDataSource = secondaryDataSource;
+    }
+
+    @Primary
+    @Bean(name = "primaryDataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.primary")
+    public DataSource primaryDataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    // Configuracion de JdbcTemplate
+    @Bean(name = "jdbcTemplate")
+    public JdbcTemplate jdbcTemplate() {
+        return new JdbcTemplate(primaryDataSource);
+    }
+
+    // Configuración de JpaTransactionManager si no estuvieramos usando JPA usariamos PlatformTransactionManager
+    @Bean(name = "transactionManager")
+    public JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
+
+
+    // Configuración del JobRepository
+    @Bean(name = "jobRepository")
+    public JobRepository jobRepository(@Qualifier("transactionManager")JpaTransactionManager transactionManager) throws Exception {
+        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+        factory.setDataSource(primaryDataSource);
+        factory.setTransactionManager(transactionManager);
+        factory.setDatabaseType("MYSQL");
+        factory.afterPropertiesSet(); // Inicializa el factory
+        return factory.getObject();
+    }
+
+    // Configuración de JobLauncher usando TaskExecutorJobLauncher
+    @Bean(name = "jobLauncher")
+    public JobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
+        TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
+        jobLauncher.setJobRepository(jobRepository);
+
+        // Configura un TaskExecutor (sincrónico o asincrónico)
+        TaskExecutor taskExecutor = new SyncTaskExecutor();  // O usa SimpleAsyncTaskExecutor para asincrónico
+        jobLauncher.setTaskExecutor(taskExecutor);  // Establecer el TaskExecutor
+        return jobLauncher;
+    }
+
+
+
+    // lectura escritura archivos
+    @Bean(name = "csvItemReader")
+    public CsvItemReader<GenericEntity> csvItemReader() {
+        return new CsvItemReader<>(GenericEntity.class, new FlatFileItemReader<>());
+    }
+
+    @Bean(name = "csvItemWriter")
+    public CsvItemWriter<GenericEntity> csvItemWriter() {
+        return new CsvItemWriter<>();
+    }
+
+
+
+    // lectura escritura bases de datos
+    @StepScope
+    @Bean(name = "databaseItemReader")//leer primera base de datos
+    public JpaPagingItemReader<?> databaseReader(EntityManagerFactory entityManagerFactory,
+                                                 @Value("#{jobParameters['entityClass']}") String entityClassName) throws ClassNotFoundException {
+        return new DatabaseReader().databaseReader(entityManagerFactory, entityClassName);
+    }
+
+    @Bean(name = "databaseItemWriter")//escribir primera base de datos
+    public ItemWriter<GenericEntity> databaseItemWriter(GenericRepository genericRepository) {
+        return new DatabaseWriter.ManualItemWriter<>(genericRepository);
+    }
+
+    @Bean
+    @StepScope  // writer para la segunda base de datos
+    public <T> JpaItemWriter<T> secondEntityWriter(@Qualifier("secondEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+        JpaItemWriter<T> writer = new JpaItemWriter<>();
+        writer.setEntityManagerFactory(entityManagerFactory);  // Establecer el EntityManagerFactory para la segunda base de datos
+        return writer;
+    }
+
+
+
+
+    //datasource y config para que cuando leamos de una base de datos podamos escribir en otra
+
+    @Bean(name="databaseToDatabaseStep")
+    public Step databaseToDatabaseStep(@Qualifier("jobRepository2") JobRepository jobRepository,
+                                       @Qualifier("secondTransactionManager") JpaTransactionManager transactionManager,
+                                       ItemReader<?> reader,
+                                       ItemProcessor<?, ?> processor,
+                                       JpaItemWriter<Object> writer) {
+        return new StepBuilder("databaseToDatabaseStep", jobRepository)
+                .<Object, Object>chunk(10, transactionManager)  // Usar el transactionManager de la segunda base de datos
+                .reader(reader)
+                .processor((ItemProcessor<? super Object, ?>) processor)
+                .writer(writer)
+                .build();
+    }
+
+    @Bean(name = "secondDataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.second")
+    public DataSource secondDataSource() {
+        return DataSourceBuilder.create().build();
+    }
+
+    // Configuración del JobRepository
+    @Bean(name = "jobRepository2")
+    public JobRepository jobRepository2(@Qualifier("secondTransactionManager")JpaTransactionManager transactionManager) throws Exception {
+        JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+        factory.setDataSource(secondaryDataSource);
+        factory.setTransactionManager(transactionManager);
+        factory.setDatabaseType("MYSQL");
+        factory.afterPropertiesSet(); // Inicializa el factory
+        return factory.getObject();
+    }
+
+    @StepScope
+    @Bean(name = "secondEntityManagerFactory")
+    public LocalContainerEntityManagerFactoryBean secondEntityManagerFactory(
+            @Qualifier("secondDataSource") DataSource secondDataSource,
+            EntityManagerFactoryBuilder builder) {
+        return builder
+                .dataSource(secondDataSource)
+                .packages("com.example.BatchProcessor.model") // Paquete donde se encuentran las entidades
+                .persistenceUnit("secondPU")
+                .build();
+    }
+
+    @Bean(name = "secondTransactionManager")
+    public JpaTransactionManager secondTransactionManager(@Qualifier("secondEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
+        return new JpaTransactionManager(entityManagerFactory);
+    }
+
+
+
+    // procesamiento
+    @Bean
+    public <T> GenericProcessor<T> genericProcessor() {
+        return new GenericProcessor<>();
+    }
+
+
+
+------------------
+
+
+
+package com.example.BatchProcessor.controller;
+
+import com.example.BatchProcessor.listener.JobCompletionListener;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/batch")
+public class BatchController {
+
+    private final JobLauncher jobLauncher;
+    private final ApplicationContext context;
+    private final JpaTransactionManager jpaTransactionManager;
+    private final JobRepository jobRepository;
+    private final JobCompletionListener jobCompletionListener;
+
+
+
+
+    public BatchController(JobLauncher jobLauncher, ApplicationContext context, JpaTransactionManager jpaTransactionManager, JobRepository jobRepository, JobCompletionListener jobCompletionListener) {
+        this.jobLauncher = jobLauncher;
+        this.context = context;
+        this.jpaTransactionManager = jpaTransactionManager;
+        this.jobRepository = jobRepository;
+        this.jobCompletionListener = jobCompletionListener;
+    }
+
+    @PostMapping("/run")
+    public ResponseEntity<String> runBatchJob(@RequestParam Map<String, String> params) {
+        try {
+            // Obtener los nombres de los componentes desde los parámetros
+            String readerBean = params.get("reader");
+            String processorBean = params.get("processor");
+            String writerBean = params.get("writer");
+
+
+            // Verificar si los parámetros son válidos
+            if (readerBean == null || processorBean == null || writerBean == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Debe proporcionar los parámetros 'reader', 'processor' y 'writer'.");
+            }
+
+            // Obtener los componentes desde el contexto de Spring
+            ItemReader<?> reader = (ItemReader<?>) context.getBean(readerBean);
+            ItemProcessor<?, ?> processor = (ItemProcessor<?, ?>) context.getBean(processorBean);
+            ItemWriter<?> writer = (ItemWriter<?>) context.getBean(writerBean);
+
+            // Crear el Step dinámicamente
+            Step dynamicStep = new StepBuilder("dynamicStep", jobRepository)
+                    .<Object, Object>chunk(10, jpaTransactionManager)  // Tamaño del chunk, puedes ajustarlo
+                    .reader(reader)
+                    .processor((ItemProcessor<? super Object, ?>) processor)
+                    .writer((ItemWriter<? super Object>) writer)
+                    .build();
+
+            // Obtener el Step desde el contexto de Spring
+            Step databaseToDatabaseStep = context.getBean("databaseToDatabaseStep", Step.class);  // Reemplaza con el nombre del Bean
+
+
+            // Crear el Job dinámicamente
+            Job dynamicJob = new JobBuilder("dynamicJob", jobRepository)
+                    .start(databaseToDatabaseStep)
+                    .listener(jobCompletionListener)
+                    .build();
+
+            // Ejecutar el Job con los parámetros opcionales
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addString("entityClass", "com.example.BatchProcessor.model.GenericEntity") // Pasa la clase como String
+                    .addString("Fecha",  " " + System.currentTimeMillis())  // Añadimos el parámetro del archivo
+                    .toJobParameters();
+
+            jobLauncher.run(dynamicJob, jobParameters);
+
+            return ResponseEntity.ok("Job started successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error starting job: " + e.getMessage());
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
