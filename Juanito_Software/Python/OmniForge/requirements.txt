@@ -1,0 +1,24 @@
+# Core
+langgraph>=0.2.0
+langchain-core>=0.3.0
+
+# LLM providers — instala solo los que uses
+langchain-ollama>=0.2.0          # provider por defecto (qwen3:8b local)
+# langchain-anthropic>=0.3.0     # descomenta para Claude
+# langchain-openai>=0.2.0        # descomenta para GPT
+# langchain-google-genai>=2.0.0  # descomenta para Gemini
+
+# Web automation
+browser-use>=0.1.0               # browser agent (requiere playwright)
+playwright>=1.40.0               # backend de browser-use
+
+# Terminal / code execution
+open-interpreter>=0.3.0          # ejecución código multi-lenguaje
+
+# PC control — screen, mouse, keyboard
+pyautogui>=0.9.54                # ratón, teclado, capturas
+pillow>=10.0.0                   # procesado de imágenes (requerido por pyautogui)
+pyperclip>=1.8.2                 # portapapeles (copy_to_clipboard / get_clipboard)
+
+# Utilidades
+python-dotenv>=1.0.0
