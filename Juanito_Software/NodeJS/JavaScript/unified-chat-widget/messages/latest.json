@@ -1,170 +1,6 @@
 [
   {
     "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "Venga tio que voy a donde el camello que le hace falta a un colega",
-    "timestamp": 1781292850316,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-12T19:34:10.317Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "me pasa a recoger ahora",
-    "timestamp": 1781292854039,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-12T19:34:14.039Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "a la noche le doy mas ultrakill",
-    "timestamp": 1781292861596,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-12T19:34:21.597Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "a full",
-    "timestamp": 1781292863257,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-12T19:34:23.257Z"
-  },
-  {
-    "platform": "kick",
-    "username": "deyirosantana",
-    "message": "venga bro",
-    "timestamp": 1781292864719,
-    "user": "deyirosantana",
-    "received_at": "2026-06-12T19:34:24.719Z"
-  },
-  {
-    "platform": "rumble",
-    "username": "JuanitoCanuto",
-    "message": "au jjuju",
-    "timestamp": 1781364318000,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T15:25:21.108Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "au junmju",
-    "timestamp": 1781364336925,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T15:25:36.926Z"
-  },
-  {
-    "platform": "kick",
-    "username": "JuanitoCanuto",
-    "message": "au juju",
-    "timestamp": 1781364339140,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T15:25:39.140Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "midoff_6",
-    "message": "Hombre juanitooo como estas",
-    "timestamp": 1781367824256,
-    "user": "midoff_6",
-    "received_at": "2026-06-13T16:23:44.258Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "midoff_6",
-    "message": "Has encontrado trabajo ya q hace mucho q no strimeas o q??",
-    "timestamp": 1781367862384,
-    "user": "midoff_6",
-    "received_at": "2026-06-13T16:24:22.385Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "midoff_6",
-    "message": "ha bien bien",
-    "timestamp": 1781367916205,
-    "user": "midoff_6",
-    "received_at": "2026-06-13T16:25:16.206Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "midoff_6",
-    "message": "me alegro por ti",
-    "timestamp": 1781367921746,
-    "user": "midoff_6",
-    "received_at": "2026-06-13T16:25:21.747Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "midoff_6",
-    "message": "que has dejado los porros i todo niño por la noche le metemos al rsut si quieres avisame si te apetece",
-    "timestamp": 1781367955314,
-    "user": "midoff_6",
-    "received_at": "2026-06-13T16:25:55.315Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "grande midoff",
-    "timestamp": 1781368129810,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T16:28:49.811Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "sisisisi",
-    "timestamp": 1781368131536,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T16:28:51.536Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "esta noche le damos sin falta",
-    "timestamp": 1781368138011,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-13T16:28:58.011Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "estais muy callados",
-    "timestamp": 1781450862830,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-14T15:27:42.832Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "seguir asi",
-    "timestamp": 1781450865135,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-14T15:27:45.135Z"
-  },
-  {
-    "platform": "kick",
     "username": "ameloblastos",
     "message": "buenas",
     "timestamp": 1781451577687,
@@ -948,5 +784,155 @@
     "timestamp": 1781729903314,
     "user": "JuanitoCanuto",
     "received_at": "2026-06-17T20:58:23.314Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "JuanitoCanuto",
+    "message": "la mejor intro gente",
+    "timestamp": 1782088971915,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-06-22T00:42:51.919Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "frann17malaka",
+    "message": "holaaaa",
+    "timestamp": 1782089975725,
+    "user": "frann17malaka",
+    "received_at": "2026-06-22T00:59:35.726Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "frann17malaka",
+    "message": "sigues entrenando ?",
+    "timestamp": 1782090006291,
+    "user": "frann17malaka",
+    "received_at": "2026-06-22T01:00:06.292Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "emojiAngry",
+    "timestamp": 1782093372452,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:12.453Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "hola",
+    "timestamp": 1782093375625,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:15.625Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "como estas",
+    "timestamp": 1782093378044,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:18.044Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "bro",
+    "timestamp": 1782093379177,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:19.178Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "estas",
+    "timestamp": 1782093381071,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:21.071Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "durmiendo",
+    "timestamp": 1782093383416,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:23.416Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "viva franco",
+    "timestamp": 1782093394733,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:34.733Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "apaga directo",
+    "timestamp": 1782093407474,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:47.475Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "que",
+    "timestamp": 1782093412966,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:52.967Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "sino",
+    "timestamp": 1782093413763,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:53.764Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "te",
+    "timestamp": 1782093414701,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:54.701Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "pueden",
+    "timestamp": 1782093416985,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:56.985Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "banear",
+    "timestamp": 1782093418881,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:56:58.881Z"
+  },
+  {
+    "platform": "kick",
+    "username": "deyirosantana",
+    "message": "apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro apaga directo bro",
+    "timestamp": 1782093449052,
+    "user": "deyirosantana",
+    "received_at": "2026-06-22T01:57:29.053Z"
+  },
+  {
+    "platform": "kick",
+    "username": "aytha1",
+    "message": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "timestamp": 1782095290293,
+    "user": "aytha1",
+    "received_at": "2026-06-22T02:28:10.293Z"
   }
 ]
