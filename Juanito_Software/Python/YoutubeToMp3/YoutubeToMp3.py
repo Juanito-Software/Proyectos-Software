@@ -152,7 +152,7 @@ def descargar_desde_csv(ruta_csv="descargas.csv"):
     urls = []
     with open(ruta_csv, newline='', encoding='utf-8') as csvfile:
         lector = csv.DictReader(csvfile)
-        if 'url' not in lector.fieldnames:
+        if not lector.fieldnames or 'url' not in lector.fieldnames:
             print("❌ El CSV debe tener una columna llamada 'url'.")
             return
         for fila in lector:

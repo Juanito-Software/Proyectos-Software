@@ -167,7 +167,7 @@ def run_interactive() -> dict:
     
     # 6. License
     license_choices = ["MIT", "Apache 2.0", "GPLv3", "BSD 3-Clause", "Ninguna"]
-    selected_license = prompt_select("Licencia del proyecto", license_choices, 0)
+    selected_license = prompt_select("Licencia del proyecto", license_choices, 2)
     options["license_name"] = selected_license if selected_license != "Ninguna" else "None"
     
     # 7. CLI Template
@@ -179,9 +179,13 @@ def run_interactive() -> dict:
         frameworks = ["pytest", "unittest"]
         options["test_framework"] = prompt_select("Framework de pruebas", frameworks, 0)
         
-    # 9. Environments (Git and Venv)
+    # 9. Environments (Git, Poetry / Venv)
     options["init_git"] = prompt_confirm("¿Inicializar repositorio Git automáticamente?", True)
-    options["create_venv"] = prompt_confirm("¿Crear entorno virtual (.venv)?", False)
+    options["use_poetry"] = prompt_confirm("¿Usar Poetry como gestor de dependencias?", False)
+    if options["use_poetry"]:
+        options["create_venv"] = False
+    else:
+        options["create_venv"] = prompt_confirm("¿Crear entorno virtual (.venv)?", False)
     
     options["output_dir"] = Path(".")
     
@@ -225,9 +229,9 @@ def parse_arguments() -> tuple[argparse.Namespace, dict]:
     )
     parser.add_argument(
         "-l", "--license",
-        default="MIT",
+        default="GPLv3",
         choices=["MIT", "Apache 2.0", "GPLv3", "BSD 3-Clause", "None"],
-        help="Licencia del proyecto (por defecto: MIT)."
+        help="Licencia del proyecto (por defecto: GPLv3)."
     )
     parser.add_argument(
         "--python",
@@ -261,6 +265,11 @@ def parse_arguments() -> tuple[argparse.Namespace, dict]:
         help="Crear entorno virtual .venv automáticamente."
     )
     parser.add_argument(
+        "--poetry",
+        action="store_true",
+        help="Usar Poetry como gestor de dependencias (genera pyproject.toml para Poetry y scripts .bat). Incompatible con --venv."
+    )
+    parser.add_argument(
         "--defaults",
         action="store_true",
         help="Usar valores por defecto para todos los campos no especificados."
@@ -288,7 +297,8 @@ def parse_arguments() -> tuple[argparse.Namespace, dict]:
         "include_tests": not args.no_tests,
         "test_framework": args.framework,
         "init_git": not args.no_git,
-        "create_venv": args.venv
+        "use_poetry": args.poetry,
+        "create_venv": args.venv and not args.poetry
     }
     
     return args, options
@@ -327,7 +337,14 @@ def main():
         print(f"  {C_CYAN}1.{C_RESET} Entrar al directorio:")
         print(f"     {C_BOLD}cd {options['project_name']}{C_RESET}")
         
-        if options.get("create_venv"):
+        if options.get("use_poetry"):
+            print(f"  {C_CYAN}2.{C_RESET} Instalar dependencias con Poetry:")
+            print(f"     {C_BOLD}poetry install{C_RESET}")
+            run_cmd = f"poetry run {options['project_name']}" if options.get("include_cli") else f"poetry run python -m {package_name}"
+            print(f"  {C_CYAN}3.{C_RESET} Ejecutar el proyecto:")
+            print(f"     {C_BOLD}{run_cmd}{C_RESET}")
+            print(f"     {C_GRAY}O usar los scripts: scripts\\setup.bat / scripts\\run.bat{C_RESET}")
+        elif options.get("create_venv"):
             print(f"  {C_CYAN}2.{C_RESET} Activar el entorno virtual:")
             if sys.platform == "win32":
                 print(f"     {C_BOLD}.\\.venv\\Scripts\\activate{C_RESET}")

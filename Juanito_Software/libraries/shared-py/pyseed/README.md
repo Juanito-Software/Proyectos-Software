@@ -22,6 +22,7 @@
 | 🖥️ **CLI opcional** | Entrypoint ejecutable con `argparse` y `__main__.py` |
 | 🐙 **Git** | `git init`, `.gitignore` y `.gitattributes` optimizados para Python |
 | 🐍 **`.venv`** | Creación opcional de entorno virtual en el mismo paso |
+| 📜 **Poetry** | Modo Poetry: `pyproject.toml` declarativo + `scripts/` con `.bat` listos |
 | 🎨 **Terminal** | Colores ANSI, iconos Unicode, spinner animado y árbol de archivos final |
 | ⚡ **Cero dependencias** | Solo la biblioteca estándar de Python 3.8+ |
 
@@ -51,7 +52,7 @@ pyseed --version-cli
 pyseed
 ```
 
-El asistente te pregunta paso a paso: nombre, descripción, autor, licencia, CLI, tests, Git y entorno virtual. Detecta tu nombre y email desde la configuración de Git automáticamente.
+El asistente te pregunta paso a paso: nombre, descripción, autor, licencia, CLI, tests, Git, Poetry y entorno virtual. Detecta tu nombre y email desde la configuración de Git automáticamente.
 
 ### Modo directo
 
@@ -60,12 +61,10 @@ El asistente te pregunta paso a paso: nombre, descripción, autor, licencia, CLI
 pyseed mi-proyecto
 
 # Con todas las opciones
-windows:
-
+# Windows:
 pyseed mi-api --description "Una API REST moderna" --license "Apache 2.0" --author "Juan García" --email "juan@example.com" --cli --framework pytest --venv --no-git --output-dir C:\Users\User\Desktop
 
-linux:
-
+# Linux:
 pyseed mi-api \
   --description "Una API REST moderna" \
   --license "Apache 2.0" \
@@ -75,7 +74,10 @@ pyseed mi-api \
   --framework pytest \
   --venv \
   --no-git \
-  --output-dir C:\Users\User\Desktop
+  --output-dir ~/proyectos
+
+# Con Poetry como gestor de dependencias
+pyseed mi-proyecto --poetry --cli
 
 # Sin Git ni tests
 pyseed mi-script --no-git --no-tests --license "BSD 3-Clause"
@@ -110,6 +112,7 @@ Opciones:
       --framework FW    pytest | unittest (default: pytest)
       --no-git          No inicializar Git
       --venv            Crear entorno virtual .venv
+      --poetry          Usar Poetry como gestor de dependencias (incompatible con --venv)
       --defaults        Usar valores por defecto sin preguntar
       --version-cli     Muestra la versión de pyseed
 ```
@@ -118,23 +121,84 @@ Opciones:
 
 ## 📂 Estructura generada
 
+### Modo estándar (Hatchling)
+
 ```
 mi-proyecto/
 ├── pyproject.toml          # Metadatos y configuración (PEP 621, Hatchling)
-├── README.md               # Documentación inicial
-├── LICENSE                 # Licencia elegida
-├── .gitignore              # Ignorados optimizados para Python
-├── .gitattributes          # Normalización de fin de línea
+├── README.md
+├── LICENSE
+├── .gitignore
+├── .gitattributes
 ├── src/
 │   └── mi_proyecto/
-│       ├── __init__.py     # Versión del paquete
-│       ├── core.py         # Funcionalidad principal de ejemplo
-│       ├── cli.py          # CLI (solo con --cli)
-│       └── __main__.py     # python -m mi_proyecto (solo con --cli)
+│       ├── __init__.py
+│       ├── core.py
+│       ├── cli.py          # Solo con --cli
+│       └── __main__.py     # Solo con --cli
 └── tests/
     ├── __init__.py
-    └── test_mi_proyecto.py # Suite de tests inicial
+    └── test_mi_proyecto.py
 ```
+
+### Modo Poetry (`--poetry`)
+
+```
+mi-proyecto/
+├── pyproject.toml          # Backend Poetry con [tool.poetry] y lockfile
+├── README.md
+├── LICENSE
+├── .gitignore
+├── .gitattributes
+├── scripts/
+│   ├── setup.bat           # poetry install
+│   ├── run.bat             # poetry run ...
+│   └── build.bat           # PyInstaller vía Poetry (solo con --cli)
+├── src/
+│   └── mi_proyecto/
+│       ├── __init__.py
+│       ├── core.py
+│       ├── cli.py          # Solo con --cli
+│       └── __main__.py     # Solo con --cli
+└── tests/
+    ├── __init__.py
+    └── test_mi_proyecto.py
+```
+
+---
+
+## 📜 Modo Poetry
+
+Al usar `--poetry`, pyseed genera un `pyproject.toml` declarativo para [Poetry](https://python-poetry.org/) en lugar del backend Hatchling estándar:
+
+```toml
+[tool.poetry]
+name = "mi-proyecto"
+version = "0.1.0"
+description = "..."
+authors = ["Juan <juan@example.com>"]
+packages = [{include = "mi_proyecto", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+```
+
+También genera `scripts/` con tres `.bat` listos para usar en Windows:
+
+| Script | Comando equivalente |
+|---|---|
+| `scripts/setup.bat` | `poetry install` |
+| `scripts/run.bat` | `poetry run python -m mi_proyecto` |
+| `scripts/build.bat` | `poetry run pyinstaller ...` (solo con `--cli`) |
+
+> **Nota:** `--poetry` es incompatible con `--venv`. Poetry gestiona su propio entorno virtual.
 
 ---
 
@@ -158,7 +222,7 @@ $ pyseed
 ? ¿Tests? [Y/n]:
 ? Framework: pytest
 ? ¿Inicializar Git? [Y/n]:
-? ¿Crear .venv? [y/N]:
+? ¿Usar Poetry como gestor de dependencias? [y/N]: y
 
 ⠙ Sembrando proyecto...
 ✔ ¡Proyecto creado con éxito! 🎉
@@ -169,6 +233,10 @@ $ pyseed
 ├── LICENSE
 ├── README.md
 ├── pyproject.toml
+├── scripts/
+│   ├── build.bat
+│   ├── run.bat
+│   └── setup.bat
 ├── src/
 │   └── super_api/
 │       ├── __init__.py
@@ -181,9 +249,9 @@ $ pyseed
 
 Siguientes pasos:
   1. cd super-api
-  2. pip install -e .
-  3. pytest
-  4. super-api  o  python -m super_api
+  2. poetry install
+  3. poetry run super-api  o  poetry run python -m super_api
+     O usar los scripts: scripts\setup.bat / scripts\run.bat
 ```
 
 ---

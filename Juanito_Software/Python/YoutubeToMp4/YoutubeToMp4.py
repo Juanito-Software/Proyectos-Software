@@ -227,14 +227,12 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
 # ---------------- wrapper y flujo principal ----------------
 
 def descargar_video_mp4(url, carpeta_salida=None):
-    # Si no se especifica carpeta, usar "descargas" en el mismo directorio del script
     if carpeta_salida is None:
-        script_dir = os.path.dirname(sys.executable)
-        carpeta_salida = os.path.join(script_dir, "descargas")
-    else:
-            # Desarrollo: usar el directorio del script
+        if hasattr(sys, '_MEIPASS'):
+            script_dir = os.path.dirname(sys.executable)
+        else:
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            carpeta_salida = os.path.join(script_dir, "descargas")
+        carpeta_salida = os.path.join(script_dir, "descargas")
     if not HAS_PYTUBE:
         raise RuntimeError('pytube no está instalado en este entorno.')
     return descargar_con_pytube(url, carpeta_salida)
@@ -249,7 +247,7 @@ def descargar_desde_csv(ruta_csv="descargas.csv"):
     urls = []
     with open(ruta_csv, newline='', encoding='utf-8') as csvfile:
         lector = csv.DictReader(csvfile)
-        if 'url' not in lector.fieldnames:
+        if not lector.fieldnames or 'url' not in lector.fieldnames:
             print("❌ El CSV debe tener una columna llamada 'url'.")
             return
         for fila in lector:

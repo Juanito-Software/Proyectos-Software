@@ -11,8 +11,11 @@ import datetime
 from pathlib import Path
 from pyseed.templates import (
     PYPROJECT_TEMPLATE,
+    PYPROJECT_POETRY_TEMPLATE,
+    PYPROJECT_POETRY_CLI_SECTION,
     PYTEST_SECTION_TEMPLATE,
     README_TEMPLATE,
+    README_POETRY_SECTION,
     GITIGNORE_TEMPLATE,
     GITATTRIBUTES_TEMPLATE,
     INIT_TEMPLATE,
@@ -21,6 +24,10 @@ from pyseed.templates import (
     CLI_TEMPLATE,
     TEST_CORE_PYTEST_TEMPLATE,
     TEST_CORE_UNITTEST_TEMPLATE,
+    SCRIPTS_SETUP_BAT_TEMPLATE,
+    SCRIPTS_RUN_BAT_TEMPLATE,
+    SCRIPTS_RUN_CLI_BAT_TEMPLATE,
+    SCRIPTS_BUILD_BAT_TEMPLATE,
     LICENSES
 )
 
@@ -85,9 +92,10 @@ def generate_project(options: dict, progress_callback=None) -> tuple[bool, list[
         include_cli = options.get("include_cli", False)
         include_tests = options.get("include_tests", True)
         test_framework = options.get("test_framework", "pytest")
-        
+
         init_git = options.get("init_git", True)
-        create_venv = options.get("create_venv", False)
+        use_poetry = options.get("use_poetry", False)
+        create_venv = options.get("create_venv", False) and not use_poetry
 
         log(f"Creando directorio del proyecto en: {output_dir}")
         if output_dir.exists():
@@ -160,30 +168,73 @@ def generate_project(options: dict, progress_callback=None) -> tuple[bool, list[
             log("Sin licencia especificada.")
 
         # 6. Write pyproject.toml
-        log("Configurando pyproject.toml...")
-        cli_scripts_section = ""
-        if include_cli:
-            cli_scripts_section = (
-                f"[project.scripts]\n"
-                f"{project_name} = \"{package_name}.cli:main\"\n"
-            )
-
         pytest_section = ""
         if include_tests and test_framework == "pytest":
             pytest_section = PYTEST_SECTION_TEMPLATE
 
-        pyproject_content = PYPROJECT_TEMPLATE.format(
-            project_name=project_name,
-            package_name=package_name,
-            version=version,
-            description=description,
-            python_version=python_version,
-            license_name=license_name,
-            author_name=author_name,
-            author_email=author_email,
-            cli_scripts_section=cli_scripts_section,
-            pytest_section=pytest_section
-        )
+        if use_poetry:
+            log("Configurando pyproject.toml (Poetry)...")
+            cli_scripts_section = ""
+            if include_cli:
+                cli_scripts_section = PYPROJECT_POETRY_CLI_SECTION.format(
+                    project_name=project_name,
+                    package_name=package_name
+                )
+            dev_deps = 'pytest = "^7.4"' if (include_tests and test_framework == "pytest") else ""
+            pyproject_content = PYPROJECT_POETRY_TEMPLATE.format(
+                project_name=project_name,
+                package_name=package_name,
+                version=version,
+                description=description,
+                python_version=python_version,
+                license_name=license_name,
+                author_name=author_name,
+                author_email=author_email,
+                cli_scripts_section=cli_scripts_section,
+                dev_dependencies_section=dev_deps,
+                pytest_section=pytest_section
+            )
+
+            # Generate scripts/ directory
+            log("Generando scripts de Poetry (scripts/setup.bat, run.bat, build.bat)...")
+            scripts_dir = output_dir / "scripts"
+            scripts_dir.mkdir(exist_ok=True)
+            (scripts_dir / "setup.bat").write_text(SCRIPTS_SETUP_BAT_TEMPLATE, encoding="utf-8")
+            if include_cli:
+                (scripts_dir / "run.bat").write_text(
+                    SCRIPTS_RUN_CLI_BAT_TEMPLATE.format(package_name=package_name),
+                    encoding="utf-8"
+                )
+                (scripts_dir / "build.bat").write_text(
+                    SCRIPTS_BUILD_BAT_TEMPLATE.format(project_name=project_name, package_name=package_name),
+                    encoding="utf-8"
+                )
+            else:
+                (scripts_dir / "run.bat").write_text(
+                    SCRIPTS_RUN_BAT_TEMPLATE.format(package_name=package_name),
+                    encoding="utf-8"
+                )
+        else:
+            log("Configurando pyproject.toml...")
+            cli_scripts_section = ""
+            if include_cli:
+                cli_scripts_section = (
+                    f"[project.scripts]\n"
+                    f"{project_name} = \"{package_name}.cli:main\"\n"
+                )
+            pyproject_content = PYPROJECT_TEMPLATE.format(
+                project_name=project_name,
+                package_name=package_name,
+                version=version,
+                description=description,
+                python_version=python_version,
+                license_name=license_name,
+                author_name=author_name,
+                author_email=author_email,
+                cli_scripts_section=cli_scripts_section,
+                pytest_section=pytest_section
+            )
+
         (output_dir / "pyproject.toml").write_text(pyproject_content, encoding="utf-8")
 
         # 7. Write README.md
@@ -209,13 +260,18 @@ def generate_project(options: dict, progress_callback=None) -> tuple[bool, list[
                 f"```"
             )
 
-        test_run_command = "pytest" if (include_tests and test_framework == "pytest") else "python -m unittest discover -s tests"
+        if use_poetry:
+            test_run_command = "poetry run pytest" if (include_tests and test_framework == "pytest") else "poetry run python -m unittest discover -s tests"
+        else:
+            test_run_command = "pytest" if (include_tests and test_framework == "pytest") else "python -m unittest discover -s tests"
+
         readme_content = README_TEMPLATE.format(
             project_name=project_name,
             description=description,
             usage_instructions=usage_instructions,
             test_run_command=test_run_command,
-            license_name=license_name
+            license_name=license_name,
+            poetry_section=README_POETRY_SECTION if use_poetry else ""
         )
         (output_dir / "README.md").write_text(readme_content, encoding="utf-8")
 
@@ -229,8 +285,15 @@ def generate_project(options: dict, progress_callback=None) -> tuple[bool, list[
             else:
                 log(f"Aviso: No se pudo inicializar Git. ¿Está instalado? Detalles: {git_out}")
 
-        # 9. Create Virtual Environment
-        if create_venv:
+        # 9. Create Virtual Environment or install with Poetry
+        if use_poetry:
+            log("Instalando dependencias con Poetry... (esto puede tardar unos segundos)")
+            poetry_ok, poetry_out = run_command(["poetry", "install"], output_dir)
+            if poetry_ok:
+                log("Dependencias instaladas correctamente con Poetry.")
+            else:
+                log(f"Aviso: No se pudo ejecutar 'poetry install'. ¿Está Poetry instalado? Detalles: {poetry_out}")
+        elif create_venv:
             log("Creando entorno virtual Python (.venv)... (esto puede tardar unos segundos)")
             venv_ok, venv_out = run_command(["python", "-m", "venv", ".venv"], output_dir)
             if venv_ok:

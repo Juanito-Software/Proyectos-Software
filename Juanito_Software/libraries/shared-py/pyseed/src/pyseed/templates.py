@@ -49,7 +49,7 @@ Instalar en modo desarrollo local / Install in local development mode:
 ```bash
 pip install -e .
 ```
-
+{poetry_section}
 ## 🚀 Uso / Usage
 
 {usage_instructions}
@@ -373,3 +373,72 @@ LICENSES = {
     "GPLv3": LICENSE_GPL,
     "BSD 3-Clause": LICENSE_BSD3
 }
+
+# ── Poetry templates ──────────────────────────────────────────────────────────
+
+PYPROJECT_POETRY_TEMPLATE = """[tool.poetry]
+name = "{project_name}"
+version = "{version}"
+description = "{description}"
+authors = ["{author_name} <{author_email}>"]
+license = "{license_name}"
+readme = "README.md"
+packages = [{{include = "{package_name}", from = "src"}}]
+
+[tool.poetry.dependencies]
+python = "{python_version}"
+
+[tool.poetry.group.dev.dependencies]
+{dev_dependencies_section}
+{cli_scripts_section}
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+{pytest_section}"""
+
+PYPROJECT_POETRY_CLI_SECTION = """[tool.poetry.scripts]
+{project_name} = "{package_name}.cli:main"
+
+"""
+
+SCRIPTS_SETUP_BAT_TEMPLATE = """@echo off
+echo === Instalando dependencias con Poetry ===
+poetry install
+pause
+"""
+
+SCRIPTS_RUN_BAT_TEMPLATE = """@echo off
+poetry run python -c "import {package_name}; print({package_name}.core.greet())"
+pause
+"""
+
+SCRIPTS_RUN_CLI_BAT_TEMPLATE = """@echo off
+poetry run python -m {package_name}
+pause
+"""
+
+SCRIPTS_BUILD_BAT_TEMPLATE = """@echo off
+setlocal
+
+echo === Instalando dependencias con Poetry ===
+poetry install
+
+echo === Limpiando builds anteriores ===
+rmdir /s /q dist 2>nul
+rmdir /s /q build 2>nul
+
+echo === Construyendo con PyInstaller ===
+set APP_NAME={project_name}
+poetry run pyinstaller --onefile --clean --name %APP_NAME% src\\{package_name}\\__main__.py
+
+echo === Build terminado ===
+pause
+"""
+
+README_POETRY_SECTION = """
+O instalar dependencias con Poetry / Or install dependencies with Poetry:
+```bash
+poetry install
+```
+"""
