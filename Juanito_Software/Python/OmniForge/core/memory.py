@@ -1,5 +1,5 @@
 """
-Memoria persistente — tareas completadas y hechos durables entre sesiones.
+Memoria persistente — tareas completadas, hechos durables y hints de planificación.
 
 Recuperación adaptativa:
   ≤ semantic_threshold tareas → últimas n_recent en orden cronológico
@@ -8,10 +8,16 @@ Recuperación adaptativa:
                                 Si Ollama no está disponible, cae a cronológico.
 
 Archivos en disco:
-  memory.json            {"tasks": [...], "facts": [...]}
+  memory.json            {"tasks": [...], "facts": [...], "hints": [...]}
   memory.embeddings.json {task_id: [float, ...]}   ← solo se crea al activar semántica
+
+Separación facts/hints (P4):
+  _facts  — hechos del usuario/sistema (file paths, apps instaladas, preferencias)
+  _hints  — reglas de planificación generadas por el evaluador
+  Deduplicación independiente: un hint nunca bloquea un fact con texto similar y viceversa.
 """
 import json
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -41,9 +47,11 @@ class MemoryStore:
 
         self._tasks: list[dict] = []
         self._facts: list[str] = []
+        self._hints: list[str] = []          # P4: separado de _facts
         self._embeddings: dict[str, list[float]] = {}
         self._embed_path = self.path.with_name(self.path.stem + ".embeddings.json")
-        self._embedder = None  # lazy — solo se inicializa al superar el umbral
+        self._embedder = None
+        self._lock = threading.Lock()        # P6: protege _save() de escrituras concurrentes
         self._load()
 
     # ── Persistencia ──────────────────────────────────────────────────────────
@@ -53,12 +61,21 @@ class MemoryStore:
             return
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
-            if isinstance(data, list):           # backward compat: formato antiguo
+            if isinstance(data, list):
                 self._tasks = data
                 self._facts = []
+                self._hints = []
             else:
                 self._tasks = data.get("tasks", [])
-                self._facts = data.get("facts", [])
+                # Migración automática: separar [HINT] que vivían mezclados con facts
+                raw_facts = data.get("facts", [])
+                self._hints = data.get("hints", [])
+                if not self._hints:
+                    # Primera carga post-P4: extraer hints de la lista de facts antigua
+                    self._hints = [f.replace("[HINT] ", "", 1) for f in raw_facts
+                                   if f.startswith("[HINT]")]
+                    raw_facts = [f for f in raw_facts if not f.startswith("[HINT]")]
+                self._facts = raw_facts
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -69,15 +86,16 @@ class MemoryStore:
                 self._embeddings = {}
 
     def _save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(
-                {"tasks": self._tasks, "facts": self._facts},
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        with self._lock:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(
+                json.dumps(
+                    {"tasks": self._tasks, "facts": self._facts, "hints": self._hints},
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
 
     def _save_embeddings(self) -> None:
         try:
@@ -103,11 +121,6 @@ class MemoryStore:
         return self._get_embedder().embed_query(text)
 
     def _backfill_embeddings(self) -> None:
-        """
-        Computa embeddings para tareas sin vector (primera vez que se activa semántica,
-        o tareas cargadas de disco antes de que se calculase el umbral).
-        Coste one-time: ~30ms/tarea en CPU.
-        """
         missing = [t for t in self._tasks if t["id"] not in self._embeddings]
         if not missing:
             return
@@ -127,11 +140,9 @@ class MemoryStore:
         }
         self._tasks.append(entry)
         if len(self._tasks) > self.max_entries:
-            self._tasks = self._tasks[-self.max_entries :]
+            self._tasks = self._tasks[-self.max_entries:]
         self._save()
 
-        # Precalentar embeddings en el tramo previo al umbral para que la
-        # primera búsqueda semántica no imponga una pausa larga al usuario.
         warmup_start = max(1, self.semantic_threshold - 100)
         if len(self._tasks) >= warmup_start:
             try:
@@ -139,45 +150,67 @@ class MemoryStore:
                     self._embeddings[entry["id"]] = self._embed(entry["task"])
                     self._save_embeddings()
             except Exception:
-                pass  # Ollama no disponible — modo cronológico como fallback
+                pass
 
-    # ── API — hechos ──────────────────────────────────────────────────────────
+    # ── API — hechos de usuario ───────────────────────────────────────────────
 
-    def add_fact(self, fact: str) -> bool:
-        """
-        Añade un hecho si no es redundante (deduplicación por substring).
-        Devuelve True si fue añadido.
-        """
+    def add_fact(self, fact: str, _save: bool = True) -> bool:
+        """Añade un hecho de usuario si no es redundante. Deduplicación solo contra _facts."""
         fact = fact.strip()
         if not fact:
             return False
         fl = fact.lower()
         for existing in self._facts:
-            el = existing.lower()
-            if fl in el or el in fl:
+            if fl in existing.lower() or existing.lower() in fl:
                 return False
         self._facts.append(fact)
         if len(self._facts) > self.max_facts:
-            self._facts = self._facts[-self.max_facts :]
-        self._save()
+            self._facts = self._facts[-self.max_facts:]
+        if _save:
+            self._save()
         return True
+
+    def add_facts(self, facts: list[str]) -> list[str]:
+        """Añade múltiples hechos con una sola escritura a disco."""
+        added = [f for f in facts if self.add_fact(f, _save=False)]
+        if added:
+            self._save()
+        return added
 
     @property
     def facts(self) -> list[str]:
         return list(self._facts)
 
+    # ── API — hints del evaluador ─────────────────────────────────────────────
+
+    def add_hint(self, hint: str) -> bool:
+        """
+        Añade un hint de planificación generado por el evaluador.
+        Deduplicación independiente de _facts — un hint nunca bloquea un fact.
+        """
+        hint = hint.strip()
+        if not hint:
+            return False
+        hl = hint.lower()
+        for existing in self._hints:
+            if hl in existing.lower() or existing.lower() in hl:
+                return False
+        self._hints.append(hint)
+        if len(self._hints) > self.max_facts:   # mismo límite que facts
+            self._hints = self._hints[-self.max_facts:]
+        self._save()
+        return True
+
+    @property
+    def hints(self) -> list[str]:
+        return list(self._hints)
+
     # ── Búsqueda semántica ────────────────────────────────────────────────────
 
     def _semantic_search(self, query: str, top_k: int) -> list[dict]:
-        """
-        Similitud coseno vectorizada (numpy). Resultado en orden cronológico.
-        Llama a _backfill_embeddings() antes de buscar para cubrir el historico cargado de disco.
-        """
         import numpy as np
 
         self._backfill_embeddings()
-
-        # Solo tareas con embedding disponible
         candidates = [t for t in self._tasks if t["id"] in self._embeddings]
         if not candidates:
             return self._tasks[-top_k:]
@@ -192,63 +225,57 @@ class MemoryStore:
         scores = (matrix / m_norms) @ q_norm
 
         k = min(top_k, len(candidates))
-        # argpartition es O(n) vs O(n log n) de argsort — importa con 500+ tareas
         top_idx = np.argpartition(scores, -k)[-k:]
         selected_ids = {candidates[i]["id"] for i in top_idx}
-
-        # Cronológico para que el LLM lea el contexto con orden temporal natural
         return [t for t in self._tasks if t["id"] in selected_ids]
 
     # ── Contexto para el LLM ──────────────────────────────────────────────────
 
     def get_context(self, query: str = None) -> Optional[str]:
-        """
-        Devuelve hechos + tareas relevantes como texto para el LLM.
-
-        query — tarea actual (usada para búsqueda semántica).
-          Si hay > semantic_threshold tareas y query no es None, y Ollama
-          está disponible → búsqueda semántica con nomic-embed-text.
-          En cualquier otro caso → últimas n_recent en orden cronológico.
-        """
         parts: list[str] = []
 
+        # Hints del evaluador — reglas de planificación, sección propia
+        if self._hints:
+            parts.append(
+                "[PLANNING HINTS — rules derived from past failures, follow these]\n"
+                + "\n".join(f"• {h}" for h in self._hints)
+            )
+
+        # Hechos del usuario/sistema
         if self._facts:
             parts.append(
-                "[Known facts about this user/system]\n"
+                "[SYSTEM FACTS — use these to inform decisions]\n"
                 + "\n".join(f"• {f}" for f in self._facts)
             )
 
+        # Tareas pasadas
         if self._tasks:
-            use_semantic = (
-                query is not None
-                and len(self._tasks) > self.semantic_threshold
-            )
-            header = "[Memory — past tasks]"
+            use_semantic = query is not None and len(self._tasks) > self.semantic_threshold
+            header = "[PAST SESSION LOG — completed tasks, shown for context only. Do NOT re-execute these.]"
 
             if use_semantic:
                 try:
                     recent = self._semantic_search(query, top_k=self.n_recent)
-                    header = "[Relevant past tasks — semantic search]"
+                    header = "[RELEVANT PAST SESSION LOG — for context only. Do NOT re-execute these.]"
                 except Exception:
-                    recent = self._tasks[-self.n_recent :]
+                    recent = self._tasks[-self.n_recent:]
             else:
-                recent = self._tasks[-self.n_recent :]
+                recent = self._tasks[-self.n_recent:]
 
             lines = []
             for e in recent:
                 ts = e["timestamp"][:16].replace("T", " ")
                 agents = ", ".join(e["agents_used"]) if e["agents_used"] else "?"
                 lines.append(
-                    f"• [{ts}] ({agents})\n"
-                    f"  Task: {e['task'][:150]}\n"
-                    f"  Result: {e['result'][:300]}"
+                    f"• [{ts}] ({agents}) previously completed: {e['task'][:120]}\n"
+                    f"  outcome: {e['result'][:200]}"
                 )
             parts.append(header + "\n" + "\n".join(lines))
 
         if not parts:
             return None
 
-        return "\n\n".join(parts)[: self.max_context_chars]
+        return "\n\n".join(parts)[:self.max_context_chars]
 
     def __len__(self) -> int:
         return len(self._tasks)

@@ -1,5 +1,5 @@
 """
-Observabilidad estructurada — escribe eventos JSONL a ~/.omniforge/logs/YYYY-MM-DD.jsonl.
+Observabilidad estructurada — escribe eventos JSONL a logs/YYYY-MM-DD.jsonl.
 Implementado como LangChain callback: se propaga automáticamente por todo el grafo.
 """
 import json
@@ -11,10 +11,17 @@ from uuid import UUID
 
 from langchain_core.callbacks import BaseCallbackHandler
 
+# Tools que usan Tesseract (OCR local, sin LLM)
+_OCR_TOOLS = frozenset({"read_screen_text", "find_text_on_screen"})
+
+# Tools que invocan el LLM de visión (llava, etc.)
+_VISION_LLM_TOOLS = frozenset({"find_element", "describe_screen"})
+
 
 class OmniForgeLogger(BaseCallbackHandler):
     """
     Registra tool calls, LLM calls, errores y tiempos en formato JSONL.
+    Además imprime en consola cuando se usan OCR, visión LLM o skills.
     Pasar como callback en graph.invoke(state, config={"callbacks": [logger]}).
     """
 
@@ -27,6 +34,11 @@ class OmniForgeLogger(BaseCallbackHandler):
         self._file = self._dir / f"{datetime.now().strftime('%Y-%m-%d')}.jsonl"
         self._tool_t: dict[str, float] = {}
         self._llm_t: dict[str, float] = {}
+        self._skill_names: frozenset[str] = frozenset()
+
+    def register_skills(self, names: set[str]) -> None:
+        """Registra los nombres de las skills para identificarlas en los logs."""
+        self._skill_names = frozenset(names)
 
     # ── I/O ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +48,7 @@ class OmniForgeLogger(BaseCallbackHandler):
             with self._file.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(event, ensure_ascii=False, default=str) + "\n")
         except OSError:
-            pass  # logging nunca rompe el agente
+            pass
 
     # ── API pública (eventos de sesión) ───────────────────────────────────────
 
@@ -57,6 +69,15 @@ class OmniForgeLogger(BaseCallbackHandler):
         name = serialized.get("name", "unknown_tool")
         self._tool_t[str(run_id)] = time.monotonic()
         self._w({"event": "tool_call", "tool": name, "input": str(input_str)[:300]})
+
+        # Consola: indicar qué motor/categoría se está usando
+        if name in _OCR_TOOLS:
+            print(f"  [OCR] {name}")
+        elif name in _VISION_LLM_TOOLS:
+            from config import CONFIG
+            print(f"  [Vision LLM] {name} ({CONFIG.vision.model})")
+        elif name in self._skill_names:
+            print(f"  [Skill] {name}")
 
     def on_tool_end(self, output: Any, *, run_id: UUID, **kwargs: Any) -> None:
         elapsed = time.monotonic() - self._tool_t.pop(str(run_id), time.monotonic())
@@ -98,5 +119,5 @@ class OmniForgeLogger(BaseCallbackHandler):
 
     def on_llm_error(self, error: BaseException, *, run_id: UUID, **kwargs: Any) -> None:
         self._llm_t.pop(str(run_id), None)
-        msg = str(error) or repr(error)  # algunos errores de Ollama tienen str() vacío
+        msg = str(error) or repr(error)
         self._w({"event": "llm_error", "error_type": type(error).__name__, "error": msg[:300]})

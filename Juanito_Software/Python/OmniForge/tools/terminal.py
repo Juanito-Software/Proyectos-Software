@@ -80,6 +80,23 @@ def _subprocess_fallback(code: str, language: str) -> str:
     if tess_dir and tess_dir not in env.get("PATH", ""):
         env["PATH"] = tess_dir + os.pathsep + env.get("PATH", "")
 
+    import re
+    # Comandos "start <app>" lanzan GUIs en Windows: subprocess.run con pipes hereda
+    # los handles al proceso hijo y bloquea hasta que el usuario cierra la app.
+    # Solución: Popen sin captura — retorna inmediatamente.
+    if language == "shell" and re.match(r"^\s*start\b", code, re.IGNORECASE):
+        try:
+            subprocess.Popen(
+                code, shell=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=env,
+            )
+            return "OK: aplicación lanzada en segundo plano"
+        except Exception as e:
+            return f"ERROR lanzando aplicación: {e}"
+
     try:
         result = subprocess.run(
             cmd,

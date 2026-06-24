@@ -2,10 +2,16 @@
 AgentCore — grafo LangGraph.
 _build_agent_graph() es el constructor genérico que usan los agentes especializados.
 build_graph()        es el wrapper que construye OmniForge con todas las tools.
+
+Mejoras arquitectónicas aplicadas:
+  - Provider fallback chain (Hermes): si el LLM primario falla, intenta el siguiente.
+  - Sandwich compression (Hermes): comprime mensajes del medio preservando cabeza + cola.
+  - Sequential tool node (propio): evita ejecución paralela de tools en Ollama.
 """
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, END
+from langgraph.graph.message import RemoveMessage
 from langgraph.prebuilt import ToolNode
 
 from core.state import AgentState
@@ -28,6 +34,11 @@ Rules:
 - Do not explain what you are about to do — just do it.
 """
 
+# Cuántas palabras aproximadas caben en un mensaje antes de comprimir el historial.
+# 0 = sin compresión. Ajustar según el context window del modelo.
+_COMPRESS_AFTER_MESSAGES = 40   # umbral: número de mensajes en el historial
+_COMPRESS_PROTECT_TAIL = 6      # preservar siempre los últimos N mensajes
+
 
 def _build_agent_graph(
     config: OmniForgeConfig,
@@ -41,37 +52,146 @@ def _build_agent_graph(
 
     required_action_tools: el agente no puede declarar done hasta haber llamado
       al menos una de estas tools (anti-hallucination).
-    sequential_tools: si True, pasa parallel_tool_calls=False al LLM para forzar
-      una tool por respuesta. Necesario en pc_controller donde el orden importa
-      (run_command debe completar antes de que click ocurra).
+    sequential_tools: si True, usa un nodo secuencial propio en lugar de ToolNode
+      para garantizar ejecución ordenada independientemente del provider.
     """
-    from core.llm import build_llm
+    from core.llm import build_llm, build_llm_list
 
-    llm = build_llm(config)
+    # ── LLM principal + fallbacks (Hermes pattern) ────────────────────────────
+    llm_chain = build_llm_list(config)   # [primario, fallback1, fallback2, ...]
+    llm = llm_chain[0]
+
     bind_kwargs = {}
-    if sequential_tools:
+    if sequential_tools and config.llm.provider.lower() != "ollama":
         bind_kwargs["parallel_tool_calls"] = False
-    try:
-        llm_with_tools = llm.bind_tools(tools, **bind_kwargs)
-    except TypeError:
-        # El provider no soporta parallel_tool_calls → ignorar
-        llm_with_tools = llm.bind_tools(tools)
-    tool_node = ToolNode(tools)
+
+    def _bind(base_llm):
+        try:
+            return base_llm.bind_tools(tools, **bind_kwargs)
+        except TypeError:
+            return base_llm.bind_tools(tools)
+
+    llm_with_tools = _bind(llm)
+    fallback_llms_with_tools = [_bind(fb) for fb in llm_chain[1:]]
+
+    # ── Tool node ─────────────────────────────────────────────────────────────
+    if sequential_tools:
+        # ToolNode usa asyncio.gather — ejecución paralela que rompe pc_controller.
+        # Este nodo ejecuta las tool_calls una por una en el orden indicado por el LLM.
+        _tool_map = {t.name: t for t in tools}
+
+        def tool_node(state: AgentState) -> dict:
+            last = state["messages"][-1]
+            results = []
+            for tc in (getattr(last, "tool_calls", []) or []):
+                fn = _tool_map.get(tc.get("name", ""))
+                if fn is None:
+                    content = f"ERROR: herramienta '{tc.get('name')}' no encontrada."
+                else:
+                    try:
+                        content = str(fn.invoke(tc.get("args", {})))
+                    except Exception as e:
+                        content = f"ERROR en {tc.get('name')}: {e}"
+                results.append(ToolMessage(
+                    content=content,
+                    tool_call_id=tc.get("id", ""),
+                    name=tc.get("name", ""),
+                ))
+            return {"messages": results}
+    else:
+        tool_node = ToolNode(tools)
+
     system_message = SystemMessage(content=system_prompt)
 
+    # ── Nodos ─────────────────────────────────────────────────────────────────
+
     def reason(state: AgentState) -> AgentState:
+        nonlocal llm_with_tools
         messages_for_llm = [system_message] + list(state["messages"])
-        response: AIMessage = llm_with_tools.invoke(messages_for_llm)
-        return {
-            "messages": [response],
-            "iteration": state["iteration"] + 1,
-            "last_tool_result": None,
-        }
+
+        # Hermes pattern: proba el LLM primario y luego cada fallback en orden.
+        last_err: Exception | None = None
+        for attempt in [llm_with_tools] + fallback_llms_with_tools:
+            try:
+                response: AIMessage = attempt.invoke(messages_for_llm)
+                return {
+                    "messages": [response],
+                    "iteration": state["iteration"] + 1,
+                    "last_tool_result": None,
+                }
+            except Exception as e:
+                if "parallel_tool_calls" in str(e):
+                    # Provider rechaza el param en runtime — reconstruir sin él y persistir
+                    llm_with_tools = llm.bind_tools(tools)
+                    try:
+                        response = llm_with_tools.invoke(messages_for_llm)
+                        return {
+                            "messages": [response],
+                            "iteration": state["iteration"] + 1,
+                            "last_tool_result": None,
+                        }
+                    except Exception as e2:
+                        last_err = e2
+                        continue
+                last_err = e
+                continue  # probar siguiente fallback
+
+        raise last_err  # todos los providers fallaron
+
+    def compress(state: AgentState) -> dict:
+        """
+        Sandwich compression (Hermes pattern):
+        preserva el primer mensaje (contexto de tarea) + los últimos N,
+        y resume el bloque intermedio con el LLM más barato disponible.
+
+        IMPORTANTE: AgentState.messages usa add_messages (append-only).
+        Para eliminar mensajes usamos RemoveMessage(id=...) — LangGraph los borra
+        antes de añadir los nuevos. La cabeza y la cola se conservan intactas;
+        solo el bloque intermedio se reemplaza por el resumen.
+        """
+        msgs = list(state["messages"])
+        if len(msgs) <= _COMPRESS_PROTECT_TAIL + 1:
+            return {}
+
+        middle = msgs[1:-_COMPRESS_PROTECT_TAIL]   # excluye head[0] y tail[-N:]
+
+        if not middle:
+            return {}
+
+        middle_text = "\n".join(
+            f"[{type(m).__name__}] {getattr(m, 'content', '')!s:.300}"
+            for m in middle
+        )
+        summary_prompt = (
+            "Summarize the following agent conversation steps into 3-5 bullet points. "
+            "Keep key findings, tool results, and decisions. Be factual and brief.\n\n"
+            + middle_text
+        )
+        try:
+            summary_resp = llm.invoke([HumanMessage(content=summary_prompt)])
+            summary_content = getattr(summary_resp, "content", str(summary_resp))
+            summary_msg = HumanMessage(content=f"[COMPRESSED HISTORY]\n{summary_content}")
+            # Eliminar mensajes intermedios por ID; el summary queda justo después de head.
+            # add_messages procesa primero los RemoveMessage y luego hace append del summary.
+            to_remove = [RemoveMessage(id=m.id) for m in middle if getattr(m, "id", None)]
+            if not to_remove:
+                return {}   # mensajes sin ID — compresión no posible
+            return {"messages": to_remove + [summary_msg]}
+        except Exception:
+            return {}   # si falla la compresión, continuar sin ella
+
+    def should_compress(state: AgentState) -> Literal["compress", "reason"]:
+        if (
+            _COMPRESS_AFTER_MESSAGES > 0
+            and len(state["messages"]) > _COMPRESS_AFTER_MESSAGES
+        ):
+            return "compress"
+        return "reason"
 
     def _action_tool_called(messages: list) -> bool:
         """True si alguna tool de acción real aparece en el historial de ToolMessages."""
         if not required_action_tools:
-            return True  # sin restricción → siempre se considera que hay acción
+            return True
         for m in messages:
             if isinstance(m, ToolMessage) and getattr(m, "name", "") in required_action_tools:
                 return True
@@ -86,22 +206,15 @@ def _build_agent_graph(
         if hasattr(last, "tool_calls") and last.tool_calls:
             return "tools"
 
-        # Agente respondió con texto sin llamar tools.
-        # Si requerimos tools de acción y ninguna se ha llamado → hallucination.
-        # Máximo 2 reminders por sesión (error_count < 2) para evitar bucles
-        # en tareas que genuinamente no necesitan acción UI.
+        # Agente respondió con solo texto — verificar si le falta llamar action tools.
+        # Máximo 2 reminders para evitar bucles en tareas sin UI.
         if not _action_tool_called(state["messages"]) and state["error_count"] < 2:
-            return "remind"
-
-        # Fallback genérico: early iterations con muy pocas tool calls → remind.
-        tool_messages = [m for m in state["messages"] if isinstance(m, ToolMessage)]
-        if len(tool_messages) < 3 and state["iteration"] < 4 and state["error_count"] < config.agent.max_retries:
             return "remind"
 
         return "end"
 
     def remind(state: AgentState) -> dict:
-        """Injects a correction when the agent responded with text instead of tool calls."""
+        """Corrige al agente cuando responde con texto sin haber completado la acción."""
         if required_action_tools and not _action_tool_called(state["messages"]):
             action_list = ", ".join(sorted(required_action_tools))
             content = (
@@ -135,9 +248,6 @@ def _build_agent_graph(
         error_count = state["error_count"]
         last_content = getattr(messages[-1], "content", "") or ""
 
-        # Find how many tool calls the preceding AIMessage batched together.
-        # ToolNode appends one ToolMessage per call, so we check all of them,
-        # not just the last one (which is the only one the old code checked).
         n_tools = 0
         for msg in reversed(messages):
             if isinstance(msg, AIMessage):
@@ -152,15 +262,27 @@ def _build_agent_graph(
 
         return {"last_tool_result": last_content, "error_count": error_count}
 
+    # ── Construcción del grafo ─────────────────────────────────────────────────
     graph = StateGraph(AgentState)
     graph.add_node("reason", reason)
+    graph.add_node("compress", compress)
     graph.add_node("tools", tool_node)
     graph.add_node("post_tools", handle_tool_error)
     graph.add_node("remind", remind)
+
     graph.set_entry_point("reason")
-    graph.add_conditional_edges("reason", route, {"tools": "tools", "remind": "remind", "end": END})
+    graph.add_conditional_edges("reason", route, {
+        "tools": "tools",
+        "remind": "remind",
+        "end": END,
+    })
     graph.add_edge("tools", "post_tools")
-    graph.add_edge("post_tools", "reason")
+    # Después de cada ciclo de tools: comprimir si el historial es largo
+    graph.add_conditional_edges("post_tools", should_compress, {
+        "compress": "compress",
+        "reason": "reason",
+    })
+    graph.add_edge("compress", "reason")
     graph.add_edge("remind", "reason")
     return graph.compile()
 
