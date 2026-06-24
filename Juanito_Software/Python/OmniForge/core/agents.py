@@ -122,22 +122,49 @@ Critical rules:
     * Amazon ES: https://www.amazon.es/s?k=TERM
     * Wikipedia: https://es.wikipedia.org/w/index.php?search=TERM
 - To type in a plain text field (Notepad, forms): click the field, sleep_seconds(0.3), then type_text.
-- VISION TOOLS — cuándo usar cada una:
-    find_text_on_screen("texto")  → para obtener coordenadas exactas de un botón o etiqueta (OCR, offline)
-    read_screen_text()            → para leer todo el texto visible y decidir qué hacer
-    describe_screen("pregunta")   → para entender la pantalla cuando OCR no es suficiente (requiere vision LLM)
-    find_element("descripción")   → para localizar elementos complejos sin texto claro (requiere vision LLM)
+- VISION TOOLS — orden de prioridad OBLIGATORIO (de más rápido a más lento):
+  NIVEL 1 — Siempre intentar primero (OCR, instantáneo, sin LLM):
+    read_screen_text()            → leer todo el texto visible en pantalla
+    find_text_on_screen("texto")  → obtener coordenadas exactas de un texto visible
+  NIVEL 2 — Atajos de teclado conocidos (sin coste, sin LLM):
+    press_key("ctrl+l")           → enfocar barra de direcciones en Chrome/Edge
+    press_key("ctrl+f")           → abrir buscador en cualquier app
+    press_key("alt+d")            → alternativa para barra de direcciones
+  NIVEL 3 — Visión LLM (LENTO ~3-8s, usar SOLO si niveles 1 y 2 fallaron):
+    describe_screen("pregunta")   → entender la pantalla cuando OCR no basta
+    find_element("descripción")   → localizar elementos SIN texto visible (iconos, imágenes, áreas)
+  REGLA: NUNCA llamar find_element o describe_screen si el elemento tiene texto legible
+    (botones con etiqueta, URLs, campos con placeholder) → usa find_text_on_screen en su lugar.
 """,
     },
 }
+
+
+def _build_skills_section(skill_tools: list) -> str:
+    """
+    Genera el bloque de texto que se inyecta en el system prompt describiendo
+    las skills disponibles. Sin esto el LLM no las descubre de forma autónoma.
+    """
+    if not skill_tools:
+        return ""
+    lines = ["", "Additional skills available (use them when appropriate):"]
+    for t in skill_tools:
+        # Primera línea del docstring como descripción corta
+        desc = (t.description or "").strip().split("\n")[0].strip(" .")
+        lines.append(f"- {t.name}: {desc}")
+    return "\n".join(lines)
 
 
 def build_agent(name: str, config):
     """
     Construye y devuelve un CompiledGraph para el agente nombrado.
     Puede usarse standalone o como nodo dentro del Planner.
+    Las skills de skills/*.py se cargan, fusionan e inyectan en el system prompt
+    para que el agente las descubra y use de forma autónoma.
     """
     from core.graph import _build_agent_graph
+    from core.skills import load_skills, merge_skills
+    from langchain_core.tools import BaseTool
 
     if name not in REGISTRY:
         raise ValueError(
@@ -145,10 +172,24 @@ def build_agent(name: str, config):
         )
 
     entry = REGISTRY[name]
+    base_tools: list = entry["tools"]
+    skill_map = load_skills()
+    all_tools = merge_skills(base_tools, skill_map, name)
+
+    # Las skills son las tools que no estaban en el set base
+    base_names = {t.name for t in base_tools}
+    skill_tools = [t for t in all_tools if t.name not in base_names]
+
+    # Inyectar descripción de skills en el system prompt para descubrimiento autónomo
+    system_prompt = entry["system_prompt"]
+    skills_section = _build_skills_section(skill_tools)
+    if skills_section:
+        system_prompt = system_prompt.rstrip() + "\n" + skills_section
+
     return _build_agent_graph(
         config=config,
-        tools=entry["tools"],
-        system_prompt=entry["system_prompt"],
+        tools=all_tools,
+        system_prompt=system_prompt,
         required_action_tools=entry.get("required_action_tools"),
         sequential_tools=entry.get("sequential_tools", False),
     )

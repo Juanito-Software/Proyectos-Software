@@ -184,9 +184,10 @@ def _call_vision_llm(path: str, prompt: str) -> str:
         return model.invoke([msg]).content
 
     return (
-        f"ERROR: motor de visión '{engine}' no soportado. "
-        "Opciones: ocr, ollama, anthropic, openai. "
-        "Cambia CONFIG.vision.engine en config.py."
+        f"ERROR: find_element y describe_screen requieren visión LLM "
+        f"(ollama/anthropic/openai), pero el motor actual es '{engine}' (solo OCR). "
+        "Alternativa inmediata: usa find_text_on_screen() para localizar texto visible, "
+        "o press_key('ctrl+l') para enfocar la barra de direcciones de Chrome."
     )
 
 

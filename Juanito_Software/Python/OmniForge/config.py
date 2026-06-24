@@ -21,6 +21,10 @@ class LLMConfig:
     api_key: Optional[str] = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY")
                                                           or os.getenv("OPENAI_API_KEY")
                                                           or os.getenv("GOOGLE_API_KEY"))
+    # Cadena de fallback si el provider primario falla (timeout, sobrecarga, error).
+    fallback_providers: list = field(default_factory=lambda: [
+        {"provider": "ollama", "model": "qwen2.5:7b"},
+    ])
 
 
 @dataclass
@@ -47,8 +51,8 @@ class AgentConfig:
 
 @dataclass
 class VisionConfig:
-    engine: str = "ocr"                      # ocr | ollama | anthropic | openai
-    model: str = "llava:latest"              # modelo de visión (ollama) o claude-opus-4-5 / gpt-4o
+    engine: str = "ollama"                   # ocr | ollama | anthropic | openai
+    model: str = "llava:7b"                  # modelo de visión (ollama) o gpt-4o
     base_url: str = "http://localhost:11434" # base_url para ollama
     api_key: Optional[str] = None           # None → hereda la clave de LLMConfig
     # Ruta al ejecutable de Tesseract. None = detección automática.
@@ -59,7 +63,7 @@ class VisionConfig:
 @dataclass
 class EvaluatorConfig:
     enabled: bool = True
-    eval_dir: str = field(default_factory=lambda: str(Path.home() / ".omniforge"))
+    eval_dir: str = field(default_factory=lambda: str(Path(__file__).parent / "evaluations"))
     analyze_every: int = 10    # analizar patrones cada N tareas completadas
 
 
@@ -75,7 +79,7 @@ class LoggingConfig:
 @dataclass
 class MemoryConfig:
     enabled: bool = True
-    path: str = field(default_factory=lambda: str(Path.home() / ".omniforge" / "memory.json"))
+    path: str = field(default_factory=lambda: str(Path(__file__).parent / "memory" / "memory.json"))
     max_entries: int = 1000
     max_context_chars: int = 2000
     n_recent: int = 8                  # cuántas memorias recientes inyectar al LLM
