@@ -16,14 +16,17 @@ from tools.terminal import run_command as _run_command
 # El Planner lee 'description' para decidir a quién asignar cada subtarea.
 REGISTRY: dict[str, dict] = {
     "coder": {
-        "description": "Ejecuta código Python/shell, lee y escribe archivos, gestiona el sistema de ficheros.",
-        "tools": FILESYSTEM_TOOLS + TERMINAL_TOOLS,
+        "description": "Ejecuta código Python/shell, lee y escribe archivos, gestiona el sistema de ficheros. Para OCR básico (extraer texto): read_screen_text, find_text_on_screen. NO tiene describe_screen ni find_element.",
+        "tools": FILESYSTEM_TOOLS + TERMINAL_TOOLS + VISION_TOOLS,
         "system_prompt": """You are CoderAgent, specialized in code execution and file management.
-Available tools: run_code, run_command, read_file, write_file, list_dir, delete_file.
+Available tools: run_code, run_command, read_file, write_file, list_dir, delete_file,
+                 read_screen_text, find_text_on_screen.
 
 Rules:
 - Use run_code for multi-line scripts; run_command for quick one-liners.
 - Always read a file before writing to avoid overwriting important content.
+- For OCR tasks (extract text from images or screen): use read_screen_text or find_text_on_screen
+  — NEVER write your own pytesseract code, these tools handle Tesseract configuration automatically.
 - Return ONLY the result of what was asked — no preamble or commentary.
 - When done, stop calling tools and summarize the result in one paragraph.
 """,
@@ -44,7 +47,13 @@ Rules:
     },
 
     "pc_controller": {
-        "description": "Controla la pantalla: hace capturas, clica, escribe, pulsa teclas, arrastra, hace scroll. También puede lanzar aplicaciones con run_command.",
+        "description": "Controla la pantalla: hace capturas, clica, escribe, pulsa teclas, arrastra, hace scroll. También puede lanzar aplicaciones con run_command. Es el ÚNICO agente con describe_screen (descripción IA visual) y find_element. Usar siempre que se pida describe_screen, visión IA, o entender visualmente la pantalla.",
+        "required_action_tools": frozenset({
+            "click", "double_click", "right_click",
+            "type_text", "press_key",
+            "drag", "scroll",
+        }),
+        "sequential_tools": True,  # un tool por respuesta — evita click antes de que la app abra
         "tools": SCREEN_TOOLS + VISION_TOOLS + [_run_command],
         "system_prompt": """You are PCControlAgent, specialized in graphical UI control.
 You MUST call tools to perform any action. Writing text does nothing.
@@ -72,12 +81,31 @@ Mandatory workflow — follow this exactly:
             If it does NOT match the expected URL → the navigation failed → retry from step 5.
             For non-browser tasks, use read_screen_text() or find_text_on_screen() to verify
             that expected text is visible — these use OCR and return real results, not guesses.
-7. DONE:    report what tools you called and what results they returned.
+7. FINAL:   ALWAYS before reporting done:
+            a. call take_screenshot() — captures the final screen state as evidence.
+            b. call read_screen_text() — OCR confirms what is actually on screen.
+            c. Include the OCR text verbatim in your report as proof.
+            If the expected result is NOT found in the OCR text → retry ONLY step 5 (ACT).
+            NEVER go back to step 1. The app is still open — do NOT call run_command again.
+8. DONE:    report the OCR result from step 7 and the final outcome.
 
 Critical rules:
 - You MUST call at least one tool. Never respond with only text.
 - NEVER claim an action succeeded unless a tool returned a success result.
 - NEVER claim a page loaded without calling get_current_url() and confirming the URL.
+- NEVER report the task as complete if you have not yet called the action tools required:
+    typing tasks → type_text() MUST have been called.
+    clicking tasks → click() or double_click() MUST have been called.
+  Launching the app is NOT completing the task. Proceed to step 5 (ACT) always.
+- NEVER call run_command to launch an app that is already open (visible in list_open_windows).
+  Calling it again opens a SECOND instance — a critical error for the user.
+- NEVER report done without including the OCR text from read_screen_text() as proof.
+- CRITICAL — call tools ONE AT A TIME. Never batch launch + verify + click in the same response.
+  Notepad needs 1-2 seconds to appear after run_command. If you call click() in the same batch as
+  run_command(), the click fires before the window exists. Always: call run_command → get result →
+  call sleep_seconds → get result → call list_open_windows → get result → then click/type.
+- Always use run_command("start notepad"), never run_command("notepad") — without "start" the
+  process can block for the entire session until the user closes the window.
 - NAVIGATING to a URL — always use clipboard paste (avoids Chrome autocorrect):
     1. copy_to_clipboard("https://target-url.com")
     2. press_key("ctrl+l")   ← focuses address bar and selects existing text
@@ -121,4 +149,6 @@ def build_agent(name: str, config):
         config=config,
         tools=entry["tools"],
         system_prompt=entry["system_prompt"],
+        required_action_tools=entry.get("required_action_tools"),
+        sequential_tools=entry.get("sequential_tools", False),
     )

@@ -8,16 +8,18 @@ from config import CONFIG
 
 
 def _run_async(coro):
-    """Ejecuta una coroutine desde contexto síncrono."""
+    """
+    Ejecuta una coroutine desde contexto síncrono.
+    Usa get_running_loop() como predicado — no crea loops silenciosos (deprecado en 3.10+).
+    """
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result()
-        return loop.run_until_complete(coro)
+        asyncio.get_running_loop()
+        # Loop activo (FastAPI, Jupyter…) — thread propio con loop aislado
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, coro).result()
     except RuntimeError:
+        # Sin loop activo — crear y cerrar limpiamente
         return asyncio.run(coro)
 
 

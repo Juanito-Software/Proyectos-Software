@@ -1,6 +1,12 @@
 """
 Abstracción LLM — el agente nunca importa un provider directamente.
 Cambiar provider = cambiar CONFIG.llm, nada más.
+
+Providers instalados por defecto: ollama
+Providers opcionales (ver requirements.txt):
+  pip install langchain-anthropic    → provider="anthropic"
+  pip install langchain-openai       → provider="openai"
+  pip install langchain-google-genai → provider="google"
 """
 from langchain_core.language_models.chat_models import BaseChatModel
 from config import OmniForgeConfig
@@ -23,7 +29,14 @@ def build_llm(config: OmniForgeConfig) -> BaseChatModel:
         )
 
     if provider == "anthropic":
-        from langchain_anthropic import ChatAnthropic
+        try:
+            from langchain_anthropic import ChatAnthropic  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "langchain-anthropic no está instalado.\n"
+                "Ejecuta: pip install langchain-anthropic\n"
+                "O descomenta la línea en requirements.txt."
+            )
         return ChatAnthropic(
             model=config.llm.model,
             api_key=config.llm.api_key,
@@ -32,7 +45,14 @@ def build_llm(config: OmniForgeConfig) -> BaseChatModel:
         )
 
     if provider == "openai":
-        from langchain_openai import ChatOpenAI
+        try:
+            from langchain_openai import ChatOpenAI  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "langchain-openai no está instalado.\n"
+                "Ejecuta: pip install langchain-openai\n"
+                "O descomenta la línea en requirements.txt."
+            )
         return ChatOpenAI(
             model=config.llm.model,
             api_key=config.llm.api_key,
@@ -41,7 +61,14 @@ def build_llm(config: OmniForgeConfig) -> BaseChatModel:
         )
 
     if provider == "google":
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        try:
+            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "langchain-google-genai no está instalado.\n"
+                "Ejecuta: pip install langchain-google-genai\n"
+                "O descomenta la línea en requirements.txt."
+            )
         return ChatGoogleGenerativeAI(
             model=config.llm.model,
             google_api_key=config.llm.api_key,
@@ -49,4 +76,6 @@ def build_llm(config: OmniForgeConfig) -> BaseChatModel:
             max_output_tokens=config.llm.max_tokens,
         )
 
-    raise ValueError(f"Provider '{provider}' no soportado. Opciones: ollama, anthropic, openai, google")
+    raise ValueError(
+        f"Provider '{provider}' no soportado. Opciones: ollama, anthropic, openai, google"
+    )
