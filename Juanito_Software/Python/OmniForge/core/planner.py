@@ -41,6 +41,18 @@ Rules:
 - Only include agents that are actually required.
 - Be specific in subtasks — each agent only sees its own subtask, not the full context.
 - If step B needs the output of step A, say so explicitly in step B's subtask.
+
+Tool-to-agent mapping (STRICT — never assign a tool to the wrong agent):
+- describe_screen   → ALWAYS pc_controller
+- find_element      → ALWAYS pc_controller
+- read_screen_text  → coder OR pc_controller
+- find_text_on_screen → coder OR pc_controller
+- take_screenshot / click / type / keyboard → pc_controller
+- run_code / run_command / read_file / write_file → coder
+- web_search / browse_url → researcher
+
+If the user explicitly names a tool (e.g. "use describe_screen"), assign the task to the agent
+that owns that tool — do NOT substitute a different tool.
 """
 
 
@@ -55,6 +67,19 @@ Agent results:
 
 Respond directly — no headers, no bullet points unless they help clarity.
 """
+
+
+def _fact_extractor_prompt(task: str, result: str) -> str:
+    return f"""A task was just completed. Extract 0-3 short facts worth remembering for future sessions.
+
+Rules:
+- Facts must be SPECIFIC and DURABLE: file paths, installed apps, user habits, system config.
+- Skip task-specific details that won't help future tasks.
+- If there is nothing worth remembering, return [].
+- Return ONLY a valid JSON array of strings: ["fact 1", "fact 2"] or []
+
+Task: {task[:300]}
+Result: {result[:500]}"""
 
 
 # ── Plan parsing ──────────────────────────────────────────────────────────────
@@ -74,10 +99,11 @@ def _parse_plan(text: str) -> list[dict]:
 
 # ── Grafo ─────────────────────────────────────────────────────────────────────
 
-def build_planner_graph(config: OmniForgeConfig):
+def build_planner_graph(config: OmniForgeConfig, memory=None, evaluator=None):
     """
     Construye y compila el Planner.
-    Devuelve un CompiledGraph que acepta PlannerState.
+    memory:    MemoryStore opcional — contexto histórico + hechos.
+    evaluator: Evaluator opcional  — evalúa cada tarea y genera hints de mejora.
     """
     from core.llm import build_llm
 
@@ -98,8 +124,17 @@ def build_planner_graph(config: OmniForgeConfig):
         if config.agent.verbose:
             print(f"\n[Planner] Planificando: {state['task']}")
 
+        task_content = state["task"]
+        if memory:
+            ctx = memory.get_context(state["task"])
+            if ctx:
+                task_content = ctx + "\n\n---\nCurrent task: " + task_content
+                if config.agent.verbose:
+                    mode = "semántica" if len(memory) > config.memory.semantic_threshold else "cronológica"
+                    print(f"[Memory] {len(memory)} tareas, recuperación {mode}.")
+
         response: AIMessage = llm.invoke(
-            [planner_system, HumanMessage(content=state["task"])]
+            [planner_system, HumanMessage(content=task_content)]
         )
         steps = _parse_plan(response.content)
 
@@ -171,6 +206,51 @@ def build_planner_graph(config: OmniForgeConfig):
 
         prompt = _synthesizer_prompt(state["task"], state["results"])
         response: AIMessage = llm.invoke([HumanMessage(content=prompt)])
+
+        if memory:
+            agents_used = list({s["agent"] for s in state["plan"]})
+            memory.add(state["task"], response.content, agents_used)
+            if config.agent.verbose:
+                print(f"[Memory] Tarea guardada. Total: {len(memory)} tareas, {len(memory.facts)} hechos.")
+
+            if config.memory.extract_facts:
+                try:
+                    extract_resp: AIMessage = llm.invoke(
+                        [HumanMessage(content=_fact_extractor_prompt(state["task"], response.content))]
+                    )
+                    match = re.search(r'\[.*?\]', extract_resp.content, re.DOTALL)
+                    if match:
+                        raw_facts = json.loads(match.group())
+                        added = [f for f in raw_facts if isinstance(f, str) and memory.add_fact(f)]
+                        if added and config.agent.verbose:
+                            for f in added:
+                                print(f"  [Fact] {f}")
+                except Exception:
+                    pass  # extracción de hechos nunca interrumpe el flujo principal
+
+        if evaluator:
+            try:
+                ev = evaluator.evaluate(
+                    task=state["task"],
+                    plan=state["plan"],
+                    results=state["results"],
+                    iterations=state["iteration"],
+                    max_iterations=config.agent.max_iterations,
+                )
+                evaluator.save(ev)
+                if config.agent.verbose:
+                    status = ev.failure_type or "ok"
+                    print(f"[Eval] efficiency={ev.efficiency} failure={status}")
+
+                if evaluator.should_analyze():
+                    hint = evaluator.analyze_and_generate_hint(llm)
+                    if hint and memory:
+                        added = memory.add_fact(f"[HINT] {hint}")
+                        if added and config.agent.verbose:
+                            print(f"[Eval] Nuevo hint de planificación: {hint}")
+            except Exception:
+                pass  # la evaluación nunca interrumpe el flujo principal
+
         return {"messages": [response], "status": "done"}
 
     # ── Condiciones de routing ─────────────────────────────────────────────────

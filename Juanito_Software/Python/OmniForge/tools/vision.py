@@ -20,6 +20,7 @@ Instalación para Vision LLM en la nube:
 from __future__ import annotations
 
 import base64
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -45,6 +46,16 @@ def _take_and_save() -> str:
     path = screenshot_dir / f"vision_{ts}.png"
     img = pyautogui.screenshot()
     img.save(path)
+
+    limit = CONFIG.screen.max_screenshots
+    if limit > 0:
+        shots = sorted(screenshot_dir.glob("vision_*.png"), key=lambda p: p.stat().st_mtime)
+        for old in shots[:-limit]:
+            try:
+                old.unlink()
+            except OSError:
+                pass
+
     return str(path)
 
 
@@ -53,11 +64,51 @@ def _encode_b64(path: str) -> str:
         return base64.b64encode(f.read()).decode("utf-8")
 
 
+def _resolve_tesseract_cmd() -> str | None:
+    """
+    Localiza el ejecutable de Tesseract en este orden:
+      1. CONFIG.vision.tesseract_cmd  (ruta explícita del usuario)
+      2. shutil.which("tesseract")    (si está en el PATH del sistema)
+      3. Rutas habituales de instalación en Windows
+    Devuelve la ruta encontrada o None si no se localiza.
+    """
+    # 1. Ruta explícita configurada por el usuario
+    explicit = CONFIG.vision.tesseract_cmd
+    if explicit:
+        p = Path(explicit)
+        if p.is_file():
+            return str(p)
+
+    # 2. En el PATH del sistema
+    found = shutil.which("tesseract")
+    if found:
+        return found
+
+    # 3. Rutas habituales de Windows
+    candidates = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        r"C:\Users\{}\AppData\Local\Programs\Tesseract-OCR\tesseract.exe".format(
+            __import__("os").environ.get("USERNAME", "")
+        ),
+    ]
+    for c in candidates:
+        if Path(c).is_file():
+            return c
+
+    return None
+
+
 def _ocr_data(path: str) -> dict | None:
     """Ejecuta Tesseract sobre la imagen y devuelve el dict con texto + bounding boxes."""
+    tess_cmd = _resolve_tesseract_cmd()
+    if tess_cmd is None:
+        return None
+
     try:
         from PIL import Image
         import pytesseract
+        pytesseract.pytesseract.tesseract_cmd = tess_cmd
         img = Image.open(path)
         return pytesseract.image_to_data(
             img,
@@ -67,10 +118,11 @@ def _ocr_data(path: str) -> dict | None:
     except ImportError:
         return None
     except Exception:
-        # Intentar sin idioma específico
+        # Intentar sin idioma específico (por si faltan los datos de idioma)
         try:
             from PIL import Image
             import pytesseract
+            pytesseract.pytesseract.tesseract_cmd = tess_cmd
             img = Image.open(path)
             return pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
         except Exception:
@@ -153,8 +205,9 @@ def read_screen_text() -> str:
         data = _ocr_data(path)
         if data is None:
             return (
-                "ERROR: pytesseract no disponible. "
-                "Instala: pip install pytesseract pillow  y  Tesseract para Windows."
+                "ERROR: Tesseract no encontrado. "
+                "Comprueba que está instalado en C:\\Program Files\\Tesseract-OCR\\ "
+                "o ajusta CONFIG.vision.tesseract_cmd con la ruta correcta."
             )
         words = [
             w for w, conf in zip(data["text"], data["conf"])

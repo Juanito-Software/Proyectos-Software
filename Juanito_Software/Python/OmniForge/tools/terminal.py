@@ -55,6 +55,7 @@ def _subprocess_fallback(code: str, language: str) -> str:
     """Ejecución directa sin Open Interpreter — solo para shell."""
     import subprocess
     import sys
+    import os
 
     timeout = CONFIG.tools.terminal_timeout
 
@@ -67,6 +68,18 @@ def _subprocess_fallback(code: str, language: str) -> str:
     else:
         return f"ERROR: language '{language}' no soportado sin Open Interpreter"
 
+    # Asegurar que Tesseract esté en el PATH del subproceso.
+    # Deriva el directorio desde CONFIG para no hardcodear la ruta.
+    env = os.environ.copy()
+    tess_cmd = CONFIG.vision.tesseract_cmd
+    if tess_cmd:
+        tess_dir = str(os.path.dirname(tess_cmd))
+        env["TESSERACT_CMD"] = tess_cmd
+    else:
+        tess_dir = r"C:\Program Files\Tesseract-OCR"  # fallback instalación estándar
+    if tess_dir and tess_dir not in env.get("PATH", ""):
+        env["PATH"] = tess_dir + os.pathsep + env.get("PATH", "")
+
     try:
         result = subprocess.run(
             cmd,
@@ -74,6 +87,7 @@ def _subprocess_fallback(code: str, language: str) -> str:
             capture_output=True,
             text=True,
             timeout=timeout,
+            env=env,
         )
         output = result.stdout
         if result.stderr:

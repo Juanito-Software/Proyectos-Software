@@ -35,15 +35,28 @@ def take_screenshot(save_path: str = "") -> str:
     try:
         screenshot_dir = Path(CONFIG.screen.screenshot_dir)
         screenshot_dir.mkdir(exist_ok=True)
-        if not save_path:
+        filename = Path(save_path).name if save_path else ""
+        if not filename or not Path(filename).suffix:
+            # save_path vacío o es un directorio ('screenshots/') sin nombre → auto-nombre
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             final_path = screenshot_dir / f"screenshot_{ts}.png"
         else:
             # Always keep screenshots inside the configured directory
-            final_path = screenshot_dir / Path(save_path).name
+            final_path = screenshot_dir / filename
         img = pag.screenshot()
         img.save(final_path)
         w, h = img.size
+
+        # Rotar capturas antiguas para evitar acumulación ilimitada en disco
+        limit = CONFIG.screen.max_screenshots
+        if limit > 0:
+            shots = sorted(screenshot_dir.glob("*.png"), key=lambda p: p.stat().st_mtime)
+            for old in shots[:-limit]:
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
+
         return f"OK: Captura guardada en {final_path} ({w}x{h}px)"
     except Exception as e:
         return f"ERROR captura: {e}"

@@ -29,15 +29,33 @@ Rules:
 """
 
 
-def _build_agent_graph(config: OmniForgeConfig, tools: list, system_prompt: str):
+def _build_agent_graph(
+    config: OmniForgeConfig,
+    tools: list,
+    system_prompt: str,
+    required_action_tools: frozenset | None = None,
+    sequential_tools: bool = False,
+):
     """
     Constructor genérico — crea un CompiledGraph con las tools y el prompt dados.
-    Cualquier agente especializado llama a esto en lugar de duplicar la lógica.
+
+    required_action_tools: el agente no puede declarar done hasta haber llamado
+      al menos una de estas tools (anti-hallucination).
+    sequential_tools: si True, pasa parallel_tool_calls=False al LLM para forzar
+      una tool por respuesta. Necesario en pc_controller donde el orden importa
+      (run_command debe completar antes de que click ocurra).
     """
     from core.llm import build_llm
 
     llm = build_llm(config)
-    llm_with_tools = llm.bind_tools(tools)
+    bind_kwargs = {}
+    if sequential_tools:
+        bind_kwargs["parallel_tool_calls"] = False
+    try:
+        llm_with_tools = llm.bind_tools(tools, **bind_kwargs)
+    except TypeError:
+        # El provider no soporta parallel_tool_calls → ignorar
+        llm_with_tools = llm.bind_tools(tools)
     tool_node = ToolNode(tools)
     system_message = SystemMessage(content=system_prompt)
 
@@ -50,6 +68,15 @@ def _build_agent_graph(config: OmniForgeConfig, tools: list, system_prompt: str)
             "last_tool_result": None,
         }
 
+    def _action_tool_called(messages: list) -> bool:
+        """True si alguna tool de acción real aparece en el historial de ToolMessages."""
+        if not required_action_tools:
+            return True  # sin restricción → siempre se considera que hay acción
+        for m in messages:
+            if isinstance(m, ToolMessage) and getattr(m, "name", "") in required_action_tools:
+                return True
+        return False
+
     def route(state: AgentState) -> Literal["tools", "remind", "end"]:
         last = state["messages"][-1]
         if state["iteration"] >= config.agent.max_iterations:
@@ -58,28 +85,72 @@ def _build_agent_graph(config: OmniForgeConfig, tools: list, system_prompt: str)
             return "end"
         if hasattr(last, "tool_calls") and last.tool_calls:
             return "tools"
-        # If no tool was ever called, the agent hallucinated — force a retry (max 3 times)
-        any_tool_called = any(isinstance(m, ToolMessage) for m in state["messages"])
-        if not any_tool_called and state["iteration"] < 3:
+
+        # Agente respondió con texto sin llamar tools.
+        # Si requerimos tools de acción y ninguna se ha llamado → hallucination.
+        # Máximo 2 reminders por sesión (error_count < 2) para evitar bucles
+        # en tareas que genuinamente no necesitan acción UI.
+        if not _action_tool_called(state["messages"]) and state["error_count"] < 2:
             return "remind"
+
+        # Fallback genérico: early iterations con muy pocas tool calls → remind.
+        tool_messages = [m for m in state["messages"] if isinstance(m, ToolMessage)]
+        if len(tool_messages) < 3 and state["iteration"] < 4 and state["error_count"] < config.agent.max_retries:
+            return "remind"
+
         return "end"
 
     def remind(state: AgentState) -> dict:
         """Injects a correction when the agent responded with text instead of tool calls."""
-        msg = HumanMessage(content=(
-            "You wrote text but did not call any tools. "
-            "Writing text does NOT perform any action on the computer. "
-            "You MUST call a tool RIGHT NOW. Start with run_command or take_screenshot."
-        ))
-        return {"messages": [msg], "error_count": state["error_count"] + 1}
+        if required_action_tools and not _action_tool_called(state["messages"]):
+            action_list = ", ".join(sorted(required_action_tools))
+            content = (
+                f"You responded with text but have NOT yet called any of the required action tools: "
+                f"{action_list}. "
+                "Setup tools (run_command, sleep_seconds, list_open_windows, take_screenshot) "
+                "do NOT complete the task — they only prepare the environment. "
+                "CRITICAL: The app is ALREADY OPEN — do NOT call run_command again, "
+                "that would open a second instance. "
+                "Go directly to step 5 (ACT): call click() to focus the text area, "
+                "then call type_text() to type, or press_key() for key presses. "
+                "Do NOT report completion without calling these tools first."
+            )
+        elif any(isinstance(m, ToolMessage) for m in state["messages"]):
+            content = (
+                "You responded with text but the task is NOT complete yet. "
+                "You MUST now call the action tools: click(), type_text(), press_key(), etc. "
+                "Proceed to step 5 (ACT) — do NOT report completion until you have performed "
+                "the actual action and verified it with read_screen_text()."
+            )
+        else:
+            content = (
+                "You wrote text but did not call any tools. "
+                "Writing text does NOT perform any action on the computer. "
+                "You MUST call a tool RIGHT NOW. Start with run_command or take_screenshot."
+            )
+        return {"messages": [HumanMessage(content=content)], "error_count": state["error_count"] + 1}
 
     def handle_tool_error(state: AgentState) -> AgentState:
-        last = state["messages"][-1]
-        content = getattr(last, "content", "") or ""
+        messages = state["messages"]
         error_count = state["error_count"]
-        if isinstance(content, str) and content.startswith("ERROR"):
-            error_count += 1
-        return {"last_tool_result": content, "error_count": error_count}
+        last_content = getattr(messages[-1], "content", "") or ""
+
+        # Find how many tool calls the preceding AIMessage batched together.
+        # ToolNode appends one ToolMessage per call, so we check all of them,
+        # not just the last one (which is the only one the old code checked).
+        n_tools = 0
+        for msg in reversed(messages):
+            if isinstance(msg, AIMessage):
+                n_tools = len(getattr(msg, "tool_calls", []) or [])
+                break
+
+        batch = messages[-n_tools:] if n_tools > 1 else [messages[-1]]
+        for msg in batch:
+            content = getattr(msg, "content", "") or ""
+            if isinstance(content, str) and content.startswith("ERROR"):
+                error_count += 1
+
+        return {"last_tool_result": last_content, "error_count": error_count}
 
     graph = StateGraph(AgentState)
     graph.add_node("reason", reason)
