@@ -3,6 +3,8 @@ Registro de agentes especializados.
 Cada agente tiene un toolset reducido y un system prompt enfocado.
 El Planner elige qué agente invocar para cada subtarea.
 """
+import os
+from pathlib import Path
 from tools.filesystem import FILESYSTEM_TOOLS
 from tools.terminal import TERMINAL_TOOLS
 from tools.browser import BROWSER_TOOLS
@@ -140,6 +142,29 @@ Critical rules:
 }
 
 
+def _build_system_paths_section() -> str:
+    """
+    Resuelve las rutas reales del sistema en tiempo de ejecución e inyecta el bloque
+    en el system prompt. Evita que el LLM use <username> o rutas hardcodeadas incorrectas.
+    """
+    home = Path.home()
+    desktop = home / "Desktop"
+    documents = home / "Documents"
+    downloads = home / "Downloads"
+    username = os.environ.get("USERNAME") or os.environ.get("USER") or home.name
+    lines = [
+        "",
+        "System paths (use these exact paths, never guess or use <username>):",
+        f"  home:      {home}",
+        f"  desktop:   {desktop}",
+        f"  documents: {documents}",
+        f"  downloads: {downloads}",
+        f"  username:  {username}",
+        "When referencing user home in tools use '~' or the exact paths above.",
+    ]
+    return "\n".join(lines)
+
+
 def _build_skills_section(skill_tools: list) -> str:
     """
     Genera el bloque de texto que se inyecta en el system prompt describiendo
@@ -180,8 +205,12 @@ def build_agent(name: str, config):
     base_names = {t.name for t in base_tools}
     skill_tools = [t for t in all_tools if t.name not in base_names]
 
-    # Inyectar descripción de skills en el system prompt para descubrimiento autónomo
+    # Inyectar rutas reales del sistema — evita que el LLM genere <username> como literal
     system_prompt = entry["system_prompt"]
+    if name in ("coder", "pc_controller"):
+        system_prompt = system_prompt.rstrip() + "\n" + _build_system_paths_section()
+
+    # Inyectar descripción de skills en el system prompt para descubrimiento autónomo
     skills_section = _build_skills_section(skill_tools)
     if skills_section:
         system_prompt = system_prompt.rstrip() + "\n" + skills_section

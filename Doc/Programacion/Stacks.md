@@ -17,6 +17,9 @@
 - **Base de datos** → dónde guardas los datos.
     
 
+
+
+
 # 1. Ecosistema JavaScript / TypeScript
 
 Es el stack más popular para startups, SaaS y desarrollo web moderno.
@@ -81,7 +84,13 @@ Actualmente NestJS está creciendo muchísimo en empresas.
 - Redis
     
 
+
+
+
 ---
+
+
+
 
 # 2. MERN y MEAN
 
@@ -114,7 +123,14 @@ Son combinaciones concretas del ecosistema JavaScript.
 **PostgreSQL + NestJS + React/Next.js**
 
 
+
+
+
 ---
+
+
+
+
 
 # 3. Ecosistema Python
 
@@ -190,7 +206,13 @@ IA:
 - TensorFlow
     
 
+
+
+
 ---
+
+
+
 
 # 4. Ecosistema .NET (C#)
 
@@ -259,7 +281,13 @@ BD:
 - SQL Server o PostgreSQL
     
 
+
+
+
 ---
+
+
+
 
 # 5. Ecosistema Java
 
@@ -310,7 +338,13 @@ BD:
 - PostgreSQL
     
 
+
+
+
 ---
+
+
+
 
 # 6. Ecosistema PHP
 
@@ -363,7 +397,13 @@ BD:
 - PostgreSQL o MySQL
     
 
+
+
+
 ---
+
+
+
 
 **APIs**
 
@@ -424,14 +464,14 @@ BD:
 
     Notion
 
-
-1. **TypeScript + Next.js + NestJS + PostgreSQL**
+   **TypeScript + Next.js + PostgreSQL**
+1. **TypeScript + NestJS + Angular + PostgreSQL**
     
 2. **Python + FastAPI + PostgreSQL**
     
 3. **C# + ASP.NET Core + SQL Server**
     
-4. **Java + Spring Boot + PostgreSQL**
+4. **Java + Spring Boot + React + PostgreSQL**
     
 5. **PHP + Laravel + PostgreSQL**
     
