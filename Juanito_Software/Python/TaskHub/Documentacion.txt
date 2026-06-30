@@ -1,0 +1,139 @@
+Documentación técnica del proyecto TaskHub
+
+1. Introducción
+TaskHub es una API REST desarrollada con FastAPI para la gestión de tareas, con soporte para autenticación mediante JWT, operaciones CRUD sobre tareas, relación entre usuarios y tareas, y asociación de etiquetas a cada tarea. El proyecto está pensado como una base práctica para aprender y aplicar conceptos modernos de Python backend, incluyendo SQLAlchemy, Pydantic, inyección de dependencias y documentación automática de la API.
+
+2. Objetivo del proyecto
+El objetivo principal de TaskHub es ofrecer una solución backend clara y escalable para gestionar tareas personales o colaborativas, incorporando:
+- Registro e inicio de sesión de usuarios.
+- Autenticación segura con tokens JWT.
+- Gestión completa de tareas.
+- Asociación de etiquetas a tareas.
+- Filtros básicos mediante query parameters.
+- Documentación interactiva de la API generada automáticamente.
+
+3. Estructura del proyecto
+TaskHub/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── auth.py
+│   └── routers/
+│       ├── auth.py
+│       └── tasks.py
+├── .env
+└── requirements.txt
+
+4. Descripción de los componentes principales
+4.1 app/main.py
+Este archivo contiene la instancia principal de FastAPI. Aquí se configura la aplicación, se montan los routers y se inicializan las tablas de la base de datos al arrancar la aplicación.
+
+4.2 app/config.py
+Este módulo gestiona la configuración de la aplicación mediante Pydantic Settings. Lee variables de entorno desde el archivo .env y valida su tipo, lo que mejora la seguridad y la consistencia de la configuración.
+
+4.3 app/database.py
+Define la conexión a la base de datos con SQLAlchemy, incluyendo:
+- El engine de conexión.
+- La sesión local de base de datos.
+- La dependencia get_db, utilizada para inyectar sesiones en los endpoints.
+
+4.4 app/models.py
+Contiene los modelos de SQLAlchemy que representan las entidades del sistema:
+- User: usuarios del sistema.
+- Task: tareas registradas por los usuarios.
+- Tag: etiquetas asociadas a tareas.
+- Tabla intermedia para la relación muchos-a-muchos entre tareas y etiquetas.
+
+4.5 app/schemas.py
+Aquí se definen los schemas de Pydantic, que sirven para validar la entrada de datos y estructurar la salida de la API. Este módulo es uno de los puntos más importantes del proyecto porque separa claramente:
+- Lo que el cliente puede enviar al servicio.
+- Lo que la API devuelve como respuesta.
+
+4.6 app/auth.py
+Implementa la lógica de autenticación con JWT, incluyendo:
+- Generación de tokens.
+- Verificación de credenciales.
+- Hash de contraseñas.
+- Obtención del usuario autenticado mediante dependencias.
+
+4.7 app/routers/auth.py
+Contiene los endpoints relacionados con autenticación, como:
+- Registro de usuarios.
+- Inicio de sesión y obtención de token.
+
+4.8 app/routers/tasks.py
+Define los endpoints de gestión de tareas, incluyendo:
+- Listado de tareas.
+- Creación de tareas.
+- Actualización parcial o completa.
+- Eliminación de tareas.
+- Filtros por estado o etiquetas.
+
+5. Flujo de funcionamiento general
+El funcionamiento de la aplicación sigue este flujo:
+1. El cliente realiza una solicitud HTTP a un endpoint.
+2. FastAPI valida automáticamente los datos de entrada mediante los schemas Pydantic.
+3. Se resuelven las dependencias, como la sesión de base de datos o el usuario autenticado.
+4. El router delega la lógica al servicio o directamente al modelo correspondiente.
+5. Se interactúa con la base de datos mediante SQLAlchemy.
+6. La respuesta se serializa según el schema de salida definido para el endpoint.
+
+6. Diferencias clave respecto a Flask
+Aunque el proyecto está basado en conceptos similares a Flask, FastAPI introduce varias mejoras importantes:
+- Validación automática con Pydantic.
+- Documentación interactiva en /docs y /redoc.
+- Soporte nativo para programación asíncrona.
+- Inyección de dependencias con Depends().
+- Mejor organización de la API mediante routers.
+
+En términos de acceso a datos, SQLAlchemy se sigue usando de manera muy similar a como se hacía en Flask. La diferencia principal está en la forma de obtener la sesión de base de datos y en la validación de los datos de entrada/salida.
+
+7. Variables de entorno
+La aplicación espera que exista un archivo .env con configuraciones básicas, por ejemplo:
+- DATABASE_URL
+- SECRET_KEY
+- ALGORITHM
+- ACCESS_TOKEN_EXPIRE_MINUTES
+
+Este archivo es esencial para el correcto funcionamiento de la API.
+
+8. Instalación y ejecución
+Requisitos previos:
+- Python 3.10 o superior.
+- Entorno virtual recomendado.
+
+Instalación:
+pip install -r requirements.txt
+
+Ejecución en modo desarrollo:
+uvicorn app.main:app --reload
+
+Una vez iniciada la aplicación, la documentación interactiva estará disponible en:
+- http://localhost:8000/docs
+- http://localhost:8000/redoc
+
+9. Endpoints principales
+Autenticación
+- POST /auth/register
+- POST /auth/token
+
+Tareas
+- GET /tasks/
+- POST /tasks/
+- PATCH /tasks/{task_id}
+- DELETE /tasks/{task_id}
+
+10. Conceptos clave a dominar
+Para entender correctamente este proyecto, es importante familiarizarse con los siguientes conceptos:
+- SQLAlchemy: modelado de entidades y consultas a base de datos.
+- Pydantic: validación y serialización de datos.
+- FastAPI: creación de endpoints y manejo de dependencias.
+- JWT: autenticación segura mediante tokens.
+- Depends(): inyección de dependencias en los endpoints.
+
+11. Conclusión
+TaskHub representa una implementación práctica y moderna de una API backend con FastAPI. Su estructura está diseñada para ser simple, comprensible y útil como punto de partida para proyectos más complejos. El dominio de este proyecto permite consolidar habilidades fundamentales en desarrollo backend con Python, incluyendo validación de datos, autenticación, persistencia y diseño de APIs REST.

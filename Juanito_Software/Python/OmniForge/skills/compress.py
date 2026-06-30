@@ -2,9 +2,15 @@
 Skill: compresión y extracción de archivos — patrón de Hermes (file utilities).
 Operaciones ZIP con stdlib Python, sin dependencias externas.
 """
+import os
 import zipfile
 from pathlib import Path
 from langchain_core.tools import tool
+
+
+def _resolve(path: str) -> Path:
+    """Expande ~ y variables de entorno (%USERPROFILE%, $HOME, etc.)."""
+    return Path(os.path.expandvars(os.path.expanduser(path)))
 
 SKILL_METADATA = {
     "agents": ["coder"],
@@ -19,11 +25,15 @@ def compress_to_zip(source_path: str, output_zip: str = "") -> str:
     source_path: ruta al archivo o carpeta a comprimir.
     output_zip:  ruta del ZIP resultante. Si se omite, crea <source_path>.zip en el mismo directorio.
     """
-    src = Path(source_path)
+    src = _resolve(source_path)
     if not src.exists():
-        return f"ERROR: '{source_path}' no existe."
+        return (
+            f"ERROR: '{source_path}' no existe (resuelto como '{src}'). "
+            "Usa ~ para el home del usuario, p.ej. '~/Desktop/carpeta'. "
+            "Evita <username> literal — usa ~ en su lugar."
+        )
 
-    dest = Path(output_zip) if output_zip else src.with_suffix(".zip")
+    dest = _resolve(output_zip) if output_zip else src.with_suffix(".zip")
 
     try:
         with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -49,13 +59,16 @@ def extract_archive(zip_path: str, output_dir: str = "") -> str:
     zip_path:   ruta al archivo .zip.
     output_dir: carpeta destino. Si se omite, extrae junto al ZIP.
     """
-    zp = Path(zip_path)
+    zp = _resolve(zip_path)
     if not zp.exists():
-        return f"ERROR: '{zip_path}' no existe."
+        return (
+            f"ERROR: '{zip_path}' no existe (resuelto como '{zp}'). "
+            "Usa ~ para el home del usuario, p.ej. '~/Desktop/archivo.zip'."
+        )
     if not zipfile.is_zipfile(zp):
         return f"ERROR: '{zip_path}' no es un archivo ZIP válido."
 
-    dest = Path(output_dir) if output_dir else zp.parent / zp.stem
+    dest = _resolve(output_dir) if output_dir else zp.parent / zp.stem
     dest.mkdir(parents=True, exist_ok=True)
 
     try:
