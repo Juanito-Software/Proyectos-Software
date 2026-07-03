@@ -4,16 +4,6 @@
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
     "username": "JuanitoCanuto",
-    "message": "estas un poquito ardido con las parrafadas",
-    "timestamp": 1781729898467,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-17T20:58:18.468Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
     "message": "enjoy!  :)",
     "timestamp": 1781729903314,
     "user": "JuanitoCanuto",
@@ -910,5 +900,15 @@
     "timestamp": 1783040729670,
     "user": "KICKBounties",
     "received_at": "2026-07-03T01:05:29.674Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "SibudGamer",
+    "message": "Ese juanito!!!",
+    "timestamp": 1783094344511,
+    "user": "SibudGamer",
+    "received_at": "2026-07-03T15:59:04.513Z"
   }
 ]

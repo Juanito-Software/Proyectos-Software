@@ -1,5 +1,0 @@
-# Created at 2026-05-27T19:02:30.840
-Boot Manifest-JAR contains absolute paths in classpath 'D:\Proyectos\Proyectos-Software\Juanito_Software\Java\RadioStack\radiostack-core\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-
