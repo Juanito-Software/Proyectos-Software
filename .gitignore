@@ -147,3 +147,6 @@ roboflow.json
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Instaladores generados (PyInstaller/py2app)
+*.pkg
