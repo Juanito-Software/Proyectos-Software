@@ -135,5 +135,91 @@ Para entender correctamente este proyecto, es importante familiarizarse con los 
 - JWT: autenticación segura mediante tokens.
 - Depends(): inyección de dependencias en los endpoints.
 
-11. Conclusión
-TaskHub representa una implementación práctica y moderna de una API backend con FastAPI. Su estructura está diseñada para ser simple, comprensible y útil como punto de partida para proyectos más complejos. El dominio de este proyecto permite consolidar habilidades fundamentales en desarrollo backend con Python, incluyendo validación de datos, autenticación, persistencia y diseño de APIs REST.
+11. Frontend React
+
+11.1 Estructura del frontend
+TaskHub/
+└── frontend/
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    └── src/
+        ├── main.jsx          ← punto de entrada, monta <App /> en el DOM
+        ├── App.jsx           ← enruta entre AuthPage y TasksPage según token
+        ├── AuthContext.jsx   ← Context + Provider para estado de autenticación
+        ├── api.js            ← todas las llamadas HTTP a la API
+        ├── AuthPage.jsx      ← pantalla de login/registro con tabs
+        ├── TasksPage.jsx     ← dashboard principal con filtros y listado
+        ├── TaskCard.jsx      ← componente de tarea individual
+        ├── TaskForm.jsx      ← modal de creación/edición de tarea
+        └── index.css         ← estilos (CSS custom properties, sin frameworks)
+
+11.2 Flujo de autenticación en el frontend
+1. App.jsx lee el token del AuthContext.
+2. Si no hay token, muestra AuthPage (login/registro).
+3. Al hacer login, api.js llama a POST /auth/token con form-urlencoded
+   (así lo espera OAuth2PasswordRequestForm de FastAPI).
+4. El JWT se guarda en localStorage y se inyecta en Authorization: Bearer <token>
+   en cada petición posterior.
+5. Al cerrar sesión, se limpia localStorage y el Context vuelve a null → AuthPage.
+
+11.3 Gestión de estado de tareas
+TasksPage mantiene el estado de la lista de tareas en useState y recarga con
+useCallback + useEffect cada vez que cambian los filtros. No hay librería de estado
+global (Redux, Zustand, etc.) porque el árbol de componentes es pequeño.
+
+11.4 Filtros implementados
+- Estado: todas / pendientes / completadas (via query param ?completed=)
+- Etiqueta: campo de texto que filtra via ?tag=
+Los filtros se pasan directamente a api.getTasks(), que construye la query string
+y delega al endpoint GET /tasks/ del backend.
+
+11.5 Por qué Vite y no Create React App
+Vite arranca en ~300ms y usa ESModules nativos en dev. CRA está oficialmente
+deprecado desde 2023. Vite es hoy el estándar de facto para proyectos React nuevos.
+
+11.6 CORS
+main.py incluye CORSMiddleware de FastAPI con allow_origins=["http://localhost:5173"]
+(el puerto por defecto de Vite en desarrollo). En producción habría que actualizar
+ese origen al dominio real o a "*" si la API es pública.
+
+12. Instalación y ejecución completa (backend + frontend)
+
+Backend:
+  cd TaskHub
+  python -m venv venv
+  venv\Scripts\activate          (Windows) / source venv/bin/activate (Unix)
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload
+  → API disponible en http://localhost:8000
+  → Documentación en http://localhost:8000/docs
+
+Frontend (en otra terminal):
+  cd TaskHub/frontend
+  npm install
+  npm run dev
+  → App disponible en http://localhost:5173
+
+13. Endpoints completos
+
+Autenticación:
+  POST /auth/register   Body: { email, username, password }
+  POST /auth/token      Body: form-urlencoded { username, password }
+
+Tareas (requieren Bearer token):
+  GET    /tasks/                          Lista de tareas del usuario
+  GET    /tasks/?completed=true           Solo completadas
+  GET    /tasks/?tag=trabajo              Solo tareas con esa etiqueta
+  POST   /tasks/                          Crear tarea
+  GET    /tasks/{id}                      Obtener una tarea
+  PATCH  /tasks/{id}                      Actualizar parcialmente
+  DELETE /tasks/{id}                      Eliminar
+
+14. Conclusión
+TaskHub representa una implementación práctica y moderna de una aplicación
+fullstack con FastAPI (backend) y React (frontend). Su estructura está diseñada
+para ser simple, comprensible y útil como punto de partida para proyectos más
+complejos. El dominio de este proyecto permite consolidar habilidades fundamentales
+en desarrollo web con Python y JavaScript moderno, incluyendo validación de datos,
+autenticación JWT, persistencia con SQLAlchemy y construcción de interfaces
+reactivas con hooks y Context API.
