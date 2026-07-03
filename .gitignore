@@ -1,30 +1,29 @@
+# ============================================
 # Entornos virtuales
-.env
-.venv
+# ============================================
+*.env
+.venv/
 venv/
 env/
 env_Py3.10/
 ENV/
-docs/
 coqui_env/
 iaenv/
+**/venv/
+**/.env
 
-# Proyectos/entornos/carpetas específicas/dependecias externas/librerias requirements-lock
-requirements-lock.txt
-FloatTrans/
-frames/
-AIClipCreator_env/
-ClipVO/
-ClipsAI_env/
-datasets/
-ffmpeg/
+# ============================================
+# Node / JavaScript / TypeScript
+# ============================================
+**/node_modules/
+**/dist/
+**/coverage/
+frontend/node_modules/
+frontend/dist/
 
-# PyInstaller
-build/
-dist/
-*.spec
-
-# Archivos Python compilados
+# ============================================
+# Python
+# ============================================
 __pycache__/
 *.py[cod]
 *.pyc
@@ -33,22 +32,64 @@ __pycache__/
 *.pdb
 *.so
 *.dll
-
-# --- Jupyter Notebooks ---
 .ipynb_checkpoints/
+requirements-lock.txt
 
-# --- Archivos de datasets ---
+# ============================================
+# Java / Maven / Gradle
+# ============================================
+target/
+*.class
+.gradle/
+
+# ============================================
+# PHP / Laravel / Composer
+# ============================================
+vendor/
+
+# ============================================
+# Rust
+# (target/ ya cubierto arriba, es la misma carpeta de salida que usa Cargo)
+# ============================================
+
+# ============================================
+# PyInstaller / builds nativos
+# ============================================
+build/
+dist/
+*.spec
+
+# ============================================
+# Proyectos / entornos / carpetas especificas
+# ============================================
+FloatTrans/
+frames/
+AIClipCreator_env/
+ClipVO/
+ClipsAI_env/
+datasets/
+ffmpeg/
+
+# ============================================
+# Datasets: archivos comprimidos y configs auto-generadas
+# (antes "*.yaml" ignoraba TODOS los yaml del repo, incluyendo
+# workflows de CI y docker-compose de los subproyectos. Se acota
+# a lo que realmente generan los datasets/Roboflow.)
+# ============================================
 *.zip
 *.tar
 *.tar.gz
 *.rar
 *.7z
+*.whl
 Dataset*/
-Dataset/
-*.yaml
+data.yaml
+Dataset*/**/*.yaml
+datasets/**/*.yaml
 
-
-# --- Pesos y modelos entrenados ---
+# ============================================
+# Pesos y modelos entrenados
+# ============================================
 *.pt
 *.onnx
 *.engine
@@ -57,11 +98,15 @@ Dataset/
 *.h5
 runs/
 
-# --- Archivos de Roboflow ---
+# ============================================
+# Roboflow
+# ============================================
 *.cache
 roboflow.json
 
+# ============================================
 # Archivos grandes o temporales
+# ============================================
 *.mp4
 *.avi
 *.mkv
@@ -71,16 +116,34 @@ roboflow.json
 *.log
 *.exe
 *.msi
-*.rar
-*.whl
 
-# --- Archivos de VSCode / IDEs ---
+# ============================================
+# Bases de datos locales
+# ============================================
+*.db
+
+# ============================================
+# Obsidian: configuracion local y plugins con posibles credenciales
+# (Doc/.obsidian/plugins/copilot/data.json guarda campos ApiKey/Token;
+# hoy estan vacios pero es mejor no seguir versionando este archivo)
+# ============================================
+.obsidian/
+**/.obsidian/
+.smart-env/
+**/.smart-env/
+
+# ============================================
+# IDEs / editores
+# ============================================
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 *.code-workspace
 
+# ============================================
 # Archivos de sistema
+# ============================================
 .DS_Store
 Thumbs.db
+desktop.ini
