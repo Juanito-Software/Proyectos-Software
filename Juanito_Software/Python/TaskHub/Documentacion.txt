@@ -14,19 +14,22 @@ El objetivo principal de TaskHub es ofrecer una solución backend clara y escala
 
 3. Estructura del proyecto
 TaskHub/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── config.py
-│   ├── database.py
-│   ├── models.py
-│   ├── schemas.py
-│   ├── auth.py
-│   └── routers/
-│       ├── auth.py
-│       └── tasks.py
-├── .env
-└── requirements.txt
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── auth.py
+│   │   └── routers/
+│   │       ├── auth.py
+│   │       └── tasks.py
+│   ├── .env
+│   └── requirements.txt
+├── frontend/
+└── Documentacion.txt
 
 4. Descripción de los componentes principales
 4.1 app/main.py
@@ -107,9 +110,11 @@ Requisitos previos:
 - Entorno virtual recomendado.
 
 Instalación:
+cd backend
 pip install -r requirements.txt
 
 Ejecución en modo desarrollo:
+cd backend
 uvicorn app.main:app --reload
 
 Una vez iniciada la aplicación, la documentación interactiva estará disponible en:
@@ -186,7 +191,7 @@ ese origen al dominio real o a "*" si la API es pública.
 12. Instalación y ejecución completa (backend + frontend)
 
 Backend:
-  cd TaskHub
+  cd TaskHub/backend
   python -m venv venv
   venv\Scripts\activate          (Windows) / source venv/bin/activate (Unix)
   pip install -r requirements.txt
