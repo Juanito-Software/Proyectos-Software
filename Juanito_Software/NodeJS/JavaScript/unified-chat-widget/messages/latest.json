@@ -3,26 +3,6 @@
     "platform": "twitch",
     "account": "JuanitoCanuto",
     "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "enjoy!  :)",
-    "timestamp": 1781729903314,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-17T20:58:23.314Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
-    "username": "JuanitoCanuto",
-    "message": "la mejor intro gente",
-    "timestamp": 1782088971915,
-    "user": "JuanitoCanuto",
-    "received_at": "2026-06-22T00:42:51.919Z"
-  },
-  {
-    "platform": "twitch",
-    "account": "JuanitoCanuto",
-    "channel": "JuanitoCanuto",
     "username": "frann17malaka",
     "message": "holaaaa",
     "timestamp": 1782089975725,
@@ -910,5 +890,23 @@
     "timestamp": 1783094344511,
     "user": "SibudGamer",
     "received_at": "2026-07-03T15:59:04.513Z"
+  },
+  {
+    "platform": "kick",
+    "username": "JuanitoCanuto",
+    "message": "iepalee",
+    "timestamp": 1783121046865,
+    "user": "JuanitoCanuto",
+    "received_at": "2026-07-03T23:24:06.868Z"
+  },
+  {
+    "platform": "twitch",
+    "account": "JuanitoCanuto",
+    "channel": "JuanitoCanuto",
+    "username": "coryinon",
+    "message": "Handling something at the moment, but my squad and I will pull up to your stream.",
+    "timestamp": 1783128044780,
+    "user": "coryinon",
+    "received_at": "2026-07-04T01:20:44.787Z"
   }
 ]
