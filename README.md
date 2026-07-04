@@ -17,34 +17,35 @@ contenido. Las condiciones varían según el programa.
 	**Python**
 		FastAPI
 		Flask
-		Django
+		Django (Por aprender)
 	**JavaScript / TypeScript**
 		Node.js
 		Express.js
-		NestJS
+		NestJS  (Por aprender)
 
 	    
 	**C#**
-		ASP.NET Core
+		ASP.NET Core  (Por aprender)
 	
 	**Rust**
-		Axum
-		Actix Web
+		Axum	    (Por aprender)
+		Actix Web 	(Por aprender)
 	**PHP**
 		Laravel
-		Symfony
+		Symfony  (Por aprender)
 
 **Frontend Desktop**
 	
 	JavaFX (Java)
 	Swing (Java)
 	Tkinter (python)
+	QT Designer (Python)
 	Qt / PyQt / PySide (Python)
-	Flutter
-	Electron
-	Tauri
-	.NET MAUI
-	WPF
+	Flutter				(Por aprender)
+	Electron	 (Por aprender)
+	Tauri		 (Por aprender)
+	.NET MAUI	 (Por aprender)
+	WPF			 (Por aprender)
 
 **Web = stack típico de aplicaciones web (frontend + backend de apps web)**
  
@@ -52,18 +53,18 @@ contenido. Las condiciones varían según el programa.
 	JavaScript/TypeScript
 		Node.js
 		Express.js
-		NestJS
+		NestJS	 (Por aprender)
 	  
 	**Frontend UI**
 		  React
 		  Angular
-		  Vue.js
+		  Vue.js	(Por aprender)
 	Meta-frameworks  
-		Next.js
+		Next.js	 (Por aprender)
 
 **Fullstack / SSR**  
 	
-	Inertia.js  
+	Inertia.js   (Por aprender)
 	Blade (Laravel)
 
 
@@ -73,35 +74,35 @@ contenido. Las condiciones varían según el programa.
 	PostgreSQL
 	MySQL
 	No Relacionales (NoSQL)
-	MongoDB
+	MongoDB		(cursado en el grado medio SMR)
 
 **APIs**
 	
 	REST
-	GraphQL
+	GraphQL		 (Por aprender)
 	WebSockets
-	gRPC
+	gRPC		  (Por aprender)
 
 **DevOps / Herramientas**
 	
 	Git
-	Docker
+	Docker		(cursado en el grado medio SMR)
 	Linux
 	Nginx
-	CI/CD (GitHub Actions)
+	CI/CD (GitHub Actions)	(Por aprender)
 
 **Inteligencia Artificial**
 
 	  Frameworks:
 	
 		PyTorch
-		TensorFlow
+		TensorFlow	(Por aprender)
 	
 	  LLMs:
 	
 		Ollama
-		vLLM
-		llama.cpp
+		vLLM		(Por aprender)
+		llama.cpp	(Por aprender)
 	
 	  Orquestación:
 	
