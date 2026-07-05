@@ -28,7 +28,7 @@ comtypes==1.4.16
 # ============================================================
 # IMPORTANTE: instalar manualmente con CUDA index-url
 
-torch==2.1.0+cu121
+torch==2.12.1
 torchvision==0.16.0+cu121
 torchaudio==2.1.0+cu121
 
