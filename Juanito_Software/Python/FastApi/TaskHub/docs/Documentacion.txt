@@ -1,0 +1,230 @@
+Documentación técnica del proyecto TaskHub
+
+1. Introducción
+TaskHub es una API REST desarrollada con FastAPI para la gestión de tareas, con soporte para autenticación mediante JWT, operaciones CRUD sobre tareas, relación entre usuarios y tareas, y asociación de etiquetas a cada tarea. El proyecto está pensado como una base práctica para aprender y aplicar conceptos modernos de Python backend, incluyendo SQLAlchemy, Pydantic, inyección de dependencias y documentación automática de la API.
+
+2. Objetivo del proyecto
+El objetivo principal de TaskHub es ofrecer una solución backend clara y escalable para gestionar tareas personales o colaborativas, incorporando:
+- Registro e inicio de sesión de usuarios.
+- Autenticación segura con tokens JWT.
+- Gestión completa de tareas.
+- Asociación de etiquetas a tareas.
+- Filtros básicos mediante query parameters.
+- Documentación interactiva de la API generada automáticamente.
+
+3. Estructura del proyecto
+TaskHub/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── auth.py
+│   │   └── routers/
+│   │       ├── auth.py
+│   │       └── tasks.py
+│   ├── .env
+│   └── requirements.txt
+├── frontend/
+└── Documentacion.txt
+
+4. Descripción de los componentes principales
+4.1 app/main.py
+Este archivo contiene la instancia principal de FastAPI. Aquí se configura la aplicación, se montan los routers y se inicializan las tablas de la base de datos al arrancar la aplicación.
+
+4.2 app/config.py
+Este módulo gestiona la configuración de la aplicación mediante Pydantic Settings. Lee variables de entorno desde el archivo .env y valida su tipo, lo que mejora la seguridad y la consistencia de la configuración.
+
+4.3 app/database.py
+Define la conexión a la base de datos con SQLAlchemy, incluyendo:
+- El engine de conexión.
+- La sesión local de base de datos.
+- La dependencia get_db, utilizada para inyectar sesiones en los endpoints.
+
+4.4 app/models.py
+Contiene los modelos de SQLAlchemy que representan las entidades del sistema:
+- User: usuarios del sistema.
+- Task: tareas registradas por los usuarios.
+- Tag: etiquetas asociadas a tareas.
+- Tabla intermedia para la relación muchos-a-muchos entre tareas y etiquetas.
+
+4.5 app/schemas.py
+Aquí se definen los schemas de Pydantic, que sirven para validar la entrada de datos y estructurar la salida de la API. Este módulo es uno de los puntos más importantes del proyecto porque separa claramente:
+- Lo que el cliente puede enviar al servicio.
+- Lo que la API devuelve como respuesta.
+
+4.6 app/auth.py
+Implementa la lógica de autenticación con JWT, incluyendo:
+- Generación de tokens.
+- Verificación de credenciales.
+- Hash de contraseñas.
+- Obtención del usuario autenticado mediante dependencias.
+
+4.7 app/routers/auth.py
+Contiene los endpoints relacionados con autenticación, como:
+- Registro de usuarios.
+- Inicio de sesión y obtención de token.
+
+4.8 app/routers/tasks.py
+Define los endpoints de gestión de tareas, incluyendo:
+- Listado de tareas.
+- Creación de tareas.
+- Actualización parcial o completa.
+- Eliminación de tareas.
+- Filtros por estado o etiquetas.
+
+5. Flujo de funcionamiento general
+El funcionamiento de la aplicación sigue este flujo:
+1. El cliente realiza una solicitud HTTP a un endpoint.
+2. FastAPI valida automáticamente los datos de entrada mediante los schemas Pydantic.
+3. Se resuelven las dependencias, como la sesión de base de datos o el usuario autenticado.
+4. El router delega la lógica al servicio o directamente al modelo correspondiente.
+5. Se interactúa con la base de datos mediante SQLAlchemy.
+6. La respuesta se serializa según el schema de salida definido para el endpoint.
+
+6. Diferencias clave respecto a Flask
+Aunque el proyecto está basado en conceptos similares a Flask, FastAPI introduce varias mejoras importantes:
+- Validación automática con Pydantic.
+- Documentación interactiva en /docs y /redoc.
+- Soporte nativo para programación asíncrona.
+- Inyección de dependencias con Depends().
+- Mejor organización de la API mediante routers.
+
+En términos de acceso a datos, SQLAlchemy se sigue usando de manera muy similar a como se hacía en Flask. La diferencia principal está en la forma de obtener la sesión de base de datos y en la validación de los datos de entrada/salida.
+
+7. Variables de entorno
+La aplicación espera que exista un archivo .env con configuraciones básicas, por ejemplo:
+- DATABASE_URL
+- SECRET_KEY
+- ALGORITHM
+- ACCESS_TOKEN_EXPIRE_MINUTES
+
+Este archivo es esencial para el correcto funcionamiento de la API.
+
+8. Instalación y ejecución
+Requisitos previos:
+- Python 3.10 o superior.
+- Entorno virtual recomendado.
+
+Instalación:
+cd backend
+pip install -r requirements.txt
+
+Ejecución en modo desarrollo:
+cd backend
+uvicorn app.main:app --reload
+
+Una vez iniciada la aplicación, la documentación interactiva estará disponible en:
+- http://localhost:8000/docs
+- http://localhost:8000/redoc
+
+9. Endpoints principales
+Autenticación
+- POST /auth/register
+- POST /auth/token
+
+Tareas
+- GET /tasks/
+- POST /tasks/
+- PATCH /tasks/{task_id}
+- DELETE /tasks/{task_id}
+
+10. Conceptos clave a dominar
+Para entender correctamente este proyecto, es importante familiarizarse con los siguientes conceptos:
+- SQLAlchemy: modelado de entidades y consultas a base de datos.
+- Pydantic: validación y serialización de datos.
+- FastAPI: creación de endpoints y manejo de dependencias.
+- JWT: autenticación segura mediante tokens.
+- Depends(): inyección de dependencias en los endpoints.
+
+11. Frontend React
+
+11.1 Estructura del frontend
+TaskHub/
+└── frontend/
+    ├── index.html
+    ├── package.json
+    ├── vite.config.js
+    └── src/
+        ├── main.jsx          ← punto de entrada, monta <App /> en el DOM
+        ├── App.jsx           ← enruta entre AuthPage y TasksPage según token
+        ├── AuthContext.jsx   ← Context + Provider para estado de autenticación
+        ├── api.js            ← todas las llamadas HTTP a la API
+        ├── AuthPage.jsx      ← pantalla de login/registro con tabs
+        ├── TasksPage.jsx     ← dashboard principal con filtros y listado
+        ├── TaskCard.jsx      ← componente de tarea individual
+        ├── TaskForm.jsx      ← modal de creación/edición de tarea
+        └── index.css         ← estilos (CSS custom properties, sin frameworks)
+
+11.2 Flujo de autenticación en el frontend
+1. App.jsx lee el token del AuthContext.
+2. Si no hay token, muestra AuthPage (login/registro).
+3. Al hacer login, api.js llama a POST /auth/token con form-urlencoded
+   (así lo espera OAuth2PasswordRequestForm de FastAPI).
+4. El JWT se guarda en localStorage y se inyecta en Authorization: Bearer <token>
+   en cada petición posterior.
+5. Al cerrar sesión, se limpia localStorage y el Context vuelve a null → AuthPage.
+
+11.3 Gestión de estado de tareas
+TasksPage mantiene el estado de la lista de tareas en useState y recarga con
+useCallback + useEffect cada vez que cambian los filtros. No hay librería de estado
+global (Redux, Zustand, etc.) porque el árbol de componentes es pequeño.
+
+11.4 Filtros implementados
+- Estado: todas / pendientes / completadas (via query param ?completed=)
+- Etiqueta: campo de texto que filtra via ?tag=
+Los filtros se pasan directamente a api.getTasks(), que construye la query string
+y delega al endpoint GET /tasks/ del backend.
+
+11.5 Por qué Vite y no Create React App
+Vite arranca en ~300ms y usa ESModules nativos en dev. CRA está oficialmente
+deprecado desde 2023. Vite es hoy el estándar de facto para proyectos React nuevos.
+
+11.6 CORS
+main.py incluye CORSMiddleware de FastAPI con allow_origins=["http://localhost:5173"]
+(el puerto por defecto de Vite en desarrollo). En producción habría que actualizar
+ese origen al dominio real o a "*" si la API es pública.
+
+12. Instalación y ejecución completa (backend + frontend)
+
+Backend:
+  cd TaskHub/backend
+  python -m venv venv
+  venv\Scripts\activate          (Windows) / source venv/bin/activate (Unix)
+  pip install -r requirements.txt
+  uvicorn app.main:app --reload
+  → API disponible en http://localhost:8000
+  → Documentación en http://localhost:8000/docs
+
+Frontend (en otra terminal):
+  cd TaskHub/frontend
+  npm install
+  npm run dev
+  → App disponible en http://localhost:5173
+
+13. Endpoints completos
+
+Autenticación:
+  POST /auth/register   Body: { email, username, password }
+  POST /auth/token      Body: form-urlencoded { username, password }
+
+Tareas (requieren Bearer token):
+  GET    /tasks/                          Lista de tareas del usuario
+  GET    /tasks/?completed=true           Solo completadas
+  GET    /tasks/?tag=trabajo              Solo tareas con esa etiqueta
+  POST   /tasks/                          Crear tarea
+  GET    /tasks/{id}                      Obtener una tarea
+  PATCH  /tasks/{id}                      Actualizar parcialmente
+  DELETE /tasks/{id}                      Eliminar
+
+14. Conclusión
+TaskHub representa una implementación práctica y moderna de una aplicación
+fullstack con FastAPI (backend) y React (frontend). Su estructura está diseñada
+para ser simple, comprensible y útil como punto de partida para proyectos más
+complejos. El dominio de este proyecto permite consolidar habilidades fundamentales
+en desarrollo web con Python y JavaScript moderno, incluyendo validación de datos,
+autenticación JWT, persistencia con SQLAlchemy y construcción de interfaces
+reactivas con hooks y Context API.
