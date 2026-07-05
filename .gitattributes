@@ -1,7 +1,5 @@
-*.exe -filter -diff -merge -text
-*.pkg -filter -diff -merge -text
-*.rar -filter -diff -merge -text
-*.db -filter -diff -merge -text
-*.dll -filter -diff -merge -text
-*.lib -filter -diff -merge -text
-*.dic -filter -diff -merge -text
+# ============================================================
+# Política de fin de línea del repositorio
+# ------------------------------------------------------------
+# * text=auto : Git detecta archivos de texto y los almacena
+#  
