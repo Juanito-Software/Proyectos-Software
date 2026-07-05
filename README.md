@@ -16,8 +16,8 @@ Proyectos-Software/
 ├── Doc/                    # Vault de Obsidian: apuntes, plantillas y documentación transversal
 ├── Juanito_Software/       # Todos los proyectos, agrupados por lenguaje/plataforma
 │   ├── Java/
-│   ├── Laravel/
-│   ├── NodeJS/
+│   ├── JS/                 # Ecosistema JavaScript/TypeScript (Node, Angular, React)
+│   ├── PHP/
 │   ├── Python/
 │   ├── Rust/
 │   └── libraries/          # Librerías compartidas entre proyectos
@@ -44,21 +44,21 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `SpringlessEasyBatcher` | Motor de batching sin Spring — software propietario, código no incluido (ver su README) |
 | `others/` | Utilidades varias: `EscribirNombresArchivos`, `ServidorJuegos`, `XlsxToCsvConverter` |
 
-### 🐘 PHP / Laravel
+### 🐘 PHP
 
 | Proyecto | Descripción |
 |---|---|
-| `gym-app` | Aplicación de gestión de gimnasio (Laravel + Vite + Tailwind). Documentación de entrega y dumps SQL en `docs/` |
+| `PHP/Laravel/gym-app` | Aplicación de gestión de gimnasio (Laravel + Vite + Tailwind). Documentación de entrega y dumps SQL en `docs/` |
 
-### 🟨 JavaScript / TypeScript (NodeJS)
+### 🟨 JS — JavaScript / TypeScript
 
 | Proyecto | Descripción |
 |---|---|
-| `JavaScript/JSGameChat` | Chat en tiempo real orientado a juegos |
-| `JavaScript/TaskHub` | Gestor de tareas (variante JavaScript) |
-| `JavaScript/unified-chat-widget` | Widget de chat embebible |
-| `TypeScript/Angular/TaskHub` | Frontend del gestor de tareas en Angular |
-| `TypeScript/React/TaskHubPro` | Frontend del gestor de tareas en React |
+| `JS/JSGameChat` | Chat en tiempo real orientado a juegos |
+| `JS/TaskHub` | Gestor de tareas (variante JavaScript, cliente + servidor) |
+| `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
+| `JS/Angular/TaskHub` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
+| `JS/React/TaskHubPro` | Gestor de tareas en TypeScript (variante React) |
 
 ### 🐍 Python
 
@@ -82,7 +82,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `SpotifyDownloader` | Descarga de audio |
 | `SpringlessEasyBatcher` | Versión Python del motor de batching (propietario) |
 | `StreamTools/` | Utilidades para streamers: `BackCount`, `ContadorOBS`, `ClipsGeneration`, `VODsGeneration` |
-| `TaskHub` | Backend del gestor de tareas estilo Kanban (FastAPI, JWT) |
+| `FastApi/TaskHub` | Gestor de tareas estilo Kanban (backend FastAPI con JWT + frontend React) |
 | `ToDoList` | Lista de tareas de escritorio |
 | `VocoderSynth` | Vocoder en tiempo real |
 | `YoutubeToMp3` / `YoutubeToMp4` | Descarga y conversión de vídeo/audio |
