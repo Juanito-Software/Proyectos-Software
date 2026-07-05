@@ -101,6 +101,19 @@ O usa el lanzador `run-windows.bat`.
 
 ---
 
+## 📦 Dependencia externa: ClipsAI
+
+La carpeta `ClipsGeneration/ClipsAI/` **no se versiona en este repositorio**:
+es el proyecto de terceros [ClipsAI](https://github.com/ClipsAI/clipsai) con su
+propio repositorio upstream. Si la necesitas, clónala localmente:
+
+```bash
+cd StreamTools/ClipsGeneration
+git clone https://github.com/ClipsAI/clipsai.git ClipsAI
+```
+
+---
+
 ## ⚖️ Licencia
 
 Las herramientas propias de este proyecto están licenciadas bajo la **Licencia Pública General de GNU versión 3 (GPLv3)**.

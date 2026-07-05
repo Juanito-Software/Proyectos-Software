@@ -27,7 +27,7 @@ A diferencia de versiones anteriores del proyecto, **GPTDevTeam ya no carga ning
 - 🗒️ **Memoria persistente**: cada intento (éxito o fallo) se guarda en `memory.json` para trazabilidad del proceso.
 - ✍️ **Documentación automática**: el rol Documenter comenta el código final antes de guardarlo.
 - 📐 **Diagrama de flujo integrado**: el archivo `Diagrama.txt` documenta visualmente la arquitectura interna del pipeline.
-- 🧩 **MetaGPT incluido**: el repo incluye el framework MetaGPT (carpeta `MetaGPT/`) como referencia/extensión, aunque el pipeline actual no depende de él para funcionar.
+- 🧩 **Compatible con MetaGPT como referencia**: el pipeline no depende del framework MetaGPT para funcionar. La carpeta local `MetaGPT/` ya no se versiona en este repositorio (es código de terceros); si quieres consultarlo, clónalo desde su upstream: `git clone https://github.com/geekan/MetaGPT.git`.
 
 ---
 
@@ -192,7 +192,7 @@ Usuario (Prompt)
 ## 📚 Créditos de Modelos y Librerías
 
 - Modelos LLM servidos localmente vía [Ollama](https://ollama.com/) (`qwen3:8b`, `qwen2.5-coder:7b`, modelos de Alibaba/Qwen).
-- MetaGPT incluido bajo su propia licencia ([metagpt-oss](https://github.com/geekan/MetaGPT)).
+- MetaGPT bajo su propia licencia ([metagpt-oss](https://github.com/geekan/MetaGPT)) — no versionado aquí; clonar desde upstream si se necesita.
 
 ---
 
