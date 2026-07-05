@@ -150,3 +150,40 @@ desktop.ini
 
 # Instaladores generados (PyInstaller/py2app)
 *.pkg
+
+# ============================================
+# Configuración local de agentes/asistentes IA
+# ============================================
+**/.claude/
+
+# ============================================
+# Accesos directos de Windows (específicos de cada máquina)
+# ============================================
+*.lnk
+
+# ============================================
+# Salidas de build de PyInstaller con nombre <Proyecto>Build/
+# ============================================
+*Build/
+
+# ============================================
+# Estado de ejecución de aplicaciones concretas
+# (datos que genera el programa al ejecutarse; no son código.
+# Acotados por ruta para no ignorar archivos legítimos homónimos.)
+# ============================================
+Juanito_Software/Python/OmniForge/screenshots/
+Juanito_Software/Python/AI_DuoTalk/cache_semantico.json
+Juanito_Software/Python/GPTDevTeam/memory.json
+Juanito_Software/Python/ToDoList/tasks.json
+Juanito_Software/Python/YoutubeToMp3/descargas.csv
+Juanito_Software/Python/PC_Health_Sistema/log_ejecucion.txt
+Juanito_Software/Rust/motorIndexado/indice.json
+Juanito_Software/Rust/motorIndexado/test_index*.json
+
+# ============================================
+# Código de terceros clonado localmente (no versionar como propio)
+# Dependencias con su propio repositorio upstream; ver el README
+# de cada proyecto para saber cómo obtenerlas.
+# ============================================
+Juanito_Software/Python/GPTDevTeam/MetaGPT/
+Juanito_Software/Python/StreamTools/ClipsGeneration/ClipsAI/
