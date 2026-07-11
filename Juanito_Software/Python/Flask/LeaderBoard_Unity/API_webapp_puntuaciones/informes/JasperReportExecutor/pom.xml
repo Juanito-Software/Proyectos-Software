@@ -64,7 +64,7 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.2.3</version> <!-- O la versión más reciente -->
+            <version>5.4.0</version> <!-- O la versión más reciente -->
         </dependency>
         
         
@@ -87,13 +87,13 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.2.3</version>
+            <version>5.4.0</version>
         </dependency>
 
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports</artifactId>
-            <version>6.18.1</version> <!-- o la versión que estés usando -->
+            <version>7.0.7</version> <!-- o la versión que estés usando -->
         </dependency>
         
 
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.2.3</version> <!-- O la versión que necesites -->
+            <version>5.4.0</version> <!-- O la versión que necesites -->
         </dependency>
         
         
@@ -122,7 +122,7 @@
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports</artifactId>
-            <version>5.6.0</version>
+            <version>7.0.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.castor</groupId>
