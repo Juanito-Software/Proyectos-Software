@@ -3,7 +3,7 @@ import { userRepository } from '../repositories/user.repository';
 import { ApiError } from '../utils/ApiError';
 import { ChangePasswordInput, UpdateProfileInput, UserPublicDto } from '../dto/user.dto';
 
-function toPublicDto(user: {
+export function toPublicDto(user: {
   id: string;
   name: string;
   email: string;

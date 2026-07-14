@@ -26,7 +26,7 @@ export const taskRepository = {
         status: params.status,
         assigneeId: params.assigneeId,
       },
-      include: { assignee: true },
+      include: { assignee: true, creator: true },
       skip: params.skip,
       take: params.take,
       orderBy: { createdAt: 'desc' },
@@ -34,7 +34,7 @@ export const taskRepository = {
   },
 
   update(id: string, data: Prisma.TaskUpdateInput) {
-    return prisma.task.update({ where: { id }, data });
+    return prisma.task.update({ where: { id }, data, include: { assignee: true, creator: true } });
   },
 
   delete(id: string) {

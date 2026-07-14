@@ -11,6 +11,7 @@ import { ProjectService } from '../../core/project.service';
 import { TaskService } from '../../core/task.service';
 import { Project, Task, TaskStatus } from '../../core/models';
 import { CreateTaskDialogComponent } from './create-task-dialog.component';
+import { TaskDetailDialogComponent } from './task-detail-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog.component';
 
 interface Column {
@@ -60,11 +61,15 @@ interface Column {
                 <strong>{{ task.title }}</strong>
               </div>
               <p *ngIf="task.description">{{ task.description }}</p>
+              <p class="task-card-assignee" *ngIf="task.assignee">{{ task.assignee.name }}</p>
               <div class="task-card-footer">
                 <mat-chip-set>
                   <mat-chip>{{ task.priority }}</mat-chip>
                 </mat-chip-set>
-                <button mat-button color="warn" (click)="deleteTask(task, column)">Eliminar</button>
+                <div class="task-card-actions">
+                  <button mat-button (click)="openTaskDetail(task, column)">Editar</button>
+                  <button mat-button color="warn" (click)="deleteTask(task, column)">Eliminar</button>
+                </div>
               </div>
             </mat-card>
             <p class="empty-hint" *ngIf="!column.tasks.length">Sin tareas</p>
@@ -92,7 +97,9 @@ interface Column {
     .task-card { padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
     .task-card-handle { cursor: grab; }
     .task-card p { margin: 0; font-size: 0.85rem; color: rgba(0,0,0,0.6); }
+    .task-card-assignee { font-style: italic; }
     .task-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .task-card-actions { display: flex; }
     .empty-hint { color: rgba(0,0,0,0.4); font-size: 0.85rem; text-align: center; margin: 1rem 0; }
     .cdk-drag-preview { box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     .cdk-drag-placeholder { opacity: 0.3; }
@@ -170,6 +177,21 @@ export class ProjectDetailComponent implements OnInit {
         },
         error: () => this.snackBar.open('No se pudo crear la tarea', 'Cerrar', { duration: 3000 }),
       });
+    });
+  }
+
+  openTaskDetail(task: Task, column: Column): void {
+    const dialogRef = this.dialog.open(TaskDetailDialogComponent, {
+      data: { task, members: this.project?.members ?? [] },
+    });
+
+    dialogRef.afterClosed().subscribe((updated: Task | undefined) => {
+      if (!updated) return;
+
+      column.tasks = column.tasks.filter((t) => t.id !== task.id);
+      const targetColumn = this.columns.find((c) => c.status === updated.status);
+      targetColumn?.tasks.unshift(updated);
+      this.snackBar.open('Tarea actualizada', 'Cerrar', { duration: 3000 });
     });
   }
 

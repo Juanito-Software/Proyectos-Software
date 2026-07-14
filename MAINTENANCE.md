@@ -19,7 +19,9 @@ credenciales de desarrollo.
 
 - Todos los hashes de commit anteriores al 2026-07-05 cambiaron.
 - Los clones y forks previos a esa fecha son incompatibles con la historia
-  actual: es necesario clonar de nuevo (no hacer pull).
+  actual: es necesario clonar de nuevo. No hacer pull ni push desde un clon
+  antiguo, y nunca forzarlos (--force / --allow-unrelated-histories):
+  restauraría la historia purgada.
 - La operación se realizó sobre un clon espejo con `git filter-repo`,
   validando el resultado antes de sustituir el repositorio y publicar.
 

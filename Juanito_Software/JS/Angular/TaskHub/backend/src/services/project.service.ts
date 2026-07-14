@@ -1,6 +1,19 @@
 import { projectRepository } from '../repositories/project.repository';
 import { ApiError } from '../utils/ApiError';
 import { AddMemberInput, CreateProjectInput, UpdateProjectInput } from '../dto/project.dto';
+import { toPublicDto } from './user.service';
+
+function toProjectDto(project: {
+  owner: Parameters<typeof toPublicDto>[0];
+  members: { user: Parameters<typeof toPublicDto>[0] }[];
+  [key: string]: unknown;
+}) {
+  return {
+    ...project,
+    owner: toPublicDto(project.owner),
+    members: project.members.map((m) => ({ ...m, user: toPublicDto(m.user) })),
+  };
+}
 
 export const projectService = {
   create(ownerId: string, input: CreateProjectInput) {
@@ -27,7 +40,7 @@ export const projectService = {
     const isMember = project.ownerId === userId || project.members.some((m: { userId: string }) => m.userId === userId);
     if (!isMember) throw ApiError.forbidden('No tienes acceso a este proyecto');
 
-    return project;
+    return toProjectDto(project);
   },
 
   async update(id: string, userId: string, input: UpdateProjectInput) {

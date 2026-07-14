@@ -1,11 +1,31 @@
 import { TaskStatus } from '@prisma/client';
 import { taskRepository } from '../repositories/task.repository';
 import { ApiError } from '../utils/ApiError';
-import { CreateCommentInput, CreateTaskInput, UpdateTaskInput } from '../dto/task.dto';
+import { CommentDto, CreateCommentInput, CreateTaskInput, TaskDto, UpdateTaskInput } from '../dto/task.dto';
+import { toPublicDto } from './user.service';
+
+type RawUser = Parameters<typeof toPublicDto>[0];
+
+function toCommentDto(comment: { author: RawUser } & Omit<CommentDto, 'author'>): CommentDto {
+  return { ...comment, author: toPublicDto(comment.author) };
+}
+
+function toTaskDto(task: {
+  assignee: RawUser | null;
+  creator: RawUser | null;
+  comments?: (Omit<CommentDto, 'author'> & { author: RawUser })[];
+} & Omit<TaskDto, 'assignee' | 'creator' | 'comments'>): TaskDto {
+  return {
+    ...task,
+    assignee: task.assignee ? toPublicDto(task.assignee) : null,
+    creator: task.creator ? toPublicDto(task.creator) : null,
+    comments: task.comments?.map(toCommentDto),
+  };
+}
 
 export const taskService = {
-  create(creatorId: string, input: CreateTaskInput) {
-    return taskRepository.create({
+  async create(creatorId: string, input: CreateTaskInput) {
+    const task = await taskRepository.create({
       title: input.title,
       description: input.description,
       priority: input.priority,
@@ -14,28 +34,41 @@ export const taskService = {
       creator: { connect: { id: creatorId } },
       assignee: input.assigneeId ? { connect: { id: input.assigneeId } } : undefined,
     });
+    return toTaskDto(task);
   },
 
-  list(filters: { projectId?: string; status?: TaskStatus; assigneeId?: string }, page: number, limit: number) {
-    return taskRepository.findMany({
+  async list(filters: { projectId?: string; status?: TaskStatus; assigneeId?: string }, page: number, limit: number) {
+    const tasks = await taskRepository.findMany({
       ...filters,
       skip: (page - 1) * limit,
       take: limit,
     });
+    return tasks.map(toTaskDto);
   },
 
   async getById(id: string) {
     const task = await taskRepository.findById(id);
     if (!task) throw ApiError.notFound('Tarea no encontrada');
-    return task;
+    return toTaskDto(task);
   },
 
   async update(id: string, input: UpdateTaskInput) {
-    await this.getById(id);
-    return taskRepository.update(id, {
-      ...input,
-      deadline: input.deadline ? new Date(input.deadline) : undefined,
+    const exists = await taskRepository.findById(id);
+    if (!exists) throw ApiError.notFound('Tarea no encontrada');
+    const task = await taskRepository.update(id, {
+      title: input.title,
+      description: input.description,
+      status: input.status,
+      priority: input.priority,
+      deadline: input.deadline === null ? null : input.deadline ? new Date(input.deadline) : undefined,
+      assignee:
+        input.assigneeId === null
+          ? { disconnect: true }
+          : input.assigneeId
+            ? { connect: { id: input.assigneeId } }
+            : undefined,
     });
+    return toTaskDto(task);
   },
 
   async remove(id: string) {
@@ -45,7 +78,8 @@ export const taskService = {
 
   async addComment(taskId: string, authorId: string, input: CreateCommentInput) {
     await this.getById(taskId);
-    return taskRepository.addComment(taskId, authorId, input.text);
+    const comment = await taskRepository.addComment(taskId, authorId, input.text);
+    return toCommentDto(comment);
   },
 
   async dashboardSummary(userId: string) {

@@ -45,7 +45,8 @@ El proyecto está organizado en dos módulos principales:
 - Registro e inicio de sesión de usuarios.
 - Gestión de proyectos.
 - Gestión de miembros por proyecto.
-- Creación, edición, asignación y seguimiento de tareas.
+- Creación, edición, asignación y seguimiento de tareas mediante tablero Kanban con arrastrar y soltar.
+- Vista de detalle de tarea: edición de estado, prioridad, responsable y fecha límite, con hilo de comentarios.
 - Estados de tarea: `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`.
 - Prioridades: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
 - Comentarios en tareas.
@@ -145,7 +146,7 @@ Relaciones principales:
 
 ## 11. Estado del Proyecto
 
-Este proyecto se encuentra en desarrollo y su estructura base ya está definida para soportar autenticación, gestión de proyectos y tareas.
+Este proyecto se encuentra en desarrollo y su estructura base ya está definida para soportar autenticación, gestión de proyectos y tareas. El tablero Kanban y la vista de detalle/edición de tareas con comentarios ya están operativos; quedan pendientes la gestión avanzada de miembros (invitaciones), notificaciones e historial de actividad.
 
 ## 12. Nota Final
 

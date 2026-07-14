@@ -17,8 +17,6 @@ Crear programa + IA de finanzas
 
 mejoras en servidores FTP y WEB en python y rust
 
-levantar proyecto larabel
-
 CI/CD
 
 Añadir metadatos CV

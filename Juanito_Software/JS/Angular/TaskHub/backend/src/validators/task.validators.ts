@@ -18,8 +18,8 @@ export const updateTaskSchema = z.object({
     description: z.string().trim().max(2000).optional(),
     status: z.nativeEnum(TaskStatus).optional(),
     priority: z.nativeEnum(TaskPriority).optional(),
-    assigneeId: z.string().uuid().optional(),
-    deadline: z.string().datetime().optional(),
+    assigneeId: z.string().uuid().nullable().optional(),
+    deadline: z.string().datetime().nullable().optional(),
   }),
 });
 

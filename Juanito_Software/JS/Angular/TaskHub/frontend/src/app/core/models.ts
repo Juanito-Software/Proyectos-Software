@@ -22,6 +22,19 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface ProjectMemberUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface ProjectMember {
+  id: string;
+  userId: string;
+  role: 'OWNER' | 'EDITOR' | 'VIEWER';
+  user: ProjectMemberUser;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -29,6 +42,7 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   ownerId: string;
+  members?: ProjectMember[];
 }
 
 export interface CreateProjectRequest {
@@ -38,6 +52,15 @@ export interface CreateProjectRequest {
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface Comment {
+  id: string;
+  text: string;
+  taskId: string;
+  authorId: string;
+  author: { id: string; name: string; email: string };
+  createdAt: string;
+}
 
 export interface Task {
   id: string;
@@ -52,6 +75,7 @@ export interface Task {
   creatorId: string;
   createdAt: string;
   updatedAt: string;
+  comments?: Comment[];
 }
 
 export interface CreateTaskRequest {
@@ -66,4 +90,6 @@ export interface UpdateTaskRequest {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
+  assigneeId?: string | null;
+  deadline?: string | null;
 }
