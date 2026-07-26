@@ -188,3 +188,5 @@ Juanito_Software/JS/unified-chat-widget/messages/
 # ============================================
 Juanito_Software/Python/GPTDevTeam/MetaGPT/
 Juanito_Software/Python/StreamTools/ClipsGeneration/ClipsAI/
+# kick-js: ahora se instala desde npm como @retconned/kick-js
+Juanito_Software/JS/unified-chat-widget/libs/

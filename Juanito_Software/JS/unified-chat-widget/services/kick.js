@@ -1,4 +1,4 @@
-import { createClient } from "../libs/kick-js/dist/index.js"; 
+import { createClient } from "@retconned/kick-js";
 //import { addMessage, getMessages } from "../utils/globalMessages.js";
 //import { appendLatestJson } from "../utils/saveMessage.js";
 import { KICK_CHANNEL, KICK_BEARER_TOKEN, KICK_COOKIES } from './config.js';
