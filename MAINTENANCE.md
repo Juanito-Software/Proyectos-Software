@@ -5,6 +5,34 @@ de los proyectos).
 
 ---
 
+## 2026-07-26 — Reducción de superficie de dependencias
+
+Ronda de actualización y limpieza de dependencias en los proyectos mantenidos,
+con el objetivo de eliminar vulnerabilidades reales en lugar de silenciarlas.
+
+**Cambios aplicados:**
+
+- `unified-chat-widget`: retirado el soporte de BitChute, DLive, Odysee y
+  Trovo (servicios, servidores auxiliares y documentación). La carpeta
+  `messages/` deja de versionarse por ser estado de ejecución.
+- `Angular/TaskHub/backend`: `bcrypt` actualizado de v5 a v6, lo que elimina
+  la cadena `node-pre-gyp` / `node-gyp` / `tar` (48 paquetes menos) que
+  arrastraba las vulnerabilidades críticas del proyecto. Compatibilidad de
+  hashes entre versiones verificada con el flujo de login.
+- `Angular/TaskHub/frontend`: actualizado de Angular 19 a 21 mediante
+  `ng update`, en dos saltos mayores verificados por separado, con
+  `@angular/material` y `@angular/cdk` alineados. Migrado además al paquete
+  `@angular/build`.
+- `npm audit fix` aplicado en el resto de proyectos JavaScript mantenidos.
+- Cerradas las pull requests de Dependabot que apuntaban a rutas eliminadas
+  en la reestructuración.
+
+**Resultado:** de 590 a 385 alertas de Dependabot (−35%), y de 19 a 13
+críticas. Toda la reducción procede de correcciones efectivas, no de
+descartes.
+
+---
+
 ## 2026-07-05 — Limpieza de historia (git filter-repo)
 
 Se reescribió la historia completa del repositorio para eliminar contenido
