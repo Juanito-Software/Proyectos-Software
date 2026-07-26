@@ -16,7 +16,7 @@ en el plan de aprendizaje (marcadas como *por aprender*).
 
 - JavaFX, Swing (Java)
 - Tkinter, Qt Designer, PyQt/PySide (Python)
-- Flutter, Electron, Tauri, .NET MAUI, WPF *(por aprender)*
+- Flutter, Electron *(por aprender)*, Tauri *(por aprender)*, .NET MAUI *(por aprender)*, WPF *(por aprender)*
 
 ## Web
 
@@ -27,7 +27,7 @@ en el plan de aprendizaje (marcadas como *por aprender*).
 ## Bases de datos
 
 - **SQL** — PostgreSQL, MySQL
-- **NoSQL** — MongoDB *(cursado en el grado medio SMR)*
+- **NoSQL** — MongoDB
 
 ## APIs
 
@@ -36,7 +36,9 @@ en el plan de aprendizaje (marcadas como *por aprender*).
 ## DevOps / Herramientas
 
 - Git, Linux, Nginx
-- Docker *(cursado en el grado medio SMR)*
+- Docker
+- Kubernetes *(por aprender)*
+- AWS *(por aprender)*
 - CI/CD con GitHub Actions *(por aprender)*
 
 ## Inteligencia Artificial

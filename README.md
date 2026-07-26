@@ -54,7 +54,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 
 | Proyecto | Descripción |
 |---|---|
-| `JS/JSGameChat` | Chat en tiempo real orientado a juegos |
+| `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/TaskHub` | Gestor de tareas (variante JavaScript, cliente + servidor) |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
 | `JS/Angular/TaskHub` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
@@ -75,13 +75,13 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `MisServidores/` | Servidores FTP y WEB básicos |
 | `OmniForge` | Sistema de agentes con visión por computador |
 | `PC_Health_Sistema` | Monitorización de salud del sistema |
-| `PyGameChat` | Chat para juegos en Python |
+| `PyGameChat` | juego para el chat en tiempo real |
 | `Radio_Python` | Radio por software |
 | `Reproductor_Python` | Reproductor multimedia |
 | `Simulaciones/` | Simulaciones: juego de la vida de Conway, Fibonacci |
 | `SpotifyDownloader` | Descarga de audio |
-| `SpringlessEasyBatcher` | Versión Python del motor de batching (propietario) |
-| `StreamTools/` | Utilidades para streamers: `BackCount`, `ContadorOBS`, `ClipsGeneration`, `VODsGeneration` |
+| `SpringlessEasyBatcher` | Versión gratuita en Python del motor de batching (no comercial) |
+| `StreamTools/` | Utilidades para streamers: `BackCount`, `ClipsGeneration`, `VODsGeneration` |
 | `FastApi/TaskHub` | Gestor de tareas estilo Kanban (backend FastAPI con JWT + frontend React) |
 | `ToDoList` | Lista de tareas de escritorio |
 | `VocoderSynth` | Vocoder en tiempo real |
@@ -98,7 +98,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 
 | Proyecto | Descripción |
 |---|---|
-| `libraries/shared-py/pyseed` | Utilidades Python compartidas entre proyectos |
+| `libraries/shared-py/pyseed` | Libreria para la generación de la estructura de proyectos en python |
 
 > Las tecnologías en aprendizaje y el plan de estudio se mantienen en [`ROADMAP.md`](ROADMAP.md).
 

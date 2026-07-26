@@ -9,9 +9,6 @@ Colección de herramientas especializadas para **streamers y creadores de conten
 ### ⏱️ BackCount — Cronómetro Web para OBS
 Temporizador de cuenta atrás accesible como **Browser Source en OBS**. Basado en **Flask**, expone una página web local que OBS puede mostrar directamente en escena como overlay.
 
-### 🔢 ContadorOBS — Contador de Eventos con Hotkeys
-Contador manual de eventos (kills, muertes, victorias, etc.) controlable mediante **atajos de teclado globales**. El número se actualiza en tiempo real y puede mostrarse en OBS.
-
 ### 🎬 AIClipCreator_EpicHL — Generador Automático de Clips Épicos
 Sistema de **IA para detectar y cortar automáticamente los mejores momentos** de tus partidas o streams en clips listos para publicar. Usa computer vision y análisis de audio para identificar picos de acción.
 
@@ -24,10 +21,6 @@ Sistema de **IA para detectar y cortar automáticamente los mejores momentos** d
 - Compatible como Browser Source en OBS Studio.
 - Estilos CSS personalizables para que encaje con tu stream.
 - API REST para controlar el timer desde streamdecks u otras apps.
-
-#### ContadorOBS
-- Teclas rápidas globales para incrementar/decrementar el contador.
-- Visualización siempre visible en la barra de sistema o ventana flotante.
 
 #### AIClipCreator_EpicHL
 - Análisis de vídeo con IA para detectar momentos de alto impacto.
@@ -44,11 +37,6 @@ Sistema de **IA para detectar y cortar automáticamente los mejores momentos** d
 **BackCount:**
 ```bash
 pip install flask
-```
-
-**ContadorOBS:**
-```bash
-pip install keyboard pywin32
 ```
 
 **AIClipCreator_EpicHL:**
@@ -86,11 +74,6 @@ python app.py
 ```
 Luego en OBS: Añadir **Browser Source** → URL: `http://localhost:5000`
 
-### 🔢 ContadorOBS
-```bash
-cd StreamTools/ContadorOBS
-python ContadorOBS.py
-```
 
 ### 🎬 AIClipCreator_EpicHL
 ```bash
