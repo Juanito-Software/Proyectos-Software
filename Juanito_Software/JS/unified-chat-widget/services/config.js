@@ -38,33 +38,6 @@ export const RUMBLE_SERVER_URL = process.env.RUMBLE_SERVER_URL || 'http://localh
 export const RUMBLE_POLL_INTERVAL = parseInt(process.env.RUMBLE_POLL_INTERVAL || '3000', 10);
 
 // ==========================
-//         TROVO
-// ==========================
-export const TROVO_CLIENT_ID = process.env.TROVO_CLIENT_ID;
-export const TROVO_CHANNEL_ID = process.env.TROVO_CHANNEL_ID;
-// Nota: TROVO_CLIENT_SECRET ya no es necesario con el endpoint channel-token
-
-// ==========================
-//         ODYSEE
-// ==========================
-export const ODYSEE_CHANNEL_NAME = process.env.ODYSEE_CHANNEL_NAME;
-export const ODYSEE_CLAIM_ID = process.env.ODYSEE_CLAIM_ID;
-export const ODYSEE_SERVER_URL = process.env.ODYSEE_SERVER_URL || 'http://localhost:5004';
-
-// ==========================
-//         DLIVE
-// ==========================
-export const DLIVE_ACCESS_TOKEN = process.env.DLIVE_ACCESS_TOKEN;
-export const DLIVE_STREAMER_USERNAME = process.env.DLIVE_STREAMER_USERNAME;
-
-// ==========================
-//         BITCHUTE
-// ==========================
-export const BITCHUTE_CHANNEL_NAME = process.env.BITCHUTE_CHANNEL_NAME;
-export const BITCHUTE_VIDEO_ID = process.env.BITCHUTE_VIDEO_ID;
-export const BITCHUTE_SERVER_URL = process.env.BITCHUTE_SERVER_URL || 'http://localhost:5005';
-
-// ==========================
 //         TWITCH
 //  (modo multi-cuentas)
 // ==========================
