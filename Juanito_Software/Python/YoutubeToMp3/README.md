@@ -68,6 +68,7 @@ ffmpeg -version
 ```plaintext
 YoutubeToMp3/
 ├── YoutubeToMp3.py           # Script principal — descarga individual
+├── YoutubeToMp3_cookies.py   # Variante con soporte de cookies (ver más abajo)
 ├── batch_downloader.py       # Script automatizado — descarga masiva desde CSV
 ├── descargas.csv             # Archivo de entrada/salida (nombre, url)
 ├── matriz_effect.exe         # Efecto visual (opcional)
@@ -138,6 +139,29 @@ Doble clic en YoutubeToMp3.exe
 3. Convierte a MP3 con FFmpeg
 4. Registra el estado en la consola
 5. Guarda un log de ejecución
+
+---
+
+## 🍪 Variante con cookies (`YoutubeToMp3_cookies.py`)
+
+YouTube ha exigido sesión iniciada para ver vídeos en distintos momentos. Cuando
+eso ocurre, el script principal falla con errores del tipo *"Sign in to confirm
+you're not a bot"*.
+
+Para esos periodos existe **`YoutubeToMp3_cookies.py`**, una variante del script
+principal que añade:
+
+- Uso de cookies del navegador para autenticar las peticiones de `yt_dlp`.
+- Verificación de runtimes JS (Deno / Node.js), requeridos por `yt-dlp` EJS.
+- Detección y clasificación de errores de bot, formato y cookies, con mensajes
+  de ayuda específicos.
+
+**Cuál usar:** por defecto, `YoutubeToMp3.py` — es más simple y funciona mientras
+YouTube permita el acceso anónimo. Si empiezan los errores de "confirma que no
+eres un bot", cambia a `YoutubeToMp3_cookies.py`.
+
+> Nota de mantenimiento: ambos scripts comparten la mayor parte del código. Si
+> corriges un fallo en uno, revisa si aplica también al otro.
 
 ---
 
