@@ -27,6 +27,28 @@ credenciales de desarrollo.
 
 ---
 
+## Política de dependencias y alertas de seguridad
+
+Este repositorio es un monorepo de proyectos personales y experimentales: la
+mayoría no se despliega en ningún servidor y varios están archivados. Las
+alertas de Dependabot se tratan, por tanto, con el siguiente criterio:
+
+1. **Se corrigen** las vulnerabilidades que afectan a dependencias de
+   *producción* de proyectos mantenidos (las que acabarían ejecutándose en un
+   despliegue real).
+2. **Se descartan**, indicando el motivo en la propia alerta, las que afectan
+   únicamente a *dependencias de desarrollo* — linters, empaquetadores,
+   servidores de desarrollo, frameworks de test — porque no forman parte de
+   ningún artefacto distribuible.
+3. **Se descartan** igualmente las de proyectos archivados o experimentales
+   que no se ejecutan.
+
+El descarte es una decisión explícita y registrada, no un descuido. Si alguno
+de estos proyectos pasara a desplegarse, sus alertas deberían revisarse de
+nuevo bajo el criterio 1.
+
+---
+
 ## 2026-07-03 / 2026-07-05 — Reestructuración del monorepo
 
 - Política de fin de línea unificada en `.gitattributes` (`* text=auto`,
