@@ -113,18 +113,20 @@ export const YOUTUBE_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
 -------
 
 PORT=3000
-#TWITCH_CLIENT_ID=li5vvfhvt969ox2r5dtqpbsmc1yzu2     REAL
 
-#twitchtokengenerator.com/
-TWITCH_CLIENT_ID=gp762nuuoqcoxypju8c569th9wz7q5
-TWITCH_OAUTH_TOKEN=1ml1qz2yfx9skrrnw78kiiqwiym6po
-TWITCH_CHANNEL=juanitocanuto
-YOUTUBE_API_KEY=AIzaSyBg6l_gDSuON0YoiYBTL2C_6BHESCrfqOU
-YOUTUBE_CHANNEL_ID=UCradcPmvNy682vtcansJviQ
-KICK_CHANNEL=juanitocanuto
-KICK_BEARER_TOKEN=Bearer 206844312|IvQ4d9sxp04sHXPLO6TxL2dpdnb5cKSYzP7pX5g0
-KICK_COOKIES=KP_UIDz=0BGkYC9F0d7EXVBwbMbV4dBzqgqINu4C5i2LsqvExzVnkpSsy012oQjjjdODNWpx2BwZe3UYz9myeYf9oPTg62p0YlR0xKSiJB460hXZJRbX4FaLKUrqKTdsOgYHCRhL2Rj1BawSSWDOEBRRP2Wm9VhRQMMmKnLJcT92fvnC; KP_UIDz-ssn=0BGkYC9F0d7EXVBwbMbV4dBzqgqINu4C5i2LsqvExzVnkpSsy012oQjjjdODNWpx2BwZe3UYz9myeYf9oPTg62p0YlR0xKSiJB460hXZJRbX4FaLKUrqKTdsOgYHCRhL2Rj1BawSSWDOEBRRP2Wm9VhRQMMmKnLJcT92fvnC
-#KICK_API_KEY=tu_api_key_kick (opcional)
+# Twitch: generar token en https://twitchtokengenerator.com/
+TWITCH_CLIENT_ID=<tu_client_id>
+TWITCH_OAUTH_TOKEN=<tu_oauth_token>
+TWITCH_CHANNEL=<tu_canal>
+
+# YouTube: clave de API en https://console.cloud.google.com
+YOUTUBE_API_KEY=<tu_api_key>
+YOUTUBE_CHANNEL_ID=<tu_channel_id>
+
+# Kick: el bearer y las cookies se obtienen de una sesión iniciada
+KICK_CHANNEL=<tu_canal>
+KICK_BEARER_TOKEN=Bearer <tu_bearer_token>
+KICK_COOKIES=<tus_cookies_de_sesion>
 
 -------
 
