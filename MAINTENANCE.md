@@ -75,6 +75,13 @@ El descarte es una decisión explícita y registrada, no un descuido. Si alguno
 de estos proyectos pasara a desplegarse, sus alertas deberían revisarse de
 nuevo bajo el criterio 1.
 
+**No se descartan** las alertas que sí tienen intención de arreglarse pero
+cuya corrección depende de terceros — por ejemplo, dependencias transitivas
+del sistema de compilación de Angular, que solo se resuelven cuando el
+framework actualiza las suyas. Esas se dejan abiertas a propósito: son el
+recordatorio de una tarea pendiente, y GitHub las cerrará automáticamente
+cuando la actualización llegue. Descartarlas las ocultaría sin resolverlas.
+
 ---
 
 ## 2026-07-03 / 2026-07-05 — Reestructuración del monorepo
