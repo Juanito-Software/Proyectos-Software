@@ -119,10 +119,34 @@ Tipos de software incluidos:
 Si tienes dudas sobre el uso permitido de un proyecto concreto, consulta su
 documentación o contáctame.
 
+## 🔒 Mantenimiento y seguridad
+
+Las dependencias y las alertas de seguridad **se mantienen de forma activa**. El
+análisis estático (CodeQL), Dependabot y el escaneo de secretos están habilitados
+sobre `main`, y el criterio de trabajo es **corregir en lugar de silenciar**: una
+alerta solo se descarta cuando no tiene arreglo posible, y siempre con el motivo
+registrado.
+
+Estado actual:
+
+| Sistema | Estado |
+| --- | --- |
+| Análisis de código (CodeQL) | **0 abiertas** de 256 · las diez familias de problemas corregidas |
+| Escaneo de secretos | Revisado · credenciales expuestas retiradas y revocadas |
+| Dependabot (npm, Maven) | Saneado · quedan alertas bloqueadas aguas arriba, deliberadamente abiertas |
+| Dependabot (pip) | **En curso** — es el bloque pendiente |
+
+De las 256 alertas de análisis de código, la inmensa mayoría se cerró porque el
+código dejó de tener el problema, no por descarte manual.
+
+El historial completo de cada intervención, con las alternativas consideradas y
+el motivo de cada decisión, está en [`MAINTENANCE.md`](MAINTENANCE.md).
+
 ## ⚠️ Advertencia
 
-Este repositorio contiene proyectos de investigación y experimentales. Las dependencias
-no se mantienen activamente a menos que se especifique lo contrario.
+Este repositorio contiene proyectos de investigación y experimentales. Varios son
+ejercicios de aprendizaje y no están pensados para uso en producción; cuando un
+proyecto tiene limitaciones conocidas, están documentadas en su propio código.
 
 ---
 
