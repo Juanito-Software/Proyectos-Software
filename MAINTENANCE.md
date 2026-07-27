@@ -738,6 +738,56 @@ Se resolvió subiendo la dependencia, **no** con `--force` ni
 **Nota:** la propia documentación de Angular marca como *experimental* la
 migración de un proyecto existente a Vitest.
 
+### El punto ciego de CodeQL en Java
+
+Descubierto al abrir por fin el aviso amarillo *"CodeQL is reporting warnings"*
+que llevaba semanas en la cabecera de la pestaña de seguridad y que nunca se
+había mirado. Decía:
+
+> **166 duplicate classes filtered out.** 166 files defined a class that clashes
+> with the fully-qualified name of another scanned class. This means that only
+> one of each clashing pair will be scanned.
+
+La causa: nueve copias del ejercicio de Spring Batch conviviendo como variantes,
+todas con el mismo paquete y los mismos nombres de clase. Para CodeQL,
+`com.example.BatchProcessor.BatchProcessorApplication` era una sola clase
+repetida nueve veces, así que analizaba una y descartaba ocho.
+
+**Consecuencia:** el «0 alertas abiertas» de la sección anterior era cierto
+sobre lo analizado, no sobre todo el código Java del repositorio.
+
+Y el punto ciego escondía defectos reales. Un `grep` de dos minutos por las
+copias no analizadas encontró **el mismo path traversal** que CodeQL sí había
+reportado en `FalsosBatch` —un `@RequestParam` de HTTP entrando directo en una
+ruta del sistema de ficheros— en **cuatro controladores más** que nunca
+aparecieron en ninguna lista de alertas.
+
+No era una sospecha teórica: ya se sabía que las copias divergían, porque al
+corregir `FileReaderService` se dio por hecho que eran idénticas, se sobrescribió
+una y falló la compilación. Copias distintas, fallos distintos.
+
+Lo mismo ocurría con `api/ApiExtractData` y `api/api2/ApiExtractData`: dos
+versiones que difieren en casi todos los ficheros pero comparten los 25 nombres
+de clase, de modo que una de las dos jamás se analizó.
+
+**Resuelto retirando del repositorio** `Java/Spring/SpringBatch` y
+`Java/Spring/SpringBoot`, en lugar de renombrar paquetes o excluir rutas. Se
+elimina la causa en vez de rodearla. El aviso bajó de 166 a 28 al sacar Spring
+Batch, y las 28 restantes eran exactamente las dos parejas de `SpringBoot`.
+
+Con esos proyectos se van también varias correcciones documentadas más arriba
+—el `produces = TEXT_PLAIN` de `PseudoCifradoController`, los
+`resolverDentroDeBase` de `FileReaderService` y `FileWritterService`— y buena
+parte de las alertas de Maven, que vivían en esos `pom.xml`
+(`mysql-connector-java`, `log4j-core`, `jackson-databind`, `jackson-core`). El
+registro de aquellas intervenciones se mantiene aquí porque describe decisiones
+válidas, aunque el código ya no esté en el repositorio.
+
+**La lección, que es la misma que la de la sección siguiente:** el aviso de
+estado de una herramienta importa tanto como su lista de resultados. Un análisis
+que informa de 0 problemas y de 166 ficheros no analizados no está diciendo que
+el código esté limpio.
+
 ### Las diez alertas que quedaban
 
 Revisado el listado de code scanning tras dar por cerradas las nueve familias,
