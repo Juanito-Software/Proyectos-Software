@@ -9,9 +9,23 @@ require('dotenv').config();
 const path = require('path');
 const http = require('http');
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 
 const app = express();
+
+// Limite de peticiones.
+//
+// El juego lo carga la fuente de navegador de OBS, asi que en uso normal son
+// unas pocas peticiones al arrancar. El limite es holgado a proposito: no
+// pretende frenar un ataque, sino que una pestaña recargando en bucle no sature
+// el proceso, que es de un solo hilo y atiende tambien los websockets del juego.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -21,12 +35,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Ruta principal → redirige al juego
-app.get('/', (req, res) => {
+app.get('/', apiLimiter, (req, res) => {
   res.redirect('/game');
 });
 
 // Ruta del juego (OBS: añadir como Browser Source → http://localhost:3000/game)
-app.get('/game', (req, res) => {
+app.get('/game', apiLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'game.html'));
 });
 

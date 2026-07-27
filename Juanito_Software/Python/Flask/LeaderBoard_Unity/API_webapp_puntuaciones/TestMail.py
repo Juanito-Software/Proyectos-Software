@@ -21,9 +21,13 @@ def test_email():
         msg = Message("Prueba", recipients=[email], body="Hola mundo desde Flask")
         mail.send(msg)
         return jsonify({'success': True})
-    except Exception as e:
-        print("Error:", e)
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        # El detalle del error va al log del servidor, no a la respuesta. Un
+        # fallo de SMTP menciona el servidor, el puerto y a veces el usuario con
+        # el que se autentica: informacion que ayuda a quien ataca y no al
+        # usuario legitimo, que solo necesita saber que no se pudo enviar.
+        app.logger.exception("Fallo al enviar el correo de prueba")
+        return jsonify({'error': 'No se pudo enviar el correo.'}), 500
 
 if __name__ == '__main__':
     # Sin debug: el depurador de Werkzeug permite ejecutar código arbitrario.

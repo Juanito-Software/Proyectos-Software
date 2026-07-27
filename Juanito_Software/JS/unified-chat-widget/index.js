@@ -64,6 +64,7 @@ import * as fsp from 'fs/promises';
 import { WebSocketServer } from 'ws';
 import http from 'http';
 import axios from 'axios';
+import rateLimit from 'express-rate-limit';
 
 // -------------------
 let ttsEnabled = true;
@@ -74,6 +75,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
+
+// Limite de peticiones.
+//
+// El widget lo consume la fuente de navegador de OBS, que sondea /messages cada
+// pocos segundos, asi que el limite tiene que ser holgado. Su funcion aqui no es
+// frenar abusos deliberados sino evitar que un cliente descontrolado —una
+// pestaña recargando en bucle, un script mal hecho— sature el proceso, que es de
+// un solo hilo y tambien atiende los websockets del chat.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
@@ -212,7 +228,7 @@ function broadcastMessage(messageObj) {
 }
 
 // Devuelve los últimos mensajes en JSON
-app.get('/messages', async (req, res) => {
+app.get('/messages', apiLimiter, async (req, res) => {
   try {
     const data = await fsp.readFile(messagesFile, 'utf-8');
     const messages = JSON.parse(data || '[]');

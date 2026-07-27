@@ -15,9 +15,23 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. **Las nueve resueltas**: modo debug de Flask, exposición de
-  información (Java y Python), falta de límite de peticiones, path traversal,
-  XSS, criptografía débil, CSRF, enlace de sockets y validación de URL.
+  problemas, más una décima descubierta después. **246 cerradas, 10 abiertas**
+  en el momento de escribir esto, y las 10 corregidas en el último commit a la
+  espera de que CodeQL reanalice.
+
+  Las familias abordadas: modo debug de Flask, exposición de información (Java y
+  Python), falta de límite de peticiones, path traversal, XSS, criptografía
+  débil, CSRF, enlace de sockets, validación de URL y registro de secretos en
+  claro.
+
+  **Matiz importante:** las familias se cerraron por grupos de ficheros, no
+  siempre por repositorio. Al revisar las 10 restantes aparecieron dos casos de
+  «familia dada por cerrada» que seguían vivos en ficheros que no se habían
+  mirado: límite de peticiones en `unified-chat-widget` y `JSGameChat`, y
+  exposición por excepción en `TestMail.py` y `rumble_server.py`. La lección es
+  que **cerrar una familia significa cerrar la lista de alertas de esa familia,
+  no garantizar que el patrón no exista en otro sitio**; lo segundo requiere
+  buscar el patrón, no fiarse del listado.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
@@ -647,7 +661,9 @@ repartirla es como se acaba olvidando en uno de ellos.
 Verificado con 14 casos, incluidos los cuatro que el filtro anterior aceptaba
 indebidamente. Los 14 pasan.
 
-Con esto quedan **cerradas las nueve familias de CodeQL**.
+Con esto quedan cerradas las nueve familias **de la lista inicial**. Ver más
+abajo: al revisar el listado después aparecieron diez alertas más, dos de ellas
+de familias que se creían cerradas.
 
 ### Migración de Karma a Vitest en TaskHub Angular
 
@@ -721,6 +737,46 @@ Se resolvió subiendo la dependencia, **no** con `--force` ni
 
 **Nota:** la propia documentación de Angular marca como *experimental* la
 migración de un proyecto existente a Vitest.
+
+### Las diez alertas que quedaban
+
+Revisado el listado de code scanning tras dar por cerradas las nueve familias,
+quedaban 10 alertas abiertas (frente a 246 cerradas). Ocho de ellas no eran
+nuevas: pertenecían a familias ya tratadas, en ficheros que no se habían mirado.
+
+**Registro de secretos en claro (4).** Familia que no estaba en la lista inicial,
+y donde estaba el único hallazgo serio de los diez:
+
+```js
+// test-twitch.js:6
+console.log("TOKEN:", process.env.TWITCH_OAUTH_TOKEN);
+```
+
+Imprimía el token de OAuth de Twitch completo por consola. Ese token da control
+sobre la cuenta, y una vez escrito en la salida queda en el historial del
+terminal y en el log de cualquier sistema que ejecute el script. `debug-env.js`
+lo truncaba a 12 caracteres, que es menos, pero sigue siendo material secreto.
+
+Corregido en los dos ficheros informando de si cada variable **está definida y
+cuánto mide**, nunca de su valor. Los scripts existen para comprobar que el
+`.env` carga, y para eso el valor no aporta nada.
+
+**Falta de límite de peticiones (2).** `unified-chat-widget/index.js` y
+`JSGameChat/server/index.js`. Añadido `express-rate-limit` con límites holgados
+(600 y 300 por minuto): estos servidores los consume la fuente de navegador de
+OBS, que sondea con frecuencia. El objetivo no es frenar un ataque sino que una
+pestaña recargando en bucle no sature un proceso de un solo hilo que además
+atiende websockets.
+
+**Exposición de información por excepción (4).** `TestMail.py` y
+`rumble_server.py`, con el mismo `str(e)` en la respuesta HTTP que se corrigió en
+`app.py`. En el caso de Rumble el detalle importa: el mensaje de error de su API
+puede incluir la URL completa con la clave de acceso.
+
+`TestMail.py` merece mención aparte: **es un fichero que ya se había editado** en
+la familia 1 para desactivar el modo debug de Flask, y su `str(e)` se pasó por
+alto en la familia 2. La alerta apareció como nueva porque esa misma edición
+provocó el reanálisis del fichero. No se escapó del listado: se dejó a medias.
 
 ### Credenciales en el código de LeaderBoard_Unity
 

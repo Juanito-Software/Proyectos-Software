@@ -280,7 +280,11 @@ def start_chat():
                 # No retornamos error, permitimos que el sistema continúe
                 # El hilo de chat intentará reconectar periódicamente
             else:
-                return jsonify({"error": f"Error al conectar con Rumble: {error_msg}"}), 500
+                # El detalle va al log, no a la respuesta: el mensaje de error de
+                # la API de Rumble puede incluir la URL completa con la clave de
+                # acceso, que es justo lo que no debe salir por HTTP.
+                print(f"❌ Error al conectar con Rumble: {error_msg}")
+                return jsonify({"error": "No se pudo conectar con Rumble."}), 500
         
         # Si se proporciona canal, intentar conectarse
         if channel:
@@ -316,9 +320,9 @@ def start_chat():
             }), 200
         
     except Exception as e:
-        error_msg = str(e)
-        print(f"❌ Error iniciando Rumble: {error_msg}")
-        return jsonify({"error": error_msg}), 500
+        # Igual que arriba: el detalle al log, un mensaje generico al cliente.
+        print(f"❌ Error iniciando Rumble: {e}")
+        return jsonify({"error": "No se pudo iniciar la conexion con Rumble."}), 500
 
 @app.route("/messages", methods=["GET"])
 def get_messages():
@@ -355,11 +359,16 @@ def get_status():
                     status["recent_messages_count"] = len(recent_msgs) if recent_msgs else 0
                     status["chat_available"] = True
                 except Exception as chat_error:
-                    status["chat_error"] = str(chat_error)
+                    # El endpoint /status es de diagnostico, pero lo que devuelve
+                    # sale por HTTP igual que cualquier otra respuesta. Se
+                    # informa de que el chat no esta disponible; el motivo queda
+                    # en el log del servidor.
+                    print(f"⚠️ Chat no disponible: {chat_error}")
                     status["chat_available"] = False
         except Exception as e:
+            print(f"⚠️ No se pudo consultar el estado del directo: {e}")
             status["is_live"] = False
-            status["error"] = str(e)
+            status["error"] = "No se pudo consultar el estado del directo."
     
     return jsonify(status), 200
 
