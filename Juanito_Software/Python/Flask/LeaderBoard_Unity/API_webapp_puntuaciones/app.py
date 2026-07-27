@@ -30,9 +30,9 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # O el servidor SMTP de tu elecci�
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False           # No usar SSL (ya que TLS está activado)
-app.config['MAIL_USERNAME'] = 'deadvalleygame@gmail.com'  # Tu email
-app.config['MAIL_PASSWORD'] = 'jgvn mdyn vhrz mtvv'  # Tu contraseña de correo
-app.config['MAIL_DEFAULT_SENDER'] = 'deadvalleygame@gmail.com'  # Dirección desde la que se enviarán los correos
+app.config['MAIL_USERNAME'] = os.environ['MAIL_USERNAME']
+app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD']  # Contraseña de aplicación, desde el entorno
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ['MAIL_USERNAME'])
 
 mail = Mail(app)  # Inicializa Flask-Mail
 
@@ -176,8 +176,8 @@ def eliminar_usuario(id):
 
     except Exception as e:
         db.session.rollback()  # Deshacer cambios en caso de error
-        print(f"Error al eliminar usuario: {str(e)}")  # Log para identificar el error exacto
-        return jsonify({'error': f'Error al eliminar el usuario: {str(e)}'}), 500
+        app.logger.exception("Error al eliminar usuario")  # Log para identificar el error exacto
+        return jsonify({'error': 'Error al eliminar el usuario'}), 500
 
 
 
@@ -231,8 +231,8 @@ def register_player():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error al registrar el jugador: {str(e)}: {500}")  # Esto imprimirá el error en el servidor
-        return jsonify({'error': f'Error al registrar el jugador: {str(e)}'}), 500
+        app.logger.exception("Error al registrar el jugador")  # Esto imprimirá el error en el servidor
+        return jsonify({'error': 'Error al registrar el jugador'}), 500
 
 
 
@@ -282,7 +282,7 @@ def send_reset_email():
         return jsonify({'message': 'Correo enviado exitosamente'}), 200
     except Exception as e:
         print("Error al enviar el correo:", e)
-        return jsonify({'error': f'Error al enviar el correo: {str(e)}'}), 500
+        return jsonify({'error': 'Error al enviar el correo'}), 500
 
 
 @app.route('/jugadores/reset-password/<reset_token>', methods=['GET', 'POST'])
@@ -423,8 +423,8 @@ def login():
         }), 200
 
     except Exception as e:
-        print(f"Error al iniciar sesión: {str(e)}")  # Esto imprimirá el error en el servidor
-        return jsonify({'error': f'Error al iniciar sesión: {str(e)}'}), 500
+        app.logger.exception("Error al iniciar sesión")  # Esto imprimirá el error en el servidor
+        return jsonify({'error': 'Error al iniciar sesión'}), 500
 
 @app.route('/jugadores/refresh_token', methods=['POST'])
 def refresh_token():
@@ -469,8 +469,8 @@ def refresh_token():
         print("Response: Refresh token no válido: 401")
         return jsonify({'error': 'Refresh token no válido'}), 401
     except Exception as e:
-        print(f"Error al refrescar el token: {str(e)}")
-        return jsonify({'error': f'Error al refrescar el token: {str(e)}'}), 500
+        app.logger.exception("Error al refrescar el token")
+        return jsonify({'error': 'Error al refrescar el token'}), 500
 
 
 
@@ -528,7 +528,7 @@ def actualizar_perfil():
     except Exception as e:
         db.session.rollback()
         print(f"Error al actualizar el perfil: {e}")  # Log del error en la consola
-        return jsonify({'error': f'Error al actualizar perfil: {str(e)}'}), 500
+        return jsonify({'error': 'Error al actualizar perfil'}), 500
 
 
 
@@ -619,7 +619,7 @@ def actualizar_puntuacion(nombre):
         return jsonify({'error': 'El valor debe ser un entero'}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 """
 
 @app.route('/puntuaciones', methods=['POST'])
@@ -718,7 +718,7 @@ def obtener_puntuaciones():
             ) \
             .paginate(page=page, per_page=per_page)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
     # Si no hay resultados
     if not puntuaciones.items:
@@ -906,7 +906,7 @@ def crear_logro():
 
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({'error': 'Error al crear logro', 'detalle': str(e)}), 500
+        return jsonify({'error': 'Error al crear logro'}), 500
 
 
 @app.route('/logros/<string:nombre>', methods=['GET'])
@@ -1000,7 +1000,7 @@ def obtener_privacidad(jugador_id):
             return jsonify({'message': 'Privacidad no encontrada para el jugador'}), 404
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/privacidad', methods=['POST'])
 def crear_privacidad():
@@ -1032,7 +1032,7 @@ def crear_privacidad():
         }), 201
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 @app.route('/privacidad/<int:jugador_id>', methods=['PUT'])
 def actualizar_privacidad(jugador_id):
@@ -1065,7 +1065,7 @@ def actualizar_privacidad(jugador_id):
             return jsonify({'message': 'Privacidad no encontrada para el jugador'}), 404
     except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 
 
@@ -1288,7 +1288,7 @@ def eliminar_puntuaciones(nombre):
     
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
     
 
 @app.route('/puntuaciones/limpiar', methods=['DELETE'])
@@ -1300,7 +1300,7 @@ def limpiar_puntuaciones():
         return jsonify({'mensaje': 'Puntuaciones eliminadas correctamente'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
     
     
 @app.route('/jugadores/limpiar', methods=['DELETE'])
@@ -1324,7 +1324,7 @@ def limpiar_jugadores():
         return jsonify({'mensaje': 'Jugadores y puntuaciones eliminados correctamente'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 
 if __name__ == '__main__':

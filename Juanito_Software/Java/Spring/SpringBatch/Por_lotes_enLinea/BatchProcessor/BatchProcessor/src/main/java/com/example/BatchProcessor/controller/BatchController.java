@@ -1,6 +1,8 @@
 package com.example.BatchProcessor.controller;
 
 import com.example.BatchProcessor.reader.CsvFileReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/batch")
 public class BatchController {
+
+    private static final Logger log = LoggerFactory.getLogger(BatchController.class);
 
     private final JobLauncher jobLauncher;
     private final Job fileProcessingJob;
@@ -54,8 +58,10 @@ public class BatchController {
 
             return ResponseEntity.ok("Job started successfully!");
         } catch (JobExecutionException e) {
+            // El detalle va al log, no a la respuesta HTTP.
+            log.error("Error al lanzar el job de procesado de fichero", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to start job: " + e.getMessage());
+                    .body("Failed to start job. Consulte los logs del servidor.");
         }
     }
 }

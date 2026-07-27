@@ -1,5 +1,7 @@
 package com.example.BatchProcessor.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.example.BatchProcessor.model.Persona;
 import com.example.BatchProcessor.reader.CsvFileReader;
 import com.example.BatchProcessor.repository.PersonaRepository;
@@ -35,6 +37,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/batch")
 public class BatchController {
+
+    private static final Logger log = LoggerFactory.getLogger(BatchController.class);
 
     private final JobLauncher jobLauncher;
     private final Job fileProcessingJob;
@@ -80,8 +84,9 @@ public class BatchController {
 
             return ResponseEntity.ok("Job started successfully!");
         } catch (JobExecutionException e) {
+            log.error("Error al lanzar el job de batch (upload_Path)", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to start job: " + e.getMessage());
+                    .body("Failed to start job. Consulte los logs del servidor.");
         }
     }
 
@@ -106,9 +111,9 @@ public class BatchController {
 
             return new ResponseEntity<>("Archivo procesado correctamente", HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error al procesar el archivo subido", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar el archivo: " + e.getMessage());
+                    .body("Error al procesar el archivo. Consulte los logs del servidor.");
         }
     }
 

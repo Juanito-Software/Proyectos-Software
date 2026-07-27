@@ -1,5 +1,7 @@
 package com.example.BatchProcessor.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.example.BatchProcessor.service.ProcesarCSVService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/Batch")
 public class ProcesarCSVController {
+
+    private static final Logger log = LoggerFactory.getLogger(ProcesarCSVController.class);
 
     private final ProcesarCSVService procesarCSVService;
 
@@ -28,8 +32,9 @@ public class ProcesarCSVController {
             procesarCSVService.procesarCsv(inputFilePath);
             return ResponseEntity.ok("Batch processing completed successfully.");
         } catch (Exception e) {
+            log.error("Error al procesar el CSV por lotes", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error during batch processing: " + e.getMessage());
+                    .body("Error during batch processing. Consulte los logs del servidor.");
         }
     }
 }

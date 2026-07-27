@@ -1,6 +1,8 @@
 package com.example.BatchProcessor.controller;
 
 import com.example.BatchProcessor.listener.JobCompletionListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
@@ -27,6 +29,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/batch")
 public class BatchController {
+
+    private static final Logger log = LoggerFactory.getLogger(BatchController.class);
 
     private final JobLauncher jobLauncher;
     private final ApplicationContext context;
@@ -88,8 +92,12 @@ public class BatchController {
 
             return ResponseEntity.ok("Job started successfully!");
         } catch (Exception e) {
+            // El detalle del error va al log del servidor, no a la respuesta:
+            // e.getMessage() puede exponer rutas, consultas SQL o nombres de
+            // clases internas a quien llame al endpoint.
+            log.error("Error al lanzar el job de batch", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error starting job: " + e.getMessage());
+                    .body("Error starting job. Consulte los logs del servidor.");
         }
     }
 }

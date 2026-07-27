@@ -82,7 +82,7 @@ def add_persona():
         db.session.commit()
         return jsonify({"mensaje": "Persona añadida correctamente"}), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": 'Error interno del servidor'}), 400
 
 
 @app.route('/personas', methods=['GET'])

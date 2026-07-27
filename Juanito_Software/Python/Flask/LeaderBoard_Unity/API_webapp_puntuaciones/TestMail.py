@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 
@@ -6,8 +8,8 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = 'deadvalleygame@gmail.com'
-app.config['MAIL_PASSWORD'] = 'jgvn mdyn vhrz mtvv'
+app.config['MAIL_USERNAME'] = os.environ['MAIL_USERNAME']
+app.config['MAIL_PASSWORD'] = os.environ['MAIL_PASSWORD']
 
 mail = Mail(app)
 

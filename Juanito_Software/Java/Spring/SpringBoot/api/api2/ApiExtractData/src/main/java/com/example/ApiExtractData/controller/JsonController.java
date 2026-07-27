@@ -1,5 +1,7 @@
 package com.example.ApiExtractData.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.example.ApiExtractData.service.JsonManagerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/json")
 public class JsonController {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonController.class);
 
     // El controlador nos permite añadir datos en la base de datos usando los dtos y el assembler para convertir los dtos a entidad
     private final JsonManagerService jsonManagerService;
@@ -23,9 +27,8 @@ public class JsonController {
             String stringJson=jsonManagerService.serialize();
             return new ResponseEntity<>("Object serialized successfully in new json archive\n"+ stringJson, HttpStatus.OK);
         } catch (Exception e) {
-            System.err.println("Error on serialice object: " + e.getMessage());
-            e.printStackTrace(); // Imprimir el stack trace para más detalles
-            return new ResponseEntity<>("Error on deserialice JSON: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Error al serializar el objeto a JSON", e);
+            return new ResponseEntity<>("Error on deserialice JSON. Consulte los logs del servidor.", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -36,9 +39,7 @@ public class JsonController {
             jsonManagerService.deserialize(json);
             return ResponseEntity.ok("Object deserialized of Json successfully in BD");
         } catch (Exception e) {
-            // Registrar el error
-            System.err.println("Error on deserialice JSON: " + e.getMessage());
-            e.printStackTrace(); // Imprimir el stack trace para más detalles
+            log.error("Error al deserializar JSON", e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -51,7 +52,8 @@ public class JsonController {
             String stringJson=jsonManagerService.serializeDTO();
             return new ResponseEntity<>("Object serialized successfully in new json archive usin DTOs\n"+ stringJson, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error parsing JSON: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Error al serializar el objeto a JSON usando DTOs", e);
+            return new ResponseEntity<>("Error parsing JSON. Consulte los logs del servidor.", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -62,9 +64,7 @@ public class JsonController {
             jsonManagerService.deserializeDTO(json);
             return ResponseEntity.ok("Object deserialized of Json successfully in BD usin DTOs");
         } catch (Exception e) {
-            // Registrar el error
-            System.err.println("Error al deserializar JSON: " + e.getMessage());
-            e.printStackTrace(); // Imprimir el stack trace para más detalles
+            log.error("Error al deserializar JSON usando DTOs", e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

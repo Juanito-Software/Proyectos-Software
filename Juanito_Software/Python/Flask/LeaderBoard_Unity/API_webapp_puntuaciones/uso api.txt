@@ -12,8 +12,8 @@ la version de postgre usada es la 17
 
 ejecutar el script PostgreSQL el cual levantara la base de datos game sus tablas y relaciones, también creara un usuario admin con todos los privilegios sobre la bd game y sus tablas y otro client con permiso de escritura lectura, actualización y conexión en game y sus tablas, client se usara en la conexión con la base de datos desde la Api Flask y admin será usado en la realización de reportes desde java.
 
-El usuario admin que tenemos creado en postgre tiene estas credenciales:  admin = P@ssw0rd1?
-El otro usuario client que tenemos creado en postgre tiene estas credenciales:  client = sesamoPass1?
+El usuario admin que tenemos creado en postgre: admin (contraseña definida al ejecutar postgre.sql)
+El otro usuario client que tenemos creado en postgre: client (contraseña definida al ejecutar postgre.sql)
 
 añadir el archivo pg_hba.conf a la carpeta C:\Program Files\PostgreSQL\17\data sobrescribiendo el archivo que allí se encuentra
 

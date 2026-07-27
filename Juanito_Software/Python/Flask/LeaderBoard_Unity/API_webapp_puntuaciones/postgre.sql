@@ -2,8 +2,9 @@
 -- CREATE DATABASE game2;
 
 -- Crear usuarios (sin comprobación de existencia)
-CREATE USER admin WITH PASSWORD 'P@ssw0rd1?';
-CREATE USER client WITH PASSWORD 'sesamoPass1?';
+-- Sustituye las contraseñas por valores propios antes de ejecutar este script.
+CREATE USER admin WITH PASSWORD '<contraseña_admin>';
+CREATE USER client WITH PASSWORD '<contraseña_client>';
 
 -- Crear tipo nivel_privacidad (sin comprobación de existencia)
 CREATE TYPE nivel_privacidad AS ENUM ('publico', 'privado', 'amigos');

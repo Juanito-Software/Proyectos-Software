@@ -5,6 +5,24 @@ de los proyectos).
 
 ---
 
+## Estado de las alertas de seguridad
+
+- **Dependabot:** 2 abiertas, ambas dependencias transitivas del build de
+  Angular sin arreglo disponible (las únicas "correcciones" son retrocesos de
+  versión). Se dejan abiertas a propósito para que GitHub las cierre cuando
+  Angular actualice.
+- **Secret scanning:** 4 alertas revisadas. Una era real (clave de API de
+  Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
+  código de terceros ya retirado.
+- **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
+  problemas. Resueltas las de modo debug de Flask y las de exposición de
+  información (Java y Python). Pendientes las restantes.
+- **Credenciales en código:** revisadas y retiradas las de
+  `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
+  el escáner automático; aparecieron leyendo el código.
+
+---
+
 ## 2026-07-26 / 2026-07-27 — Saneamiento de dependencias y seguridad
 
 Revisión completa de las alertas de seguridad del repositorio, con el criterio
@@ -92,10 +110,74 @@ responsabilidad de las migraciones — con las secuencias sincronizadas mediante
 
 ### Análisis estático (CodeQL)
 
-Desactivado el modo debug de Flask en las cuatro aplicaciones que lo tenían
-activo. El depurador de Werkzeug permite ejecutar código Python arbitrario
-desde el navegador; en dos de ellas se combinaba con `host='0.0.0.0'`, lo que
-lo exponía a toda la red local.
+Las 69 alertas de CodeQL se agruparon en nueve familias de problemas: lo que
+parecían decenas de fallos distintos era el mismo puñado de patrones repetidos
+en varios archivos. Se han abordado dos de esas familias.
+
+**Modo debug de Flask (4 alertas, resuelta).** Desactivado en las cuatro
+aplicaciones que lo tenían activo. El depurador de Werkzeug permite ejecutar
+código Python arbitrario desde el navegador; en dos de ellas se combinaba con
+`host='0.0.0.0'`, lo que lo exponía a toda la red local. En `BackCount` se
+mantiene el `0.0.0.0` de forma deliberada: OBS necesita alcanzar el servidor
+desde otro equipo de la red, y esa es precisamente la razón por la que el
+depurador debía apagarse.
+
+**Exposición de información en mensajes de error (parte Java, resuelta).**
+El patrón `catch (Exception e) { ... .body("..." + e.getMessage()) }` devuelve
+al cliente el detalle interno del fallo, que puede incluir rutas del sistema,
+consultas SQL o nombres de clases. Corregido en trece controladores: el detalle
+pasa a registrarse con `log.error` y la respuesta HTTP lleva un mensaje
+genérico. Donde había `e.printStackTrace()` se sustituyó por el mismo registro.
+
+Dos casos se dejaron intactos a propósito, por estar dentro de bloques de
+código comentado y no en rutas activas. Y en `HanoiController2`, que no exponía
+nada pero se tragaba la excepción sin dejar rastro, se añadió el registro: un
+error silencioso es un problema distinto, pero también es un problema.
+
+La mayoría de esos trece archivos son variantes del mismo ejercicio de Spring
+Batch guardadas como carpetas paralelas, por lo que cada aviso aparecía
+multiplicado por el número de copias. Se valoró excluir esas carpetas del
+análisis y se descartó: son código propio y corregirlo cuesta poco más que
+justificar por qué no se corrige.
+
+**Exposición de información (parte Python, resuelta).** Mismo patrón en Flask:
+`return jsonify({'error': str(e)}), 500` devuelve la excepción al cliente.
+Corregidos 21 casos en la API de puntuaciones de LeaderBoard, en
+`flask_api_personas.py` y en el servidor TTS del widget de chat. El detalle
+pasa a `app.logger.exception` y la respuesta lleva un mensaje genérico.
+
+**Pendientes** las familias restantes: falta de límite de peticiones en las
+rutas de autenticación, path traversal en los servicios de ficheros, XSS,
+criptografía débil en un ejercicio del ciclo formativo, CSRF desactivado, y
+dos grupos sobre enlace de sockets y validación de URL.
+
+### Credenciales en el código de LeaderBoard_Unity
+
+Al revisar los mensajes de error de esa API aparecieron cuatro credenciales
+reales escritas directamente en el código y versionadas. Ninguna la había
+detectado el escáner de secretos de GitHub: no tienen un formato reconocible,
+así que no hay patrón que buscar. Es el mismo tipo de fuga que la del archivo
+de notas del widget, y refuerza la misma conclusión — **las herramientas
+automáticas encuentran los secretos con formato conocido; el resto solo
+aparece leyendo el código**.
+
+Afectaba a la contraseña de aplicación del correo de notificaciones, a la clave
+de firma de los JWT y a las contraseñas de dos usuarios de PostgreSQL, estas
+últimas repetidas además en el README del proyecto, en dos scripts SQL, en un
+archivo de notas, en la configuración de PostgreSQL y en el ejecutor de
+informes de Jasper.
+
+De las cuatro, la más grave era la clave de firma de los JWT: con ella se
+pueden fabricar tokens válidos para cualquier usuario, incluido el rol de
+administrador, sin necesidad de credenciales. Las cuatro han sido rotadas o
+revocadas.
+
+**Cambios aplicados:** todas las credenciales pasan a leerse de variables de
+entorno, con un `.env.example` documentado y `python-dotenv` añadido a las
+dependencias. La configuración **aborta el arranque con un mensaje explícito**
+si falta alguna variable, en lugar de recurrir a un valor por defecto: una
+clave de respaldo silenciosa acabaría en producción sin que nadie lo notara, y
+eso es peor que la fuga original.
 
 **Resultado:** alertas de Dependabot de **590 a 2**. Las dos restantes son
 dependencias transitivas del sistema de compilación de Angular, cuyas únicas

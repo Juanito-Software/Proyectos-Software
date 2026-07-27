@@ -1,5 +1,7 @@
 package com.example.ApiExtractData.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.example.ApiExtractData.service.JsonManagerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/json")
 public class JsonController {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonController.class);
 
     /**
      * El servicio que maneja la serialización de los datos JSON.
@@ -42,10 +46,8 @@ public class JsonController {
             // Retorna el JSON serializado con un mensaje de éxito
             return new ResponseEntity<>("Object serialized successfully in new json archive\n" + stringJson, HttpStatus.OK);
         } catch (Exception e) {
-            // Imprime un mensaje de error en consola en caso de que ocurra una excepción
-            System.err.println("Error on serialice object: " + e.getMessage());
-            e.printStackTrace(); // Imprimir el stack trace para más detalles
-            return new ResponseEntity<>("Error on serialice JSON: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Error al serializar el objeto a JSON", e);
+            return new ResponseEntity<>("Error on serialice JSON. Consulte los logs del servidor.", HttpStatus.BAD_REQUEST);
         }
     }
 

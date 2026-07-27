@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -37,6 +39,8 @@ import java.util.List;
 @RequestMapping("/batch")
 public class BatchController {
 
+    private static final Logger log = LoggerFactory.getLogger(BatchController.class);
+
     private final JobLauncher jobLauncher;
     private final Job fileProcessingJob;
     private final CsvFileReader csvFileReader;
@@ -60,7 +64,7 @@ public class BatchController {
             return ResponseEntity.ok("Job started successfully!");
         } catch (JobExecutionException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to start job: " + e.getMessage());
+                    .body("Failed to start job. Consulte los logs del servidor.");
         }
     }*/
 
@@ -81,8 +85,10 @@ public class BatchController {
 
             return ResponseEntity.ok("Job started successfully!");
         } catch (JobExecutionException e) {
+            // El detalle va al log, no a la respuesta HTTP.
+            log.error("Error al lanzar el job de procesado de fichero", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to start job: " + e.getMessage());
+                    .body("Failed to start job. Consulte los logs del servidor.");
         }
     }
 
@@ -107,9 +113,11 @@ public class BatchController {
 
             return new ResponseEntity<>("Archivo procesado correctamente", HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            // log.error en lugar de printStackTrace: queda registrado con
+            // nivel, marca de tiempo y contexto, y no se pierde por consola.
+            log.error("Error al procesar el archivo subido", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar el archivo: " + e.getMessage());
+                    .body("Error al procesar el archivo. Consulte los logs del servidor.");
         }
     }
 

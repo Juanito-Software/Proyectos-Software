@@ -39,10 +39,16 @@ public class JasperReportExecutor {
         Connection conn = null;
 
         try {
-            // Configurar la conexión a la base de datos
-            String dbUrl = "jdbc:postgresql://localhost:5432/game";
-            String dbUser = "admin";
-            String dbPassword = "P@ssw0rd1?";
+            // Configurar la conexión a la base de datos.
+            // Las credenciales se leen del entorno para no versionarlas.
+            // Ejecutar con:  DB_PASSWORD=... java -jar JasperReportExecutor.jar
+            String dbUrl = System.getenv().getOrDefault("DB_URL", "jdbc:postgresql://localhost:5432/game");
+            String dbUser = System.getenv().getOrDefault("DB_USER", "admin");
+            String dbPassword = System.getenv("DB_PASSWORD");
+            if (dbPassword == null || dbPassword.isBlank()) {
+                throw new IllegalStateException(
+                        "Falta la variable de entorno DB_PASSWORD con la contraseña de PostgreSQL.");
+            }
            
             
             // Intentar obtener la conexión a la base de datos

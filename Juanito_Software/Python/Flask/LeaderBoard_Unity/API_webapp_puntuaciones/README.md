@@ -192,10 +192,10 @@ Crear archivo `.env` en la raíz del proyecto:
 
 ```bash
 # Database
-DATABASE_URL=postgresql://client:sesamoPass1?@localhost:5432/game
+DATABASE_URL=postgresql://client:<contraseña>@localhost:5432/game
 
 # JWT
-SECRET_KEY=6Nj3G€%l&k!YgFs8P?fds
+SECRET_KEY=<generar con: python -c "import secrets; print(secrets.token_urlsafe(48))">
 JWT_EXPIRATION_HOURS=1
 
 # Email

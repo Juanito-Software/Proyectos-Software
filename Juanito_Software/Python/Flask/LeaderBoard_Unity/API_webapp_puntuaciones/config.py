@@ -1,10 +1,35 @@
 import os
 
+from dotenv import load_dotenv
+
+# Carga las variables del archivo .env situado junto a este módulo.
+# Sin esto, os.environ no vería nada de lo que hay en el .env.
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+
+
+def _requerido(nombre: str) -> str:
+    """Lee una variable de entorno obligatoria o aborta con un mensaje claro.
+
+    Preferimos que la aplicación no arranque a que lo haga con una credencial
+    por defecto: un valor de respaldo silencioso acaba llegando a producción.
+    """
+    valor = os.environ.get(nombre)
+    if not valor:
+        raise RuntimeError(
+            f"Falta la variable de entorno {nombre}. "
+            f"Defínela en el archivo .env (ver .env.example)."
+        )
+    return valor
+
+
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'postgresql://client:sesamoPass1?@localhost:5432/game'
+    # Credenciales fuera del código: se leen del entorno.
+    SQLALCHEMY_DATABASE_URI = _requerido('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     CORS_SUPPORTS_CREDENTIALS = True # Permite que las solicitudes incluyan credenciales (como cookies o encabezados de autenticación).
-    SECRET_KEY = '6Nj3G€%l&k!YgFs8P?fds'# Clave secreta utilizada por Flask para sesiones y otras operaciones de seguridad.
+    # Clave con la que se firman los JWT. Quien la conozca puede fabricar
+    # tokens válidos para cualquier usuario, así que nunca va en el código.
+    SECRET_KEY = _requerido('SECRET_KEY')
     # Configuración de CORS
     CORS_HEADERS = 'Content-Type','Authorization'# Especifica qué encabezados pueden ser utilizados en las solicitudes CORS.
     CORS_ALLOWED_ORIGINS = [

@@ -168,6 +168,13 @@ desktop.ini
 *.bak
 
 # ============================================
+# Notas de trabajo temporales (traspaso entre sesiones, planes de
+# operaciones puntuales). No forman parte del repositorio.
+# ============================================
+_siguiente-sesion.md
+_limpieza-historia/
+
+# ============================================
 # Salidas de build de PyInstaller con nombre <Proyecto>Build/
 # ============================================
 *Build/

@@ -115,7 +115,7 @@ def speak():
                 os.remove(file_path)
         except Exception:
             pass
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": 'Error interno del servidor'}), 500
 
     return jsonify({"status": "ok", "text": text}), 200
 
