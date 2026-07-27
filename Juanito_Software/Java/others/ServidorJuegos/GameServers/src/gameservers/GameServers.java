@@ -72,7 +72,18 @@ class ClientHandler implements Runnable {
             String request = in.readLine();
             if (request != null && request.startsWith("DESCARGAR")) {
                 String gameName = request.substring("DESCARGAR ".length()).trim();
-                Path gamePath = Paths.get(GameServers.GAMES_DIR, gameName);
+
+                // El nombre llega por el socket, así que lo controla el cliente.
+                // Sin comprobarlo, una petición como "DESCARGAR ../../secreto.txt"
+                // haría que el servidor enviase cualquier fichero de la máquina.
+                Path baseDir = Paths.get(GameServers.GAMES_DIR).toAbsolutePath().normalize();
+                Path gamePath = baseDir.resolve(gameName).normalize();
+
+                if (!gamePath.startsWith(baseDir)) {
+                    System.err.println("Petición rechazada, ruta fuera de la carpeta de juegos: " + gameName);
+                    out.println("Juego no encontrado.");
+                    return;
+                }
 
                 if (Files.exists(gamePath) && !Files.isDirectory(gamePath)) {
                     System.out.println("Enviando archivo: " + gameName);

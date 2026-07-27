@@ -15,10 +15,9 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas tres: modo debug de Flask, exposición de información
-  (Java y Python) y falta de límite de peticiones. Pendientes seis: path
-  traversal, XSS, criptografía débil, CSRF, enlace de sockets y validación
-  de URL.
+  problemas. Resueltas cuatro: modo debug de Flask, exposición de información
+  (Java y Python), falta de límite de peticiones y path traversal. Pendientes
+  cinco: XSS, criptografía débil, CSRF, enlace de sockets y validación de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
@@ -175,9 +174,43 @@ interfaz — lanza peticiones directas contra la API. Toda validación de
 seguridad tiene que estar en el servidor; la del cliente es comodidad para el
 usuario, no defensa.
 
-**Pendientes** las familias restantes: path traversal en los servicios de
-ficheros, XSS, criptografía débil en un ejercicio del ciclo formativo, CSRF
-desactivado, y dos grupos sobre enlace de sockets y validación de URL.
+**Path traversal (resuelta).** Tres servicios construían rutas de fichero a
+partir de datos que controla quien hace la petición: dos servicios de lectura y
+escritura de CSV en los ejercicios de Spring Batch —cuya ruta llega por un
+parámetro HTTP— y el servidor de juegos, que aceptaba por socket una orden
+`DESCARGAR <nombre>` y servía el fichero sin comprobar nada. Este último era el
+más grave: bastaba pedir `DESCARGAR ../../..` seguido de cualquier ruta para
+que el servidor enviase cualquier fichero de la máquina.
+
+En los tres casos se aplica el mismo patrón, y el orden de los pasos es lo que
+lo hace correcto: resolver la ruta contra un directorio base, **normalizarla**
+para colapsar los `..`, y solo entonces comprobar que sigue estando dentro de
+la base. Comprobar antes de normalizar es el error habitual al implementar esta
+defensa, y deja la puerta igual de abierta. En el servicio de escritura se
+sanea además el nombre derivado de una columna del CSV, sustituyendo cualquier
+carácter que no sea alfanumérico, punto, guion o guion bajo.
+
+Cambio de comportamiento a tener en cuenta: esos servicios aceptaban antes
+rutas absolutas cualesquiera y ahora solo rutas dentro del directorio base, que
+por defecto es el de trabajo y se puede cambiar con `-Dbatch.files.dir=...`.
+
+### Wrappers de Maven incompletos
+
+Al intentar compilar para verificar los cambios anteriores apareció otro
+defecto de fondo: **doce proyectos tenían el script `mvnw` versionado pero sin
+los ficheros del wrapper**, así que ninguno era construible desde un clon
+limpio — incluido `Java/BatchProcessor`, que figura en el catálogo como
+proyecto mantenido. Restaurados los doce.
+
+Es el mismo patrón que el script de lint sin configuración de ESLint y que los
+tests que nunca llegaban a ejecutarse: **herramientas declaradas pero jamás
+ejercitadas**. Tres hallazgos con la misma causa y la misma solución, que es
+integración continua: un pipeline que compile y ejecute lo que el repositorio
+dice tener habría detectado los tres el primer día.
+
+**Pendientes** las familias restantes: XSS, criptografía débil en un ejercicio
+del ciclo formativo, CSRF desactivado, y dos grupos sobre enlace de sockets y
+validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity
 
