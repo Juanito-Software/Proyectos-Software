@@ -162,6 +162,12 @@ desktop.ini
 *.lnk
 
 # ============================================
+# Copias de seguridad que generan las herramientas
+# (p.ej. phpunit --migrate-configuration deja un .bak)
+# ============================================
+*.bak
+
+# ============================================
 # Salidas de build de PyInstaller con nombre <Proyecto>Build/
 # ============================================
 *Build/
