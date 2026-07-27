@@ -15,9 +15,9 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas cinco: modo debug de Flask, exposición de información
-  (Java y Python), falta de límite de peticiones, path traversal y XSS.
-  Pendientes cuatro: criptografía débil, CSRF, enlace de sockets y validación
+  problemas. Resueltas seis: modo debug de Flask, exposición de información
+  (Java y Python), falta de límite de peticiones, path traversal, XSS y
+  criptografía débil. Pendientes tres: CSRF, enlace de sockets y validación
   de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
@@ -255,9 +255,52 @@ recursos mal codificados. Todos son **cosas declaradas que nadie llegó a
 ejecutar**, y todos los habría detectado un pipeline de integración continua en
 su primer día. Es, con diferencia, la conclusión más útil de esta revisión.
 
-**Pendientes** las familias restantes: criptografía débil en un ejercicio del
-ciclo formativo, CSRF desactivado, y dos grupos sobre enlace de sockets y
-validación de URL.
+### Criptografía débil en HashTools
+
+Cuatro alertas en `Java/HashTools`, un ejercicio del ciclo formativo que cifra
+ficheros con AES y con RSA. Las alertas señalaban los modos de operación: AES en
+CBC y RSA con relleno PKCS#1 v1.5. Ambos son corregibles con un cambio de una
+línea, pero al revisar el código apareció algo más importante que las propias
+alertas.
+
+**El vector de inicialización nunca fue aleatorio.** El código creaba el
+`IvParameterSpec` a partir de un array vacío y *después* llamaba a
+`SecureRandom.nextBytes()` sobre ese array. `IvParameterSpec` copia el array que
+recibe en el constructor, así que rellenarlo más tarde no tiene ningún efecto:
+el IV han sido siempre dieciséis bytes a cero. La intención era correcta y el
+código lo aparenta, pero la aleatoriedad nunca llegó a aplicarse.
+
+Lo relevante es que **el programa funcionaba gracias a ese fallo**. El IV no se
+guardaba en ninguna parte, así que si de verdad hubiera sido aleatorio, el
+descifrado no habría tenido forma de reconstruirlo y habría fallado siempre. Un
+error tapaba al otro. Es el mismo patrón que los seis hallazgos de la sección
+anterior: código escrito, nunca comprobado de verdad.
+
+La corrección:
+
+- **AES pasa a GCM** (`AES/GCM/NoPadding`) con un nonce de 12 bytes generado en
+  cada cifrado y escrito al principio del fichero de salida, que es de donde lo
+  lee el descifrado. GCM además es cifrado autenticado: si el fichero se
+  manipula, el descifrado lanza una excepción en lugar de devolver datos
+  corruptos en silencio, cosa que CBC no detecta.
+- **RSA pasa a OAEP** con SHA-256 en el hash y en MGF1, declarados de forma
+  explícita porque el valor por defecto de Java combina SHA-256 con MGF1-SHA1 y
+  esa incoherencia provoca fallos de interoperabilidad difíciles de localizar.
+
+Al cambiar a OAEP hubo que tocar el tamaño de bloque, y eso destapó un tercer
+defecto. OAEP consume 66 bytes de relleno frente a los 11 de PKCS#1, así que el
+bloque de 117 bytes fijado a mano dejaba de valer; ahora se calcula a partir del
+módulo de la clave. Pero además el descifrado RSA leía el fichero **entero** y
+lo pasaba a un único `doFinal`, cosa que solo funciona si el original cabía en
+un bloque: cualquier fichero mayor que el bloque fallaba al descifrarse. Ahora
+se descifra bloque a bloque.
+
+**Aviso de compatibilidad:** cambia el formato del fichero cifrado. Los ficheros
+generados con la versión anterior del programa ya no pueden descifrarse con
+ésta. Dado que se trata de un ejercicio y no hay datos que conservar, se asume.
+
+**Pendientes** las familias restantes: CSRF desactivado, y dos grupos sobre
+enlace de sockets y validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity
 
