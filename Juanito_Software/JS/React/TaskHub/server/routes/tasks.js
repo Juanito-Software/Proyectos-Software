@@ -1,9 +1,11 @@
 import express from 'express';
 import * as store from '../store.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { apiLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
+router.use(apiLimiter);
 router.use(authMiddleware);
 
 // GET /api/tasks - Listar tareas del usuario autenticado

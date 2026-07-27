@@ -15,8 +15,10 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas las de modo debug de Flask y las de exposición de
-  información (Java y Python). Pendientes las restantes.
+  problemas. Resueltas tres: modo debug de Flask, exposición de información
+  (Java y Python) y falta de límite de peticiones. Pendientes seis: path
+  traversal, XSS, criptografía débil, CSRF, enlace de sockets y validación
+  de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
@@ -146,10 +148,36 @@ Corregidos 21 casos en la API de puntuaciones de LeaderBoard, en
 `flask_api_personas.py` y en el servidor TTS del widget de chat. El detalle
 pasa a `app.logger.exception` y la respuesta lleva un mensaje genérico.
 
-**Pendientes** las familias restantes: falta de límite de peticiones en las
-rutas de autenticación, path traversal en los servicios de ficheros, XSS,
-criptografía débil en un ejercicio del ciclo formativo, CSRF desactivado, y
-dos grupos sobre enlace de sockets y validación de URL.
+**Falta de límite de peticiones (resuelta).** Las rutas de autenticación de los
+dos TaskHub con backend Express admitían intentos ilimitados: sin límite, probar
+contraseñas por fuerza bruta solo depende del ancho de banda del atacante.
+
+Añadido `express-rate-limit` con dos políticas: una estricta para autenticación
+(10 intentos cada 15 minutos por IP) y otra general para el resto de la API
+(300). La estricta usa `skipSuccessfulRequests`, de forma que los accesos
+correctos no consumen cuota y solo se penaliza a quien falla repetidamente —
+que es justo el patrón de un ataque, no el de un usuario despistado.
+
+Verificado en los dos sentidos contra el servidor en marcha: diez intentos
+fallidos devuelven 401 y a partir del undécimo 429; doce accesos correctos
+seguidos no producen ningún bloqueo. Ambas mitades importan — un límite que
+frenara también a los usuarios legítimos sería una defensa convertida en avería.
+
+Limitación conocida: el contador es por IP y vive en memoria, así que se
+reinicia con el servidor y no cubre a un atacante distribuido. Suficiente para
+el uso de estos proyectos; en un despliegue real habría que respaldarlo en
+Redis y bloquear también por cuenta, no solo por origen.
+
+Conviene subrayar dónde vive esta protección: en el **backend** de ambos
+proyectos, que en los dos casos es Express. El framework de la interfaz
+(Angular o React) no interviene ni puede hacerlo, porque un atacante no usa la
+interfaz — lanza peticiones directas contra la API. Toda validación de
+seguridad tiene que estar en el servidor; la del cliente es comodidad para el
+usuario, no defensa.
+
+**Pendientes** las familias restantes: path traversal en los servicios de
+ficheros, XSS, criptografía débil en un ejercicio del ciclo formativo, CSRF
+desactivado, y dos grupos sobre enlace de sockets y validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity
 

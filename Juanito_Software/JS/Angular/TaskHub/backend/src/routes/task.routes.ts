@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { taskController } from '../controllers/task.controller';
 import { authenticate } from '../middlewares/authenticate';
 import { validate } from '../middlewares/validate';
+import { apiLimiter } from '../middlewares/rateLimit';
 import { createCommentSchema, createTaskSchema, listTasksSchema, updateTaskSchema } from '../validators/task.validators';
 
 export const taskRouter = Router();
 
+taskRouter.use(apiLimiter);
 taskRouter.use(authenticate);
 
 taskRouter.post('/', validate(createTaskSchema), taskController.create);

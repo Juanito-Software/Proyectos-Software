@@ -3,10 +3,12 @@ import { Role } from '@prisma/client';
 import { userController } from '../controllers/user.controller';
 import { authenticate, authorize } from '../middlewares/authenticate';
 import { validate } from '../middlewares/validate';
+import { apiLimiter } from '../middlewares/rateLimit';
 import { updateProfileSchema, changePasswordSchema, listUsersSchema } from '../validators/user.validators';
 
 export const userRouter = Router();
 
+userRouter.use(apiLimiter);
 userRouter.use(authenticate);
 
 userRouter.get('/', validate(listUsersSchema), userController.list);

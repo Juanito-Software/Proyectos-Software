@@ -1,8 +1,13 @@
 import express from 'express';
 import * as storeUsers from '../storeUsers.js';
 import { generateToken } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
+
+// Límite de intentos en todas las rutas de este router: son las que permiten
+// adivinar credenciales por fuerza bruta.
+router.use(authLimiter);
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
