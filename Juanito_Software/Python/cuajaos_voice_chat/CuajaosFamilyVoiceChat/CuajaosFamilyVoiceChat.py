@@ -26,6 +26,20 @@ import pyrtp
 import struct
 
 # =================== CONFIGURACIONES GLOBALES ===================
+#
+# NOTA SOBRE EL ENLACE DE SOCKETS
+#
+# Los sockets de este programa se enlazan a "" (todas las interfaces) de forma
+# deliberada, y los analizadores estaticos lo marcan como aviso de seguridad.
+# Aqui es un requisito, no un descuido: la aplicacion descubre a los demas
+# participantes por broadcast en la red local y recibe su audio. Enlazar a
+# 127.0.0.1 la dejaria sin funcion alguna, porque no habria forma de que
+# llegase nada desde otro equipo.
+#
+# El riesgo asumido no es el enlace, sino que no hay autenticacion: cualquiera
+# dentro de la misma red local puede unirse a la conversacion o inyectar audio.
+# Es aceptable en una red domestica, que es el escenario para el que esta
+# pensado. NO lo uses en una red que no controles.
 
 SERVER_PORT = 12345       # Puerto para control y mensajes TCP (opcional para control)
 HEARTBEAT_PORT = 12346    # Puerto para los mensajes de heartbeat y elección

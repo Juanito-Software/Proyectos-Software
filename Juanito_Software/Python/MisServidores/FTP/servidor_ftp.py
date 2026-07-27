@@ -19,15 +19,50 @@ Servidor FTP implementado desde cero.
 Solo biblioteca estándar: socket, threading, os, pathlib. Sin librerías FTP.
 """
 
+import hmac
 import os
 import socket
 import threading
 from pathlib import Path
 
 # Configuración
-HOST = "0.0.0.0"
+#
+# HOST es 127.0.0.1 y no "0.0.0.0" a proposito. Escuchar en todas las
+# interfaces expondria a toda la red local un servidor de ficheros con permiso
+# de lectura y escritura. Ademas seria incoherente con el propio codigo: el
+# modo pasivo anuncia al cliente la direccion 127.0.0.1 como destino del canal
+# de datos, de modo que las transferencias solo funcionan cuando el cliente
+# esta en esta misma maquina. Este servidor ya era local; ahora tambien lo dice
+# su configuracion.
+HOST = "127.0.0.1"
 PUERTO = 2121
 RAIZ_FTP = Path(__file__).resolve().parent  # directorio del script como raíz FTP
+
+# Credenciales de acceso. Se leen del entorno para no versionarlas:
+#
+#   set FTP_USUARIO=juan
+#   set FTP_CLAVE=loquesea
+#
+# Si faltan, el servidor no arranca. Es deliberado: arrancar sin credenciales
+# significaria aceptar a cualquiera, que es exactamente lo que hacia antes.
+USUARIO_FTP = os.environ.get("FTP_USUARIO", "")
+CLAVE_FTP = os.environ.get("FTP_CLAVE", "")
+
+
+def dentro_de_raiz(ruta: Path, raiz: Path) -> bool:
+    """
+    Indica si 'ruta' esta contenida en 'raiz'.
+
+    Se usa Path.is_relative_to en lugar de comparar cadenas con startswith.
+    La comparacion textual es un error clasico: si la raiz es /datos/FTP, la
+    ruta /datos/FTP_privado tambien empieza por esa cadena y pasaria el filtro
+    pese a estar fuera. is_relative_to compara por componentes de ruta y no
+    tiene ese problema.
+    """
+    try:
+        return ruta.resolve().is_relative_to(raiz)
+    except (OSError, ValueError):
+        return False
 
 
 def enviar_respuesta(conn: socket.socket, codigo: int, mensaje: str) -> None:
@@ -104,11 +139,32 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                 enviar_respuesta(conn, 331, "Usuario OK, contraseña requerida")
 
             elif cmd == "PASS":
-                if last_user is not None:
+                if last_user is None:
+                    enviar_respuesta(conn, 503, "Primero envíe USER")
+                    continue
+                # Se comparan usuario y clave con compare_digest, que tarda lo
+                # mismo acierte o falle. Un '==' normal corta en el primer
+                # caracter distinto, y ese tiempo desigual permite adivinar la
+                # clave caracter a caracter midiendo la respuesta.
+                #
+                # Se compara en bytes y no en texto: compare_digest solo acepta
+                # cadenas de texto ASCII, asi que un usuario con acentos o 'ñ'
+                # lanzaria TypeError y dejaria la conexion colgada sin responder.
+                usuario_ok = hmac.compare_digest(
+                    last_user.encode("utf-8"), USUARIO_FTP.encode("utf-8")
+                )
+                clave_ok = hmac.compare_digest(
+                    arg.encode("utf-8"), CLAVE_FTP.encode("utf-8")
+                )
+                if usuario_ok and clave_ok:
                     logged_in = True
                     enviar_respuesta(conn, 230, "Usuario conectado")
                 else:
-                    enviar_respuesta(conn, 503, "Primero envíe USER")
+                    # Mismo mensaje para usuario inexistente y clave incorrecta:
+                    # distinguirlos revelaria que usuarios existen.
+                    logged_in = False
+                    last_user = None
+                    enviar_respuesta(conn, 530, "Credenciales incorrectas")
 
             elif cmd == "SYST":
                 enviar_respuesta(conn, 215, "UNIX Type: L8")
@@ -141,7 +197,7 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                     nuevo = nuevo / s
                 try:
                     nuevo = nuevo.resolve()
-                    if nuevo.is_dir() and str(nuevo).startswith(str(root)):
+                    if nuevo.is_dir() and dentro_de_raiz(nuevo, root):
                         cwd = nuevo
                         enviar_respuesta(conn, 250, "Directorio cambiado")
                     else:
@@ -167,7 +223,10 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                 try:
                     pasv_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     pasv_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    pasv_socket.bind(("0.0.0.0", 0))
+                    # Se enlaza al mismo HOST que el socket de control, no a
+                    # "0.0.0.0": el canal de datos no debe estar mas expuesto
+                    # que el canal por el que se autentica el cliente.
+                    pasv_socket.bind((HOST, 0))
                     pasv_socket.listen(1)
                     _, puerto = pasv_socket.getsockname()
                     ip_anuncio = "127,0,0,1"  # cliente suele conectar a la misma máquina
@@ -187,7 +246,7 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                 try:
                     data_conn, _ = pasv_socket.accept()
                     dir_listar = (cwd / arg) if arg else cwd
-                    if dir_listar.is_dir() and str(dir_listar.resolve()).startswith(str(root)):
+                    if dir_listar.is_dir() and dentro_de_raiz(dir_listar, root):
                         data_conn.sendall(listar_directorio(dir_listar))
                     data_conn.close()
                     enviar_respuesta(conn, 226, "Transferencia completada")
@@ -208,7 +267,7 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                     enviar_respuesta(conn, 425, "Use PASV primero")
                     continue
                 fpath = (cwd / arg).resolve()
-                if not fpath.is_file() or not str(fpath).startswith(str(root)):
+                if not fpath.is_file() or not dentro_de_raiz(fpath, root):
                     enviar_respuesta(conn, 550, "Archivo no existe")
                     continue
                 enviar_respuesta(conn, 150, "Abriendo conexión de datos para RETR")
@@ -239,7 +298,7 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                     enviar_respuesta(conn, 425, "Use PASV primero")
                     continue
                 fpath = (cwd / arg).resolve()
-                if not str(fpath).startswith(str(root)):
+                if not dentro_de_raiz(fpath, root):
                     enviar_respuesta(conn, 550, "Acceso denegado")
                     continue
                 enviar_respuesta(conn, 150, "Abriendo conexión de datos para STOR")
@@ -284,6 +343,14 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
 
 
 def main() -> None:
+    if not USUARIO_FTP or not CLAVE_FTP:
+        raise SystemExit(
+            "No se puede arrancar sin credenciales.\n"
+            "Define las variables de entorno FTP_USUARIO y FTP_CLAVE antes de ejecutar:\n"
+            "  Windows : set FTP_USUARIO=juan  &&  set FTP_CLAVE=tu_clave\n"
+            "  Linux   : export FTP_USUARIO=juan FTP_CLAVE=tu_clave"
+        )
+
     servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     servidor.bind((HOST, PUERTO))

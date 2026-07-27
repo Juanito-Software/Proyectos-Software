@@ -298,6 +298,12 @@ class FileTransferApp:
         try:
             server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # Enlace a "" (todas las interfaces) de forma deliberada: la funcion
+            # de este programa es recibir ficheros de otro equipo de la red
+            # local, asi que restringirlo a 127.0.0.1 lo dejaria inservible.
+            # A diferencia del servidor FTP de este mismo repositorio, aqui si
+            # hay una comprobacion de destinatario: handle_client rechaza todo
+            # lo que no traiga el dest_hash correcto.
             server_socket.bind(("", SERVER_PORT))
             server_socket.listen(5)
             self.servidor_ok = True
@@ -334,9 +340,26 @@ class FileTransferApp:
                 conn.close()
                 return
 
-            filename = header.get("filename", "archivo_recibido")
+            # El nombre del fichero lo elige quien envia, asi que es una entrada
+            # no fiable. Sin sanear, un emisor podria mandar "../../algo.txt" y
+            # escribir fuera de received_files: es path traversal.
+            #
+            # basename se queda solo con el ultimo componente y descarta
+            # cualquier ruta o "..". La comprobacion posterior con os.path.abspath
+            # es el cinturon de seguridad: verifica que la ruta final resuelta
+            # cuelga realmente del directorio de destino.
+            filename = os.path.basename(header.get("filename", "archivo_recibido"))
+            if not filename or filename in (".", ".."):
+                filename = "archivo_recibido"
+
             filesize = header.get("filesize", 0)
-            save_path = os.path.join("received_files", filename)
+
+            carpeta_destino = os.path.abspath("received_files")
+            save_path = os.path.abspath(os.path.join(carpeta_destino, filename))
+            if os.path.commonpath([carpeta_destino, save_path]) != carpeta_destino:
+                print("[Servidor] Nombre de archivo no permitido. Rechazando.")
+                conn.close()
+                return
 
             def actualizar_ui_recibir(pct, estado_texto):
                 if self.progress_bar is not None and self.label_estado is not None:

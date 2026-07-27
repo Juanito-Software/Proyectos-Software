@@ -1,0 +1,31 @@
+fix(security): add auth to the FTP server, bind it to localhost
+
+servidor_ftp.py accepted ANY username with ANY password: the PASS handler
+set logged_in unconditionally. Bound to 0.0.0.0, that exposed read/write
+file access to the whole local network.
+
+It was also inconsistent with its own design: passive mode advertises
+127.0.0.1 as the data channel target, so the code already assumed local
+use while opening the control port to the network.
+
+- HOST is now 127.0.0.1, and the passive socket binds to it as well.
+- Credentials come from FTP_USUARIO / FTP_CLAVE; the server refuses to
+  start without them rather than silently accepting everyone.
+- Credentials are compared with hmac.compare_digest to avoid leaking them
+  through response timing, and both failure modes share one message.
+  The comparison is done on UTF-8 bytes: compare_digest only accepts ASCII
+  strings, so a non-ASCII username raised TypeError and dropped the
+  connection instead of answering 530.
+- Replaced four str.startswith path checks with Path.is_relative_to.
+  Comparing paths as strings lets /datos/FTP_privado pass a /datos/FTP
+  root check.
+
+EnviarArchivos.py: sanitise the incoming filename. It came from the
+sender's header unchecked, so "../../file" escaped received_files.
+Now basename plus a commonpath check on the resolved destination.
+
+Voice chat and EnviarArchivos: document why binding to all interfaces is
+required there, and record the accepted risk (no authentication, home LAN
+only).
+
+Resolves 2 CodeQL alerts; 9 documented as intended.

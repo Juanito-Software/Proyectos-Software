@@ -15,9 +15,9 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas siete: modo debug de Flask, exposición de información
+  problemas. Resueltas ocho: modo debug de Flask, exposición de información
   (Java y Python), falta de límite de peticiones, path traversal, XSS,
-  criptografía débil y CSRF. Pendientes dos: enlace de sockets y validación
+  criptografía débil, CSRF y enlace de sockets. Pendiente una: validación
   de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
@@ -400,7 +400,89 @@ Es el octavo caso del patrón dominante de esta revisión: el SSR estaba
 configurado, compilaba y arrancaba, pero el estado de sesión se había diseñado
 como si solo existiera el navegador. **Nadie había pulsado F5 estando dentro.**
 
-**Pendientes** las familias restantes: enlace de sockets y validación de URL.
+### Sockets enlazados a todas las interfaces
+
+Once alertas de la misma regla (`py/bind-socket-all-network-interfaces`), en
+cuatro programas de Python. Tratarlas en bloque habría sido el error: la regla
+detecta `bind("")` o `bind("0.0.0.0")`, pero la pregunta que decide cada caso no
+es *¿escucha en todas las interfaces?* sino **¿tiene sentido que este programa
+reciba conexiones de la red?**. Salieron tres respuestas distintas.
+
+**Intencionadas — chat de voz, 8 alertas (#63 a #70).** Aplicación de voz entre
+equipos de una red doméstica, con descubrimiento por broadcast
+(`BROADCAST_IP = "192.168.1.255"`). Recibir conexiones de otros equipos es su
+función; enlazar a `127.0.0.1` la dejaría sin hacer nada. Documentadas en la
+cabecera de ambos ficheros y descartadas.
+
+El riesgo real de estos programas no es el enlace sino que **no autentican**:
+cualquiera en la misma red puede unirse o inyectar audio. Se asume por ser una
+red doméstica, y así queda escrito en el código, con la advertencia de no
+usarlos en redes ajenas.
+
+**Intencionada — `EnviarArchivos.py`, 1 alerta (#224).** Mismo caso, con un
+matiz a favor: sí comprueba un `dest_hash` (SHA-256 derivado del nombre que se
+comparte con el emisor) y rechaza lo que no lo traiga. Documentada y descartada.
+
+**Descuido real — `servidor_ftp.py`, 2 alertas (#72, #73).** Aquí el problema
+era más grave que la alerta, y solo se ve leyendo el código:
+
+```python
+elif cmd == "PASS":
+    if last_user is not None:
+        logged_in = True          # cualquier usuario, cualquier contraseña
+```
+
+**No había autenticación.** Con `USER` y `PASS` arbitrarios se obtenía lectura y
+escritura sobre el directorio del script. Enlazado a `0.0.0.0`, eso significaba
+un servidor de ficheros abierto a toda la red local.
+
+Y era además incoherente con su propio diseño: el modo pasivo anuncia al cliente
+la dirección `127.0.0.1` como destino del canal de datos, con el comentario
+*"cliente suele conectar a la misma máquina"*. Es decir, **el código ya asumía
+uso local**, pero abría el puerto de control a la red entera.
+
+Corregido:
+
+- `HOST = "127.0.0.1"`, coherente con lo que el modo pasivo ya daba por hecho.
+  El socket pasivo se enlaza también a `HOST` en lugar de a `0.0.0.0`: el canal
+  de datos no debe estar más expuesto que aquel por el que uno se autentica.
+- Credenciales reales, leídas de `FTP_USUARIO` y `FTP_CLAVE`. Si faltan, **el
+  servidor no arranca**: arrancar sin credenciales equivaldría a aceptar a
+  cualquiera, que es justo lo que hacía antes. Mismo criterio de fallo ruidoso
+  que se aplicó en `LeaderBoard_Unity`.
+- Comparación con `hmac.compare_digest` en lugar de `==`. Un `==` corta en el
+  primer carácter distinto, y ese tiempo desigual permite adivinar la clave
+  carácter a carácter midiendo la respuesta.
+- Mismo mensaje de error para usuario inexistente y clave incorrecta, para no
+  revelar qué usuarios existen.
+
+**Un tercer defecto encontrado de camino**, en el mismo fichero: las cuatro
+comprobaciones de que una ruta no se sale de la raíz usaban
+`str(ruta).startswith(str(root))`. Comparar rutas como cadenas es un error
+clásico: si la raíz es `/datos/FTP`, la ruta `/datos/FTP_privado` empieza por esa
+cadena y pasaba el filtro pese a estar fuera. Sustituidas por
+`Path.is_relative_to`, que compara por componentes.
+
+### Path traversal en EnviarArchivos.py
+
+No lo detectó CodeQL; apareció al revisar el código de la familia anterior.
+
+```python
+save_path = os.path.join("received_files", filename)   # filename lo elige el emisor
+```
+
+El nombre del fichero viene en la cabecera que envía el remitente, sin sanear.
+Con `../../algo.txt` se escribía fuera del directorio de destino. Requiere
+conocer el `dest_hash`, así que no era explotable por cualquiera, pero es la
+misma clase de fallo que ya se corrigió en los proyectos Java.
+
+Corregido con `os.path.basename` para quedarse solo con el último componente, y
+una verificación posterior con `os.path.commonpath` que confirma que la ruta
+final resuelta cuelga realmente del directorio de destino. Se sanea primero y se
+comprueba después, en ese orden: el saneo por sí solo es fácil de dar por bueno
+sin serlo, y la comprobación es lo que lo respalda.
+
+**Pendiente** la familia restante: validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity
 
