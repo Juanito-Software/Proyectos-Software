@@ -120,7 +120,10 @@ public class JuanBP_RA5_App {
                 valido_2 = PasswordValidator.validar(pass);
                 if (valido_2) {
                     // Genera las claves RSA y las guarda en la ruta 
-                    gerenteClavesRSA.generarClaves(pass, 256);
+                    // 2048 bits. Antes se pasaba 256, un valor copiado de la
+                    // generacion de claves AES; el parametro se ignoraba, asi
+                    // que nunca llego a intentarse una clave RSA de 256 bits.
+                    gerenteClavesRSA.generarClaves(2048);
                     System.out.println("clave introducida"); 
                     String rutaClaves = args[2];
                     System.out.println("ruta para guardar las claves: "+rutaClaves);

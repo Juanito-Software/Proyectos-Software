@@ -14,6 +14,20 @@ spring:
   flyway:
     enabled: true
 
+radiostack:
+  jwt:
+    # Clave de firma de los tokens. Se lee de la variable de entorno
+    # RADIOSTACK_JWT_SECRET y NO tiene valor por defecto a proposito: un valor
+    # por defecto en el repositorio seria una clave publica con la que
+    # cualquiera podria fabricar tokens validos. Sin la variable definida, la
+    # aplicacion no arranca.
+    #
+    # Generar una:  openssl rand -base64 48
+    secret: ${RADIOSTACK_JWT_SECRET}
+    # Duracion del token. Los JWT no se pueden revocar, asi que la caducidad es
+    # el unico limite real: cuanto mas larga, mas tiempo sirve uno robado.
+    expiration-seconds: ${RADIOSTACK_JWT_EXPIRATION_SECONDS:3600}
+
 server:
   port: 8080
 

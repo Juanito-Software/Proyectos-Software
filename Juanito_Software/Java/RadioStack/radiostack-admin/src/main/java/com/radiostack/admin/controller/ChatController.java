@@ -52,13 +52,17 @@ public class ChatController {
         estadoLabel.setText("Conectando...");
         executor.submit(() -> {
             try {
-                stompClient = StompClient.create(RadiostackAdminApp.getBaseUrl());
+                // El token se pasa al cliente STOMP para que lo envie en la
+                // trama CONNECT. Sin el, la conexion funciona pero solo permite
+                // leer: el servidor rechaza los envios sin identidad.
+                stompClient = StompClient.create(RadiostackAdminApp.getBaseUrl(), token);
                 final long emisionIdFinal = emisionId;
                 stompClient.setOnConnected(() -> Platform.runLater(() -> {
                     estadoLabel.setText("Conectado a emisión " + emisionIdFinal);
                     stompClient.subscribe(emisionIdFinal);
                 }));
                 stompClient.setOnDisconnected(() -> Platform.runLater(() -> estadoLabel.setText("Desconectado")));
+                stompClient.setOnError(motivo -> Platform.runLater(() -> estadoLabel.setText("Rechazado: " + motivo)));
                 stompClient.setOnMessage(msg -> Platform.runLater(() -> {
                     String line = "[" + (msg.timestamp != null ? msg.timestamp : "") + "] " + msg.alias + ": " + msg.contenido;
                     mensajesList.getItems().add(line);
@@ -96,11 +100,12 @@ public class ChatController {
         } catch (NumberFormatException e) {
             return;
         }
-        String alias = aliasField.getText();
-        if (alias == null) alias = "Anónimo";
+        // El alias ya no se envia: el servidor firma el mensaje con el usuario
+        // del token. El campo aliasField queda sin efecto y deberia retirarse
+        // de la interfaz.
         String contenido = mensajeField.getText();
         if (contenido == null || contenido.isBlank()) return;
-        stompClient.send(emisionId, alias, contenido);
+        stompClient.send(emisionId, contenido);
         mensajeField.clear();
     }
 

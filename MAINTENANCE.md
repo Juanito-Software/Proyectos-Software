@@ -255,8 +255,10 @@ recursos mal codificados. Todos son **cosas declaradas que nadie llegó a
 ejecutar**, y todos los habría detectado un pipeline de integración continua en
 su primer día. Es, con diferencia, la conclusión más útil de esta revisión.
 
-(Más adelante aparecieron dos más, hasta ocho: el `IvParameterSpec` de HashTools
-y el SSR de TaskHub Angular, ambos documentados en sus secciones.)
+(Más adelante aparecieron cuatro más, hasta diez: el `IvParameterSpec` y la
+generación de claves RSA de HashTools, el SSR de TaskHub Angular y el
+`permitAll()` con token de demostración de RadioStack. Todos documentados en sus
+respectivas secciones.)
 
 ### Criptografía débil en HashTools
 
@@ -301,6 +303,36 @@ se descifra bloque a bloque.
 **Aviso de compatibilidad:** cambia el formato del fichero cifrado. Los ficheros
 generados con la versión anterior del programa ya no pueden descifrarse con
 ésta. Dado que se trata de un ejercicio y no hay datos que conservar, se asume.
+
+#### Generación de claves RSA
+
+Mismo patrón que el IV, en el mismo proyecto. `generarClaves(String pass, int
+tamaño)` no usaba ninguno de sus dos parámetros: nunca llamaba a
+`kpg.initialize(...)`, así que Java generaba una clave de 2048 bits con su
+generador por defecto e ignoraba tanto el tamaño como el `SecureRandom`
+sembrado con la contraseña.
+
+Lo interesante es que **los dos parámetros muertos eran trampas** para quien
+intentara "arreglarlos" sin mirar:
+
+- El único sitio que llamaba al método pasaba `256`, un valor copiado de la
+  generación de claves AES, donde 256 bits es lo normal. Para RSA es un error de
+  categoría: `initialize(256)` habría lanzado `InvalidParameterException`.
+- Conectar el `SecureRandom` habría sido peor. `setSeed` sobre SHA1PRNG
+  sustituye la semilla y vuelve **determinista** la generación: cualquiera que
+  conociese la contraseña podría reproducir la misma clave privada. Y
+  `PasswordValidator` acepta contraseñas de 8 a 20 caracteres, al alcance de un
+  ataque por fuerza bruta.
+
+Corregido llamando a `initialize(2048)` con el generador aleatorio del sistema,
+rechazando cualquier tamaño inferior a 2048, y eliminando el `SecureRandom`
+sembrado en lugar de conectarlo. Se retiró el parámetro `pass`, que ya no
+interviene.
+
+**El comportamiento observable no cambia**: antes se generaban claves de 2048
+bits con el generador por defecto, y es lo que se sigue haciendo. Las claves ya
+guardadas siguen siendo válidas. Lo que cambia es que el código ahora dice lo
+que hace.
 
 ### Protección CSRF desactivada
 
@@ -354,10 +386,10 @@ La corrección se verificó ejecutándola, no por deducción: con la cookie ya e
 `POST /api/auth/logout` devuelve 204. Las dos rutas que dependen de la cookie
 siguen funcionando.
 
-**Hallazgo aparte, pendiente de revisar:** `SecurityConfig` de RadioStack
-declara `anyRequest().permitAll()`, es decir, la API entera queda accesible sin
-autenticación. Puede ser deliberado si es de solo lectura, pero no se ha
-verificado.
+**Hallazgo aparte:** `SecurityConfig` de RadioStack declaraba
+`anyRequest().permitAll()`, es decir, la API entera accesible sin autenticación.
+Se anotó aquí como *"puede ser deliberado si es de solo lectura"*; al revisarlo
+resultó que no lo era. Resuelto en la sección «Autenticación real en RadioStack».
 
 ### Bug de sesión con SSR en TaskHub Angular
 
@@ -481,6 +513,103 @@ una verificación posterior con `os.path.commonpath` que confirma que la ruta
 final resuelta cuelga realmente del directorio de destino. Se sanea primero y se
 comprueba después, en ese orden: el saneo por sí solo es fácil de dar por bueno
 sin serlo, y la comprobación es lo que lo respalda.
+
+### Autenticación real en RadioStack
+
+Salió del descarte de la alerta de CSRF. Al documentar por qué desactivar CSRF
+era correcto allí quedó anotado un cabo suelto: `anyRequest().permitAll()`. Se
+dejó dicho que *"puede ser deliberado si es de solo lectura"*. **No lo era.**
+
+La API tiene `POST`, `PUT`, `PATCH` y `DELETE` sobre programas, locutores,
+emisiones, comentarios y chat. Cualquiera podía crear o borrar programas de
+radio sin identificarse. Y debajo había algo peor:
+
+```java
+res.setToken("Bearer-demo-" + u.getId());
+...
+Long id = Long.parseLong(auth.replace("Bearer-demo-", ""));
+```
+
+El token era el texto `Bearer-demo-` seguido del identificador del usuario. Sin
+firma, sin secreto y sin caducidad: enviando la cabecera
+`Authorization: Bearer-demo-1` se suplantaba al usuario 1. No había nada que
+falsificar, bastaba con teclearlo.
+
+**Lo relevante no es que faltase autenticación, sino que el código aparentaba
+tenerla.** Había un `AuthController`, un `/login`, un `PasswordEncoder` con
+BCrypt comparando hashes correctamente y un `/me` que devolvía 401. Todo el
+andamiaje estaba bien construido, y solo el token era un marcador de posición.
+Un sistema sin autenticación se reconoce a simple vista; uno que la simula
+induce a error a quien lo lea después.
+
+Sustituido por JWT firmado:
+
+- `JwtService` firma con HMAC-SHA256. La clave se lee de
+  `RADIOSTACK_JWT_SECRET` y **no tiene valor por defecto**: uno escrito en el
+  repositorio sería una clave pública con la que cualquiera podría emitir
+  tokens válidos. Se rechaza al arrancar cualquier clave de menos de 256 bits.
+- El token lleva identificador, email y rol. Nada secreto: un JWT viaja en
+  Base64, no cifrado, y su contenido es legible por cualquiera. Lo que no se
+  puede es alterarlo sin invalidar la firma.
+- `JwtAuthenticationFilter` deja la identidad en el contexto de seguridad pero
+  **nunca rechaza una petición**. Si no hay token, continúa con el contexto
+  vacío. Decidir quién pasa es competencia de `SecurityConfig`, y así las reglas
+  de acceso viven en un único sitio en lugar de repartidas en dos.
+- `SecurityConfig` sustituye el `permitAll()` global: login abierto, `GET`
+  abierto (la parrilla de una radio es información para los oyentes) y todo lo
+  que modifica datos exige token. Se añadió un `authenticationEntryPoint` para
+  responder **401** en lugar de 403: la diferencia importa, porque no es que
+  falte permiso, es que no se ha dicho quién eres.
+- `/me` vuelve a consultar la base de datos para comprobar que la cuenta sigue
+  activa. **Un JWT no se puede revocar**: al desactivar un usuario, su token
+  sigue siendo criptográficamente válido hasta que caduque. La caducidad (una
+  hora por defecto) es el único límite real, y por eso es configurable.
+
+**Cambio de compatibilidad:** el cliente JavaFX enviaba `Authorization: <token>`
+sin el prefijo `Bearer`, porque el prefijo venía incrustado en la cadena
+`Bearer-demo-<id>`. Funcionaba por coincidencia. Corregido en `ApiClient`, que
+ahora añade el esquema donde corresponde —forma parte del protocolo HTTP, no del
+token—. **El módulo admin hay que recompilarlo.**
+
+Es el noveno caso del patrón dominante: `permitAll()` y el token de demostración
+eran marcadores de posición que nadie retiró.
+
+#### Autenticación del WebSocket del chat
+
+Quedó abierta en un primer momento y se cerró después. El filtro JWT de HTTP no
+sirve para el chat: una conexión WebSocket se abre con un único handshake y
+luego las tramas viajan por un canal ya establecido, fuera del ciclo
+petición-respuesta donde actúan los filtros de servlet. Y el handshake tampoco
+puede llevar cabecera `Authorization`, porque la API de WebSocket de los
+navegadores no permite añadirlas.
+
+La solución es autenticar **una trama más tarde**, en el `CONNECT` de STOMP, que
+es la primera que el cliente envía y sí admite cabeceras propias. Lo hace
+`StompAuthChannelInterceptor`, y el usuario resultante queda asociado a la
+sesión, de modo que las tramas posteriores lo heredan.
+
+El criterio de acceso es **el mismo que en HTTP**, a propósito, para no tener dos
+políticas distintas según el transporte:
+
+- `SUBSCRIBE` a `/topic` (leer el chat) es público, como los `GET`.
+- `SEND` a `/app` exige token válido, como los `POST`.
+
+Un `CONNECT` sin token se admite como anónimo. Uno con token inválido se
+rechaza en lugar de degradarse a anónimo: un token caducado o manipulado indica
+que algo va mal, y conviene que el cliente lo sepa.
+
+**Un segundo fallo encontrado al hacerlo:** el alias del mensaje venía en el
+cuerpo (`payload.getOrDefault("alias", "Anónimo")`), así que cualquiera podía
+firmar con el nombre de otro. Ahora se toma del email del token, que es la única
+identidad que el servidor puede verificar. El cliente ha dejado de enviarlo.
+
+En el cliente de escritorio, `StompClient` envía el token en el `CONNECT` y pasa
+a interpretar las tramas `ERROR`, que antes descartaba en silencio: sin eso, un
+envío rechazado por falta de permisos simplemente no aparecía y el usuario no
+recibía explicación alguna.
+
+**Pendiente en la interfaz:** el campo "Tu alias" de `chat.fxml` ya no tiene
+efecto. Se deja señalado en lugar de retirarlo, pero es un control muerto.
 
 **Pendiente** la familia restante: validación de URL.
 

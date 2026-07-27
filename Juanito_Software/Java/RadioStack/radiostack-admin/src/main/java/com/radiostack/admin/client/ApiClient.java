@@ -26,6 +26,19 @@ public class ApiClient {
         this.token = token;
     }
 
+    /**
+     * Valor de la cabecera Authorization.
+     *
+     * El servidor devuelve el JWT pelado y el esquema "Bearer" se anade aqui,
+     * que es donde corresponde: forma parte del protocolo HTTP, no del token.
+     * Antes el prefijo venia incrustado en la propia cadena que enviaba el
+     * servidor ("Bearer-demo-<id>"), asi que este cliente mandaba el token tal
+     * cual y funcionaba por casualidad.
+     */
+    private String cabeceraAutorizacion() {
+        return "Bearer " + token;
+    }
+
     public String postJson(String path, Object body) throws Exception {
         String json = body == null ? "{}" : objectMapper.writeValueAsString(body);
         HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -34,7 +47,7 @@ public class ApiClient {
                 .timeout(Duration.ofSeconds(10))
                 .POST(HttpRequest.BodyPublishers.ofString(json));
         if (token != null) {
-            builder.header("Authorization", token);
+            builder.header("Authorization", cabeceraAutorizacion());
         }
         HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() >= 400) {
@@ -49,7 +62,7 @@ public class ApiClient {
                 .timeout(Duration.ofSeconds(10))
                 .GET();
         if (token != null) {
-            builder.header("Authorization", token);
+            builder.header("Authorization", cabeceraAutorizacion());
         }
         HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() >= 400) {

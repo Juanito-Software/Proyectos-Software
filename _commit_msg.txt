@@ -1,31 +1,63 @@
-fix(security): add auth to the FTP server, bind it to localhost
+fix(security): replace the forgeable demo token with signed JWT
 
-servidor_ftp.py accepted ANY username with ANY password: the PASS handler
-set logged_in unconditionally. Bound to 0.0.0.0, that exposed read/write
-file access to the whole local network.
+RadioStack's API was fully open: SecurityConfig declared
+anyRequest().permitAll() while exposing POST, PUT, PATCH and DELETE on
+programmes, presenters, broadcasts, comments and chat.
 
-It was also inconsistent with its own design: passive mode advertises
-127.0.0.1 as the data channel target, so the code already assumed local
-use while opening the control port to the network.
+Underneath it, the token was the string "Bearer-demo-" followed by the
+user id, with no signature, no secret and no expiry. Sending
+"Authorization: Bearer-demo-1" impersonated user 1. The surrounding code
+looked like real authentication -- AuthController, /login, BCrypt password
+comparison, a /me returning 401 -- which made the placeholder easy to
+mistake for a working mechanism.
 
-- HOST is now 127.0.0.1, and the passive socket binds to it as well.
-- Credentials come from FTP_USUARIO / FTP_CLAVE; the server refuses to
-  start without them rather than silently accepting everyone.
-- Credentials are compared with hmac.compare_digest to avoid leaking them
-  through response timing, and both failure modes share one message.
-  The comparison is done on UTF-8 bytes: compare_digest only accepts ASCII
-  strings, so a non-ASCII username raised TypeError and dropped the
-  connection instead of answering 530.
-- Replaced four str.startswith path checks with Path.is_relative_to.
-  Comparing paths as strings lets /datos/FTP_privado pass a /datos/FTP
-  root check.
+HTTP:
+- JwtService signs with HMAC-SHA256. The key comes from
+  RADIOSTACK_JWT_SECRET and has no default on purpose: a default in the
+  repository would be a public key anyone could mint tokens with. Keys
+  shorter than 256 bits are rejected at startup.
+- JwtAuthenticationFilter populates the security context but never
+  rejects a request, so access rules stay in one place: SecurityConfig.
+- SecurityConfig now permits login and GET, and requires a token for
+  everything that changes data. Unauthenticated requests get 401 instead
+  of 403 via an authenticationEntryPoint.
+- /me re-reads the database to confirm the account is still active. JWTs
+  cannot be revoked, so a deactivated user's token stays cryptographically
+  valid until it expires.
 
-EnviarArchivos.py: sanitise the incoming filename. It came from the
-sender's header unchecked, so "../../file" escaped received_files.
-Now basename plus a commonpath check on the resolved destination.
+WebSocket chat:
+- The servlet filter cannot cover STOMP: the connection is established by
+  a single handshake that carries no Authorization header, and later
+  frames travel outside the request/response cycle. Authentication now
+  happens in the STOMP CONNECT frame, the first one that accepts custom
+  headers, via StompAuthChannelInterceptor.
+- Same policy as HTTP, deliberately: SUBSCRIBE to /topic is public, SEND
+  to /app requires a valid token. A CONNECT without a token is accepted as
+  anonymous; one with an invalid token is rejected rather than downgraded.
+- The chat alias came from the message payload, so anyone could sign as
+  someone else. It now comes from the verified token.
+- StompClient sends the token in CONNECT and handles ERROR frames, which
+  it previously discarded silently, leaving rejected sends unexplained.
 
-Voice chat and EnviarArchivos: document why binding to all interfaces is
-required there, and record the accepted risk (no authentication, home LAN
-only).
+BREAKING CHANGE: the desktop client sent "Authorization: <token>" without
+the Bearer scheme, because the prefix was baked into the demo token
+string. ApiClient now adds it. The admin module must be rebuilt. The
+"alias" field in chat.fxml no longer has any effect.
 
-Resolves 2 CodeQL alerts; 9 documented as intended.
+Also in HashTools, KeyPairManagerRSA.generarClaves used neither of its two
+parameters: it never called kpg.initialize(...), so Java produced a
+2048-bit key with the default random source and ignored both. Both dead
+parameters were traps for anyone wiring them up:
+
+- The only caller passed 256, copied from the AES key generation. For RSA
+  that is a category error; initialize(256) throws.
+- Seeding SecureRandom from the password would have made key generation
+  deterministic, letting anyone who knows the password reproduce the
+  private key. PasswordValidator allows 8 to 20 characters.
+
+Now calls initialize(2048) with the system random source and rejects
+smaller sizes. Observable behaviour is unchanged; existing key files
+remain valid.
+
+Also derive the FTP passive-mode announcement from HOST instead of a
+hardcoded literal, and drop the unused ip_anuncio variable.

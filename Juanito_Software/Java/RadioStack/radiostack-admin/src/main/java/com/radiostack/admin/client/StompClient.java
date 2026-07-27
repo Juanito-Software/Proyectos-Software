@@ -22,15 +22,25 @@ public class StompClient extends WebSocketClient {
     private Consumer<ChatMessage> onMessage;
     private Runnable onConnected;
     private Runnable onDisconnected;
+    private Consumer<String> onError;
     private volatile boolean stompConnected;
 
-    public StompClient(String wsUri) {
+    /**
+     * Token de acceso, o null para conectar como anonimo.
+     *
+     * Sin token se puede leer el chat pero no escribir en el, igual que en la
+     * API HTTP: consultar es publico y modificar exige identificarse.
+     */
+    private final String token;
+
+    public StompClient(String wsUri, String token) {
         super(URI.create(wsUri));
+        this.token = token;
     }
 
-    public static StompClient create(String baseHttpUrl) {
+    public static StompClient create(String baseHttpUrl, String token) {
         String ws = baseHttpUrl.replace("http://", "ws://").replace("https://", "wss://");
-        return new StompClient(ws + "/ws/stomp");
+        return new StompClient(ws + "/ws/stomp", token);
     }
 
     public void setOnMessage(Consumer<ChatMessage> onMessage) {
@@ -45,9 +55,21 @@ public class StompClient extends WebSocketClient {
         this.onDisconnected = onDisconnected;
     }
 
+    /** Notifica el motivo cuando el servidor devuelve una trama ERROR. */
+    public void setOnError(Consumer<String> onError) {
+        this.onError = onError;
+    }
+
     @Override
     public void onOpen(ServerHandshake handshake) {
-        sendStompFrame("CONNECT", "accept-version:1.2\nhost:localhost", null);
+        // El token viaja en la trama CONNECT y no en el handshake HTTP.
+        // El handshake de WebSocket no admite cabeceras propias, asi que
+        // CONNECT es la primera oportunidad de identificarse.
+        StringBuilder cabeceras = new StringBuilder("accept-version:1.2\nhost:localhost");
+        if (token != null && !token.isBlank()) {
+            cabeceras.append("\nAuthorization:Bearer ").append(token);
+        }
+        sendStompFrame("CONNECT", cabeceras.toString(), null);
     }
 
     @Override
@@ -82,6 +104,26 @@ public class StompClient extends WebSocketClient {
         if ("CONNECTED".equals(command)) {
             stompConnected = true;
             if (onConnected != null) runOnFx(onConnected);
+            return;
+        }
+        if ("ERROR".equals(command)) {
+            // El servidor rechaza la trama, por ejemplo al intentar escribir
+            // sin token valido. Antes estas tramas se descartaban en silencio
+            // y el mensaje simplemente no aparecia, sin explicacion alguna.
+            stompConnected = false;
+            int inicioMensaje = rest.indexOf("message:");
+            String motivo = "El servidor rechazo la conexion o el mensaje.";
+            if (inicioMensaje >= 0) {
+                int fin = rest.indexOf('\n', inicioMensaje);
+                motivo = rest.substring(inicioMensaje + "message:".length(),
+                        fin > 0 ? fin : rest.length()).trim();
+            }
+            if (onError != null) {
+                String motivoFinal = motivo;
+                runOnFx(() -> onError.accept(motivoFinal));
+            } else if (onDisconnected != null) {
+                runOnFx(onDisconnected);
+            }
             return;
         }
         if ("MESSAGE".equals(command)) {
@@ -125,9 +167,17 @@ public class StompClient extends WebSocketClient {
         sendStompFrame("SUBSCRIBE", "id:sub-" + emisionId + "\ndestination:" + dest, null);
     }
 
-    public void send(long emisionId, String alias, String contenido) {
+    /**
+     * Envia un mensaje al chat.
+     *
+     * Ya no se manda el alias. El servidor lo ignora y usa el del token: antes
+     * lo tomaba del cuerpo del mensaje, asi que cualquiera podia firmar con el
+     * nombre de otro. Seguir enviandolo daria a entender que aun sirve para
+     * algo.
+     */
+    public void send(long emisionId, String contenido) {
         String dest = "/app/emisiones/" + emisionId + "/chat.send";
-        String body = "{\"alias\":\"" + escapeJson(alias) + "\",\"contenido\":\"" + escapeJson(contenido) + "\"}";
+        String body = "{\"contenido\":\"" + escapeJson(contenido) + "\"}";
         sendStompFrame("SEND", "destination:" + dest + "\ncontent-type:application/json\ncontent-length:" + body.length(), body);
     }
 

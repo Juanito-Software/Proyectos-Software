@@ -17,7 +17,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -35,18 +34,63 @@ public class KeyPairManagerRSA {
         return clavesRSA; 
     }
     
-    // Metodo para generar un par de claves RSA
-    public void generarClaves(String pass, int tamaño){
-    
-        try { 
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            SecureRandom secure = SecureRandom.getInstance("SHA1PRNG");
-            secure.setSeed(pass.getBytes()); // Configura el generador aleatorio con la semilla proporcionada (password)
+    /** Tamaño minimo aceptable para una clave RSA, en bits. */
+    private static final int TAMANO_MINIMO = 2048;
 
-            clavesRSA = kpg.genKeyPair(); // Genera el par de claves
-            
+    /**
+     * Genera un par de claves RSA del tamaño indicado.
+     *
+     * Version anterior de este metodo, para que conste por que cambio:
+     *
+     *   public void generarClaves(String pass, int tamaño) {
+     *       KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+     *       SecureRandom secure = SecureRandom.getInstance("SHA1PRNG");
+     *       secure.setSeed(pass.getBytes());
+     *       clavesRSA = kpg.genKeyPair();
+     *   }
+     *
+     * Ni 'tamaño' ni 'secure' llegaban a usarse: nunca se llamaba a
+     * kpg.initialize(...), asi que Java generaba una clave de 2048 bits con su
+     * generador aleatorio por defecto e ignoraba ambos.
+     *
+     * Los dos parametros muertos eran ademas peligrosos si alguien hubiera
+     * "arreglado" el metodo sin mirar:
+     *
+     * - El unico sitio que lo llamaba pasaba 256, un valor copiado de la
+     *   generacion de claves AES, donde 256 bits es lo normal. Para RSA es un
+     *   error de categoria: una clave de 256 bits se rompe de inmediato, y
+     *   initialize(256) lanzaria InvalidParameterException. Por eso ahora se
+     *   valida el tamaño en lugar de aceptarlo sin mas.
+     *
+     * - El SecureRandom sembrado con la contraseña habria sido peor. setSeed
+     *   sobre SHA1PRNG sustituye la semilla y vuelve determinista la
+     *   generacion: cualquiera que conociese la contraseña podria reproducir
+     *   exactamente la misma clave privada. Y la contraseña la valida
+     *   PasswordValidator entre 8 y 20 caracteres, o sea, al alcance de un
+     *   ataque por fuerza bruta. Se elimina: para generar claves hay que usar
+     *   la aleatoriedad del sistema, no una derivada de una contraseña.
+     *
+     * El comportamiento observable NO cambia: antes se generaban claves de 2048
+     * bits con el generador por defecto, y eso es justo lo que se hace ahora.
+     * La diferencia es que ahora el codigo dice lo que hace.
+     */
+    public void generarClaves(int tamaño){
+
+        if (tamaño < TAMANO_MINIMO) {
+            throw new IllegalArgumentException(
+                    "Tamaño de clave RSA insuficiente: " + tamaño
+                            + " bits. El minimo admitido son " + TAMANO_MINIMO + ".");
+        }
+
+        try {
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+            // Sin segundo argumento, initialize usa el SecureRandom del
+            // sistema, que es lo correcto para material criptografico.
+            kpg.initialize(tamaño);
+            clavesRSA = kpg.generateKeyPair();
+
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(KeyPairManagerRSA.class.getName()).log(Level.SEVERE, null, ex); 
+            Logger.getLogger(KeyPairManagerRSA.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

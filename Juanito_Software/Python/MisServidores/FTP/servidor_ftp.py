@@ -229,8 +229,12 @@ def sesion_ftp(conn: socket.socket, cliente_addr) -> None:
                     pasv_socket.bind((HOST, 0))
                     pasv_socket.listen(1)
                     _, puerto = pasv_socket.getsockname()
-                    ip_anuncio = "127,0,0,1"  # cliente suele conectar a la misma máquina
-                    pasv_str = formato_pasv("127.0.0.1", puerto)
+                    # La direccion que se anuncia se deriva de HOST, no de un
+                    # literal. Antes estaba escrita a mano y podia dejar de
+                    # coincidir con la interfaz donde realmente se escucha, que
+                    # es como el servidor acababa anunciando una direccion
+                    # inalcanzable para el cliente.
+                    pasv_str = formato_pasv(HOST, puerto)
                     enviar_respuesta(conn, 227, f"Entrando en modo pasivo {pasv_str}")
                 except OSError:
                     enviar_respuesta(conn, 425, "No se pudo abrir puerto pasivo")
