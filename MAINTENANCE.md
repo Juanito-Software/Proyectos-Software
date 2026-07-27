@@ -15,9 +15,10 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas cuatro: modo debug de Flask, exposición de información
-  (Java y Python), falta de límite de peticiones y path traversal. Pendientes
-  cinco: XSS, criptografía débil, CSRF, enlace de sockets y validación de URL.
+  problemas. Resueltas cinco: modo debug de Flask, exposición de información
+  (Java y Python), falta de límite de peticiones, path traversal y XSS.
+  Pendientes cuatro: criptografía débil, CSRF, enlace de sockets y validación
+  de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
@@ -208,8 +209,54 @@ ejercitadas**. Tres hallazgos con la misma causa y la misma solución, que es
 integración continua: un pipeline que compile y ejecute lo que el repositorio
 dice tener habría detectado los tres el primer día.
 
-**Pendientes** las familias restantes: XSS, criptografía débil en un ejercicio
-del ciclo formativo, CSRF desactivado, y dos grupos sobre enlace de sockets y
+**XSS y sanitización incompleta (resuelta).** Cuatro avisos con tres causas
+distintas, y cada uno pedía una solución diferente:
+
+En el controlador de pseudocifrado, la respuesta contiene texto del usuario y
+podía servirse con un tipo de contenido que el navegador interpretara como
+HTML. Aquí **escapar no era una opción** — alteraría el resultado del cifrado —,
+así que la defensa es declarar `produces = TEXT_PLAIN`: el navegador muestra la
+respuesta literalmente en lugar de interpretarla.
+
+En la consola de depuración de TaskHubPro se construía el contenido con
+`innerHTML` a partir de la URL (que incluye los filtros que teclea el usuario)
+y de la respuesta del servidor. Sustituido por construcción del DOM con
+`textContent`. La diferencia es de fondo: `innerHTML` interpreta lo que recibe,
+`textContent` lo inserta tal cual.
+
+Y en el saneado de texto para el sintetizador de voz del widget había el error
+más instructivo de los tres. La línea original quitaba etiquetas con una única
+pasada de `replace(/<[^>]*>/g, '')`. Parece correcta, pero con una entrada como
+`<<span>script>` el filtro elimina el `<span>` central y **produce** `<script>`,
+una etiqueta recién creada que ya nadie vuelve a revisar. Ahora se repite hasta
+que el texto deja de cambiar y se eliminan los signos sueltos. La lección
+general: un filtro de una sola pasada puede construir aquello que pretende
+eliminar.
+
+### Más herramientas declaradas pero nunca ejercitadas
+
+Intentar compilar para verificar los cambios anteriores destapó dos defectos
+más, ninguno relacionado con esta sesión:
+
+- El `pom.xml` de `ApiService` **se declaraba como dependencia de sí mismo**, lo
+  que impedía a Maven ni siquiera leer el proyecto. Tenía además un
+  `spring-boot-starter` duplicado y Lombok fijado a `RELEASE`, un valor obsoleto
+  que hacía que la compilación pudiera cambiar de un día para otro sin tocar
+  nada. Ese proyecto no había compilado nunca.
+- Siete `application.properties` estaban guardados en ISO-8859 en lugar de
+  UTF-8, por haberse escrito con un editor de Windows en español. Maven y Spring
+  Boot leen los recursos como UTF-8, así que la compilación fallaba en cuanto
+  aparecía una vocal acentuada en un comentario. Convertidos los siete.
+
+Con estos, van seis hallazgos de la misma naturaleza: script de lint sin
+configuración de ESLint, tests que destruían la base de datos y nunca se
+ejecutaban, doce wrappers de Maven incompletos, un `pom.xml` ilegible y unos
+recursos mal codificados. Todos son **cosas declaradas que nadie llegó a
+ejecutar**, y todos los habría detectado un pipeline de integración continua en
+su primer día. Es, con diferencia, la conclusión más útil de esta revisión.
+
+**Pendientes** las familias restantes: criptografía débil en un ejercicio del
+ciclo formativo, CSRF desactivado, y dos grupos sobre enlace de sockets y
 validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity

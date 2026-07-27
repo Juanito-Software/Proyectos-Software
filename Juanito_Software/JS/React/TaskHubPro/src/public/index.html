@@ -877,8 +877,18 @@
 
       const logHeader = `>> ${method} ${url}\n`;
       const prettyJson = JSON.stringify(data, null, 2);
-      
-      terminal.innerHTML = `<span class="console-info">${logHeader}</span>${prettyJson}`;
+
+      // Se construye el DOM en lugar de asignar innerHTML.
+      //
+      // La url incluye los filtros que escribe el usuario y prettyJson viene de
+      // la respuesta del servidor: con innerHTML, cualquier etiqueta dentro de
+      // esos textos se interpretaría como HTML y podría ejecutar código.
+      // textContent inserta el texto tal cual, sin interpretarlo nunca.
+      const header = document.createElement('span');
+      header.className = 'console-info';
+      header.textContent = logHeader;
+
+      terminal.replaceChildren(header, document.createTextNode(prettyJson));
       terminal.scrollTop = 0;
     }
 

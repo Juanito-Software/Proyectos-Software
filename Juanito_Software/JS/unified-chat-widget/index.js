@@ -258,7 +258,22 @@ function sanitizeForTTS(s) {
   if (!s) return '';
   let t = normUnicode(s);
   t = t.replace(/[\r\n]+/g, ' ');         // unifica saltos de línea
-  t = t.replace(/<[^>]*>/g, '');         // quita tags HTML simples
+
+  // Quita etiquetas HTML repitiendo hasta que no quede ninguna.
+  //
+  // Una sola pasada es burlable: en "<<span>script>" el replace elimina el
+  // "<span>" del centro y el resultado es "<script>", que ya ha pasado el
+  // filtro. Repetir hasta que el texto deje de cambiar cierra ese hueco.
+  let anterior;
+  do {
+    anterior = t;
+    t = t.replace(/<[^>]*>/g, '');
+  } while (t !== anterior);
+
+  // Y se eliminan los signos de mayor/menor sueltos que hayan sobrevivido,
+  // para que no puedan volver a formar una etiqueta más adelante.
+  t = t.replace(/[<>]/g, '');
+
   t = t.replace(/[^\x20-\x7EÁÉÍÓÚÜÑáéíóúüñ¿¡€£¥·çÇàèìòùÄÖäöß—–]+/g, ''); // restringe a caracteres comunes + algunos acentos
   if (t.length > TTS_MAX_LENGTH) t = t.slice(0, TTS_MAX_LENGTH) + '...';
   return t.trim();
