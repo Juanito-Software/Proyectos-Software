@@ -150,4 +150,4 @@ proyecto tiene limitaciones conocidas, están documentadas en su propio código.
 
 ---
 
-©️ 2025 JuanitoSoftware · [bernaldezperedaj@gmail.com](mailto:bernaldezperedaj@gmail.com)
+©️ 2025–2026 JuanitoSoftware · [bernaldezperedaj@gmail.com](mailto:bernaldezperedaj@gmail.com)
