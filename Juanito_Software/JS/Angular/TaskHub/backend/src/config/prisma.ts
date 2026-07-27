@@ -3,7 +3,7 @@ import { isProduction } from './env';
 
 // Patrón singleton: evita crear múltiples conexiones en desarrollo (hot-reload).
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __prisma__: PrismaClient | undefined;
 }
 
