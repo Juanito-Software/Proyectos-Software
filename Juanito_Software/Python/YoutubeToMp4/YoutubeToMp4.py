@@ -24,8 +24,46 @@ import sys
 import csv
 import tempfile
 import shutil
+from urllib.parse import urlparse
 
 HAS_PYTUBE = False
+
+# Dominios de los que se acepta descargar.
+DOMINIOS_YOUTUBE = (
+    "youtube.com",
+    "youtu.be",
+    "youtube-nocookie.com",
+)
+
+
+def es_url_de_youtube(url: str) -> bool:
+    """
+    Comprueba que la URL apunta realmente a YouTube.
+
+    La comprobacion se hace sobre el HOST extraido con urlparse, no buscando
+    subcadenas dentro de la URL entera. Escribir `"youtube.com" in url` parece
+    equivalente y no lo es: esa condicion la cumple tambien
+    https://youtube.com.sitio-falso.net/x, porque la cadena aparece dentro del
+    dominio del atacante. La URL entera contiene demasiadas partes que un
+    tercero controla (ruta, parametros, fragmento) como para buscar en ella.
+
+    Del mismo modo, se exige que el host sea el dominio exacto o un subdominio
+    suyo comparando con el punto delante (".youtube.com"). Sin ese punto,
+    "mi-youtube.com" pasaria el filtro.
+    """
+    try:
+        partes = urlparse(url)
+    except ValueError:
+        return False
+
+    if partes.scheme not in ("http", "https"):
+        return False
+
+    host = (partes.hostname or "").lower()
+    return any(
+        host == dominio or host.endswith("." + dominio)
+        for dominio in DOMINIOS_YOUTUBE
+    )
 
 try:
     from pytubefix import YouTube
@@ -227,6 +265,12 @@ def descargar_con_pytube(url, carpeta_salida="descargas"):
 # ---------------- wrapper y flujo principal ----------------
 
 def descargar_video_mp4(url, carpeta_salida=None):
+    # La validacion se hace aqui y no en cada sitio que pide una URL, porque
+    # este es el punto por el que pasan todas: el modo interactivo y el CSV.
+    # Repartirla por los puntos de entrada es como se acaba olvidando en uno.
+    if not es_url_de_youtube(url):
+        raise ValueError(f"La URL no pertenece a YouTube: {url}")
+
     if carpeta_salida is None:
         if hasattr(sys, '_MEIPASS'):
             script_dir = os.path.dirname(sys.executable)
@@ -277,9 +321,9 @@ def proceso_interactivo():
         if url.lower() in ("salir", "n", "no"):
             print("Gracias por usar el programa. Esperamos verte pronto.👋")
             break
-        # Validar que sea una URL válida
-        if not (url.startswith("http://") or url.startswith("https://")):
-            print("❌ Por favor, introduce una URL válida que comience con http:// o https://")
+        # Validar que sea una URL de YouTube
+        if not es_url_de_youtube(url):
+            print("❌ Introduce una URL de YouTube válida (youtube.com, youtu.be) con http:// o https://")
             continue
         try:
             descargar_video_mp4(url)
@@ -308,8 +352,14 @@ if __name__ == "__main__":
     # Preguntar modo de descarga (csv o manual)
     modo = input("\n¿Quieres descargar automáticamente desde CSV o manualmente por consola? (csv/manual): ").strip().lower()
     
-    # Detectar si el usuario escribió una URL por error
-    if modo.startswith("http://") or modo.startswith("https://") or "youtube.com" in modo or "youtu.be" in modo:
+    # Detectar si el usuario escribió una URL por error.
+    #
+    # Esto es una comodidad, no un control de seguridad: si acierta, se pasa al
+    # modo manual, que vuelve a pedir la URL y esa si se valida. Aun asi se usa
+    # la misma funcion que el resto, para no dejar en el codigo un
+    # `"youtube.com" in modo` que el siguiente lector pueda copiar creyendo que
+    # es una comprobacion valida.
+    if es_url_de_youtube(modo) or modo.startswith(("http://", "https://")):
         print("⚠️ Parece que escribiste una URL. Se usará modo manual.")
         print("   La próxima vez, escribe 'manual' o 'csv' para elegir el modo.\n")
         proceso_interactivo()

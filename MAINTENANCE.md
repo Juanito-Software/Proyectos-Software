@@ -15,10 +15,9 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas ocho: modo debug de Flask, exposición de información
-  (Java y Python), falta de límite de peticiones, path traversal, XSS,
-  criptografía débil, CSRF y enlace de sockets. Pendiente una: validación
-  de URL.
+  problemas. **Las nueve resueltas**: modo debug de Flask, exposición de
+  información (Java y Python), falta de límite de peticiones, path traversal,
+  XSS, criptografía débil, CSRF, enlace de sockets y validación de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
@@ -255,10 +254,11 @@ recursos mal codificados. Todos son **cosas declaradas que nadie llegó a
 ejecutar**, y todos los habría detectado un pipeline de integración continua en
 su primer día. Es, con diferencia, la conclusión más útil de esta revisión.
 
-(Más adelante aparecieron cuatro más, hasta diez: el `IvParameterSpec` y la
-generación de claves RSA de HashTools, el SSR de TaskHub Angular y el
-`permitAll()` con token de demostración de RadioStack. Todos documentados en sus
-respectivas secciones.)
+(Más adelante aparecieron cinco más, hasta once: el `IvParameterSpec` y la
+generación de claves RSA de HashTools, el SSR de TaskHub Angular, el
+`permitAll()` con token de demostración de RadioStack, y unos `@types/node`
+fijados a la versión 18 en un proyecto que se ejecuta sobre Node 22. Todos
+documentados en sus respectivas secciones.)
 
 ### Criptografía débil en HashTools
 
@@ -611,7 +611,116 @@ recibía explicación alguna.
 **Pendiente en la interfaz:** el campo "Tu alias" de `chat.fxml` ya no tiene
 efecto. Se deja señalado en lugar de retirarlo, pero es un control muerto.
 
-**Pendiente** la familia restante: validación de URL.
+### Validación incompleta de URL en YoutubeToMp4
+
+Una sola alerta, en la línea que detectaba si el usuario había escrito una URL
+en lugar de `csv` o `manual`:
+
+```python
+if modo.startswith("http://") or ... or "youtube.com" in modo or "youtu.be" in modo:
+```
+
+Buscar `"youtube.com"` dentro de la URL entera parece equivalente a comprobar el
+dominio y no lo es. La URL completa contiene partes que controla quien la
+escribe —ruta, parámetros, fragmento—, así que
+`https://youtube.com.sitio-falso.net/x` y `https://malo.net/?ref=youtube.com`
+pasan el filtro sin ser de YouTube.
+
+Ahora bien, **esa línea concreta no era un control de seguridad**: si acierta,
+pasa al modo manual, que vuelve a pedir la URL. El fallo real estaba en otro
+sitio y CodeQL no lo señalaba: **ni el modo interactivo ni el CSV comprobaban el
+destino**. El interactivo solo exigía que empezara por `http://` o `https://`, y
+el CSV no comprobaba nada.
+
+Corregido con `es_url_de_youtube()`, que analiza la URL con `urlparse` y compara
+el **host**, no la cadena completa. Dos detalles que hacen que funcione:
+
+- Se exige que el esquema sea `http` o `https`, lo que descarta `file://` y
+  `javascript:`.
+- La coincidencia por subdominio compara con el punto delante
+  (`host.endswith(".youtube.com")`). Sin ese punto, `mi-youtube.com` pasaría.
+
+La validación se colocó dentro de `descargar_video_mp4()`, que es el punto por
+el que pasan los dos modos, en lugar de repetirla en cada punto de entrada:
+repartirla es como se acaba olvidando en uno de ellos.
+
+Verificado con 14 casos, incluidos los cuatro que el filtro anterior aceptaba
+indebidamente. Los 14 pasan.
+
+Con esto quedan **cerradas las nueve familias de CodeQL**.
+
+### Migración de Karma a Vitest en TaskHub Angular
+
+No viene de una alerta de CodeQL sino de Dependabot: la cadena vulnerable de
+`brace-expansion` entraba por Karma, el ejecutor de tests. Angular 21 usa Vitest
+por defecto y ofrece guía de migración, así que en vez de perseguir la
+dependencia se retiró la rama entera.
+
+- El builder pasa de `@angular/build:karma` a `@angular/build:unit-test`. Vitest
+  no lanza un navegador: ejecuta en Node y simula el DOM con jsdom.
+- El builder nuevo no admite opciones de compilación en el target de test
+  (`polyfills`, `assets`, `styles`), que ya estaban en el de `build`. La única
+  que no estaba, `zone.js/testing`, no hace falta: el único test no usa
+  `fakeAsync` ni `waitForAsync`. Si algún día se usan, hay que añadir
+  `zone.js/plugins/vitest-patch`.
+- Como el proyecto tiene SSR, se añadió una configuración de build `testing` que
+  desactiva `ssr` y `outputMode: server`. Sin ella, el builder habría usado
+  `development`, que arrastra el servidor a los tests.
+- `tsconfig.spec.json` pasa de tipos `jasmine` a `vitest/globals`.
+
+El fichero de test no se tocó: usa `describe`, `it`, `expect`, `toBeTruthy` y
+`not.toBeNull`, todo compatible. Existe un schematic oficial
+(`refactor-jasmine-vitest`) para convertir espías y matchers de Jasmine, pero
+aquí no había nada que convertir.
+
+**Resultado:** los 2 tests pasan en Vitest y las vulnerabilidades de npm en ese
+proyecto **bajan de 12 a 3**, desapareciendo las seis de severidad alta. El
+árbol de dependencias pasa de 668 a 519 paquetes.
+
+Desinstalar Karma no bastó por sí solo. Tras hacerlo, `npm audit` seguía
+señalando la cadena `brace-expansion → minimatch → glob → karma →
+@angular/build`. La causa se vio en el `package.json` de `@angular/build`:
+
+```json
+"peerDependencies":     { "karma": "^6.4.0", "vitest": "^4.0.8" },
+"peerDependenciesMeta": { "karma": { "optional": true }, "vitest": { "optional": true } }
+```
+
+Angular declara **ambos runners como peers opcionales**, para que cada proyecto
+instale solo el que use. npm no instala los peers opcionales, así que ese Karma
+no lo necesitaba nadie: era un resto que sobrevivía en el `package-lock.json` de
+cuando sí era dependencia directa. `npm uninstall` retira la declaración pero no
+purga el árbol. Se resolvió regenerando `node_modules` y el `package-lock.json`
+desde cero.
+
+La lección, que vale para cualquier proyecto de npm: **desinstalar un paquete no
+garantiza que salga del árbol**. Mientras siga en el bloqueo, sus dependencias
+transitivas siguen instaladas y siguen contando en la auditoría.
+
+**Queda abierta a propósito** la cadena
+`@angular/cli → @modelcontextprotocol/sdk → @hono/node-server` (3 moderadas). El
+único arreglo que ofrece npm es retroceder `@angular/cli` a la 21.0.4. Mismo
+criterio que las otras alertas bloqueadas aguas arriba: no se descarta, se deja
+abierta para que se cierre sola cuando Angular actualice.
+
+**No se ejecutó `npm audit fix --force` en ningún momento.** Proponía instalar
+`@angular/build@19.1.9` y `@angular/cli@21.0.4`, es decir, deshacer la
+actualización a Angular 21 que costó dos rondas de `ng update`. Retroceder de
+versión no es corregir una vulnerabilidad.
+
+**Un hallazgo de camino.** La instalación falló primero con `ERESOLVE`: Vitest 4
+exige `@types/node` 20, 22 o 24 en adelante, y el proyecto declaraba `^18.18.0`
+mientras el Node realmente instalado es el **22.16.0**. Llevaba tiempo
+compilándose con los tipos de una versión de Node que no se usa, y que además ya
+está fuera de soporte. Se alineó a `^22`, la que coincide con el runtime: unos
+tipos más modernos que el intérprete permitirían usar APIs inexistentes en la
+máquina, y el fallo aparecería en ejecución en lugar de al compilar.
+
+Se resolvió subiendo la dependencia, **no** con `--force` ni
+`--legacy-peer-deps`: el conflicto era real, no un aviso espurio.
+
+**Nota:** la propia documentación de Angular marca como *experimental* la
+migración de un proyecto existente a Vitest.
 
 ### Credenciales en el código de LeaderBoard_Unity
 

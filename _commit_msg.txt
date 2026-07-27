@@ -1,63 +1,69 @@
-fix(security): replace the forgeable demo token with signed JWT
+fix(security): validate YouTube URLs by host; migrate Angular tests to Vitest
 
-RadioStack's API was fully open: SecurityConfig declared
-anyRequest().permitAll() while exposing POST, PUT, PATCH and DELETE on
-programmes, presenters, broadcasts, comments and chat.
+YoutubeToMp4 decided whether a string was a YouTube link with
+`"youtube.com" in modo`. Substring matching on a whole URL is not a host
+check: https://youtube.com.example.net/x and https://evil.net/?ref=youtube.com
+both satisfy it, because the URL contains path, query and fragment that the
+author of the link controls.
 
-Underneath it, the token was the string "Bearer-demo-" followed by the
-user id, with no signature, no secret and no expiry. Sending
-"Authorization: Bearer-demo-1" impersonated user 1. The surrounding code
-looked like real authentication -- AuthController, /login, BCrypt password
-comparison, a /me returning 401 -- which made the placeholder easy to
-mistake for a working mechanism.
+That particular line was only a convenience heuristic, but the real gap was
+elsewhere and CodeQL did not flag it: neither the interactive mode nor the
+CSV mode checked the destination at all. The interactive path only required
+an http:// or https:// prefix; the CSV path checked nothing.
 
-HTTP:
-- JwtService signs with HMAC-SHA256. The key comes from
-  RADIOSTACK_JWT_SECRET and has no default on purpose: a default in the
-  repository would be a public key anyone could mint tokens with. Keys
-  shorter than 256 bits are rejected at startup.
-- JwtAuthenticationFilter populates the security context but never
-  rejects a request, so access rules stay in one place: SecurityConfig.
-- SecurityConfig now permits login and GET, and requires a token for
-  everything that changes data. Unauthenticated requests get 401 instead
-  of 403 via an authenticationEntryPoint.
-- /me re-reads the database to confirm the account is still active. JWTs
-  cannot be revoked, so a deactivated user's token stays cryptographically
-  valid until it expires.
+Added es_url_de_youtube(), which parses with urlparse and compares the
+hostname against an allow-list. Subdomain matching uses a leading dot
+(".youtube.com") so that "mi-youtube.com" does not pass, and the scheme is
+restricted to http/https, which rules out file:// and javascript:. The
+check lives in descargar_video_mp4(), the single point both modes go
+through, rather than being repeated at each entry point.
 
-WebSocket chat:
-- The servlet filter cannot cover STOMP: the connection is established by
-  a single handshake that carries no Authorization header, and later
-  frames travel outside the request/response cycle. Authentication now
-  happens in the STOMP CONNECT frame, the first one that accepts custom
-  headers, via StompAuthChannelInterceptor.
-- Same policy as HTTP, deliberately: SUBSCRIBE to /topic is public, SEND
-  to /app requires a valid token. A CONNECT without a token is accepted as
-  anonymous; one with an invalid token is rejected rather than downgraded.
-- The chat alias came from the message payload, so anyone could sign as
-  someone else. It now comes from the verified token.
-- StompClient sends the token in CONNECT and handles ERROR frames, which
-  it previously discarded silently, leaving rejected sends unexplained.
+Verified against 14 cases, including the four the previous filter wrongly
+accepted. All pass. This closes the last of the nine CodeQL families.
 
-BREAKING CHANGE: the desktop client sent "Authorization: <token>" without
-the Bearer scheme, because the prefix was baked into the demo token
-string. ApiClient now adds it. The admin module must be rebuilt. The
-"alias" field in chat.fxml no longer has any effect.
+Separately, migrate the Angular TaskHub test setup from Karma to Vitest.
+The vulnerable brace-expansion chain entered through Karma, so the branch
+was removed rather than chased. Angular 21 ships Vitest as the default
+runner.
 
-Also in HashTools, KeyPairManagerRSA.generarClaves used neither of its two
-parameters: it never called kpg.initialize(...), so Java produced a
-2048-bit key with the default random source and ignored both. Both dead
-parameters were traps for anyone wiring them up:
+- Builder changes from @angular/build:karma to @angular/build:unit-test.
+- Build options (polyfills, assets, styles) move out of the test target,
+  which the new builder does not support; they already exist on the build
+  target. zone.js/testing is not needed: the single spec uses neither
+  fakeAsync nor waitForAsync.
+- Added a "testing" build configuration disabling ssr and outputMode
+  server. Without it the builder would use "development", which drags the
+  SSR server into the test build.
+- tsconfig.spec.json types go from jasmine to vitest/globals.
+- The spec file is unchanged; its matchers are already Vitest-compatible.
 
-- The only caller passed 256, copied from the AES key generation. For RSA
-  that is a category error; initialize(256) throws.
-- Seeding SecureRandom from the password would have made key generation
-  deterministic, letting anyone who knows the password reproduce the
-  private key. PasswordValidator allows 8 to 20 characters.
+Both tests pass and npm vulnerabilities in that project drop from 12 to 3,
+removing all six high-severity ones. The dependency tree goes from 668 to
+519 packages.
 
-Now calls initialize(2048) with the system random source and rejects
-smaller sizes. Observable behaviour is unchanged; existing key files
-remain valid.
+Uninstalling Karma was not enough on its own: audit still reported
+brace-expansion -> minimatch -> glob -> karma -> @angular/build. Angular
+declares both runners as OPTIONAL peer dependencies, which npm does not
+install, so that Karma was a leftover surviving in package-lock.json from
+when it was a direct dependency. npm uninstall drops the declaration but
+does not prune the tree; the lockfile and node_modules had to be
+regenerated.
 
-Also derive the FTP passive-mode announcement from HOST instead of a
-hardcoded literal, and drop the unused ip_anuncio variable.
+The remaining three moderate advisories
+(@angular/cli -> @modelcontextprotocol/sdk -> @hono/node-server) are left
+open on purpose: the only fix npm offers is downgrading @angular/cli. Same
+policy as the other upstream-blocked alerts -- not dismissed, left open to
+close by itself when Angular updates.
+
+npm audit fix --force was never run. It proposed @angular/build@19.1.9 and
+@angular/cli@21.0.4, undoing the Angular 21 upgrade. Downgrading is not
+fixing.
+
+Also bump @types/node from ^18.18.0 to ^22. Vitest 4 requires 20, 22 or
+24+, and the project was building against types for a Node version it does
+not run -- the installed runtime is 22.16.0, and Node 18 is end-of-life.
+Resolved by upgrading rather than with --force or --legacy-peer-deps: the
+peer conflict was real.
+
+NOTE: Angular documents migrating an existing project to Vitest as
+experimental.
