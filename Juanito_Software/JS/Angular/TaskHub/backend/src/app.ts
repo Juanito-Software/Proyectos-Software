@@ -22,6 +22,15 @@ export function createApp(): Application {
   app.use(compression());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  // La unica cookie de esta API es el refresh token. La proteccion frente a
+  // CSRF esta en sus atributos (sameSite 'strict' y path acotado), definidos en
+  // controllers/auth.controller.ts, no en un middleware aparte.
+  //
+  // No se usa middleware de token CSRF a proposito: el resto de la API se
+  // autentica con Bearer en la cabecera Authorization, que el navegador no
+  // adjunta automaticamente y por tanto no es vulnerable a CSRF. Solo dos rutas
+  // (/api/auth/refresh y /api/auth/logout) dependen de la cookie, y el peor
+  // desenlace posible en ellas es un cierre de sesion forzado.
   app.use(cookieParser());
   app.use(pinoHttp({ logger }));
 

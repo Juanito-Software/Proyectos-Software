@@ -15,9 +15,9 @@ de los proyectos).
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
 - **Code scanning (CodeQL):** 69 alertas agrupadas en nueve familias de
-  problemas. Resueltas seis: modo debug de Flask, exposición de información
-  (Java y Python), falta de límite de peticiones, path traversal, XSS y
-  criptografía débil. Pendientes tres: CSRF, enlace de sockets y validación
+  problemas. Resueltas siete: modo debug de Flask, exposición de información
+  (Java y Python), falta de límite de peticiones, path traversal, XSS,
+  criptografía débil y CSRF. Pendientes dos: enlace de sockets y validación
   de URL.
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
@@ -255,6 +255,9 @@ recursos mal codificados. Todos son **cosas declaradas que nadie llegó a
 ejecutar**, y todos los habría detectado un pipeline de integración continua en
 su primer día. Es, con diferencia, la conclusión más útil de esta revisión.
 
+(Más adelante aparecieron dos más, hasta ocho: el `IvParameterSpec` de HashTools
+y el SSR de TaskHub Angular, ambos documentados en sus secciones.)
+
 ### Criptografía débil en HashTools
 
 Cuatro alertas en `Java/HashTools`, un ejercicio del ciclo formativo que cifra
@@ -299,8 +302,105 @@ se descifra bloque a bloque.
 generados con la versión anterior del programa ya no pueden descifrarse con
 ésta. Dado que se trata de un ejercicio y no hay datos que conservar, se asume.
 
-**Pendientes** las familias restantes: CSRF desactivado, y dos grupos sobre
-enlace de sockets y validación de URL.
+### Protección CSRF desactivada
+
+Dos alertas, en dos proyectos, que pese a la etiqueta común **no son el mismo
+problema**. La distinción que decide ambos casos es si existe *autoridad
+ambiental*: credenciales que el navegador adjunta por su cuenta a una petición
+provocada desde otro sitio web. Sin eso, no hay CSRF posible, porque la petición
+forjada llega sin identidad.
+
+**RadioStack — falso positivo.** La API es `STATELESS` y no crea sesión ni emite
+ninguna cookie; no hay `HttpSession`, `Cookie`, `formLogin` ni `httpBasic` en
+todo el proyecto. Desactivar CSRF ahí es la configuración correcta. CodeQL ve
+`csrf.disable()` y avisa sin poder determinar si hay autoridad ambiental.
+Documentado en el propio `SecurityConfig`, con la condición que obligaría a
+revertirlo: si algún día se añade autenticación por sesión o por cookie.
+
+**TaskHub Angular — real, aunque de impacto bajo.** El access token viaja en la
+cabecera `Authorization`, que el navegador no añade solo y por tanto es inmune.
+Pero el refresh token va en cookie, y `POST /api/auth/refresh` y
+`POST /api/auth/logout` se autentican **únicamente** con ella. Eso sí es
+autoridad ambiental.
+
+El impacto conviene medirlo con precisión en lugar de asumir el peor caso: el
+CORS está restringido a un solo origen, así que un atacante no puede leer la
+respuesta y no roba ningún token. Lo máximo que consigue es forzar un cierre de
+sesión o una rotación del refresh token. Molestia, no robo de credenciales.
+
+Corregido subiendo la cookie de `sameSite: 'lax'` a `'strict'`. Es un cambio que
+no puede romper nada: la SPA y la API son *same-site*, que es la razón de que ya
+funcionase con `lax`; `strict` solo restringe el caso cruzado, que aquí no
+existe. Se descartó montar un token CSRF con librería (patrón double-submit):
+para dos rutas cuyo peor desenlace es un logout forzado, es más infraestructura
+de la que el problema justifica.
+
+También se descartó **quitar la cookie** y devolver el refresh token en el
+cuerpo de la respuesta. Eliminaría la clase de vulnerabilidad entera, pero esa
+cookie es `httpOnly` precisamente para que un XSS no pueda leer el refresh
+token: sería cambiar un CSRF de impacto bajo por un XSS con robo de sesión.
+
+**La alerta de TaskHub se descarta a mano.** La consulta
+`js/missing-token-validation` es sintáctica — busca `cookie-parser` sin
+middleware CSRF y no evalúa los atributos de la cookie, así que no hay forma de
+que la corrección aplicada la cierre sola. Es la única excepción al criterio de
+*corregir en lugar de silenciar* seguido en el resto de la revisión, y la
+diferencia respecto a un descarte de conveniencia es que aquí sí hay un arreglo
+real de por medio: lo que se descarta es una comprobación que no sabe mirar
+dónde está puesta la defensa.
+
+La corrección se verificó ejecutándola, no por deducción: con la cookie ya en
+`Strict`, `POST /api/auth/refresh` devuelve 200 con usuario y token nuevos, y
+`POST /api/auth/logout` devuelve 204. Las dos rutas que dependen de la cookie
+siguen funcionando.
+
+**Hallazgo aparte, pendiente de revisar:** `SecurityConfig` de RadioStack
+declara `anyRequest().permitAll()`, es decir, la API entera queda accesible sin
+autenticación. Puede ser deliberado si es de solo lectura, pero no se ha
+verificado.
+
+### Bug de sesión con SSR en TaskHub Angular
+
+Descubierto al verificar lo anterior, y no relacionado con ello: **al pulsar F5
+estando dentro, la aplicación expulsaba al usuario al login**.
+
+Lo primero fue descartar que lo hubiera provocado el cambio de la cookie. Tres
+medidas lo dejaron claro:
+
+- `localStorage` conservaba la sesión intacta después del F5. Si la causa
+  hubiera sido la cookie, el único camino hasta la pantalla de login pasa por
+  `clearSession()`, que la habría borrado.
+- No se registró **ninguna** petición a `/api/auth/refresh`. La expulsión ocurría
+  sin consultar al backend.
+- Pedir `/` directamente devolvía un **redirect HTTP** (respuesta 3xx), es decir,
+  la decisión venía del servidor, antes de ejecutarse una línea de JavaScript en
+  el navegador.
+
+La cadena causal: `ng serve` renderiza en servidor; allí se construye
+`AuthService`, cuyo `readUser()` devuelve `null` porque en el servidor no existe
+`localStorage`; `isAuthenticated()` da `false`; el `authGuard` que protege la
+ruta raíz responde `createUrlTree(['/login'])`; y Angular SSR traduce eso a un
+redirect. **En el servidor la aplicación estaba siempre deslogueada.** Solo se
+manifestaba al refrescar, que es la única ocasión en que interviene el servidor.
+
+Había además un agravante: `app.routes.server.ts` declaraba
+`{ path: '**', renderMode: RenderMode.Prerender }`. Prerenderizar es generar
+HTML en tiempo de compilación, así que una ruta protegida por un guard quedaba
+congelada en un fichero estático con el resultado de evaluar la sesión de un
+usuario inexistente.
+
+**Corregido** marcando las rutas protegidas como `RenderMode.Client`, de modo
+que el guard se evalúa solo en el navegador, que es donde vive la sesión. Login
+y registro siguen prerenderizándose: son públicas y no dependen de quién sea el
+usuario. La regla que ordena ahora ese fichero está escrita en él, junto con la
+condición que permitiría revertirlo (deducir la sesión de la cookie `httpOnly`,
+que el servidor sí puede leer).
+
+Es el octavo caso del patrón dominante de esta revisión: el SSR estaba
+configurado, compilaba y arrancaba, pero el estado de sesión se había diseñado
+como si solo existiera el navegador. **Nadie había pulsado F5 estando dentro.**
+
+**Pendientes** las familias restantes: enlace de sockets y validación de URL.
 
 ### Credenciales en el código de LeaderBoard_Unity
 

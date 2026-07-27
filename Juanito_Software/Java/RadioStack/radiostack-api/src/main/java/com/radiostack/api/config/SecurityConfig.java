@@ -15,6 +15,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+            // CSRF desactivado a proposito, no por descuido.
+            //
+            // Un ataque CSRF necesita que el navegador adjunte credenciales por
+            // su cuenta a una peticion provocada desde otro sitio web: una
+            // cookie de sesion que viaja sola. Esta API es STATELESS y no crea
+            // ninguna sesion ni emite ninguna cookie, asi que una peticion
+            // forjada llega sin identidad, igual que la de cualquier
+            // desconocido. No hay nada que suplantar.
+            //
+            // Si algun dia se anade autenticacion por sesion o por cookie, hay
+            // que volver a activar CSRF.
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
