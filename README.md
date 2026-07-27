@@ -1,4 +1,4 @@
-# Proyectos-Software — © 2025 Juanito Software
+# Proyectos-Software — © 2025–2026 Juanito Software
 
 Monorepo personal con los proyectos de software de **Juanito Software**: aplicaciones,
 utilidades y herramientas en Java, Python, JavaScript/TypeScript, PHP y Rust.
@@ -150,4 +150,4 @@ proyecto tiene limitaciones conocidas, están documentadas en su propio código.
 
 ---
 
-©️ 2025–2026 JuanitoSoftware · [bernaldezperedaj@gmail.com](mailto:bernaldezperedaj@gmail.com)
+© 2025–2026 JuanitoSoftware · [bernaldezperedaj@gmail.com](mailto:bernaldezperedaj@gmail.com)
