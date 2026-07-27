@@ -1328,7 +1328,11 @@ def limpiar_jugadores():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    # debug=True activa el depurador de Werkzeug, que permite ejecutar código
+    # Python arbitrario desde el navegador. Combinado con host='0.0.0.0'
+    # (accesible desde toda la red) supone una ejecución remota de código.
+    # Para depurar en local: app.run(host='127.0.0.1', debug=True)
+    app.run(host='0.0.0.0', debug=False)
 
 
 

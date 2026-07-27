@@ -100,4 +100,5 @@ def get_persona_by_id(persona_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Sin debug: el depurador de Werkzeug permite ejecutar código arbitrario.
+    app.run(debug=False)

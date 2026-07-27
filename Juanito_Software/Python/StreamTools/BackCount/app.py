@@ -87,5 +87,8 @@ if __name__ == '__main__':
     print("\nNota: Para OBS, usa la dirección IP de tu red local.")
     print("="*60 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # host='0.0.0.0' es intencionado: OBS necesita alcanzar el servidor desde
+    # la red local. Por eso mismo debug debe estar desactivado: el depurador
+    # de Werkzeug permitiría ejecutar código arbitrario a cualquiera en la LAN.
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
