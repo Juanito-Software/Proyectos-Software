@@ -4,7 +4,7 @@
 
 numpy==1.26.4
 opencv-python==4.13.0.92
-Pillow==12.2.0
+Pillow==12.3.0
 mss==10.2.0
 
 ultralytics==8.4.58
@@ -28,7 +28,7 @@ comtypes==1.4.16
 # ============================================================
 # IMPORTANTE: instalar manualmente con CUDA index-url
 
-torch==2.1.0+cu121
+torch==2.13.0
 torchvision==0.16.0+cu121
 torchaudio==2.1.0+cu121
 
