@@ -1,0 +1,116 @@
+# Configuración de Dependabot
+#
+# OBJETIVO: este fichero NO activa actualizaciones de versión. Solo da forma a
+# las pull requests de *seguridad*, que son las que Dependabot abre por su
+# cuenta cuando hay una vulnerabilidad.
+#
+# Por eso todos los bloques llevan `open-pull-requests-limit: 0`. Ese ajuste
+# desactiva las PRs de actualización de versión; las de seguridad no están
+# sujetas a ese límite ni cuentan para él, así que siguen llegando. Sin él, al
+# existir este fichero Dependabot empezaría a proponer actualizaciones de cada
+# dependencia desactualizada de todos los proyectos del monorepo.
+#
+# Dos problemas concretos que resuelve:
+#
+# 1. AGRUPACIÓN POR DIRECTORIO. Por defecto, las actualizaciones de seguridad
+#    agrupadas se juntan en una sola PR que cruza varios directorios. En un
+#    monorepo con una API Flask, un backend FastAPI y dos proyectos de machine
+#    learning eso es inmanejable: obliga a aceptar o rechazar en bloque cambios
+#    de naturalezas incompatibles. Los grupos definidos aquí no usan `group-by`,
+#    así que no cruzan directorios: una PR por proyecto.
+#
+# 2. EL STACK DE PYTORCH. Ver la nota en el bloque de pip.
+
+version: 2
+
+updates:
+  # ---------------------------------------------------------------------------
+  # Python
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directories:
+      - "/Juanito_Software/Python/**"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      seguridad:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      # PyTorch se gestiona a mano, no por Dependabot.
+      #
+      # FPS-AI-Toolkit fija `torch==2.1.0+cu121`. Ese sufijo `+cu121` es la
+      # compilación para CUDA 12.1, que no viene de PyPI sino del índice propio
+      # de PyTorch (--index-url). Dependabot no lo entiende y propone la versión
+      # de PyPI a secas, lo que dejaría el proyecto ejecutándose en CPU o
+      # directamente roto.
+      #
+      # Además torch, torchvision y torchaudio van emparejados por versión
+      # (torchvision 0.16 corresponde a torch 2.1). Dependabot sube solo uno y
+      # deja los otros atrás, produciendo una combinación que ni siquiera
+      # instala.
+      #
+      # Si aparece una vulnerabilidad en PyTorch hay que actualizar los tres a
+      # la vez, con la variante CUDA correcta, y comprobar que la GPU sigue
+      # funcionando. Eso no es automatizable aquí.
+      - dependency-name: "torch"
+      - dependency-name: "torchvision"
+      - dependency-name: "torchaudio"
+
+  # ---------------------------------------------------------------------------
+  # JavaScript / TypeScript
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directories:
+      - "/Juanito_Software/JS/**"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      seguridad:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # ---------------------------------------------------------------------------
+  # Java
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "maven"
+    directories:
+      - "/Juanito_Software/Java/**"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      seguridad:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # ---------------------------------------------------------------------------
+  # PHP
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "composer"
+    directories:
+      - "/Juanito_Software/PHP/**"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      seguridad:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions
+  # ---------------------------------------------------------------------------
+  # Sin efecto mientras no haya workflows propios; queda preparado para cuando
+  # se añada el pipeline de integración continua.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
