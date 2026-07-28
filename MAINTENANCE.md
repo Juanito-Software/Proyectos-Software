@@ -808,6 +808,73 @@ funcionaba.
 Funciona correctamente con PyJWT, que interpreta el datetime ingenuo como UTC,
 así que no es un fallo. Se deja para cuando toque.
 
+### Dependencias de LeaderBoard_Unity al día
+
+Cuatro entradas de la lista real viven en el mismo `requirements.txt`, así que se
+trataron juntas.
+
+| Paquete | Antes | Ahora | Motivo |
+|---|---|---|---|
+| `PyJWT` | 2.10.1 | 2.13.0 | 4 avisos, **3 no aplicables** |
+| `Werkzeug` | 3.0.4 | 3.1.8 | `safe_join` inseguro en Windows, agotamiento de recursos |
+| `requests` | 2.31.0 | 2.34.2 | fuga de `.netrc`, `verify=False` persistente |
+| `python-dotenv` | 1.0.1 | 1.2.2 | `set_key` sigue enlaces simbólicos |
+
+**De los cuatro avisos de PyJWT, tres no afectaban a este proyecto**: los de
+clave pública JWK aceptada como secreto HMAC, SSRF en `PyJWKClient` y peticiones
+JWKS ilimitadas requieren `PyJWK` o `PyJWKClient`, que no se usan en ninguna
+parte. Los dos que sí aplicaban son denegación de servicio.
+
+El proyecto ya estaba bien escrito en lo que importa: **las cinco llamadas a
+`jwt.decode` fijan `algorithms=['HS256']`**, sin excepción, y el `SECRET_KEY`
+mide 64 bytes. Las alertas graves no aplicaban por cómo está hecho el código, no
+por casualidad.
+
+Sin cambios de código: `encode`, `decode`, `ExpiredSignatureError` e
+`InvalidTokenError` son idénticos entre 2.10 y 2.13. Se comprobó también que
+Flask 3.0.3 funciona con Werkzeug 3.1.8 antes de subirlo, por estar acoplados.
+
+**Verificado extremo a extremo**: registro 201, login 200 con los dos tokens,
+perfil con token válido 200, y —la que importa— **perfil con el `id` del token
+cambiado de 8 a 1 conservando la firma original: 403**. Esa API identifica al
+usuario por el `id` que viaja dentro del token, así que si la firma no se
+comprobara bien, bastaría cambiar un número para leer el perfil de otro.
+
+#### Dos cabos sueltos que salieron al probarlo
+
+**El `.env` era idéntico al `.env.example`.** Al mover las credenciales de
+código a variables de entorno en una sesión anterior, el `.env` se quedó con los
+valores de muestra: el rol `usuario`, que no existe en PostgreSQL. La API llevaba
+desde entonces sin poder conectar a su base de datos, y nadie lo había notado
+porque nadie la había arrancado. Es la undécima aparición del patrón de esta
+revisión, y esta vez el descuido fue propio.
+
+**La contraseña real contenía `@` y `?`.** En una URL de conexión el `@` separa
+las credenciales del host, así que `psycopg2` partía la cadena por el sitio
+equivocado. Corregido codificando (`%40`, `%3F`) y **documentado en el
+`.env.example`** con la tabla de equivalencias, porque le va a ocurrir a
+cualquiera que clone el proyecto.
+
+#### Anotados y no corregidos
+
+En `authenticate_token` (`app.py`, línea 41):
+
+```python
+if auth_header:
+    token = auth_header.split(" ")[1]
+if not token:
+```
+
+Si la petición llega sin cabecera `Authorization`, `token` nunca se asigna y el
+`if not token` lanza `UnboundLocalError` → **500 en lugar de 403**. Si llega con
+la cabecera pero sin espacio, el `split(" ")[1]` lanza `IndexError` → otro 500.
+Rechaza igual, así que no es un fallo de seguridad, pero un 500 en el camino de
+autenticación revela que algo revienta por dentro.
+
+Y `app.run(host='0.0.0.0')` en la línea 1335 escucha en todas las interfaces.
+Puede ser deliberado, porque el cliente es un juego de Unity que quizá corra en
+otra máquina.
+
 ### El punto ciego de CodeQL en Java
 
 Descubierto al abrir por fin el aviso amarillo *"CodeQL is reporting warnings"*
