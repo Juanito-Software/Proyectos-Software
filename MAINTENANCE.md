@@ -808,6 +808,32 @@ funcionaba.
 Funciona correctamente con PyJWT, que interpreta el datetime ingenuo como UTC,
 así que no es un fallo. Se deja para cuando toque.
 
+#### python-multipart y python-dotenv en el mismo proyecto
+
+`python-multipart` 0.0.12 → 0.0.32 y `python-dotenv` 1.0.1 → 1.2.2.
+
+`python-multipart` acumulaba cuatro alertas altas, y conviene separar cuál
+importaba. La de **escritura arbitraria de ficheros indica en su propio título
+«via Non-Default Configuration»**: requiere una configuración que FastAPI no
+usa, así que no aplicaba. Las otras tres son denegación de servicio al parsear
+formularios —cabeceras de parte sin límite, frontera malformada, parseo
+cuadrático de la cadena de consulta— y esas **sí** eran alcanzables.
+
+El motivo es dónde interviene el paquete: FastAPI lo usa para leer formularios,
+y aquí eso ocurre en `OAuth2PasswordRequestForm`, en `routers/auth.py`. Es
+decir, en el **login**, que es una ruta pública y sin autenticar. Cualquiera
+podía enviarle un formulario deformado sin tener cuenta.
+
+El salto de versión es grande, así que antes de aplicarlo se comprobó en un
+entorno aparte que `OAuth2PasswordRequestForm` sigue funcionando con FastAPI
+0.115.0 y `python-multipart` 0.0.32, en `application/x-www-form-urlencoded` y en
+`multipart/form-data`, y que sigue devolviendo 422 cuando falta un campo.
+
+Verificado después contra el servidor real: `POST /auth/token` con credenciales
+incorrectas devuelve 401 y con las correctas devuelve el token. El 401 también
+cuenta como prueba: significa que el formulario se parseó bien y la comparación
+se hizo; si el parseo hubiera fallado, el error habría sido otro.
+
 ### Dependencias de LeaderBoard_Unity al día
 
 Cuatro entradas de la lista real viven en el mismo `requirements.txt`, así que se

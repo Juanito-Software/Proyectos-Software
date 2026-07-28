@@ -16,5 +16,10 @@ pydantic-settings==2.5.0
 # propia de PyJWT. Solo seria necesario para algoritmos RSA o ECDSA.
 PyJWT==2.13.0
 bcrypt==5.0.0
-python-multipart==0.0.12
-python-dotenv==1.0.1
+# python-multipart lo usa FastAPI para leer formularios. Aqui interviene en el
+# login, via OAuth2PasswordRequestForm, que es una ruta publica y sin
+# autenticar: cualquiera puede enviarle un formulario deformado. Por eso las
+# denegaciones de servicio al parsear (cabeceras de parte sin limite, frontera
+# malformada, parseo cuadratico) son alcanzables sin credenciales.
+python-multipart==0.0.32
+python-dotenv==1.2.2
