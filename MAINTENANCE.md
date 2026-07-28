@@ -903,6 +903,24 @@ Es el duodécimo caso del patrón de esta revisión —algo que compila pero que
 nunca se ejercitó— y el mejor argumento para el CI pendiente: **arrancar los dos
 módulos juntos una sola vez** habría detectado que el cliente no podía loguearse.
 
+### Conector de MySQL: cambio de artefacto, no de versión
+
+`Java/BatchProcessor` declaraba `mysql:mysql-connector-java:8.0.33`, con una alta
+(*MySQL Connectors takeover*). Este no se arregla subiendo la versión: **ese
+artefacto está descatalogado**. Oracle movió el conector a
+`com.mysql:mysql-connector-j` en 2022 y dejó de publicar el anterior, que se
+quedó congelado en la 8.0.33 con la vulnerabilidad sin parchear. Subir el número
+no habría servido de nada, porque no hay versiones nuevas de las coordenadas
+viejas.
+
+Cambiadas las coordenadas a `com.mysql:mysql-connector-j` y retirada la
+`<version>`: el proyecto hereda de `spring-boot-starter-parent`, que gestiona
+ese artefacto y lo mantiene al día.
+
+**El cambio es transparente** porque el nombre de la clase del driver no cambia
+en la práctica: `application.properties` ya usaba `com.mysql.cj.jdbc.Driver`, que
+es la clase del artefacto nuevo. No hubo que tocar ninguna configuración.
+
 ### El listado de Dependabot se sincronizó
 
 Las alertas fantasma descritas más abajo desaparecieron por sí solas: **de 202 a
