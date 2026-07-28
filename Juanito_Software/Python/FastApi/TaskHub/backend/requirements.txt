@@ -3,7 +3,18 @@ uvicorn[standard]==0.30.0
 sqlalchemy==2.0.36
 pydantic[email]==2.9.0
 pydantic-settings==2.5.0
-python-jose[cryptography]==3.3.0
+# PyJWT en lugar de python-jose.
+#
+# python-jose estuvo cuatro anos sin publicar version (3.3.0 en 2021, 3.4.0 en
+# 2025) y en ese hueco arrastro una confusion de algoritmos sin corregir. La
+# documentacion oficial de FastAPI dejo de recomendarlo por eso.
+#
+# Ademas unifica: LeaderBoard_Unity ya usa PyJWT, asi que ahora hay una sola
+# libreria de JWT en el repositorio en lugar de dos que hacen lo mismo.
+#
+# No hace falta el extra [cryptography]: con HS256 basta la implementacion
+# propia de PyJWT. Solo seria necesario para algoritmos RSA o ECDSA.
+PyJWT==2.13.0
 bcrypt==5.0.0
 python-multipart==0.0.12
 python-dotenv==1.0.1

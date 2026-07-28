@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import bcrypt
-from jose import JWTError, jwt
+import jwt  # PyJWT
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -37,12 +37,19 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        # algorithms= fija el algoritmo aceptado en lugar de leerlo de la
+        # cabecera del token. Es la defensa contra los ataques de confusion de
+        # algoritmos, en los que el atacante cambia el "alg" del token para que
+        # el servidor verifique con un metodo distinto del previsto.
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = schemas.TokenData(username=username)
-    except JWTError:
+    except jwt.PyJWTError:
+        # PyJWTError es la clase base de PyJWT: cubre firma invalida, token
+        # caducado, formato incorrecto y algoritmo no permitido. Equivale al
+        # JWTError de python-jose que habia aqui antes.
         raise credentials_exception
 
     user = db.query(models.User).filter(models.User.username == token_data.username).first()

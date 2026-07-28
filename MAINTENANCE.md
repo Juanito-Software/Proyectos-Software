@@ -738,6 +738,76 @@ Se resolvió subiendo la dependencia, **no** con `--force` ni
 **Nota:** la propia documentación de Angular marca como *experimental* la
 migración de un proyecto existente a Vitest.
 
+### python-jose sustituido por PyJWT en TaskHub (FastAPI)
+
+Primera de las alertas de Dependabot abordadas una a una. `python-jose 3.3.0`
+acumulaba una alerta **crítica** —confusión de algoritmos con claves OpenSSH
+ECDSA, que permite forjar tokens— y una moderada de denegación de servicio.
+
+**La crítica no era explotable aquí, y conviene dejarlo escrito.** Ese ataque
+necesita que el servidor verifique con una clave ECDSA y que el atacante firme
+con HS256 usando esa clave pública como secreto HMAC. Este proyecto usa un
+secreto simétrico y, sobre todo, fija la lista de algoritmos en el descifrado:
+
+```python
+jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+```
+
+Ese `algorithms=` es precisamente la defensa contra la familia de ataques de
+confusión de algoritmos: impide que el servidor use el `alg` que venga en la
+cabecera del token. Estaba bien hecho desde el principio.
+
+Aun así se corrigió, porque bastaría con cambiar `ALGORITHM` en el `.env` para
+que dejara de ser teórico.
+
+**Se eligió migrar a PyJWT en lugar de subir a `python-jose 3.5.0`**, que habría
+sido una línea. El motivo no es la vulnerabilidad concreta sino el historial:
+python-jose pasó **cuatro años sin publicar versión** —3.3.0 en 2021, 3.4.0 en
+2025— y en ese hueco arrastró la confusión de algoritmos sin corregir. Subir de
+versión arregla el fallo de hoy pero no el riesgo de cadena de suministro. La
+documentación oficial de FastAPI dejó de recomendarlo por lo mismo.
+
+Y unifica: `LeaderBoard_Unity` ya usaba PyJWT, así que ahora hay **una sola
+librería de JWT** en el repositorio en lugar de dos que hacen lo mismo.
+
+El cambio son tres líneas: el import, el tipo de excepción capturada y la
+dependencia. Las llamadas a `encode` y `decode` tienen firma idéntica en ambas
+librerías. Se retiró el extra `[cryptography]`, innecesario con HS256, lo que
+elimina también `ecdsa`, `rsa` y `pyasn1` del árbol.
+
+**Verificado con cinco pruebas contra el servidor en marcha**, no solo con el
+caso feliz:
+
+| Prueba | Resultado |
+|---|---|
+| Token válido | 200 |
+| Sin cabecera `Authorization` | 401 |
+| Cadena que no es un token | 401 |
+| Firma alterada en un byte | 401 |
+| **`sub` cambiado de `prueba1` a `admin`, firma original intacta** | **401** |
+
+La última es la que de verdad importa: comprueba la propiedad que hace útil un
+JWT, que el contenido no se puede modificar sin invalidar la firma. Debería
+estar en el CI.
+
+**Un error metodológico digno de recordar.** El primer intento de alterar la
+firma cambió su último carácter, de `...Erno` a `...Ernp`, y el servidor
+respondió 200. Parecía que la autenticación estaba rota. No lo estaba: una firma
+HMAC-SHA256 son 32 bytes, que en base64url ocupan 43 caracteres, y el último
+grupo de 3 caracteres codifica solo 2 bytes. **Los 2 bits sobrantes se
+descartan**, y `o` y `p` se diferencian justo en uno de ellos. Ambas cadenas
+decodifican a los mismos 32 bytes: el token era auténtico y el servidor hizo lo
+correcto.
+
+Es el tercer caso en dos días en que la herramienta o la prueba dicen algo que
+no es —tras las clases duplicadas de CodeQL y las alertas fantasma de
+Dependabot—. Sin comprobar los bytes, se habría "arreglado" código que
+funcionaba.
+
+**Anotado y no corregido:** `datetime.utcnow()` está obsoleto desde Python 3.12.
+Funciona correctamente con PyJWT, que interpreta el datetime ingenuo como UTC,
+así que no es un fallo. Se deja para cuando toque.
+
 ### El punto ciego de CodeQL en Java
 
 Descubierto al abrir por fin el aviso amarillo *"CodeQL is reporting warnings"*
