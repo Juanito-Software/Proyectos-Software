@@ -1,5 +1,6 @@
 package com.radiostack.admin.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -19,7 +20,19 @@ public class ApiClient {
     public ApiClient(String baseUrl) {
         this.baseUrl = baseUrl;
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
-        this.objectMapper = new ObjectMapper();
+        // El cliente ignora los campos del JSON que sus clases no declaran.
+        //
+        // Sin esto, el ObjectMapper falla en cuanto el servidor incluye un
+        // campo que el modelo del cliente no tiene, aunque ese campo no le haga
+        // falta. Era el caso de 'activo': el UsuarioDTO del servidor lo devuelve
+        // desde el primer commit, pero la clase UserInfo del cliente nunca lo
+        // declaro, asi que el login fallaba con "Unrecognized field". El cliente
+        // solo necesita id, nombre, email y rol.
+        //
+        // Un cliente HTTP debe tolerar que el servidor añada campos: es la forma
+        // normal de evolucionar una API sin romper a quien la consume.
+        this.objectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public void setToken(String token) {

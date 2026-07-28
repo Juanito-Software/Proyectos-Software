@@ -60,10 +60,22 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!--
+			Coordenadas nuevas del conector de MySQL.
+
+			El artefacto antiguo, mysql:mysql-connector-java, esta descatalogado
+			desde 2022: Oracle movio el conector a com.mysql:mysql-connector-j y
+			dejo de publicar el anterior, que se quedo en la 8.0.33 con la
+			vulnerabilidad sin parchear. No es una subida de version, es un
+			cambio de artefacto.
+
+			Sin <version>: la fija el spring-boot-starter-parent, que la mantiene
+			al dia y coherente con el resto del stack.
+		-->
 		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>8.0.33</version> <!-- Cambia esto por la versión más reciente -->
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>

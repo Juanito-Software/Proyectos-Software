@@ -834,6 +834,102 @@ incorrectas devuelve 401 y con las correctas devuelve el token. El 401 también
 cuenta como prueba: significa que el formulario se parseó bien y la comparación
 se hizo; si el parseo hubiera fallado, el error habría sido otro.
 
+### Jackson al día en radiostack-admin
+
+`jackson-databind` 2.15.2 → 2.22.0, con dos altas: saltos del validador de tipos
+polimórficos que permiten instanciar clases arbitrarias.
+
+**Lo interesante fue cómo hacerlo, no la versión.** El pom padre importa el BOM
+de Spring Boot, que fija las versiones de Jackson para **todos** los módulos.
+Subir aquí solo `jackson-databind` habría dejado su `jackson-core` transitivo en
+la versión que marca Spring Boot, y esa mezcla de versiones distintas entre
+artefactos del mismo grupo es exactamente la que producía las alertas separadas
+de `jackson-core` en los proyectos que se retiraron.
+
+Peor aún: **ese desajuste no rompe la compilación**. Las clases se encuentran y
+el build pasa; falla en tiempo de ejecución, al deserializar.
+
+Se resolvió importando el **BOM de Jackson en el propio módulo**, que mantiene
+`databind`, `core` y `annotations` en bloque y solo afecta a este módulo.
+
+No se subió Jackson en todo el proyecto a propósito: `radiostack-api` es una
+aplicación Spring Boot y debe usar el Jackson que Spring espera. `radiostack-admin`
+es un cliente JavaFX independiente que solo usa `ObjectMapper` para leer el JSON
+de la API, así que ahí el salto está aislado. **Es el mismo criterio aplicado a
+PyTorch: actualizar hasta donde el cambio está contenido, y no más allá.**
+
+Verificado con `dependency:tree`, que es lo que compilar no demuestra:
+
+```
+jackson-databind:jar:2.22.0
++- jackson-annotations:jar:2.22
+\- jackson-core:jar:2.22.0
+```
+
+(El `2.22` de `annotations` no es un desajuste: Jackson publica ese artefacto con
+versión de dos componentes en las entregas `.0`.)
+
+#### El bug que la prueba destapó: el cliente nunca pudo iniciar sesión
+
+Al arrancar la API y el cliente JavaFX juntos para probar el parseo, el login
+falló:
+
+```
+Unrecognized field "activo" (class com.radiostack.admin.client...LoginResponse$UserInfo)
+```
+
+**No lo causó la actualización.** El historial lo confirma: el `UsuarioDTO` del
+servidor devuelve el campo `activo` desde el commit original del proyecto
+(`7076f35`), y la clase `UserInfo` del cliente nunca lo declaró. El
+`ObjectMapper` del cliente estaba sin configurar, y su comportamiento por
+defecto es fallar ante campos desconocidos. Es decir: **el cliente de RadioStack
+no ha podido iniciar sesión desde el primer día.** Nadie lo notó porque nadie
+había arrancado los dos módulos a la vez.
+
+Que apareciera *ahora* es, irónicamente, la prueba de que Jackson 2.22 funciona:
+el error solo puede producirse después de recibir y empezar a leer el JSON.
+
+Corregido en el sitio correcto —el `ObjectMapper` del cliente, no la clase
+`UserInfo`— con `FAIL_ON_UNKNOWN_PROPERTIES = false`. Añadir el campo a mano
+habría dejado el mismo fallo latente para el próximo campo que el servidor
+añadiese. Un cliente HTTP debe tolerar que el servidor incorpore campos: es la
+forma normal de evolucionar una API sin romper a quien la consume.
+
+Verificado de extremo a extremo: la API arranca (Tomcat en 8080, Flyway valida,
+PostgreSQL conecta), el cliente hace login con `admin@radiostack.local` y entra
+al panel de administración.
+
+Es el duodécimo caso del patrón de esta revisión —algo que compila pero que
+nunca se ejercitó— y el mejor argumento para el CI pendiente: **arrancar los dos
+módulos juntos una sola vez** habría detectado que el cliente no podía loguearse.
+
+### El listado de Dependabot se sincronizó
+
+Las alertas fantasma descritas más abajo desaparecieron por sí solas: **de 202 a
+46**, y las 46 corresponden a ficheros que existen. Ya no aparece
+`Java/Spring/SpringBatch/`, `Java/Spring/SpringBoot/`, `Python/TaskHub/` ni los
+paquetes no declarados de `GPTDevTeam`.
+
+El reparto de lo que queda es más útil que el total:
+
+| Proyecto | Alertas |
+|---|---|
+| `FPS-AI-Toolkit` (Pillow 13 + torch 11) | **24** |
+| `JasperReportExecutor` (itext, jasperreports ×2, pgjdbc, poi) | 5 |
+| `radiostack-admin` (jackson, ya corregidas) | 5 |
+| `AI_DuoTalk` (torch) | 4 |
+| `LeaderBoard_Unity` (flask-cors ×3, flask) | 4 |
+| Sueltas (mysql-connector, poi, brace-expansion, @hono) | 4 |
+
+**Tres proyectos concentran 33 de las 46.** Y en los tres la actualización no es
+viable por motivos distintos: Pillow ya está en la última versión publicada,
+torch está excluido por el asunto de la compilación CUDA, e iText 2.1.7 lleva
+abandonado desde 2009 y migrar significa reescribir con iText 7 u OpenPDF.
+
+Es decir: **el techo de lo alcanzable actualizando dependencias está en unas 13
+alertas.** Bajar de ahí exige decidir si esos proyectos siguen siendo necesarios,
+que es una decisión de alcance del repositorio, no de mantenimiento.
+
 ### BackCount y FFMPEG_UI
 
 Dos proyectos pequeños, resueltos de una vez.

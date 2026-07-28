@@ -15,6 +15,34 @@
     <name>radiostack-admin</name>
     <description>Cliente de administración JavaFX para RadioStack</description>
 
+    <!--
+        BOM de Jackson propio de este modulo.
+
+        El pom padre importa el BOM de Spring Boot, que fija las versiones de
+        Jackson para todo el proyecto. Eso es correcto para radiostack-api, que
+        es una aplicacion Spring y debe usar el Jackson que Spring espera.
+
+        Pero este modulo es un cliente JavaFX independiente: no usa Spring, solo
+        Jackson para leer el JSON de la API. Subir aqui unicamente
+        jackson-databind dejaria su jackson-core transitivo en la version que
+        marca Spring Boot, y esa mezcla de versiones distintas entre artefactos
+        del mismo grupo es la que produce fallos raros en tiempo de ejecucion.
+
+        Importando el BOM de Jackson en el propio modulo, databind, core y
+        annotations se mueven siempre juntos, y solo afecta a este modulo.
+    -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.22.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -26,10 +54,10 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <!-- La version la fija el jackson-bom de arriba. -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version>
         </dependency>
         <dependency>
             <groupId>org.java-websocket</groupId>
