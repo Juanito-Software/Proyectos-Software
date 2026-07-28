@@ -834,6 +834,34 @@ incorrectas devuelve 401 y con las correctas devuelve el token. El 401 también
 cuenta como prueba: significa que el formulario se parseó bien y la comparación
 se hizo; si el parseo hubiera fallado, el error habría sido otro.
 
+### BackCount y FFMPEG_UI
+
+Dos proyectos pequeños, resueltos de una vez.
+
+**`StreamTools/BackCount`** — `Flask` 3.0.0 → 3.1.3 y `Werkzeug` 3.0.1 → 3.1.8.
+
+La alerta que figuraba como alta era *"Werkzeug debugger vulnerable to remote
+execution"*, y **no era explotable**: el depurador de Werkzeug solo permite
+ejecutar código si el modo debug está encendido, y `app.py` tiene `debug=False`.
+Con el comentario que se dejó al arreglarlo en su momento:
+
+```python
+# host='0.0.0.0' es intencionado: OBS necesita alcanzar el servidor desde
+# la red local. Por eso mismo debug debe estar desactivado: el depurador
+```
+
+Es un caso que merece señalarse: **una corrección de una sesión anterior
+neutralizó una alerta que apareció después**, y el comentario evitó tener que
+reconstruir el razonamiento al volver. La actualización se aplicó igualmente,
+porque la 3.0.1 sí arrastra los fallos de `safe_join` en Windows.
+
+Comprobado antes de aplicarlo que Flask 3.1.3 funciona con Werkzeug 3.1.8 en los
+tres patrones que usa el proyecto —plantillas, respuestas JSON y sesión—, por
+estar los dos paquetes acoplados.
+
+**`FFMPEG_UI`** — `python-dotenv` 1.1.1 → 1.2.2. Salto menor en un proyecto de
+escritorio con PyQt; no requiere verificación funcional.
+
 ### Dependencias de LeaderBoard_Unity al día
 
 Cuatro entradas de la lista real viven en el mismo `requirements.txt`, así que se
