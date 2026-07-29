@@ -1010,6 +1010,89 @@ termine no habría demostrado nada, porque el modelo de Silero se carga vía
 exige conocer la GPU y mover torch, torchvision y torchaudio en bloque. Sigue
 excluida en `dependabot.yml`.
 
+### FPS-AI-Toolkit: PyTorch CUDA y Pillow
+
+El proyecto con más alertas de toda la revisión: **24** (Pillow 13, torch 11),
+más de la mitad de las 46 que quedaban. Es una herramienta de visión por
+ordenador del portfolio, y usa GPU, así que la actualización dependía del
+hardware real de la máquina.
+
+**Pillow** 12.2.0 → 12.3.0. Las 13 alertas eran de vulnerabilidades publicadas
+después de la 12.2.0 —escrituras fuera de límites, bombas de descompresión,
+inyección de comandos en `WindowsViewer`—, todas corregidas en la 12.3.0.
+
+**El stack de PyTorch** pasó de `torch/torchvision/torchaudio 2.1.0/0.16.0/2.1.0
++cu121` a `torch/torchvision 2.6.0/0.21.0 +cu124`. Tres decisiones:
+
+- **De cu121 a cu124.** Aunque el toolkit CUDA instalado (`nvcc`) es 12.1, el
+  driver de NVIDIA es retrocompatible: torch trae sus propias librerías CUDA y
+  solo necesita un driver suficientemente moderno. Verificado en la máquina:
+  `torch.cuda.is_available()` da `True` sobre la RTX 4060 Ti (sm_89). La 2.6.0 es
+  además la versión que arregla por defecto el `torch.load` con RCE
+  (`weights_only`), que era la alerta crítica de este proyecto.
+
+- **Se retiró `torchaudio`.** Estaba en el `requirements.txt` (2.1.0+cu121) pero
+  el código no usa audio: es un proyecto de visión, y `torchaudio` no llegó a
+  instalarse siquiera. Lo requiere `ultralytics` (YOLO) a través de torch y
+  torchvision, nunca torchaudio. Fuera ~100 MB de dependencia muerta.
+
+- **Los tres —ahora dos— artefactos se fijan emparejados** (torch 2.6.0 ↔
+  torchvision 0.21.0). Mezclar versiones del stack de torch da errores en
+  ejecución, no al instalar. Documentado en el propio `requirements.txt`, con la
+  orden de instalación desde el índice de PyTorch (no PyPI) porque las builds
+  `+cuXXX` no están en PyPI.
+
+`torch` sigue **excluido en `dependabot.yml`** a propósito, y esto explica por
+qué: Dependabot no entiende el sufijo `+cu124` ni el índice alternativo de
+PyTorch, así que propondría la build de CPU de PyPI y rompería la GPU.
+Actualizarlo requiere hacerlo a mano, como aquí.
+
+**Verificado ejecutándolo:** las versiones quedan emparejadas con CUDA activa, y
+el toolkit arranca con YOLO detectando en GPU.
+
+### FPS-AI-Toolkit: el stack de PyTorch con CUDA
+
+La mayor concentración de la revisión: 24 alertas (13 de Pillow, 11 de torch),
+más de la mitad de todo lo que quedaba. Un toolkit de visión con YOLO que se
+ejecuta en la GPU, así que compilar no bastaba: tenía que seguir detectando.
+
+**PyTorch.** Estaba en `torch==2.1.0+cu121` con `torchvision` y `torchaudio`
+emparejados, con una crítica (`torch.load` con RCE) y varias altas de corrupción
+de memoria. Nada del proyecto fija la versión —la usa `ultralytics` por debajo, y
+solo pide `torch>=1.8.0`—, así que se pudo subir.
+
+El dato que lo decidió: la máquina ya tenía **torch 2.6.0+cu124** instalado y
+funcionando. El driver de NVIDIA es retrocompatible, así que la build cu124 corre
+sobre una RTX 4060 Ti aunque el toolkit `nvcc` sea 12.1: torch trae sus propias
+librerías CUDA y solo necesita un driver moderno. Se alineó el `requirements.txt`
+a esa versión real (2.6.0+cu124 / torchvision 0.21.0+cu124), que además es donde
+se corrige por defecto el `torch.load` con RCE. Verificado:
+`torch.cuda.is_available()` es `True` y ve la GPU.
+
+**Pillow** 12.2.0 → 12.3.0. Aquí sí había parche: las 13 alertas eran de
+vulnerabilidades publicadas después de la 12.2.0, y la 12.3.0 las cierra.
+
+**Tres defectos destapados al ejecutarlo, todos del patrón dominante:**
+
+- `torchaudio` estaba en el `requirements.txt` pero **el único uso era un import
+  muerto** (`from torchaudio.models.wav2vec2 import wav2vec2_base`), sobrante de
+  una prueba antigua: se importaba y no se usaba en ninguna parte. Es un proyecto
+  de visión, no de audio. Se borró el import y se retiró torchaudio del
+  `requirements`, ~100 MB de dependencia inútil menos.
+- `dxcam` (captura de pantalla rápida) **se importaba pero faltaba en el
+  `requirements.txt`**, así que una instalación limpia no arrancaba. Añadido.
+- Ambos fallos solo aparecieron **ejecutando** el programa, uno tras otro: el
+  import de torchaudio tumbaba el arranque en la línea 34, y una vez quitado,
+  faltaba dxcam en la 39.
+
+Son los hallazgos trece y catorce del tipo «declarado pero nunca ejercitado», y
+el argumento más claro para el CI pendiente: **un CI que solo importara el módulo
+principal** habría cazado los dos sin necesidad de GPU ni de nada más.
+
+**Queda `torch` de AI_DuoTalk ya resuelto aparte; este era el último proyecto
+con el stack CUDA.** Verificado ejecutando `MultifuncionFPS.py`: arranca y YOLO
+detecta.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva

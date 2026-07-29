@@ -4,8 +4,12 @@
 
 numpy==1.26.4
 opencv-python==4.13.0.92
-Pillow==12.2.0
+Pillow==12.3.0
 mss==10.2.0
+# dxcam: captura de pantalla rapida en Windows. El codigo la importaba
+# (MultifuncionFPS.py) pero faltaba en requirements, asi que una instalacion
+# limpia no arrancaba. Anadida.
+dxcam==0.0.5
 
 ultralytics==8.4.58
 ultralytics-thop==2.0.19
@@ -28,9 +32,24 @@ comtypes==1.4.16
 # ============================================================
 # IMPORTANTE: instalar manualmente con CUDA index-url
 
-torch==2.1.0+cu121
-torchvision==0.16.0+cu121
-torchaudio==2.1.0+cu121
+# Stack de PyTorch para CUDA 12.4 (RTX 4060 Ti, sm_89).
+#
+# Instalar los dos juntos y desde el indice de PyTorch, no de PyPI:
+#   pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+#
+# Se retiro torchaudio (estaba en 2.1.0+cu121): el proyecto es de vision y no
+# usa audio. Lo requiere ultralytics (YOLO) a traves de torch y torchvision,
+# nunca torchaudio. Quitarlo elimina ~100 MB de dependencia muerta.
+#
+# Nota sobre CUDA: el driver de NVIDIA es retrocompatible, asi que la build
+# cu124 funciona aunque el toolkit (nvcc) instalado sea 12.1 -- torch trae sus
+# propias librerias CUDA y solo necesita un driver suficientemente moderno.
+# Verificado: torch.cuda.is_available() == True sobre la RTX 4060 Ti.
+#
+# 2.6.0 es ademas la version que corrige por defecto el torch.load con RCE
+# (weights_only=True). torch y torchvision van emparejados: 2.6.0 <-> 0.21.0.
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
 
 
 # ============================================================

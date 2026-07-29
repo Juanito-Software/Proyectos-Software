@@ -30,8 +30,7 @@ import subprocess
 import sys
 from ultralytics import YOLO
 import mss
-from FloatTrans.src.main import setup_window, read_config 
-from torchaudio.models.wav2vec2 import wav2vec2_base
+from FloatTrans.src.main import setup_window, read_config
 from progress_bar_utils import show_fancy_progress_bar
 import cv2
 import numpy as np
