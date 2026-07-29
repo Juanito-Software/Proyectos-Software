@@ -9,31 +9,47 @@ package com.mycompany.jasperreportexecutor;
  * @author User
  */
 
-import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 import net.sf.jasperreports.engine.JRException;
-
-import net.sf.jasperreports.engine.export.*;
-import net.sf.jasperreports.view.JasperViewer;
-
+import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-
-import net.sf.jasperreports.engine.export.JRXlsExporter;
-import net.sf.jasperreports.engine.export.JRCsvExporter;
-import net.sf.jasperreports.export.SimpleExporterInput;
-import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.engine.JasperReport;
 
 public class JasperReportExecutor {
+
+    /**
+     * Compila una plantilla .jrxml del classpath y devuelve el informe listo
+     * para rellenar.
+     *
+     * Antes el programa cargaba ficheros .jasper ya compilados (con Jaspersoft
+     * Studio). Eso ataba el proyecto a la version de JasperReports con la que se
+     * compilaron: al actualizar la libreria, esos .jasper dejaron de cargarse.
+     * Compilar el .jrxml en cada arranque elimina ese acoplamiento — la plantilla
+     * siempre se compila con la version que esta corriendo — a cambio de unos
+     * milisegundos de compilacion al inicio, irrelevantes aqui.
+     *
+     * Se usa getResourceAsStream y no getResource().getPath(): este ultimo
+     * devuelve rutas invalidas en Windows (con prefijo "/C:/" y caracteres
+     * codificados como %20), un fallo latente que habria dado problemas en
+     * cuanto la ruta del proyecto tuviera un espacio.
+     */
+    private static JasperReport compilarPlantilla(String recurso) throws JRException {
+        try (InputStream is = JasperReportExecutor.class.getClassLoader().getResourceAsStream(recurso)) {
+            if (is == null) {
+                throw new JRException("No se encontro la plantilla en el classpath: " + recurso);
+            }
+            return JasperCompileManager.compileReport(is);
+        } catch (java.io.IOException e) {
+            throw new JRException("Error leyendo la plantilla: " + recurso, e);
+        }
+    }
 
     public static void main(String[] args) throws JRException {
         Connection conn = null;
@@ -61,16 +77,9 @@ public class JasperReportExecutor {
                 
                 
                 
-                // Ruta al archivo .jasper (compilado desde Jaspersoft Studio)
-                String reportPath = JasperReportExecutor.class.getClassLoader().getResource("informePuntuaciones.jasper").getPath();
-                //String absoluteReportPath = "C:\\Users\\User\\Desktop\\webapp_puntuaciones\\informes\\informe.jasper";
-
-                // Parámetros del informe (si fuesen necesarios)
-                //Map<String, Object> parameters = new HashMap<>();
-                //parameters.put("param1", "valor1"); // Ejemplo de un parámetro
-                
-                // Llenar el informe con datos
-                JasperPrint jasperPrint = JasperFillManager.fillReport(reportPath, null, conn); // Aquí añadirías los parámetros si los hubieras
+                // Compilar la plantilla al vuelo y rellenarla con datos.
+                JasperReport reportePuntuaciones = compilarPlantilla("informePuntuaciones.jrxml");
+                JasperPrint jasperPrint = JasperFillManager.fillReport(reportePuntuaciones, null, conn);
 
                 // Obtener la ruta base del directorio del proyecto (suponiendo que sea el directorio raíz del proyecto)
                 String basePath = System.getProperty("user.dir"); // Devuelve el directorio de trabajo actual
@@ -135,11 +144,9 @@ public class JasperReportExecutor {
                 
                 
                 
-                // Ruta al archivo .jasper (compilado desde Jaspersoft Studio)
-                String reportPath2 = JasperReportExecutor.class.getClassLoader().getResource("informeJugadores.jasper").getPath();
-                
-                // Llenar el informe con datos
-                JasperPrint jasperPrint2 = JasperFillManager.fillReport(reportPath2, null, conn); // Aquí añadirías los parámetros si los hubieras
+                // Segundo informe: misma mecanica, compilar y rellenar.
+                JasperReport reporteJugadores = compilarPlantilla("informeJugadores.jrxml");
+                JasperPrint jasperPrint2 = JasperFillManager.fillReport(reporteJugadores, null, conn);
                 
                 
                 

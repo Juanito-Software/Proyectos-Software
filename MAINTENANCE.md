@@ -921,6 +921,129 @@ ese artefacto y lo mantiene al día.
 en la práctica: `application.properties` ya usaba `com.mysql.cj.jdbc.Driver`, que
 es la clase del artefacto nuevo. No hubo que tocar ninguna configuración.
 
+### Apache POI en XlsxToCsvConverter
+
+`poi-ooxml` 5.3.0 → 5.5.1 (una moderada de validación de entrada al parsear
+OOXML). `poi` y `poi-ooxml` se subieron en bloque mediante una propiedad
+`poi.version` compartida: `poi-ooxml` depende de `poi`, y versiones distintas del
+mismo grupo dan errores de enlace en ejecución. Salto dentro de la serie 5.x y el
+código solo usa `XSSFWorkbook` y `ss.usermodel`, así que no hubo cambios de
+código.
+
+**Un hallazgo de camino, el decimotercero del patrón:** al compilar falló con
+`invalid target release: 23`. El pom declaraba `maven.compiler.target=23`, una
+versión de Java que el JDK instalado (21) no puede generar. Es decir, **este
+proyecto no compilaba en la máquina donde vive**, y nadie lo había notado porque
+nadie lo había compilado. Bajado a 21, que es el JDK real y le sobra a POI, que
+solo requiere Java 8.
+
+### JasperReportExecutor: reescritura del pom y compilación al vuelo
+
+Cinco alertas concentradas en un proyecto del portfolio (el TFG): iText 2.1.7 de
+2009 (XXE), dos de `jasperreports`, POI y el driver de PostgreSQL. Como el
+proyecto **se ejecuta de verdad** —genera informes contra PostgreSQL y exporta a
+PDF—, no bastaba con que compilara: tenía que seguir produciendo los informes.
+
+**El pom estaba roto, no solo desactualizado.** Declaraba a mano iText, POI,
+groovy y commons, y **dos versiones distintas de `jasperreports`** (6.18.1 y
+5.6.0) más `poi`/`poi-ooxml` repetidos tres veces. Maven se queda con la primera
+versión de cada uno e ignora el resto, así que medio pom no hacía nada.
+
+El código solo usa `net.sf.jasperreports` y JDBC; iText y POI los emplea
+JasperReports por debajo. Así que se reescribió el pom a **dos dependencias**:
+`jasperreports 6.21.5` (última de la serie 6.x, que conserva la API de
+exportadores del código) y `postgresql 42.7.7`. Lo demás viene transitivo y
+parcheado. El dato que hizo esto viable: **JasperReports 6.21.5 ya no usa iText,
+usa OpenPDF** (`com.github.librepdf:openpdf`, el fork libre que corrige los fallos
+de aquella iText 2.1.7), y trae POI 5.4.1 y Jackson 2.17 dentro. Verificado con
+`dependency:tree`: `com.lowagie:itext` **desaparece del árbol**.
+
+**Dos problemas destapados al ejecutarlo, ninguno de la actualización en sí:**
+
+Las plantillas declaraban `language="groovy"`, y al arrancar fallaban con
+`CompilationFailedException`: el pom viejo traía `groovy-all:2.5.14` para eso, y
+JasperReports 6.21.5 declara Groovy como opcional (no se arrastra). Las
+expresiones de los informes son Java válido —`$F{campo}`, `new java.util.Date()`,
+`$V{REPORT_COUNT}%2 == 0`—, sin nada de Groovy, así que se pasaron las dos
+plantillas a `language="java"`. JasperReports compila Java con su propio `ecj`
+incluido, sin dependencia extra.
+
+Y el programa cargaba ficheros **`.jasper` precompilados**, que llevan grabada
+dentro la versión con la que se compilaron (y su Groovy). Eran el origen del
+acoplamiento: al cambiar la librería, dejaban de cargarse. Se reescribió para
+**compilar los `.jrxml` al vuelo con `JasperCompileManager`** en cada arranque,
+de modo que la plantilla siempre se compila con la versión que corre. Se
+retiraron los `.jasper` obsoletos.
+
+De paso se corrigió un fallo latente en la carga: usaba
+`getResource().getPath()`, que devuelve rutas inválidas en Windows (prefijo
+`/C:/`, `%20` en los espacios). Cambiado a `getResourceAsStream`, que habría dado
+problemas en cuanto la ruta del proyecto tuviera un espacio.
+
+**Verificado ejecutándolo:** conecta a PostgreSQL, compila las dos plantillas y
+genera `informePuntuaciones.pdf` e `informeJugadores.pdf`. De 200 líneas de pom a
+60, de cinco vulnerabilidades a cero, y el proyecto queda **menos acoplado que
+antes** —ya no depende de ficheros precompilados con una versión concreta—.
+
+### PyTorch en AI_DuoTalk
+
+`torch` 2.7.1 → 2.13.0. La 2.7.1 arrastraba varias alertas moderadas y bajas de
+corrupción de memoria. Conviene aclarar que **aquí no estaba la crítica**: el
+`torch.load` con RCE (`weights_only`) es de FPS-AI-Toolkit con torch 2.1.0, no de
+este proyecto.
+
+Antes de tocar la versión se comprobó qué la ataba: **nada la fijaba**. El código
+no importa `torch` directamente —lo usan Whisper (transcripción) y Silero (voz)
+por debajo—, `openai-whisper` pide `torch` sin rango de versión, y `gpt4all` ni
+siquiera depende de torch. Así que subir a la última estable (2.13.0) era seguro
+por el lado de las dependencias.
+
+**Es la única actualización de esta ronda que no se pudo verificar en el
+sandbox:** torch pesa cientos de MB y necesita la máquina real. Se probó
+ejecutando AI_DuoTalk de extremo a extremo —Whisper transcribe y Silero
+sintetiza voz—, que es lo que ejercita torch de verdad; que `pip install`
+termine no habría demostrado nada, porque el modelo de Silero se carga vía
+`torch.hub` en tiempo de ejecución.
+
+**Queda `torch` de FPS-AI-Toolkit sin tocar** (entrada aparte): allí es
+`torch==2.1.0+cu121`, una compilación CUDA que no viene de PyPI, y actualizarla
+exige conocer la GPU y mover torch, torchvision y torchaudio en bloque. Sigue
+excluida en `dependabot.yml`.
+
+### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
+
+Tres alertas no se corrigen porque el fallo está en una dependencia transitiva
+de un paquete de terceros, varios niveles por debajo de lo que el repositorio
+controla. En ninguna de las tres hay un fichero propio donde documentarlo —el
+código vulnerable vive en `node_modules`, que no se versiona—, así que la
+decisión queda registrada solo aquí. **No se descartan en GitHub: se dejan
+abiertas para que se cierren solas cuando el mantenedor de aguas arriba
+actualice.** Es el criterio de *corregir en lugar de silenciar* llevado a su
+consecuencia lógica: si no hay corrección posible, tampoco se silencia.
+
+- **`brace-expansion` en `unified-chat-widget`** (alta, DoS). Entra por una
+  cadena de siete niveles: `@retconned/kick-js` → `puppeteer-extra-plugin-stealth`
+  → … → `rimraf@3` → `glob@7` → `minimatch@3` → `brace-expansion@1.1.16`.
+  `npm audit fix` responde literalmente *"No fix available"*: `kick-js` fija
+  versiones antiguas de puppeteer, y estas fijan el resto de la cadena. Es una
+  dependencia **de desarrollo** —puppeteer automatiza el navegador para leer el
+  chat de Kick, no llega a producción— y el DoS solo se dispara con patrones de
+  llaves construidos por un atacante, cosa que aquí no ocurre. Forzarla con
+  `overrides` inyectaría una versión no probada siete niveles por encima; se
+  descartó.
+
+- **`@hono/node-server` en `TaskHub` Angular** (moderada). Cadena
+  `@angular/cli` → `@modelcontextprotocol/sdk` → `@hono/node-server`. El único
+  arreglo que ofrece npm es retroceder `@angular/cli` a la 21.0.4, deshaciendo la
+  actualización a Angular 21.
+
+- **Dos dependencias del build de Angular** ya documentadas en la cabecera de
+  este archivo: sus únicas "correcciones" son retrocesos de versión.
+
+El patrón común: **la única corrección disponible es peor que el problema**
+—retroceder una versión mayor, o inyectar un paquete no probado en una cadena
+ajena—. Todas se resolverán solas cuando el proyecto de aguas arriba publique.
+
 ### El listado de Dependabot se sincronizó
 
 Las alertas fantasma descritas más abajo desaparecieron por sí solas: **de 202 a
