@@ -1093,6 +1093,24 @@ principal** habría cazado los dos sin necesidad de GPU ni de nada más.
 con el stack CUDA.** Verificado ejecutando `MultifuncionFPS.py`: arranca y YOLO
 detecta.
 
+### flask-cors 5.0.0 a 6.0.5 en LeaderBoard_Unity
+
+La última entrada de la lista real, y la única de salto de versión mayor, por eso
+se dejó para el final. Tres alertas moderadas: coincidencia de rutas
+inconsistente y sensibilidad a mayúsculas al casar orígenes.
+
+El salto 5 → 6 endurece precisamente cómo flask-cors casa los patrones de
+origen, que es lo que corrige las tres alertas. Podría haber roto una
+configuración que dependiera de la laxitud anterior, pero aquí no aplica: el uso
+es una sola llamada `CORS(app, methods=[...], origins=Config.CORS_ALLOWED_ORIGINS)`
+con la **lista de orígenes vacía**. Sin orígenes que casar, el cambio de
+comportamiento no tiene nada que romper. La API de la librería (`CORS(...)`) es
+idéntica entre la 5 y la 6.
+
+Verificado: instala limpio y la API arranca. Con esto quedan cerradas las 19
+entradas de la lista real de vulnerabilidades, salvo las tres dejadas abiertas a
+propósito (sección siguiente).
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva
