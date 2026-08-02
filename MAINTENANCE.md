@@ -1139,6 +1139,29 @@ pendientes ya no existen en `docs/sql/`; solo queda el script de PostgreSQL.
 `"abcdefghi"` pasaría—. El código anterior tenía el mismo comportamiento, así que
 no se cambió. Para exigir dígitos sería `digits:9`.
 
+### Acabado: chat.fxml y el README de YoutubeToMp3
+
+**Campo alias muerto retirado.** Tras autenticar el WebSocket de RadioStack, el
+servidor firma cada mensaje con el usuario del token, así que el campo "Tu alias"
+de `chat.fxml` ya no servía para nada — se dejó en su día señalado como pendiente.
+Eliminados el `<TextField fx:id="aliasField">` del fxml y el
+`@FXML private TextField aliasField` del controlador. El layout no se resiente:
+el campo de mensaje ya tenía `HBox.hgrow="ALWAYS"` y ocupa el hueco. Ojo: el
+`alias` que aparece en los mensajes **recibidos** es distinto —es el de quien
+envía, que llega del servidor— y se conserva.
+
+**README de YoutubeToMp3 corregido.** Documentaba un `batch_downloader.py` que no
+existe, tanto en el árbol de ficheros como en un comando de ejecución. La
+descarga masiva por CSV **sí existe**, pero está integrada en `YoutubeToMp3.py`
+(función `descargar_desde_csv`), no en un script aparte. Corregidas las dos
+referencias para apuntar al script real. Es documentación que mandaba a ejecutar
+un fichero inexistente.
+
+**Sobre los READMEs en general:** la tarea preveía escribir READMEs mínimos por
+proyecto, pero al revisarlo la mayoría ya los tenía, y bastante completos —los
+cuatro TaskHub, casi todos los de Python—. No hacía falta la ronda masiva; solo
+la corrección puntual del fantasma de YoutubeToMp3.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva

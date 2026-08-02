@@ -18,7 +18,6 @@ import java.util.concurrent.Executors;
 public class ChatController {
 
     @FXML private TextField emisionIdField;
-    @FXML private TextField aliasField;
     @FXML private TextField mensajeField;
     @FXML private ListView<String> mensajesList;
     @FXML private Label estadoLabel;
@@ -100,9 +99,9 @@ public class ChatController {
         } catch (NumberFormatException e) {
             return;
         }
-        // El alias ya no se envia: el servidor firma el mensaje con el usuario
-        // del token. El campo aliasField queda sin efecto y deberia retirarse
-        // de la interfaz.
+        // El alias no se envia: el servidor firma el mensaje con el usuario del
+        // token JWT. El mensaje recibido si trae alias (el de quien lo envio),
+        // que es lo que se muestra en la lista.
         String contenido = mensajeField.getText();
         if (contenido == null || contenido.isBlank()) return;
         stompClient.send(emisionId, contenido);

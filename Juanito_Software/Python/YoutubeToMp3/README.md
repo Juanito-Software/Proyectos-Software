@@ -67,9 +67,8 @@ ffmpeg -version
 
 ```plaintext
 YoutubeToMp3/
-├── YoutubeToMp3.py           # Script principal — descarga individual
+├── YoutubeToMp3.py           # Script principal — descarga individual y masiva por CSV
 ├── YoutubeToMp3_cookies.py   # Variante con soporte de cookies (ver más abajo)
-├── batch_downloader.py       # Script automatizado — descarga masiva desde CSV
 ├── descargas.csv             # Archivo de entrada/salida (nombre, url)
 ├── matriz_effect.exe         # Efecto visual (opcional)
 ├── YoutubeToMp3.exe          # Ejecutable compilado (Windows)
@@ -124,8 +123,11 @@ cancion_favorita,https://www.youtube.com/watch?v=ZZZZZZZZZZZ
 
 #### Paso 2: Ejecutar el descargador masivo
 
+La descarga masiva está integrada en el script principal: al ejecutarlo, elige
+el modo CSV cuando lo pregunte.
+
 ```bash
-python batch_downloader.py
+python YoutubeToMp3.py
 ```
 
 O con el ejecutable compilado:

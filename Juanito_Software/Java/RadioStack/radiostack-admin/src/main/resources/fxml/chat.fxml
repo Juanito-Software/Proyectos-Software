@@ -22,7 +22,6 @@
             <padding><Insets top="12" right="12" bottom="12" left="12"/></padding>
             <ListView fx:id="mensajesList" VBox.vgrow="ALWAYS" styleClass="chat-list"/>
             <HBox spacing="8" alignment="CENTER_LEFT">
-                <TextField fx:id="aliasField" promptText="Tu alias" prefWidth="120" styleClass="field-input"/>
                 <TextField fx:id="mensajeField" promptText="Mensaje..." HBox.hgrow="ALWAYS" styleClass="field-input" onAction="#enviar"/>
                 <Button text="Enviar" onAction="#enviar" styleClass="btn-primary"/>
             </HBox>
