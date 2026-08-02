@@ -1162,6 +1162,36 @@ proyecto, pero al revisarlo la mayoría ya los tenía, y bastante completos —l
 cuatro TaskHub, casi todos los de Python—. No hacía falta la ronda masiva; solo
 la corrección puntual del fantasma de YoutubeToMp3.
 
+### Angular: dependencia muerta retirada, salto a 22 aplazado
+
+La tarea pendiente hablaba de "actualizar Node y las deprecaciones de Angular".
+Al revisarlo, ninguna de las dos deprecaciones que se creían pendientes aplicaba:
+
+- **`@angular/platform-browser-dynamic`** figuraba en el `package.json` pero **no
+  se importa en ningún sitio**: la aplicación arranca con `bootstrapApplication`
+  desde `@angular/platform-browser`, la forma moderna. Era dependencia muerta.
+  Retirada.
+- **`@angular/animations`** sí se usa, pero mediante `provideAnimations()`, que es
+  la API actual y correcta (la usa Angular Material por debajo). La deprecación
+  real —las animaciones basadas en `trigger()`/`transition()`, sustituidas por
+  `animate.enter`/`animate.leave`— no aparece en el código. Nada que cambiar.
+
+**El salto a Angular 22 se deja aplazado a propósito.** El proyecto está en
+Angular 21, que se fijó en su día porque Angular 22 exige Node ≥ 22.22.3 y la
+máquina tiene 22.16.0. Pero 21 no es una versión atascada: el `@angular/cli` 21
+declara `node: ^20.19.0 || ^22.12.0 || >=24.0.0`, y el 22.16.0 instalado cumple.
+Es decir, **Angular 21 funciona con el Node actual**; el requisito de 22.22.3 solo
+entra en juego si se salta a 22.
+
+Saltar a 22 obligaría a: subir Node primero, luego `ng update` (un major cada
+vez), y volver a probar SSR, Vitest y el flujo de sesión, todo lo cual está
+verificado sobre 21. Es una migración mayor sin nada que hoy la empuje —21 es
+reciente y está soportado—, así que queda como decisión futura y no como deuda.
+
+**Cuando se aborde:** actualizar Node a ≥ 22.22.3, `ng update @angular/core@22
+@angular/cli@22` (con material y cdk en el mismo comando, que deben moverse en
+bloque), y re-probar arranque, F5 con sesión y `npm test`.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva
