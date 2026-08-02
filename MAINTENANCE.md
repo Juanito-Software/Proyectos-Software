@@ -1111,6 +1111,34 @@ Verificado: instala limpio y la API arranca. Con esto quedan cerradas las 19
 entradas de la lista real de vulnerabilidades, salvo las tres dejadas abiertas a
 propósito (sección siguiente).
 
+### Limpieza de validación en gym-app
+
+Tres arreglos en `RegisteredUserController::store`, ninguno de seguridad: código
+de validación redundante que se había ido acumulando.
+
+- **`phone_number` se validaba dos veces**: la regla `size:9` y, justo después,
+  una comprobación manual con `strlen`. Eliminada la manual; la regla ya lo hace.
+- **`sport` era obligatorio para coach mediante un `if` con `filled()`** tras el
+  `validate()`. Movido a la propia regla como `required_if:role,coach`, que es lo
+  que Laravel ofrece para esto.
+- **`Password::uncompromised()` corría también en los tests.** Esa regla consulta
+  la API de HaveIBeenPwned por HTTP, así que metía una llamada de red externa en
+  la suite: la hacía lenta y dependiente de que el servicio respondiera. Ahora se
+  añade solo fuera del entorno `testing`; en producción sigue rechazando
+  contraseñas filtradas.
+
+Verificado con `php artisan test`: **25 tests, 61 assertions, todo verde**,
+incluido `new users can register`, que ejercita justo esta validación. Los tests
+usan SQLite en memoria (por el `phpunit.xml` corregido en su día), así que no
+tocan la base de datos de desarrollo.
+
+Los dumps MySQL obsoletos (`gym_app.sql`, `gym_app_v1.0.sql`) que figuraban como
+pendientes ya no existen en `docs/sql/`; solo queda el script de PostgreSQL.
+
+**Nota no corregida:** `size:9` valida la longitud, no que sean dígitos —
+`"abcdefghi"` pasaría—. El código anterior tenía el mismo comportamiento, así que
+no se cambió. Para exigir dígitos sería `digits:9`.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva

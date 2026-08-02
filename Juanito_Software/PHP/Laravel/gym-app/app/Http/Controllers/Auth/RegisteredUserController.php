@@ -24,41 +24,35 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Las reglas de contraseña se construyen aparte para poder desactivar
+        // uncompromised() en el entorno de pruebas. Esa regla consulta la API de
+        // HaveIBeenPwned por HTTP: en los tests eso es una llamada de red externa
+        // que los hace lentos y dependientes de que el servicio este disponible.
+        $reglaPassword = \Illuminate\Validation\Rules\Password::min(8)
+            ->mixedCase()   // al menos mayúscula y minúscula
+            ->letters()     // al menos una letra
+            ->numbers()     // al menos un número
+            ->symbols();    // al menos un símbolo
+
+        if (! app()->environment('testing')) {
+            $reglaPassword->uncompromised();  // evita contraseñas filtradas
+        }
+
         $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-            'password' => [
-                'required',
-                'string',
-                'confirmed',
-                \Illuminate\Validation\Rules\Password::min(8)
-                    ->mixedCase()      // al menos mayúscula y minúscula
-                    ->letters()         // al menos una letra
-                    ->numbers()         // al menos un número
-                    ->symbols()         // al menos un símbolo
-                    ->uncompromised(),  // evita contraseñas filtradas
-            ],
-
+            'password'      => ['required', 'string', 'confirmed', $reglaPassword],
+            // size:9 ya exige exactamente 9 caracteres; la comprobacion manual
+            // con strlen que habia despues era redundante y se elimino.
             'phone_number'  => ['required', 'string', 'size:9'],
             'role'          => ['required', 'in:client,coach'],
-            'sport'         => ['nullable', 'string', 'max:50'],
+            // required_if hace que 'sport' sea obligatorio solo cuando el rol es
+            // coach, en la propia regla. Sustituye a la comprobacion manual con
+            // filled() que habia mas abajo.
+            'sport'         => ['required_if:role,coach', 'nullable', 'string', 'max:50'],
         ]);
 
         $role = $request->input('role') === 'coach' ? 'coach' : 'client';
-
-        if ($role === 'coach' && ! $request->filled('sport')) {
-            return back()
-                ->withInput($request->except('password', 'password_confirmation'))
-                ->withErrors(['sport' => 'El campo "sport" es obligatorio para entrenadores.']);
-        }
-
-        $phone = $request->input('phone_number');
-
-        if (strlen($phone) !== 9) {
-            return back()
-                ->withInput($request->except('password', 'password_confirmation'))
-                ->withErrors(['phone_number' => 'El número de teléfono debe tener exactamente 9 dígitos.']);
-        }
 
         $user = User::create([
             'name'         => $request->name,
