@@ -1192,6 +1192,41 @@ reciente y está soportado—, así que queda como decisión futura y no como de
 @angular/cli@22` (con material y cdk en el mismo comando, que deben moverse en
 bloque), y re-probar arranque, F5 con sesión y `npm test`.
 
+### Bug de ritmo en unified-chat-widget: mensajes en tanda
+
+Reportado por Juan: antes los mensajes del overlay aparecían de uno en uno, en
+orden de llegada; en algún refactor pasaron a mostrarse **todos de golpe**.
+
+La causa es una asimetría entre conectores que quedó al descubierto al retirar la
+pool antigua:
+
+- **Twitch y Kick** entregan por evento (`on("ChatMessage")`): un mensaje, una
+  llamada, en tiempo real. Gotean solos.
+- **YouTube y Rumble** entregan por **sondeo**: cada ciclo (YouTube cada 60 s)
+  hacen `messages.forEach(onMessage)` y sueltan de golpe todo lo acumulado.
+
+El diseño original amortiguaba esto con la pool de `utils/globalMessages.js`: los
+mensajes se guardaban y el cliente los iba leyendo en orden. Esa pool quedó
+comentada al migrar al WebSocket, y `handleMessage` pasó a llamar
+`saveAndBroadcastMessage` directamente, sin nada que espaciara las tandas. Con
+solo Twitch/Kick no se notaba; al volver a usar Rumble, cada sondeo inundaba el
+overlay.
+
+**Corregido** reponiendo el amortiguador del lado del servidor: una cola FIFO
+(`broadcastQueue`) en la que `handleMessage` encola, y un temporizador que la
+drena **de uno en uno, en orden de recepción**, cada `BROADCAST_INTERVAL_MS`
+(1 s, en una sola constante para poder ajustarlo). Es el mismo efecto que daba la
+pool, ahora sobre el WebSocket. Los mensajes de sistema (avisos de conexión) se
+dejan inmediatos a propósito, por ser esporádicos.
+
+Verificado por Juan con Rumble conectado: los mensajes vuelven a aparecer uno a
+uno en orden.
+
+**Limitación conocida:** con un ritmo de entrada sostenido superior a uno por
+segundo, la cola acumula retraso respecto al directo. Es el mismo comportamiento
+que la pool original (también era una cola); si llega a molestar, se puede
+acelerar el drenado cuando la cola supere un umbral.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva

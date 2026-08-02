@@ -387,6 +387,33 @@ export async function saveAndBroadcastMessage(message) {
 }
 
 /* -------------------------
+   Cola de difusión con ritmo (restaura el comportamiento de la antigua pool
+   de utils/globalMessages.js)
+   ------------------------- */
+//
+// Los conectores por sondeo —YouTube (cada 60 s) y Rumble— no entregan los
+// mensajes uno a uno, sino en TANDAS: cada ciclo de sondeo llega de golpe todo
+// lo acumulado desde el anterior (services/*.js hacen messages.forEach(onMessage)).
+// Sin una cola de por medio, esa tanda entera se difunde en el mismo instante y
+// el overlay la muestra toda a la vez.
+//
+// Esta cola FIFO reparte los mensajes de uno en uno, en el orden en que se
+// recibieron, a un ritmo fijo. Twitch y Kick, que ya llegan por evento uno a
+// uno, solo notan la cola cuando coinciden varios muy juntos.
+//
+// Es el mismo efecto que daba la pool de globalMessages.js con el sondeo del
+// cliente, ahora del lado del servidor y sobre el WebSocket.
+const broadcastQueue = [];
+const BROADCAST_INTERVAL_MS = 1000; // milisegundos entre mensajes mostrados
+
+setInterval(() => {
+  if (broadcastQueue.length === 0) return;
+  const message = broadcastQueue.shift();
+  saveAndBroadcastMessage(message).catch(err =>
+    console.error('Error difundiendo mensaje de la cola:', err.message));
+}, BROADCAST_INTERVAL_MS);
+
+/* -------------------------
    handleMessage: robusto y con debug
    ------------------------- */
 function handleMessage(msg) {
@@ -407,14 +434,16 @@ function handleMessage(msg) {
             sendToTTS(`${who} dijo: ${texto}`);
         }
 
-        // Guardar y difundir
+        // Encolar para guardar y difundir. La cola (arriba) los reparte de uno
+        // en uno; no se difunde aqui directamente para que las tandas de los
+        // conectores por sondeo no lleguen todas a la vez.
         const mensajeParaGuardar = {
             ...msg,
             user: autor,
             message: texto,
             received_at: new Date().toISOString()
         };
-        saveAndBroadcastMessage(mensajeParaGuardar);
+        broadcastQueue.push(mensajeParaGuardar);
 
     } catch (err) {
         console.error('Error en handleMessage:', err);
