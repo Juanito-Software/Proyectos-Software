@@ -1266,6 +1266,38 @@ aviso High de RCE abierto lo ve cualquiera que mire la pestaña de seguridad,
 aunque en este uso no sea explotable. Si el proyecto llegara a exponerse como
 servicio, la migración a 7.0.7 pasa a ser obligatoria.
 
+### Flask 3.0.3 → 3.1.3 en LeaderBoard_Unity
+
+Un aviso Low: la sesión no añade la cabecera `Vary: Cookie` en ciertos accesos,
+lo que puede provocar que una caché sirva una respuesta con sesión a otro
+usuario. Corregido en Flask 3.1.0; subido a 3.1.3.
+
+Comprobada la compatibilidad con la Werkzeug 3.1.8 ya instalada (van acopladas)
+en un entorno aparte antes de aplicarlo: arranca, la sesión funciona y **la
+respuesta ya incluye `Vary: Cookie`**, que es justo lo que faltaba.
+
+### PyTorch: 8 avisos abiertos a propósito (parche fuera de alcance CUDA)
+
+Ocho avisos en `torch` (FPS-AI-Toolkit), Moderate y Low: corrupción de memoria en
+funciones concretas (`unpack_sequence`, `lstm_cell`, `jit.script`,
+`pad_packed_sequence`...) y un DoS local. El parche es **torch 2.9.1**.
+
+Se dejan abiertas por dos razones que se refuerzan:
+
+1. **El parche no existe para la CUDA de esta máquina.** El proyecto usa builds
+   `+cu124` (RTX 4060 Ti), y la rama cu124 de PyTorch se quedó en la 2.6.0 —no
+   hay 2.7/2.8/2.9 en cu124, cu126 ni cu128 para Windows—. Subir a 2.9.1
+   obligaría a cambiar de rama CUDA y reprobar todo el stack GPU + ultralytics.
+2. **Son todas de vector Local.** Requieren que el atacante ya tenga acceso a la
+   máquina y consiga pasar tensores manipulados a esas funciones internas. En una
+   herramienta de escritorio que ejecuta su propio autor con sus propios datos,
+   el riesgo práctico es nulo: quien pudiera explotarlo ya estaría dentro.
+
+Coste de "arreglar" (cambio de CUDA + reprueba completa de GPU) desproporcionado
+frente a un riesgo local inexistente. Además, PyTorch publica avisos de esta
+clase de forma continua, así que subir de versión solo cambiaría unos números por
+otros. **No se descartan en GitHub; se dejan abiertas y documentadas.**
+
 ### undici forzada a 7.29.0 en TaskHub Angular (overrides)
 
 Cinco avisos en `undici` (uno High, cuatro Moderate): filtración cross-user por
