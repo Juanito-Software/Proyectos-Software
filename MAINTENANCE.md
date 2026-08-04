@@ -1227,6 +1227,45 @@ segundo, la cola acumula retraso respecto al directo. Es el mismo comportamiento
 que la pool original (también era una cola); si llega a molestar, se puede
 acelerar el drenado cuando la cola supere un umbral.
 
+### Segunda tanda de alertas (avisos nuevos tras la primera limpieza)
+
+Semanas después aparecieron alertas nuevas —unas de avisos publicados esos días,
+otras que la reescritura del pom de Jasper no llegó a cubrir—. Clasificadas:
+
+**pgjdbc 42.7.7 → 42.7.12 (corregido).** Dos altas: downgrade silencioso de
+channel-binding (CVE-2026-54291) y el PBKDF2 sin límite anterior. La 42.7.7 que
+se había puesto seguía afectada (rango `>= 42.7.4, < 42.7.12`). Subida a 42.7.12,
+que es donde pgJDBC refuerza la comprobación en su propio código.
+
+**Angular 21.2.18 → 21.2.19 (corregido).** Cuatro altas del propio framework, de
+publicación reciente: dos XSS por atributos de manejador de evento en el pipeline
+i18n (`@angular/core`, `@angular/compiler`), envenenamiento de caché en
+`HttpTransferCache` (`@angular/common`) y XSS de SSR (`@angular/platform-server`).
+**El parche es la 21.2.19, dentro de la rama 21** —no obliga a saltar a Angular 22
+ni a subir Node—. El `package.json` ya pedía `^21.2.18`, así que el fallo estaba
+solo en la versión clavada en el `package-lock.json`; se subió el suelo de todos
+los `@angular/*` a `^21.2.19` y se regeneró el lock. Confirma, de paso, que valió
+la pena quedarse en 21: la rama sigue recibiendo parches de seguridad.
+
+**JasperReports (abierta a propósito, documentada).** Dos altas de deserialización
+con RCE (CVE-2026-6009 y relacionada). **El parche es jasperreports 7.0.7**, y la
+6.21.5 que se puso sigue afectada (`< 7.0.7`). No se sube a 7.x porque es un cambio
+mayor —nueva estructura de módulos y API— que obligaría a rehacer el pom y
+reprobar la generación de informes, que ya dio guerra con Groovy.
+
+La decisión de dejarla abierta se apoya en que **el vector no existe en este
+proyecto**: la RCE por deserialización necesita datos serializados no confiables
+—típicamente un `.jasper` de origen externo—, y el ejecutor solo compila
+plantillas `.jrxml` propias desde `resources`, no carga `.jasper` ajenos ni
+deserializa entrada de usuario, y se ejecuta en local contra la base de datos del
+propio autor. Es un TFG de escritorio, no un servicio que reciba informes de
+terceros.
+
+**Se deja abierta, no se descarta en GitHub.** Y con una advertencia honesta: un
+aviso High de RCE abierto lo ve cualquiera que mire la pestaña de seguridad,
+aunque en este uso no sea explotable. Si el proyecto llegara a exponerse como
+servicio, la migración a 7.0.7 pasa a ser obligatoria.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva
