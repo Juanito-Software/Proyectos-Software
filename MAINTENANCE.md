@@ -1266,6 +1266,34 @@ aviso High de RCE abierto lo ve cualquiera que mire la pestaña de seguridad,
 aunque en este uso no sea explotable. Si el proyecto llegara a exponerse como
 servicio, la migración a 7.0.7 pasa a ser obligatoria.
 
+### Guzzle 7.15.1 → 7.15.2 en gym-app
+
+Dos avisos recientes en `guzzlehttp/guzzle`, dependencia **directa** del proyecto
+(`composer.json: ^7.8`): host no canónico que burla comprobaciones basadas en
+host (CVE-2026-69246, High) y dominio de cookie que conserva alcance de
+subdominio (Moderate). Es el primer arreglo del ecosistema **Composer/PHP** en
+toda la revisión.
+
+El parche es la 7.15.2, dentro de `^7.8`, así que **no hizo falta tocar el
+`composer.json`**: solo actualizar el `composer.lock` con
+`composer update guzzlehttp/guzzle --with-all-dependencies`.
+
+**Alcance real bajo:** el propio aviso dice que solo afecta a aplicaciones que
+construyen la URI de la petición a partir de entrada no confiable. gym-app usa
+Guzzle por debajo del cliente HTTP de Laravel, no fabrica URLs con datos de
+usuario. Aun así el arreglo es un salto de parche de coste y riesgo nulos, así
+que se aplica sin más.
+
+**Obstáculo de entorno, no del proyecto:** `composer update` fallaba con
+`curl error 60 (unable to get local issuer certificate)`. No era un bundle de CA
+ausente —apuntar `curl.cainfo`/`openssl.cafile` al `cacert.pem` de Laragon no lo
+resolvió—, sino el **antivirus interceptando HTTPS**: presenta un certificado
+firmado por su propia raíz, que está en el almacén de Windows (por eso el
+navegador confía) pero no en el `cacert.pem` que usa el OpenSSL de PHP. Es el
+mismo problema que ya apareció con Avast semanas atrás. Se resolvió desactivando
+el escaneo HTTPS del antivirus durante la actualización. Queda anotado que el
+`php.ini` de Laragon no tiene `curl.cainfo` configurado.
+
 ### Alertas dejadas abiertas a propósito (bloqueadas aguas arriba)
 
 Tres alertas no se corrigen porque el fallo está en una dependencia transitiva
