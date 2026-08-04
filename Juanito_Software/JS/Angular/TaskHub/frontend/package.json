@@ -36,5 +36,9 @@
     "jsdom": "^29.1.1",
     "typescript": "~5.9.3",
     "vitest": "^4.1.10"
+  },
+    "_comment_overrides": "undici 7.29.0 corrige 5 avisos (cross-user cache, CRLF, cookie injection...). @angular/build clava undici 7.28.0 exacta, por eso se fuerza aqui. Es un salto de parche sobre tooling de build/test que no llega a produccion. Al actualizar Angular, si su build ya trae undici>=7.29, este override sobra.",
+  "overrides": {
+    "undici": "7.29.0"
   }
 }

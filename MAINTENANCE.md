@@ -1266,6 +1266,28 @@ aviso High de RCE abierto lo ve cualquiera que mire la pestaña de seguridad,
 aunque en este uso no sea explotable. Si el proyecto llegara a exponerse como
 servicio, la migración a 7.0.7 pasa a ser obligatoria.
 
+### undici forzada a 7.29.0 en TaskHub Angular (overrides)
+
+Cinco avisos en `undici` (uno High, cuatro Moderate): filtración cross-user por
+directivas de caché, inyección CRLF, inyección de atributos de cookie,
+desincronización de respuestas. Todas **transitivas y de scope Development**:
+undici entra por `@angular/build` (servidor de desarrollo), por `jsdom` (tests) y
+por `node-gyp` (vía el CLI). **No llega al bundle de producción.**
+
+El parche es undici 7.29.0, pero `@angular/build` **clava la 7.28.0 exacta**
+(`"undici": "7.28.0"`, sin rango), así que Dependabot no podía actualizarla:
+bloqueada aguas arriba como `@hono`.
+
+A diferencia de `@hono`, aquí sí cabía forzarla con un **`overrides`** en el
+`package.json` (`"undici": "7.29.0"`). Es seguro porque es un salto de parche
+—un único arreglo en `lib/util/cache.js`— sobre herramientas que no se despliegan.
+Verificado: `npm ls undici` muestra las tres rutas en 7.29.0 (`overridden` /
+`deduped`), el build compila y `npm audit` baja de 5 a 3 (las 3 restantes son las
+moderadas de `@hono`/tooling, bloqueadas aguas arriba).
+
+Anotado en el propio `package.json`: si un futuro `@angular/build` ya trae
+undici ≥ 7.29, este override sobra y debe retirarse.
+
 ### Guzzle 7.15.1 → 7.15.2 en gym-app
 
 Dos avisos recientes en `guzzlehttp/guzzle`, dependencia **directa** del proyecto
