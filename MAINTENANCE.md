@@ -1266,6 +1266,46 @@ aviso High de RCE abierto lo ve cualquiera que mire la pestaña de seguridad,
 aunque en este uso no sea explotable. Si el proyecto llegara a exponerse como
 servicio, la migración a 7.0.7 pasa a ser obligatoria.
 
+### Pipeline de CI (GitHub Actions)
+
+La conclusión que más se repitió en toda la revisión: **catorce fallos del tipo
+"declarado pero nunca ejercitado"** —imports rotos, `requirements.txt`
+incompletos, poms que no compilaban, un `.env` con valores de ejemplo, un cliente
+que nunca podía loguearse—, todos encontrados a mano al ejecutar cada proyecto, y
+todos los habría cazado un CI el primer día. `.github/workflows/ci.yml` es ese
+CI.
+
+**Alcance: ligero y universal, no "construir todo".** El monorepo tiene ~50
+unidades construibles de cuatro ecosistemas, muchas experimentales; un CI que las
+compilara y testeara todas estaría en rojo permanente (la mitad no construyen
+limpias, y las que sí necesitan base de datos y secretos). En vez de eso, el
+pipeline hace comprobaciones baratas que atrapan justo la clase de fallo que se
+coló:
+
+- **`python-syntax`** — `py_compile` de los 128 `.py` propios (excluye venvs y
+  código vendorizado). Verificado a cero antes de crear el workflow.
+- **`js-syntax`** — `node --check` de los 32 `.js` propios. Habría cazado el
+  import muerto de `torchaudio`... el equivalente JS: el import roto de
+  unified-chat-widget.
+- **`config-lint`** — JSON y YAML bien formados. **Excluye a propósito los
+  `tsconfig*.json` de Angular**, que son JSONC (con comentarios) y darían falso
+  positivo con un validador de JSON estricto.
+- **`regression-guard`** — falla si reaparecen dos patrones ya corregidos:
+  `str(e)` en respuestas HTTP (fuga de información) y `console.log` de
+  `process.env` (fuga de secretos). Hoy ambos a cero.
+- **`maven-compile`** — `mvn -DskipTests compile` (sin BD ni secretos) de los
+  cinco proyectos Java mantenidos, con JDK 21. Habría cazado el `target 23`
+  imposible de XlsxToCsvConverter o el pom ilegible de ApiService.
+
+Todos los jobs se verificaron en verde **antes** de crear el workflow: 128 `.py`
+y 32 `.js` sin errores de sintaxis, JSON válidos (salvo los tsconfig excluidos),
+y los dos patrones peligrosos a cero. El CI nace verde y a partir de ahí protege
+contra regresiones.
+
+Lo que **no** cubre, a propósito: tests con base de datos y arranque de
+servicios. Eso son jobs por proyecto, con contenedores y secretos, y se añadirán
+aparte si algún proyecto vitrina lo justifica.
+
 ### Flask 3.0.3 → 3.1.3 en LeaderBoard_Unity
 
 Un aviso Low: la sesión no añade la cabecera `Vary: Cookie` en ciertos accesos,

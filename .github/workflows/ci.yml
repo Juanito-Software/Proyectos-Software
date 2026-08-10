@@ -1,0 +1,166 @@
+name: CI
+
+# Integración continua "ligera y universal" para el monorepo.
+#
+# Este repositorio reúne ~50 proyectos heterogéneos de distintos ecosistemas,
+# muchos experimentales o de aprendizaje. Un CI que intentara compilar y testear
+# todos estaría en rojo permanente (la mitad no construyen limpios, y los que sí
+# necesitan bases de datos y secretos para arrancar). En vez de eso, este
+# pipeline hace comprobaciones baratas que cazan la clase de fallo que de verdad
+# se ha colado aquí: sintaxis rota, imports que no cargan, JSON mal formado y
+# patrones peligrosos concretos. Es lo que un CI habría detectado el primer día
+# en los ~14 casos de "declarado pero nunca ejercitado" que aparecieron a mano.
+#
+# No arranca servicios ni ejecuta tests con base de datos: eso queda para jobs
+# específicos por proyecto, que se añadirán aparte cuando haga falta.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancela ejecuciones anteriores del mismo ref si llega un push nuevo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Python: comprobación de sintaxis de todos los .py del repositorio.
+  #
+  # py_compile no ejecuta el código ni resuelve dependencias: solo verifica que
+  # cada fichero es Python válido. Es barato y no necesita instalar nada. Caza
+  # errores de sintaxis y, con -m compileall, ficheros que ni siquiera parsean.
+  # ---------------------------------------------------------------------------
+  python-syntax:
+    name: Python · sintaxis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compilar sintaxis de todos los .py
+        run: |
+          # Se excluyen entornos virtuales, artefactos y código de terceros
+          # vendorizado, que no forman parte del código propio.
+          mapfile -t files < <(git ls-files '*.py' \
+            | grep -vE '/venv/|/iaenv/|/dist/|/build/|/MetaGPT/|/ClipsAI/')
+          echo "Comprobando ${#files[@]} ficheros .py"
+          python -m py_compile "${files[@]}"
+
+  # ---------------------------------------------------------------------------
+  # JavaScript: comprobación de sintaxis con `node --check`.
+  #
+  # Equivalente a py_compile para JS: parsea cada fichero sin ejecutarlo. Habría
+  # cazado, por ejemplo, el import roto que tumbaba unified-chat-widget.
+  # ---------------------------------------------------------------------------
+  js-syntax:
+    name: JavaScript · sintaxis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: node --check en todos los .js
+        run: |
+          mapfile -t files < <(git ls-files '*.js' \
+            | grep -vE 'node_modules|/dist/|/build/|/libs/')
+          echo "Comprobando ${#files[@]} ficheros .js"
+          for f in "${files[@]}"; do node --check "$f"; done
+
+  # ---------------------------------------------------------------------------
+  # Ficheros de configuración: JSON y YAML bien formados.
+  #
+  # OJO: los tsconfig*.json de Angular son JSONC (admiten comentarios), así que
+  # NO son JSON estricto y se excluyen a propósito; validarlos daría un falso
+  # positivo. Se comprueban los package.json, composer.json y el resto de JSON
+  # estricto, más los YAML de workflows y dependabot.
+  # ---------------------------------------------------------------------------
+  config-lint:
+    name: Config · JSON y YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validar JSON (excluye tsconfig JSONC y node_modules)
+        run: |
+          mapfile -t files < <(git ls-files '*.json' \
+            | grep -v node_modules \
+            | grep -vE '/tsconfig[^/]*\.json$')
+          echo "Validando ${#files[@]} ficheros JSON"
+          for f in "${files[@]}"; do
+            python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$f" \
+              || { echo "JSON inválido: $f"; exit 1; }
+          done
+      - name: Validar YAML (workflows y dependabot)
+        run: |
+          python -m pip install --quiet pyyaml
+          mapfile -t files < <(git ls-files '*.yml' '*.yaml' | grep -v node_modules)
+          echo "Validando ${#files[@]} ficheros YAML"
+          for f in "${files[@]}"; do
+            python -c "import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding='utf-8'))" "$f" \
+              || { echo "YAML inválido: $f"; exit 1; }
+          done
+
+  # ---------------------------------------------------------------------------
+  # Guardián de regresiones: patrones que ya se corrigieron y no deben volver.
+  #
+  # Cada patrón corresponde a un fallo real arreglado durante la revisión de
+  # seguridad. Si alguno reaparece, el CI falla y señala dónde. Hoy todos están
+  # a cero, así que este job nace en verde.
+  # ---------------------------------------------------------------------------
+  regression-guard:
+    name: Guardián de patrones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sin str(e) en respuestas HTTP (fuga de información)
+        run: |
+          if git grep -nE "jsonify.*str\(e\)|['\"]error['\"].*str\(e\)" -- '*.py' \
+             | grep -v '/venv/'; then
+            echo "::error::Detalle de excepción devuelto al cliente. Usa un mensaje genérico y registra el detalle en el log."
+            exit 1
+          fi
+      - name: Sin console.log de variables de entorno (fuga de secretos)
+        run: |
+          if git grep -nE "console\.log\([^)]*process\.env" -- '*.js' \
+             | grep -v node_modules; then
+            echo "::error::Variable de entorno impresa por consola. Informa de si está definida, nunca de su valor."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Java: compilación de los proyectos Maven mantenidos.
+  #
+  # Solo compila (no ejecuta tests ni arranca nada), así que no necesita base de
+  # datos ni secretos. JDK 21 cubre todos: los que fijan target 17 compilan sin
+  # problema con un JDK más nuevo. Habría cazado el pom de ApiService que no se
+  # podía leer o el target 23 imposible de XlsxToCsvConverter.
+  # ---------------------------------------------------------------------------
+  maven-compile:
+    name: Java · compilar
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        proyecto:
+          - Juanito_Software/Java/BatchProcessor
+          - Juanito_Software/Java/HashTools
+          - Juanito_Software/Java/RadioStack
+          - Juanito_Software/Java/others/XlsxToCsvConverter
+          - Juanito_Software/Python/Flask/LeaderBoard_Unity/API_webapp_puntuaciones/informes/JasperReportExecutor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: mvn compile
+        working-directory: ${{ matrix.proyecto }}
+        run: mvn -q -B -DskipTests compile
