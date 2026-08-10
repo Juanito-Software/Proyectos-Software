@@ -1667,6 +1667,45 @@ dependencias transitivas del sistema de compilación de Angular, cuyas únicas
 "correcciones" disponibles son retrocesos de versión; se dejan abiertas a la
 espera de que el framework las actualice.
 
+### Tercera tanda: league/commonmark (gym-app) y js-yaml (unified-chat-widget)
+
+Dos grupos nuevos que ilustran los dos extremos del criterio *corregir en lugar
+de silenciar*: uno tiene arreglo limpio y se aplica; el otro no tiene arreglo
+aplicable y se deja abierto y documentado.
+
+- **`league/commonmark` 2.8.3 → 2.9.1 en gym-app** (seis alertas de golpe).
+  Es transitiva: la arrastra `laravel/framework`, que la declara como
+  `^2.8.1` (no está en el `composer.json` propio). Las seis son avisos
+  acumulados contra la serie 2.x:
+    - DoS por complejidad cuadrática al parsear Markdown malicioso
+      (GHSA-c2pc-g5qf-rfrf y CVE-2026-71488).
+    - Bypass del allowlist de la extensión Embed —`youtube.com.evil` cuela
+      cuando se permite `youtube.com`, con riesgo de SSRF/XSS
+      (CVE-2026-33347, parcheado en 2.8.2).
+    - XSS en `AttributesExtension` vía `javascript:` con bytes de control que
+      el navegador descarta antes de leer el esquema (CVE-2026-71478 y
+      CVE-2025-46734, parcheado en 2.9.0).
+
+  Todas las versiones de parche (2.6.0, 2.8.2, 2.9.0) son ≤ 2.9.1, la última
+  de la serie 2.x, y 2.9.1 cae dentro del `^2.8.1` que exige Laravel
+  (`>=2.8.1 <3.0.0`). Por eso basta con
+  `composer update league/commonmark --with-dependencies`: cierra las seis sin
+  tocar el `composer.json` ni romper la restricción de Laravel. No se sube a
+  la 3.x porque quedaría fuera del rango que Laravel admite.
+
+- **`js-yaml` 4.3.0 en unified-chat-widget** (una alerta, se deja abierta).
+  Transitiva por la misma cadena que `brace-expansion`:
+  `@retconned/kick-js` → `puppeteer` → `cosmiconfig@9` → `js-yaml`. La alerta
+  es CVE-2026-59870 (consumo cuadrático de CPU al resolver `!!omap`). **El fix
+  solo existe en la línea 5.x —desde 5.2.1— y no se retroportó a las ramas 3.x
+  ni 4.x**; el propio aviso lo dice. `cosmiconfig@9` fija `js-yaml@^4`, así que
+  forzar la 5.x con `overrides` rompería cosmiconfig (la API cambió entre 4.x y
+  5.x). Además el vector no aplica: aquí js-yaml lo usa cosmiconfig para leer el
+  fichero de configuración propio en arranque, no para parsear YAML de fuentes
+  no confiables. Sin corrección posible en la rama 4.x y bloqueada aguas
+  arriba, se deja **abierta y sin descartar en GitHub**, igual que
+  `brace-expansion`.
+
 ---
 
 ## 2026-07-05 — Limpieza de historia (git filter-repo)
