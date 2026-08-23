@@ -1,0 +1,17 @@
+{
+  "kind": "character",
+  "subject": "dark medieval knight with great sword",
+  "facing": "S",
+  "grid": 32,
+  "palette": "dark_requiem_32",
+  "seed": 1337,
+  "variants": 4,
+  "backend": "sdxl-pixelart",
+  "extra_prompt": "",
+  "extra_negative": "",
+  "tags": [
+    "tattered cape",
+    "glowing red visor"
+  ],
+  "spec_version": 1
+}

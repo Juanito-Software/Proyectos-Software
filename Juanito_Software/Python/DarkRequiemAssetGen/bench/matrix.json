@@ -1,0 +1,55 @@
+{
+  "name": "dark_requiem_v1",
+  "notes": "Matriz fija del benchmark. 8 specs cubriendo los cuatro kinds que usa el juego. No tocar entre corridas: si cambian los sujetos, los CSV de distintos backends dejan de ser comparables y el benchmark pierde su unico proposito.",
+  "seeds": [1337, 20250, 48611, 77003],
+  "specs": [
+    {
+      "kind": "character",
+      "subject": "dark medieval knight with great sword",
+      "facing": "S",
+      "tags": ["tattered cape", "glowing red visor"]
+    },
+    {
+      "kind": "character",
+      "subject": "hooded plague doctor with lantern",
+      "facing": "SE",
+      "tags": ["long beak mask", "leather coat"]
+    },
+    {
+      "kind": "enemy",
+      "subject": "rotting skeleton warrior with rusted axe",
+      "facing": "S",
+      "tags": ["broken ribcage"]
+    },
+    {
+      "kind": "enemy",
+      "subject": "hulking stone gargoyle with spread wings",
+      "facing": "SE",
+      "tags": ["cracked granite"]
+    },
+    {
+      "kind": "item",
+      "subject": "vial of green poison",
+      "facing": "S",
+      "tags": ["cork stopper"]
+    },
+    {
+      "kind": "item",
+      "subject": "ornate brass key with skull bow",
+      "facing": "S",
+      "tags": []
+    },
+    {
+      "kind": "tile",
+      "subject": "cracked stone dungeon floor",
+      "facing": "S",
+      "tags": ["moss in the cracks"]
+    },
+    {
+      "kind": "tile",
+      "subject": "dark cobblestone path",
+      "facing": "S",
+      "tags": ["wet stones"]
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 
+seguir con la conversación de chatgpt que acaba con microservicios y hexagonal
+
 añadir documentación a OmniForge y modificar requeriments.txt añadir openhands
 
 Preparar programas 1 a 1 añadiendo build.bat
@@ -12,8 +14,6 @@ Simulacion mundo 2D
 hunyuanvideo usando confyAI, tambien alguna voz de trascripcion de voz a texto
 
 Lenguaje + SO de 0
-
-Crear programa + IA de finanzas
 
 mejoras en servidores FTP y WEB en python y rust
 

@@ -1,0 +1,14 @@
+{
+  "kind": "item",
+  "subject": "vial of green poison",
+  "facing": "S",
+  "grid": 32,
+  "palette": "dark_requiem_32",
+  "seed": null,
+  "variants": 6,
+  "backend": "sdxl-pixelart",
+  "extra_prompt": "",
+  "extra_negative": "",
+  "tags": [],
+  "spec_version": 1
+}

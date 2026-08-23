@@ -1,0 +1,14 @@
+{
+  "name": "dark_requiem_32",
+  "notes": "Paleta base de Dark Requiem. 8 rampas de fantasia oscura, 32 colores. Sustituible: usa `drag palette extract` sobre tu arte existente para generar la tuya y apuntar a ella desde el AssetSpec.",
+  "ramps": {
+    "obsidiana":   ["#0B0A0F", "#16141D", "#241F2E", "#3A3348", "#564D68"],
+    "hueso_frio":  ["#7A7290", "#9C96AB", "#C2BCCB", "#EAE6F0"],
+    "acero":       ["#1D2B3A", "#2F4A63", "#47708F", "#6F9DBA"],
+    "sangre":      ["#2A0D12", "#571620", "#8C2531", "#C93F45"],
+    "cuero":       ["#1E1410", "#3A2620", "#5C3D2E", "#8A5C3D"],
+    "laton":       ["#6B4A16", "#A9762A", "#D9A441", "#F2D489"],
+    "veneno":      ["#14251A", "#24462C", "#3D7443", "#6AA85E"],
+    "arcano":      ["#2B1740", "#52286E", "#8A4BB0"]
+  }
+}

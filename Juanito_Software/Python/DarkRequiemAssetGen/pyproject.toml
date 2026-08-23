@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dark-requiem-assetgen"
+version = "0.3.4"
+description = "Generador de assets de pixel art para Dark Requiem: spec reproducible, PixelPass y benchmark de modelos."
+requires-python = ">=3.10"
+dependencies = [
+    "pillow>=10.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+# Fase 2. Deliberadamente fuera del core: el PixelPass y las metricas deben
+# poder ejecutarse en cualquier maquina, sin GPU y sin 12 GB de pesos.
+sdxl = [
+    "torch>=2.3",
+    "diffusers>=0.30",
+    "transformers>=4.44",
+    "peft>=0.11",
+    "accelerate>=0.33",
+    "safetensors>=0.4",
+]
+
+[project.scripts]
+drag = "drag.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
