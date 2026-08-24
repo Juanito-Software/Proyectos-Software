@@ -55,10 +55,9 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | Proyecto | Descripción |
 |---|---|
 | `JS/JSGameChat` | juego para el chat en tiempo real |
-| `JS/TaskHub` | Gestor de tareas (variante JavaScript, cliente + servidor) |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
-| `JS/Angular/TaskHub` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
-| `JS/React/TaskHubPro` | Gestor de tareas en TypeScript (variante React) |
+| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
+| `JS/React/TaskHub_React` | Gestor de tareas en TypeScript (variante React) |
 
 ### 🐍 Python
 
@@ -73,7 +72,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `FPS-AI-Toolkit` | Herramientas de IA para juegos FPS |
 | `GPTDevTeam` | Pipeline multi-agente de generación y testeo de código con LLMs locales (Ollama) |
 | `MisServidores/` | Servidores FTP y WEB básicos |
-| `OmniForge` | Sistema de agentes con visión por computador |
+| `OmniForge` | Agente autónomo que controla un PC completo, 22 herramientas |
 | `PC_Health_Sistema` | Monitorización de salud del sistema |
 | `PyGameChat` | juego para el chat en tiempo real |
 | `Radio_Python` | Radio por software |
@@ -98,7 +97,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 
 | Proyecto | Descripción |
 |---|---|
-| `libraries/shared-py/pyseed` | Libreria para la generación de la estructura de proyectos en python |
+| `libraries/shared-py/pyseed` | Librería para la generación de la estructura de proyectos en python |
 
 > Las tecnologías en aprendizaje y el plan de estudio se mantienen en [`ROADMAP.md`](ROADMAP.md).
 
