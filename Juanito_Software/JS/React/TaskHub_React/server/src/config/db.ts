@@ -17,12 +17,31 @@ pg.types.setTypeParser(20, (value: string) => Number(value));
  */
 const schema = process.env.DB_SCHEMA;
 
+/**
+ * Neon ofrece dos puntos de entrada: uno con pool de conexiones (el host lleva
+ * "-pooler") y otro directo. El primero es el bueno en producción, porque el
+ * servicio se duerme y despierta constantemente en el plan gratuito.
+ *
+ * Pero ese pool es PgBouncer, y PgBouncer rechaza `options=-c search_path=...`
+ * al abrir la conexión — devuelve "unsupported startup parameter in options".
+ * Como el search_path solo hace falta para aislar los tests, cuando hay
+ * DB_SCHEMA se usa la conexión directa y en producción se sigue usando el pool.
+ */
+function resolveConnectionString(): string {
+  if (schema && env.databaseUrl.includes('-pooler.')) {
+    return env.databaseUrl.replace('-pooler.', '.');
+  }
+  return env.databaseUrl;
+}
+
+const connectionString = resolveConnectionString();
+
 export const pool = new pg.Pool({
-  connectionString: env.databaseUrl,
+  connectionString,
   // Neon y la mayoría de proveedores gestionados exigen TLS. No se desactiva
   // la verificación del certificado: son certificados válidos y aceptar
   // cualquiera dejaría la conexión expuesta a un intermediario.
-  ssl: env.databaseUrl.includes('sslmode=require') ? { rejectUnauthorized: true } : undefined,
+  ssl: connectionString.includes('sslmode=') ? { rejectUnauthorized: true } : undefined,
   ...(schema ? { options: `-c search_path=${schema}` } : {}),
 });
 

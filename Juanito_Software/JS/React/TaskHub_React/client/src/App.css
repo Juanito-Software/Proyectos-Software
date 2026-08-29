@@ -257,6 +257,22 @@
   color: #555;
 }
 
+/* Enlace al playground de la API. Discreto a propósito: es una herramienta
+   para desarrolladores, no una acción de la aplicación. */
+.playground-link {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  color: #555;
+  text-decoration: none;
+}
+
+.playground-link:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
 .btn-logout {
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;

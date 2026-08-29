@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authRouter } from './modules/auth/auth.router.js';
@@ -29,9 +30,17 @@ export function createApp() {
     next();
   });
 
-  // Playground de la API en la raíz. En desarrollo se sirve desde src/public;
-  // tras `npm run build`, desde dist/public (el script copia la carpeta).
-  app.use(express.static(path.join(__dirname, 'public')));
+  // El playground vive en /playground. En desarrollo se sirve desde
+  // src/public; tras `npm run build`, desde dist/public (el script lo copia).
+  //
+  // redirect:false evita que express.static conteste con un 301 a
+  // "/playground/" con barra final, que es lo que hace por defecto al servir
+  // un directorio. La URL va a acabar en un CV: mejor sin saltos.
+  const playgroundDir = path.join(__dirname, 'public');
+  app.use('/playground', express.static(playgroundDir, { redirect: false }));
+  app.get('/playground', (_req: Request, res: Response) => {
+    res.sendFile(path.join(playgroundDir, 'index.html'));
+  });
 
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json(ApiResponse.success({ ok: true }, 'TaskHub API'));
@@ -60,7 +69,28 @@ export function createApp() {
   app.use('/api/auth', authRouter);
   app.use('/api/tasks', tasksRouter);
 
-  app.use((req: Request, _res: Response, next: NextFunction) => {
+  // ── Cliente React ──────────────────────────────────────────────────────
+  // El build del cliente se copia a dist/client durante `npm run build`. En
+  // desarrollo esa carpeta no existe y no pasa nada: el cliente se sirve con
+  // Vite en el 5173, que ya redirige /api al 3001.
+  const clientDir = path.join(__dirname, 'client');
+  if (fs.existsSync(clientDir)) {
+    app.use(express.static(clientDir));
+  }
+
+  // A partir de aquí, cualquier ruta que no sea de la API es responsabilidad
+  // del enrutador del cliente. El 404 en JSON se reserva para /api/*, para que
+  // una llamada mal escrita a la API no devuelva el HTML de la aplicación.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api/')) {
+      return next(ApiError.notFound(`No existe ${req.method} ${req.originalUrl}`));
+    }
+
+    const indexFile = path.join(clientDir, 'index.html');
+    if (req.method === 'GET' && fs.existsSync(indexFile)) {
+      return res.sendFile(indexFile);
+    }
+
     next(ApiError.notFound(`No existe ${req.method} ${req.originalUrl}`));
   });
 

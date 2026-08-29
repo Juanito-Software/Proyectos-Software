@@ -204,12 +204,24 @@ async function run(): Promise<void> {
 
     // ── Playground ───────────────────────────────────────────────────────
 
-    const playground = await fetch(`${BASE}/`);
+    const playground = await fetch(`${BASE}/playground`);
     const playgroundHtml = await playground.text();
     check(
-      'GET / sirve el playground HTML',
+      'GET /playground sirve el playground HTML',
       playground.status === 200 && playgroundHtml.includes('TaskHub') && playgroundHtml.includes('authFetch'),
       `${playgroundHtml.length} bytes`,
+    );
+
+    // Una ruta inventada del cliente devuelve el index.html para que sea el
+    // enrutador de React quien decida, pero una ruta inventada de la API
+    // sigue devolviendo 404 en JSON: si no, un error de escritura en una
+    // llamada devolvería HTML y el cliente fallaría al parsearlo.
+    const apiNotFound = await fetch(`${BASE}/api/ruta-que-no-existe`, { headers: auth });
+    const apiNotFoundBody = (await apiNotFound.json().catch(() => null)) as Envelope<unknown> | null;
+    check(
+      'Una ruta inexistente de /api/ devuelve 404 en JSON, no el HTML del cliente',
+      apiNotFound.status === 404 && apiNotFoundBody?.success === false,
+      `status ${apiNotFound.status}`,
     );
 
     // ── Aislamiento entre usuarios ───────────────────────────────────────

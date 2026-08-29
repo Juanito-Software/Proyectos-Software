@@ -130,7 +130,40 @@ Todas las respuestas van envueltas:
 
 ## Playground de la API
 
-Con el backend arrancado, abre **http://localhost:3001**: una interfaz para probar todos los endpoints en vivo, con consola de respuestas JSON, filtros, contador de peticiones y uptime. Requiere iniciar sesión (comparte el token con el cliente React vía `localStorage`).
+Con el backend arrancado, abre **http://localhost:3001/playground**: una interfaz para probar todos los endpoints en vivo, con consola de respuestas JSON, filtros, contador de peticiones y uptime. Requiere iniciar sesión, y comparte el token con el cliente React vía `localStorage`, así que si ya has entrado en la aplicación el playground abre con la sesión puesta.
+
+## Despliegue
+
+El servicio web va en **Render** y la base de datos en **Neon**. Los dos tienen
+plan gratuito permanente; el de Render duerme el servicio tras 15 minutos sin
+tráfico, así que la primera carga puede tardar cerca de un minuto.
+
+### Configuración del servicio en Render
+
+Como esto vive dentro de un monorepo, hay que apuntar al subdirectorio:
+
+| Campo | Valor |
+|-------|-------|
+| Repository | `Juanito-Software/Proyectos-Software` |
+| Root Directory | `Juanito_Software/JS/React/TaskHub_React` |
+| Runtime | Node |
+| Build Command | `npm run install:all && npm run build` |
+| Start Command | `npm start --prefix server` |
+| Instance Type | Free |
+
+### Variables de entorno en Render
+
+| Variable | Valor |
+|----------|-------|
+| `DATABASE_URL` | La cadena de Neon, con `?sslmode=require` |
+| `JWT_SECRET` | Una clave larga y aleatoria, **distinta de la de desarrollo** |
+| `NODE_ENV` | `production` |
+
+`PORT` no se configura: Render la inyecta y `config/env.ts` la lee.
+
+El build compila el cliente React, luego el servidor, y copia el resultado a
+`server/dist/client`. En producción un único proceso Express sirve las tres
+cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Verificación automática
 

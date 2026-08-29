@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && node -e \"require('fs').cpSync('src/public','dist/public',{recursive:true})\"",
+    "build": "tsc && node scripts/build-assets.mjs",
     "start": "node dist/server.js",
     "verify": "tsx src/verify.ts"
   },

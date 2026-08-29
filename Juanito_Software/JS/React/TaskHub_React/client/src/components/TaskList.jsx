@@ -72,6 +72,18 @@ export default function TaskList({ user, onLogout }) {
             <p className="subtitle">Gestor de tareas colaborativo</p>
           </div>
           <div className="user-bar">
+            {/* El playground comparte el token con la aplicación, así que se
+                entra ya autenticado. Se abre en otra pestaña para no perder
+                lo que se esté haciendo aquí. */}
+            <a
+              className="playground-link"
+              href="/playground"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Probar la API en vivo"
+            >
+              API Playground
+            </a>
             <span className="user-name">{user?.username}</span>
             <button type="button" className="btn-logout" onClick={onLogout}>
               Salir
