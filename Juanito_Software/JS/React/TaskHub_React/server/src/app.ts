@@ -12,8 +12,8 @@ import { ApiResponse } from './utils/api-response.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Fábrica en vez de una instancia exportada directamente: así verify.ts puede
-// crear la app DESPUÉS de fijar DATA_DIR a una carpeta temporal, sin tocar
-// nunca los datos reales del usuario.
+// crear la app DESPUÉS de fijar DB_SCHEMA al esquema temporal de pruebas, sin
+// tocar nunca los datos reales del usuario.
 export function createApp() {
   const app = express();
 

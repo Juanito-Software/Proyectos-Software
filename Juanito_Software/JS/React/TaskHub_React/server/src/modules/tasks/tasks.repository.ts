@@ -1,134 +1,184 @@
-import fs from 'node:fs';
-import crypto from 'node:crypto';
-import { getTasksFile } from '../../config/paths.js';
-import { Task, TaskDto, TaskFilters, TaskStatus, TaskPriority, isTaskStatus, isTaskPriority } from './tasks.types.js';
+import { query } from '../../config/db.js';
+import { Task, TaskDto, TaskFilters, TaskStatus, TaskPriority } from './tasks.types.js';
 
 /**
- * Migración perezosa: las tareas guardadas antes de introducir status/priority
- * solo tienen `completed`. Se normalizan al leer, así que los datos existentes
- * siguen funcionando sin script de migración ni pérdida de información.
+ * Fila tal y como la devuelve Postgres: snake_case y fechas como Date. La
+ * traducción a la forma que usa el resto de la aplicación (camelCase, fechas
+ * en texto ISO) vive solo aquí.
  */
-function normalize(raw: Record<string, unknown>): Task {
-  const status: TaskStatus = isTaskStatus(raw.status)
-    ? raw.status
-    : raw.completed === true
-      ? 'completed'
-      : 'pending';
+interface TaskRow {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  user_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
 
-  const priority: TaskPriority = isTaskPriority(raw.priority) ? raw.priority : 'medium';
+const COLUMNS = 'id, title, description, status, priority, user_id, created_at, updated_at';
 
+function toTask(row: TaskRow): Task {
   return {
-    id: String(raw.id),
-    title: String(raw.title ?? ''),
-    description: String(raw.description ?? ''),
-    status,
-    priority,
-    userId: String(raw.userId),
-    createdAt: String(raw.createdAt ?? new Date().toISOString()),
-    updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    userId: row.user_id,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
+/**
+ * `completed` es un campo calculado, no una columna. El cliente React lo sigue
+ * usando para su checkbox, así que se deriva de `status` al salir; la base de
+ * datos solo guarda el estado, que es la fuente de verdad.
+ */
 export function toDto(task: Task): TaskDto {
   return { ...task, completed: task.status === 'completed' };
 }
 
-function readTasks(): Task[] {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(getTasksFile(), 'utf-8'));
-    return Array.isArray(parsed) ? parsed.map(normalize) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeTasks(tasks: Task[]): void {
-  fs.writeFileSync(getTasksFile(), JSON.stringify(tasks, null, 2), 'utf-8');
-}
-
 export const tasksRepository = {
-  findAllByUser(userId: string, filters?: TaskFilters): Task[] {
-    let result = readTasks().filter((t) => t.userId === userId);
+  async findAllByUser(userId: string, filters?: TaskFilters): Promise<Task[]> {
+    // Los filtros se montan como condiciones acumulativas con parámetros
+    // numerados. Antes se filtraba en memoria después de leer todas las
+    // tareas; ahora el trabajo lo hace la base de datos y solo viajan las
+    // filas que realmente se piden.
+    const conditions = ['user_id = $1'];
+    const params: unknown[] = [userId];
 
     if (filters?.status) {
-      result = result.filter((t) => t.status === filters.status);
+      params.push(filters.status);
+      conditions.push(`status = $${params.length}`);
     }
     if (filters?.priority) {
-      result = result.filter((t) => t.priority === filters.priority);
+      params.push(filters.priority);
+      conditions.push(`priority = $${params.length}`);
     }
     if (filters?.search) {
-      const query = filters.search.toLowerCase();
-      result = result.filter(
-        (t) => t.title.toLowerCase().includes(query) || t.description.toLowerCase().includes(query),
-      );
+      // ILIKE es la comparación de texto que ignora mayúsculas en Postgres.
+      // El patrón va como parámetro, así que un título con % o _ se busca tal
+      // cual y no se interpreta como comodín.
+      params.push(`%${filters.search}%`);
+      conditions.push(`(title ILIKE $${params.length} OR description ILIKE $${params.length})`);
     }
 
-    // Más recientes primero, igual que TaskHub2.
-    return result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const rows = await query<TaskRow>(
+      `SELECT ${COLUMNS} FROM tasks
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY created_at DESC`,
+      params,
+    );
+    return rows.map(toTask);
   },
 
-  findById(id: string, userId: string): Task | null {
-    const task = readTasks().find((t) => t.id === id);
-    return task?.userId === userId ? task : null;
+  async findById(id: string, userId: string): Promise<Task | null> {
+    // El user_id va en el WHERE, no en una comprobación posterior: una tarea
+    // ajena simplemente no existe para esta consulta.
+    const rows = await query<TaskRow>(
+      `SELECT ${COLUMNS} FROM tasks WHERE id = $1 AND user_id = $2`,
+      [id, userId],
+    );
+    return rows[0] ? toTask(rows[0]) : null;
   },
 
   // excludeId permite comprobar duplicados al actualizar sin que una tarea
   // choque consigo misma cuando no cambia el título.
-  findByTitleForUser(title: string, userId: string, excludeId?: string): Task | null {
-    const normalized = title.trim().toLowerCase();
-    return (
-      readTasks().find(
-        (t) => t.userId === userId && t.id !== excludeId && t.title.trim().toLowerCase() === normalized,
-      ) ?? null
-    );
+  async findByTitleForUser(title: string, userId: string, excludeId?: string): Promise<Task | null> {
+    const params: unknown[] = [userId, title];
+    let sql = `SELECT ${COLUMNS} FROM tasks
+               WHERE user_id = $1 AND LOWER(TRIM(title)) = LOWER(TRIM($2))`;
+
+    if (excludeId) {
+      params.push(excludeId);
+      sql += ` AND id <> $${params.length}`;
+    }
+
+    const rows = await query<TaskRow>(sql, params);
+    return rows[0] ? toTask(rows[0]) : null;
   },
 
-  create(
+  async create(
     input: { title: string; description: string; status: TaskStatus; priority: TaskPriority },
     userId: string,
-  ): Task {
-    const tasks = readTasks();
-    const now = new Date().toISOString();
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: input.title,
-      description: input.description,
-      status: input.status,
-      priority: input.priority,
-      userId,
-      createdAt: now,
-      updatedAt: now,
-    };
-    tasks.push(newTask);
-    writeTasks(tasks);
-    return newTask;
+  ): Promise<Task> {
+    const rows = await query<TaskRow>(
+      `INSERT INTO tasks (title, description, status, priority, user_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING ${COLUMNS}`,
+      [input.title, input.description, input.status, input.priority, userId],
+    );
+    return toTask(rows[0]);
   },
 
-  update(id: string, userId: string, updates: Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>): Task | null {
-    const tasks = readTasks();
-    const index = tasks.findIndex((t) => t.id === id && t.userId === userId);
-    if (index === -1) return null;
-    tasks[index] = { ...tasks[index], ...updates, updatedAt: new Date().toISOString() };
-    writeTasks(tasks);
-    return tasks[index];
+  async update(
+    id: string,
+    userId: string,
+    updates: Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>,
+  ): Promise<Task | null> {
+    const allowed = ['title', 'description', 'status', 'priority'] as const;
+    const assignments: string[] = [];
+    const params: unknown[] = [];
+
+    for (const field of allowed) {
+      if (updates[field] !== undefined) {
+        params.push(updates[field]);
+        assignments.push(`${field} = $${params.length}`);
+      }
+    }
+
+    // Sin campos que cambiar no hay nada que hacer, pero el contrato del
+    // método es devolver la tarea si existe: se consulta y se devuelve igual.
+    if (assignments.length === 0) return this.findById(id, userId);
+
+    assignments.push('updated_at = now()');
+    params.push(id, userId);
+
+    const rows = await query<TaskRow>(
+      `UPDATE tasks SET ${assignments.join(', ')}
+       WHERE id = $${params.length - 1} AND user_id = $${params.length}
+       RETURNING ${COLUMNS}`,
+      params,
+    );
+    return rows[0] ? toTask(rows[0]) : null;
   },
 
-  delete(id: string, userId: string): boolean {
-    const tasks = readTasks();
-    const index = tasks.findIndex((t) => t.id === id && t.userId === userId);
-    if (index === -1) return false;
-    tasks.splice(index, 1);
-    writeTasks(tasks);
-    return true;
+  async delete(id: string, userId: string): Promise<boolean> {
+    const rows = await query<{ id: string }>(
+      'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, userId],
+    );
+    return rows.length > 0;
   },
 
-  countByUser(userId: string) {
-    const tasks = readTasks().filter((t) => t.userId === userId);
+  async countByUser(userId: string) {
+    // Una sola consulta con agregación en lugar de traerse todas las tareas y
+    // contarlas en Node. FILTER es la forma de Postgres de contar por
+    // condición sin repetir la consulta una vez por estado.
+    const rows = await query<{
+      total: number;
+      pending: number;
+      in_progress: number;
+      completed: number;
+    }>(
+      `SELECT
+         COUNT(*)                                          AS total,
+         COUNT(*) FILTER (WHERE status = 'pending')        AS pending,
+         COUNT(*) FILTER (WHERE status = 'in-progress')    AS in_progress,
+         COUNT(*) FILTER (WHERE status = 'completed')      AS completed
+       FROM tasks WHERE user_id = $1`,
+      [userId],
+    );
+
+    const row = rows[0];
     return {
-      total: tasks.length,
-      pending: tasks.filter((t) => t.status === 'pending').length,
-      inProgress: tasks.filter((t) => t.status === 'in-progress').length,
-      completed: tasks.filter((t) => t.status === 'completed').length,
+      total: row.total,
+      pending: row.pending,
+      inProgress: row.in_progress,
+      completed: row.completed,
     };
   },
 };

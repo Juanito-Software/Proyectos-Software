@@ -20,12 +20,12 @@ TaskHub/
 │   │   │   ├── users/     # repository (usuarios en data/users.json)
 │   │   │   └── tasks/     # router · controller · service · repository · validation
 │   │   ├── middleware/    # auth, rate limit, validación, errores, logging
-│   │   ├── config/        # env.ts (variables de entorno) · paths.ts (rutas de datos)
-│   │   ├── utils/         # ApiError
+│   │   ├── config/        # env.ts · db.ts (pool de Postgres) · schema.ts (DDL)
+│   │   ├── utils/         # ApiError · ApiResponse
 │   │   ├── app.ts         # fábrica de la app Express
 │   │   ├── server.ts      # arranque + apagado ordenado
 │   │   └── verify.ts      # smoke test end-to-end (npm run verify)
-│   ├── data/         # tasks.json, users.json (almacenamiento)
+│   ├── .env.example  # plantilla de variables de entorno
 │   └── package.json
 └── README.md
 ```
@@ -46,6 +46,20 @@ O por separado:
 cd server && npm install
 cd ../client && npm install
 ```
+
+### 1.b Configurar la base de datos
+
+El backend usa **PostgreSQL**. Crea una base de datos vacía y copia la plantilla
+de variables de entorno:
+
+```bash
+createdb taskhub          # o CREATE DATABASE taskhub; desde psql
+cd server
+cp .env.example .env      # y edita DATABASE_URL con tu usuario y contraseña
+```
+
+Las tablas se crean solas la primera vez que arranca el servidor: el script del
+esquema es idempotente, así que no hay que ejecutar migraciones a mano.
 
 ### 2. Arrancar servidor y cliente (recomendado)
 
@@ -125,16 +139,35 @@ cd server
 npm run verify
 ```
 
-Levanta la API en un puerto temporal, apunta el almacenamiento a una carpeta temporal (no toca `data/users.json` ni `data/tasks.json`) y ejecuta **24 comprobaciones end-to-end**: registro, login, acceso sin token, CRUD completo, validación de campos y de filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros, ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre usuarios y borrado.
+Levanta la API en un puerto temporal y ejecuta **26 comprobaciones end-to-end** contra un **esquema de base de datos propio**, que se crea al empezar y se destruye al terminar — tus datos reales no se tocan, ni siquiera si la suite falla a mitad.
+
+Cubre: registro, login, acceso sin token, CRUD completo, validación de campos y de filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros, ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre usuarios, borrado, que el índice único rechace duplicados aunque cambien mayúsculas y espacios, y que borrar un usuario arrastre sus tareas.
+
+## Decisiones de diseño
+
+**SQL escrito a mano, sin ORM.** El acceso a datos usa el driver `pg` con
+consultas parametrizadas (`$1`, `$2`…). Los valores nunca se concatenan en la
+cadena SQL, que es lo que hace imposible la inyección.
+
+**Restricciones en la base de datos, no solo en el código.** El título único por
+usuario es un índice sobre `(user_id, LOWER(TRIM(title)))`. El servicio lo
+comprueba antes para devolver un 409 con mensaje claro, pero la garantía real la
+da el índice: dos peticiones simultáneas ya no pueden colarse entre la
+comprobación y la escritura, como sí ocurría con el almacenamiento en ficheros.
+
+**Filtrado en SQL, no en memoria.** Los filtros por estado, prioridad y texto se
+resuelven en la consulta, así que solo viajan las filas que se piden. El resumen
+por estado se calcula con una única agregación.
 
 ## Próximos pasos (opcional)
 
-- **MongoDB**: ver guía paso a paso en [`docs/MONGO_GUIA.md`](docs/MONGO_GUIA.md).
+- **Despliegue**: servicio web en Render y base de datos en Neon.
+- ~~**Base de datos real**~~: migrado de ficheros JSON a PostgreSQL.
 - ~~**Autenticación**~~: implementado con JWT (login/registro).
 - ~~**Asignar tareas a usuarios**~~: cada tarea tiene `userId` y solo se muestran las del usuario.
 
 ## Tecnologías
 
 - **Frontend**: React 18, Vite.
-- **Backend**: Node.js, Express, **TypeScript** (arquitectura router → controller → service → repository, como en TaskHub2), JWT, bcrypt, express-rate-limit.
-- **Almacenamiento**: JSON en `server/data/` (listo para cambiar a MongoDB).
+- **Backend**: Node.js, Express, **TypeScript** (arquitectura router → controller → service → repository), JWT, bcrypt, express-rate-limit.
+- **Base de datos**: PostgreSQL con el driver `pg` y consultas parametrizadas.

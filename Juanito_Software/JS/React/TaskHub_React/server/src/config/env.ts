@@ -13,6 +13,9 @@ export const env = {
   port: Number(required('PORT', '3001')),
   jwtSecret: required('JWT_SECRET', 'clave-secreta-desarrollo-cambiar-en-produccion'),
   jwtExpiresIn: required('JWT_EXPIRES_IN', '7d'),
+  // Sin valor por defecto a propósito: es preferible que la aplicación no
+  // arranque a que apunte en silencio a una base de datos equivocada.
+  databaseUrl: required('DATABASE_URL'),
 } as const;
 
 export const isProduction = env.nodeEnv === 'production';

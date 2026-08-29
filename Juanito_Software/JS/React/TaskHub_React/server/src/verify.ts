@@ -1,19 +1,21 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Server } from 'node:http';
 
-// Aísla la suite del mundo real: fuerza el repositorio a leer/escribir en una
-// carpeta temporal ANTES de crear la app (por eso el import de ./app es
-// dinámico, después de fijar DATA_DIR). Sin esto, cada "npm run verify"
-// dejaría usuarios de prueba para siempre en data/users.json.
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'taskhub-verify-'));
-process.env.DATA_DIR = tempDir;
-fs.writeFileSync(path.join(tempDir, 'users.json'), '[]');
-fs.writeFileSync(path.join(tempDir, 'tasks.json'), '[]');
+// Aísla la suite del mundo real: cada ejecución crea un esquema propio dentro
+// de la misma base de datos y lo destruye al terminar. Se hace con un esquema
+// y no con una base de datos aparte porque no requiere permisos especiales y
+// funciona igual en local que en Neon o en un runner de CI.
+//
+// El nombre se fija ANTES de importar ./app, porque el pool lee DB_SCHEMA al
+// construirse; por eso los imports de la app son dinámicos.
+const testSchema = `verify_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+process.env.DB_SCHEMA = testSchema;
 
+const { pool, query, initSchema, closePool } = await import('./config/db.js');
 const { createApp } = await import('./app.js');
+
+await pool.query(`CREATE SCHEMA IF NOT EXISTS ${testSchema}`);
+await initSchema();
 
 const PORT = 4050;
 const BASE = `http://localhost:${PORT}`;
@@ -240,6 +242,37 @@ async function run(): Promise<void> {
       `status ${otherSameTitle.status}`,
     );
 
+    // ── Garantía en la base de datos ─────────────────────────────────────
+
+    // El servicio comprueba el duplicado antes de insertar, pero comprobar y
+    // escribir son dos operaciones: con ficheros JSON, dos peticiones a la vez
+    // podían pasar ambas la comprobación y crear la tarea las dos. El índice
+    // único cierra esa ventana, y además normaliza — así que ni cambiando
+    // mayúsculas ni añadiendo espacios se cuela un duplicado.
+    //
+    // Se prueba directamente contra la base de datos, saltándose la API, para
+    // verificar la garantía real y no la comprobación previa del servicio.
+    const owner = (
+      await query<{ id: string }>('SELECT id FROM users WHERE LOWER(username) = LOWER($1)', [username])
+    )[0];
+
+    let rejectedByIndex = false;
+    let rejectionCode = '';
+    try {
+      await pool.query(
+        'INSERT INTO tasks (title, status, priority, user_id) VALUES ($1, $2, $3, $4)',
+        ['  COMPRAR PAN  ', 'pending', 'medium', owner.id],
+      );
+    } catch (err) {
+      rejectionCode = (err as { code?: string }).code ?? '';
+      rejectedByIndex = rejectionCode === '23505';
+    }
+    check(
+      'El índice único rechaza el duplicado aunque cambien mayúsculas y espacios',
+      rejectedByIndex,
+      rejectionCode ? `código ${rejectionCode}` : 'no se rechazó',
+    );
+
     // ── Borrado ──────────────────────────────────────────────────────────
 
     const del = await fetch(`${BASE}/api/tasks/${taskId}`, { method: 'DELETE', headers: auth });
@@ -253,13 +286,36 @@ async function run(): Promise<void> {
     const getAfterDelete = await fetch(`${BASE}/api/tasks/${taskId}`, { headers: auth });
     check('GET tras borrar -> 404', getAfterDelete.status === 404, `status ${getAfterDelete.status}`);
 
+    // ── Integridad referencial ───────────────────────────────────────────
+
+    // La clave foránea con ON DELETE CASCADE garantiza que no queden tareas
+    // huérfanas apuntando a un usuario que ya no existe. Con ficheros JSON
+    // esto no lo aseguraba nada.
+    const orphanUser = ((await query<{ id: string }>(
+      'SELECT id FROM users WHERE LOWER(username) = LOWER($1)',
+      [otherUsername],
+    )) ?? [])[0];
+    await pool.query('DELETE FROM users WHERE id = $1', [orphanUser.id]);
+    const orphanTasks = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM tasks WHERE user_id = $1',
+      [orphanUser.id],
+    );
+    check(
+      'Borrar un usuario arrastra sus tareas (ON DELETE CASCADE)',
+      orphanTasks[0].count === 0,
+      `${orphanTasks[0].count} tarea(s) huérfana(s)`,
+    );
+
     console.log(`\n${passed} passed, ${failed} failed\n`);
   } catch (err) {
     console.error('💥 La suite de verificación falló al ejecutarse:', err);
     failed++;
   } finally {
     server?.close();
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    // El esquema se borra pase lo que pase, incluso si la suite revienta a
+    // mitad: si no, cada ejecución fallida dejaría tablas de prueba atrás.
+    await pool.query(`DROP SCHEMA IF EXISTS ${testSchema} CASCADE`);
+    await closePool();
     process.exitCode = failed > 0 ? 1 : 0;
   }
 }

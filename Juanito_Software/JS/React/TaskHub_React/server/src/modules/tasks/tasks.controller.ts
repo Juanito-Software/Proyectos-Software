@@ -12,54 +12,61 @@ function readFilters(req: Request): TaskFilters {
   };
 }
 
+/**
+ * Los controladores pasan a ser asíncronos porque el repositorio ahora habla
+ * con la base de datos. El try/catch sigue siendo necesario: en Express 4 una
+ * promesa rechazada no llega al middleware de errores por sí sola, así que el
+ * `await` va dentro del try y el fallo se reenvía con next().
+ */
 export const tasksController = {
-  list(req: Request, res: Response, next: NextFunction) {
+  async list(req: Request, res: Response, next: NextFunction) {
     try {
-      const tasks = tasksService.listForUser(req.userId!, readFilters(req));
+      const tasks = await tasksService.listForUser(req.userId!, readFilters(req));
       res.json(ApiResponse.success(tasks, 'Tareas obtenidas correctamente'));
     } catch (err) {
       next(err);
     }
   },
 
-  stats(req: Request, res: Response, next: NextFunction) {
+  async stats(req: Request, res: Response, next: NextFunction) {
     try {
-      res.json(ApiResponse.success(tasksService.statsForUser(req.userId!), 'Resumen de tareas'));
+      const stats = await tasksService.statsForUser(req.userId!);
+      res.json(ApiResponse.success(stats, 'Resumen de tareas'));
     } catch (err) {
       next(err);
     }
   },
 
-  getById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const task = tasksService.getById(req.params.id, req.userId!);
+      const task = await tasksService.getById(req.params.id, req.userId!);
       res.json(ApiResponse.success(task, 'Tarea obtenida correctamente'));
     } catch (err) {
       next(err);
     }
   },
 
-  create(req: Request, res: Response, next: NextFunction) {
+  async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const task = tasksService.create(req.body, req.userId!);
+      const task = await tasksService.create(req.body, req.userId!);
       res.status(201).json(ApiResponse.success(task, 'Tarea creada correctamente'));
     } catch (err) {
       next(err);
     }
   },
 
-  update(req: Request, res: Response, next: NextFunction) {
+  async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const task = tasksService.update(req.params.id, req.userId!, req.body);
+      const task = await tasksService.update(req.params.id, req.userId!, req.body);
       res.json(ApiResponse.success(task, 'Tarea actualizada correctamente'));
     } catch (err) {
       next(err);
     }
   },
 
-  remove(req: Request, res: Response, next: NextFunction) {
+  async remove(req: Request, res: Response, next: NextFunction) {
     try {
-      tasksService.remove(req.params.id, req.userId!);
+      await tasksService.remove(req.params.id, req.userId!);
       res.json(ApiResponse.success({ id: req.params.id }, 'Tarea eliminada correctamente'));
     } catch (err) {
       next(err);
