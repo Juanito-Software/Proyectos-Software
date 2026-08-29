@@ -60,7 +60,16 @@ def build_prompt(spec: AssetSpec) -> tuple[str, str]:
     body = template.format(subject=spec.subject, facing=facing)
     style = BASE_STYLE.format(grid=spec.grid)
 
-    parts = [body, style, BACKGROUND_HINT]
+    parts = [body, style]
+    # BACKGROUND_HINT pide "isolated on flat background": tiene sentido para
+    # un sujeto recortable (character/enemy/item/prop), pero contradice
+    # directamente la plantilla de "tile" ("seamless ... no border") y su
+    # propio negativo ("isolated subject, vignette"). Meter las dos cosas en
+    # el mismo prompt es lo que produce texturas de tile inconsistentes: a
+    # veces el modelo obedece el hint de fondo magenta aislado y deja solo un
+    # parche minusculo de textura real.
+    if spec.kind != "tile":
+        parts.append(BACKGROUND_HINT)
     if spec.tags:
         parts.append(", ".join(spec.tags))
     if spec.extra_prompt:

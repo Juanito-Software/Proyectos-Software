@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dark-requiem-assetgen"
-version = "0.3.4"
+version = "0.3.6"
 description = "Generador de assets de pixel art para Dark Requiem: spec reproducible, PixelPass y benchmark de modelos."
 requires-python = ">=3.10"
 dependencies = [

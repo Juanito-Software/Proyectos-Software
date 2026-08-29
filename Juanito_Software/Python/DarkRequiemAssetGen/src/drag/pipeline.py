@@ -102,6 +102,17 @@ def generate_asset(
             f"({spec.grid}). Es casi siempre un error de invocacion, no una decision."
         )
 
+    if spec.kind == "tile" and cfg.remove_background:
+        # Un tile es textura de borde a borde por diseno (ver prompts.py):
+        # no hay "sujeto sobre fondo" que recortar, asi que el keying de
+        # magenta no tiene nada valido que buscar y termina comiendose
+        # trozos de textura real al azar. dataclasses.replace porque
+        # PixelPassConfig es frozen y cfg puede venir compartido entre
+        # specs de un mismo run de benchmark.
+        from dataclasses import replace
+
+        cfg = replace(cfg, remove_background=False)
+
     prompt, negative = build_prompt(spec)
     root = Path(out_dir) / spec.slug
     root.mkdir(parents=True, exist_ok=True)

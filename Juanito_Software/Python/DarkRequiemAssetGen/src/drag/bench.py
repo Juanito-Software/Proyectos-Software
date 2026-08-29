@@ -27,7 +27,7 @@ from __future__ import annotations
 import csv
 import json
 import time
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 from statistics import median
 
@@ -168,7 +168,18 @@ def run_benchmark(
                 raw = backend.generate(prompt, negative, seed, render_size, render_size)
                 seconds = time.perf_counter() - t0
 
-                res = run_pixelpass(raw, palette, cfg)
+                # Mismo motivo que en pipeline.generate_asset(): un tile es
+                # textura de borde a borde, no un sujeto recortable, asi que
+                # el keying de fondo no tiene nada valido que buscar. Aqui el
+                # cfg es UNO SOLO compartido para las 32 imagenes del run, asi
+                # que no se puede tocar cfg.remove_background de forma global
+                # sin romper character/enemy/item -- se decide por spec.
+                pp_cfg = (
+                    replace(cfg, remove_background=False)
+                    if spec.kind == "tile" and cfg.remove_background
+                    else cfg
+                )
+                res = run_pixelpass(raw, palette, pp_cfg)
                 name = f"{i:02d}_{spec.kind}_seed{seed}"
                 sprite_path = bdir / f"{name}.png"
                 res.image.save(sprite_path)

@@ -16,7 +16,7 @@ from .env import probe
 from .bench import load_matrix, run_benchmark, summarize
 from .packager import Frame, Sheet, export_for_unity, pack_sprites, unity_meta
 
-__version__ = "0.3.4"
+__version__ = "0.3.6"
 
 __all__ = [
     "AssetSpec",
