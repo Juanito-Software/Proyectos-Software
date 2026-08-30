@@ -277,21 +277,45 @@ datos encajan de verdad. La primera vez hay que descargar Chromium:
 npx playwright install chromium
 ```
 
-> **Estos tests escriben datos reales**: crean usuarios, tareas y llegan a
-> borrar cuentas. La configuración aborta si `DATABASE_URL` apunta a una base
-> de datos gestionada (Neon, Render, Supabase…), porque con el `.env` de
-> producción dejarían usuarios `e2e-*` en la aplicación desplegada.
->
-> Para ejecutarlos en local, apunta a una base de datos aparte:
->
-> ```bash
-> createdb taskhub_e2e
-> set DATABASE_URL=postgresql://usuario:clave@localhost:5432/taskhub_e2e
-> npm run test:e2e
-> ```
->
-> Y si alguna vez quedan restos, se limpian con:
-> `DELETE FROM users WHERE username LIKE 'e2e-%';`
+#### Salvaguarda: no se pueden ejecutar contra producción
+
+Estos tests **escriben datos reales**: crean usuarios, crean y borran tareas, y
+uno de ellos llega a eliminar una cuenta. Como el `.env` de desarrollo apunta a
+la base de datos desplegada, ejecutarlos sin pensar dejaba usuarios `e2e-*` en
+la aplicación en producción. Pasó, y por eso existe esta protección.
+
+`playwright.config.js` **aborta antes de arrancar nada** si `DATABASE_URL`
+apunta a una base de datos gestionada — Neon, Render, Supabase o RDS— y explica
+cómo apuntar a una local. La protección está en la herramienta, no en acordarse.
+
+Preparar la base de datos de pruebas, **una sola vez**:
+
+```sql
+CREATE DATABASE taskhub_e2e;
+```
+
+Y después, en cada terminal donde vayas a lanzarlos:
+
+```bash
+set DATABASE_URL=postgresql://usuario:clave@localhost:5432/taskhub_e2e
+npm run test:e2e
+```
+
+La variable solo vive en esa ventana y tiene prioridad sobre el `.env`, así que
+la configuración de desarrollo se queda intacta. En CI no hace falta: allí
+`DATABASE_URL` ya apunta al contenedor de PostgreSQL del propio job, que se
+destruye al terminar.
+
+Si en algún momento quieres saltarte la protección a propósito —por ejemplo
+contra un entorno de pruebas remoto— define `E2E_ALLOW_REMOTE_DB=1`.
+
+Y si quedaran restos de una ejecución antigua:
+
+```sql
+DELETE FROM users WHERE username LIKE 'e2e-%';
+```
+
+Las tareas asociadas se van solas por el borrado en cascada.
 
 ### Qué cubren las 47 comprobaciones de la API
 
