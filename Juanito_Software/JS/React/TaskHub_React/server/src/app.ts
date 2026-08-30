@@ -10,6 +10,7 @@ import { requestLogger } from './middleware/logging.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ApiError } from './utils/api-error.js';
 import { ApiResponse } from './utils/api-response.js';
+import { isProduction } from './config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,6 +22,20 @@ export function createApp() {
 
   const startTime = new Date();
   let requestCount = 0;
+
+  // En producción la aplicación vive detrás del proxy de Render, que añade la
+  // IP real del visitante en la cabecera X-Forwarded-For. Sin esto, Express
+  // ve siempre la IP del proxy y el limitador de peticiones cuenta a todo el
+  // mundo como un único cliente: bastaría un visitante activo para dejar la
+  // aplicación bloqueada para el resto.
+  //
+  // Se confía exactamente en UN salto, no en `true`. Confiar en todos dejaría
+  // que cualquiera se inventara la cabecera y se saltara el límite cambiando
+  // de IP falsa en cada petición, que es justo lo contrario de lo que se
+  // quiere. En local no hay proxy, así que no se activa.
+  if (isProduction) {
+    app.set('trust proxy', 1);
+  }
 
   app.use(cors());
   app.use(express.json());
