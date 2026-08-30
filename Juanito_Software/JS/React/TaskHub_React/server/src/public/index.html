@@ -747,7 +747,7 @@
             <span class="method post">POST</span>
             <span class="path">/api/tasks</span>
           </div>
-          <span class="endpoint-desc">Create task</span>
+          <span class="endpoint-desc">Crear tarea</span>
         </div>
 
         <div class="endpoint-item" id="btn-put-specific" onclick="simulatePutSpecific()">
@@ -763,7 +763,7 @@
             <span class="method delete">DELETE</span>
             <span class="path">/api/tasks/:id</span>
           </div>
-          <span class="endpoint-desc">Delete task</span>
+          <span class="endpoint-desc">Eliminar tarea</span>
         </div>
 
         <div class="endpoint-item" onclick="simulateAPI('GET', '/api/tasks/stats')">
@@ -810,17 +810,17 @@
 
       <!-- Real-time filter form -->
       <div class="filter-bar">
-        <input type="text" id="search-input" class="input-control" placeholder="Search tasks..." oninput="fetchTasks()">
+        <input type="text" id="search-input" class="input-control" placeholder="Buscar en título y descripción..." oninput="fetchTasks()">
         
         <select id="status-filter" class="input-control" onchange="fetchTasks()">
-          <option value="">All Statuses</option>
+          <option value="">Todos los estados</option>
           <option value="pending">Pending</option>
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
         </select>
 
         <select id="priority-filter" class="input-control" onchange="fetchTasks()">
-          <option value="">All Priorities</option>
+          <option value="">Todas las prioridades</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
@@ -851,7 +851,7 @@
   <div class="overlay" id="task-modal">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title" id="modal-title">Create New Task</h3>
+        <h3 class="modal-title" id="modal-title">Nueva tarea</h3>
         <button class="icon-btn" onclick="closeModal()">✕</button>
       </div>
       <form id="task-form" onsubmit="handleFormSubmit(event)">
@@ -859,12 +859,12 @@
         
         <div class="form-group">
           <label for="form-title">Title</label>
-          <input type="text" id="form-title" class="input-control" required placeholder="e.g. Learn Express with TS">
+          <input type="text" id="form-title" class="input-control" required placeholder="p. ej. Repasar Express con TypeScript">
         </div>
 
         <div class="form-group">
           <label for="form-desc">Description</label>
-          <textarea id="form-desc" class="input-control" rows="3" placeholder="Write a description for this task..."></textarea>
+          <textarea id="form-desc" class="input-control" rows="3" placeholder="Describe la tarea (opcional)"></textarea>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
@@ -888,8 +888,8 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="form-submit-btn">Create Task</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="form-submit-btn">Crear tarea</button>
         </div>
       </form>
     </div>

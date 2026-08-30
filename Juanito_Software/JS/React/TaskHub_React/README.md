@@ -4,10 +4,16 @@ Aplicación full-stack con **React** (frontend), **Express + TypeScript** (backe
 
 ## Demo en vivo
 
-**[taskhub-react.onrender.com](https://taskhub-react.onrender.com)** — regístrate con cualquier usuario y contraseña.
+**[taskhub-react.onrender.com](https://taskhub-react.onrender.com)**
 
-- La aplicación está en la raíz.
-- El **[playground de la API](https://taskhub-react.onrender.com/playground)** permite lanzar peticiones reales contra los endpoints y ver las respuestas JSON, sin clonar el repositorio.
+Regístrate con cualquier usuario y contraseña — no hace falta correo ni
+verificación, y cada cuenta solo ve sus propias tareas.
+
+- La **aplicación** está en la raíz.
+- El **[playground de la API](https://taskhub-react.onrender.com/playground)**
+  permite lanzar peticiones reales contra los endpoints y ver las respuestas
+  JSON, sin clonar el repositorio. Tiene su propio registro, y comparte sesión
+  con la aplicación.
 
 > Está en planes gratuitos (Render + Neon): el servicio se duerme tras 15 minutos sin tráfico, así que **la primera carga puede tardar cerca de un minuto**. Las siguientes van rápidas.
 
@@ -142,7 +148,32 @@ Todas las respuestas van envueltas:
 
 ## Playground de la API
 
-Con el backend arrancado, abre **http://localhost:3001/playground**: una interfaz para probar todos los endpoints en vivo, con consola de respuestas JSON, filtros, contador de peticiones y uptime. Requiere iniciar sesión, y comparte el token con el cliente React vía `localStorage`, así que si ya has entrado en la aplicación el playground abre con la sesión puesta.
+Una interfaz para lanzar peticiones reales contra todos los endpoints y ver las
+respuestas JSON, con filtros, contador de peticiones y uptime.
+
+- En local: **http://localhost:3001/playground**, con el backend arrancado.
+- Desplegado: **[taskhub-react.onrender.com/playground](https://taskhub-react.onrender.com/playground)**
+
+### Cómo se entra
+
+Todas las rutas de `/api/tasks` exigen un token, así que el playground pide
+sesión antes de dejarte llamar a nada. **No hace falta tener cuenta previa**: la
+pantalla que aparece al entrar tiene un enlace para registrarte ahí mismo, y
+sirve cualquier usuario y contraseña.
+
+El token se guarda en `localStorage` con la misma clave que usa el cliente
+React, así que las dos partes comparten sesión: si ya has entrado en la
+aplicación, el playground abre autenticado, y al revés. Si el token caduca
+mientras lo usas, vuelve a aparecer la pantalla de acceso sin perder la página.
+
+Desde el playground se sale con el botón de la esquina superior derecha, y hay
+un enlace **← Ir a la aplicación** para volver al cliente React.
+
+### Probar los endpoints de administración
+
+Los tres endpoints de `/api/admin` no tienen interfaz propia: se prueban desde
+aquí, entrando con la cuenta de administrador definida en `ADMIN_USERNAME`.
+Con un usuario normal responden 403, que es justo lo que conviene comprobar.
 
 ## Despliegue
 
