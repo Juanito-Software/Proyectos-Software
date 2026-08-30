@@ -336,7 +336,9 @@ se reciba 401 y no 403, que el administrador de la semilla exista y entre, que
 el listado no filtre ningún hash de contraseña, y que un administrador no pueda
 borrarse a sí mismo.
 
-## Integración continua
+## Integración continua y despliegue
+
+### CI — GitHub Actions
 
 Cada push y cada pull request ejecuta ocho jobs en GitHub Actions: lint, tipos,
 unitarios del servidor, tests del cliente con cobertura, suite de la API contra
@@ -352,6 +354,22 @@ por dependencias de desarrollo, y un CI siempre en rojo deja de mirarse.
 
 El workflow está en `.github/workflows/taskhub-react-ci.yml`, con una copia en
 la raíz del monorepo, que es donde GitHub los busca.
+
+### CD — Render Auto-Deploy
+
+Cada commit a `main` dispara también un despliegue automático en Render, que
+instala dependencias, compila cliente y servidor y publica la nueva versión.
+
+**El CI y el despliegue van en paralelo, no encadenados.** Render publica en
+cuanto llega el commit, sin esperar al resultado del pipeline, así que un
+despliegue puede llegar a producción con los tests en rojo — pasó, y por eso
+conviene decirlo.
+
+Es una decisión consciente mientras el proyecto está en desarrollo: poder
+desplegar un commit con tests fallando permite depurar en el entorno real.
+Encadenarlos es lo correcto cuando la aplicación se estabilice, y se hace
+desactivando el auto-deploy y llamando a un *Deploy Hook* de Render desde un
+job que dependa de `ci-ok`.
 
 ## Administración
 

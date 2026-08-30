@@ -230,8 +230,21 @@ Se añadió ESLint, que no existía en ningún paquete: TypeScript en el servido
 reglas de hooks en el cliente. El criterio es señalar errores reales, no
 cuestiones de formato.
 
+### CD: despliegue automático, no encadenado al CI
+
+Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el
+despliegue van en paralelo**: Render no espera al pipeline, así que un commit
+con los tests en rojo llega igualmente a producción. Ocurrió con `9bca722`, que
+falló el CI y se desplegó, dejando la aplicación rota por el fallo de CORS.
+
+Se mantiene así a propósito mientras el proyecto está en desarrollo: poder
+desplegar un commit con tests fallando permite depurar contra el entorno real.
+Encadenarlos —desactivar el auto-deploy y llamar a un Deploy Hook desde un job
+que dependa de `ci-ok`— queda para cuando la aplicación se estabilice.
+
 ### Pendiente
 
+- **Encadenar el despliegue al CI**, según lo anterior.
 - **Protección de rama sin configurar.** Al ser un repositorio de una sola
   persona, lo razonable es exigir que `ci-ok` pase antes de fusionar, sin exigir
   revisión humana: no hay nadie que pueda aprobarla.
