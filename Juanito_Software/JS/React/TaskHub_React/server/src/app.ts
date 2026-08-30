@@ -76,20 +76,42 @@ export function createApp() {
 
   // ── CORS ───────────────────────────────────────────────────────────────
   //
-  // Antes se aceptaba cualquier origen. Ahora solo los declarados en
-  // ALLOWED_ORIGINS. Las peticiones sin origen (curl, el propio servidor, los
-  // tests) se permiten: CORS es una protección del navegador, y bloquearlas
-  // no aporta seguridad pero sí rompe herramientas legítimas.
+  // Antes se aceptaba cualquier origen. Ahora solo tres casos:
+  //
+  // 1. Sin cabecera Origin: curl, los tests, el propio servidor. CORS es una
+  //    protección del navegador; bloquear esto no aporta seguridad y rompe
+  //    herramientas legítimas.
+  // 2. El MISMO origen que sirve la aplicación. Es imprescindible: el
+  //    navegador manda `Origin` también en las peticiones POST del mismo
+  //    sitio, así que sin este caso el propio cliente se quedaría fuera en
+  //    cuanto alguien intentara iniciar sesión.
+  // 3. Los orígenes declarados en ALLOWED_ORIGINS, para clientes externos.
+  //
+  // Se usa la forma con delegado porque hace falta `req` para saber desde qué
+  // host se está sirviendo, y así funciona en cualquier dominio sin tener que
+  // declararlo en la configuración.
   app.use(
-    cors({
-      origin(origin, callback) {
-        if (!origin || env.allowedOrigins.includes(origin)) {
-          callback(null, true);
-          return;
-        }
-        callback(new Error('Origen no permitido por CORS'));
-      },
-      credentials: false,
+    cors((req, callback) => {
+      const origin = req.headers.origin;
+
+      if (!origin) {
+        callback(null, { origin: true, credentials: false });
+        return;
+      }
+
+      const host = req.headers.host;
+      const esMismoOrigen =
+        !!host && (origin === `https://${host}` || origin === `http://${host}`);
+
+      if (esMismoOrigen || env.allowedOrigins.includes(origin)) {
+        callback(null, { origin: true, credentials: false });
+        return;
+      }
+
+      // No se lanza un error: eso devolvería un 500 y ocultaría la causa.
+      // Sin la cabecera de permiso, el navegador bloquea la respuesta por su
+      // cuenta, que es exactamente el comportamiento que define CORS.
+      callback(null, { origin: false, credentials: false });
     }),
   );
 

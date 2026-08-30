@@ -34,9 +34,9 @@ jobs:
     name: Lint y comprobación de tipos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -65,9 +65,9 @@ jobs:
       DATABASE_URL: postgresql://noop:noop@localhost:5432/noop
       JWT_SECRET: secreto-inerte-para-tests-unitarios-del-servidor
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -84,9 +84,9 @@ jobs:
     name: Tests del cliente y cobertura
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -102,7 +102,7 @@ jobs:
 
       - name: Guardar el informe de cobertura
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: cobertura-cliente
           path: Juanito_Software/JS/React/TaskHub_React/client/coverage/
@@ -141,9 +141,9 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -160,9 +160,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -216,9 +216,9 @@ jobs:
       PORT: 3001
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -241,7 +241,7 @@ jobs:
 
       - name: Guardar el informe si algo falla
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: informe-playwright
           path: Juanito_Software/JS/React/TaskHub_React/playwright-report/
@@ -252,9 +252,9 @@ jobs:
     name: Auditoría de dependencias
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -284,6 +284,10 @@ jobs:
     if: always()
     steps:
       - name: Comprobar que ningún job ha fallado
+        # Este job no clona el repositorio: solo mira el resultado de los
+        # demás. Hay que anular el working-directory heredado del workflow,
+        # porque esa carpeta no existe si no se ha hecho checkout.
+        working-directory: .
         run: |
           if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
             echo "Algún job ha fallado."

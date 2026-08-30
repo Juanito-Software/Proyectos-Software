@@ -263,6 +263,32 @@ async function run(): Promise<void> {
       `status ${otherSameTitle.status}`,
     );
 
+    // ── CORS ─────────────────────────────────────────────────────────────
+    //
+    // El navegador manda `Origin` también en las peticiones POST del mismo
+    // sitio. Una configuración que solo acepte una lista blanca deja fuera al
+    // propio cliente y rompe el inicio de sesión en producción — pasó, y por
+    // eso existe esta comprobación.
+    const mismoOrigen = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: BASE },
+      body: JSON.stringify({ username, password }),
+    });
+    check(
+      'Una petición del mismo origen no la bloquea CORS',
+      mismoOrigen.status === 200,
+      `status ${mismoOrigen.status}`,
+    );
+
+    const ajeno = await fetch(`${BASE}/api/health`, {
+      headers: { Origin: 'https://sitio-que-no-deberia-poder.example' },
+    });
+    check(
+      'Un origen desconocido no recibe la cabecera que autoriza la respuesta',
+      ajeno.headers.get('access-control-allow-origin') === null,
+      `cabecera: ${ajeno.headers.get('access-control-allow-origin') ?? 'ausente'}`,
+    );
+
     // ── Manipulación de tokens ───────────────────────────────────────────
     //
     // Un JWT es texto firmado que viaja por el cliente: hay que asumir que el
