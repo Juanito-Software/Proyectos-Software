@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
  */
 
 const nuevoUsuario = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-const PASSWORD = 'contrasena-de-prueba-e2e';
+const PASSWORD = 'frase larga de prueba e2e';
 
 async function registrarse(page, username = nuevoUsuario()) {
   await page.goto('/');
@@ -21,8 +21,11 @@ async function registrarse(page, username = nuevoUsuario()) {
     await enlaceRegistro.click();
   }
 
-  await page.getByPlaceholder(/usuario/i).fill(username);
-  await page.getByPlaceholder(/contraseña/i).fill(PASSWORD);
+  await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+  // Placeholders exactos: /contraseña/i casaría con los dos campos del
+  // registro, "Contraseña" y "Repite la contraseña".
+  await page.getByPlaceholder('Contraseña', { exact: true }).fill(PASSWORD);
+  await page.getByPlaceholder('Repite la contraseña').fill(PASSWORD);
   await page.getByRole('button', { name: /registrarse|crear cuenta/i }).click();
 
   // La cabecera con el nombre solo aparece cuando hay sesión.
@@ -51,13 +54,77 @@ test.describe('Autenticación', () => {
     // Se comprueba el campo de usuario y no el botón: tras salir, el
     // formulario conserva el modo en el que estaba, así que el botón puede
     // decir "Entrar" o "Registrarse". El campo está en los dos casos.
-    await expect(page.getByPlaceholder('Usuario')).toBeVisible();
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+  });
+
+  test('la confirmación que no coincide impide registrarse', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /regístrate/i }).click();
+
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(nuevoUsuario());
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(PASSWORD);
+    await page.getByPlaceholder('Repite la contraseña').fill('otra cosa completamente');
+
+    await expect(page.getByText(/no coinciden/i)).toBeVisible();
+    // El botón se deshabilita: la petición no llega a salir.
+    await expect(page.getByRole('button', { name: /registrarse/i })).toBeDisabled();
+  });
+
+  test('el campo de confirmación solo existe en el registro', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByPlaceholder('Repite la contraseña')).not.toBeVisible();
+
+    await page.getByRole('button', { name: /regístrate/i }).click();
+    await expect(page.getByPlaceholder('Repite la contraseña')).toBeVisible();
+  });
+
+  test('una contraseña demasiado corta no permite registrarse', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /regístrate/i }).click();
+
+    const corta = 'melon y sandia'; // 14, uno menos del mínimo
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(nuevoUsuario());
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(corta);
+    await page.getByPlaceholder('Repite la contraseña').fill(corta);
+    await page.getByRole('button', { name: /registrarse/i }).click();
+
+    // No se entra: sigue viéndose el formulario.
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+  });
+
+  test('una frase larga sin números ni símbolos es válida', async ({ page }) => {
+    // El caso que define la política: sin este test, alguien podría
+    // reintroducir reglas de composición sin que nada lo detecte.
+    const username = nuevoUsuario();
+    await page.goto('/');
+    await page.getByRole('button', { name: /regístrate/i }).click();
+
+    const frase = 'caballo correcto grapa pila';
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(frase);
+    await page.getByPlaceholder('Repite la contraseña').fill(frase);
+    await page.getByRole('button', { name: /registrarse/i }).click();
+
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+
+    // Y se puede volver a entrar con ella.
+    await page.getByRole('button', { name: /salir/i }).click();
+
+    // Al salir, el formulario conserva el modo en el que estaba: como este
+    // test venía de registrarse, sigue en "Crear cuenta". Hay que cambiar a
+    // inicio de sesión antes de buscar el botón "Entrar".
+    await page.getByRole('button', { name: /inicia sesión/i }).click();
+
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(frase);
+    await page.getByRole('button', { name: /entrar/i }).click();
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
   });
 
   test('unas credenciales incorrectas muestran error y no dejan entrar', async ({ page }) => {
     await page.goto('/');
-    await page.getByPlaceholder(/usuario/i).fill('usuario-que-no-existe-jamas');
-    await page.getByPlaceholder(/contraseña/i).fill('loquesea123');
+    await page.getByPlaceholder('Usuario', { exact: true }).fill('usuario-que-no-existe-jamas');
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill('credenciales que no existen');
     await page.getByRole('button', { name: /entrar/i }).click();
 
     await expect(page.getByText(/incorrect/i)).toBeVisible({ timeout: 10_000 });

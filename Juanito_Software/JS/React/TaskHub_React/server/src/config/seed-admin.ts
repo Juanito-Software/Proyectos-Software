@@ -1,7 +1,6 @@
 import { env } from './env.js';
 import { usersRepository } from '../modules/users/users.repository.js';
-
-const MIN_ADMIN_PASSWORD_LENGTH = 12;
+import { validarPassword, MIN_PASSWORD_LENGTH } from '../modules/auth/password-policy.js';
 
 /**
  * Crea el administrador a partir de las variables de entorno.
@@ -25,10 +24,16 @@ export async function seedAdmin(): Promise<void> {
     return;
   }
 
-  if (adminPassword.length < MIN_ADMIN_PASSWORD_LENGTH) {
+  // Se aplica la misma política que a cualquier usuario, y con más motivo:
+  // es la cuenta con más permisos. Antes tenía su propio mínimo de 12, lo que
+  // permitía que el administrador fuera más débil que un usuario normal en
+  // cuanto la política general subiera.
+  const resultado = validarPassword(adminPassword, adminUsername);
+  if (!resultado.valida) {
     throw new Error(
-      `ADMIN_PASSWORD debe tener al menos ${MIN_ADMIN_PASSWORD_LENGTH} caracteres. ` +
-        'Es la cuenta con más permisos de la aplicación: no arranco con una contraseña débil.',
+      `ADMIN_PASSWORD no cumple la política de contraseñas: ${resultado.error}\n` +
+        `Es la cuenta con más permisos de la aplicación, así que no se arranca con una débil. ` +
+        `Mínimo ${MIN_PASSWORD_LENGTH} caracteres; una frase larga es la forma más cómoda de llegar.`,
     );
   }
 

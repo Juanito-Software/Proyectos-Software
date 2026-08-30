@@ -24,7 +24,8 @@ TaskHub/
 ├── client/                       # Frontend React (Vite)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AuthForm.jsx      # login y registro
+│   │   │   ├── AuthForm.jsx      # login y registro, con confirmación
+│   │   │   ├── AuthForm.test.jsx      ← 18 tests
 │   │   │   ├── TaskForm.jsx      # alta y edición, con estado y prioridad
 │   │   │   ├── TaskForm.test.jsx      ← 9 tests
 │   │   │   ├── TaskItem.jsx      # tarjeta de tarea con sus distintivos
@@ -47,7 +48,9 @@ TaskHub/
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── auth/             # router · controller · service · JWT
-│   │   │   │   └── auth.validation.test.ts        ← 18 tests
+│   │   │   │   ├── password-policy.ts            # política NIST, fuente de verdad
+│   │   │   │   ├── password-policy.test.ts       ← 24 tests
+│   │   │   │   └── auth.validation.test.ts       ← 24 tests
 │   │   │   ├── users/            # repository (SQL) · types (rol user/admin)
 │   │   │   ├── tasks/            # router · controller · service · repository
 │   │   │   │   ├── tasks.repository.test.ts       ← 13 tests
@@ -60,12 +63,12 @@ TaskHub/
 │   │   ├── public/               # playground de la API (se sirve en /playground)
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 47 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 62 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
-├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 16 tests
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 20 tests
 ├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
@@ -251,13 +254,13 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**162 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**229 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 56 + 43 | Nada |
-| `npm run verify` | End-to-end de la API | 47 | PostgreSQL |
-| `npm run test:e2e` | Navegador real (Playwright) | 16 | PostgreSQL y `npm run build` |
+| `npm test` | Unitarios de servidor y cliente | 86 + 61 | Nada |
+| `npm run verify` | End-to-end de la API | 62 | PostgreSQL |
+| `npm run test:e2e` | Navegador real (Playwright) | 20 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
 Los **unitarios** cubren lógica pura —validadores, escapado de comodines de
@@ -317,7 +320,7 @@ DELETE FROM users WHERE username LIKE 'e2e-%';
 
 Las tareas asociadas se van solas por el borrado en cascada.
 
-### Qué cubren las 47 comprobaciones de la API
+### Qué cubren las 62 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
 filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,
@@ -371,6 +374,49 @@ Encadenarlos es lo correcto cuando la aplicación se estabilice, y se hace
 desactivando el auto-deploy y llamando a un *Deploy Hook* de Render desde un
 job que dependa de `ci-ok`.
 
+## Política de contraseñas
+
+Sigue **NIST SP 800-63B Revisión 4** (julio de 2025). La implementación está en
+`server/src/modules/auth/password-policy.ts`, que es la única fuente de verdad:
+la usan tanto el registro como la semilla del administrador.
+
+| Regla | Valor | Origen |
+|---|---|---|
+| Longitud mínima | **15 caracteres** | NIST: exige 15 cuando la contraseña es el único factor; los 8 solo valen con MFA, y TaskHub no la tiene |
+| Longitud máxima | 72 caracteres | **Límite técnico**, no requisito de NIST: bcrypt solo lee los primeros 72 bytes |
+| Reglas de composición | **Ninguna** | NIST Rev 4 las **prohíbe**, no solo las desaconseja |
+| Caracteres permitidos | Todos, espacios incluidos | NIST |
+| Lista de bloqueo | Contraseñas comunes, caracteres repetidos, secuencias de teclado y el propio nombre de usuario | NIST exige la comprobación; **el contenido concreto de la lista es decisión de TaskHub** |
+
+**Por qué no se exige "una mayúscula, un número y un símbolo".** Esas reglas
+producen contraseñas predecibles —`Password1!`, `Verano2026!`— que un atacante
+prueba de las primeras. `caballo correcto grapa pila` no tiene ni una mayúscula
+ni un número, y es muchísimo más resistente que `P4ss!`. NIST prohíbe esas
+reglas desde la Revisión 4 justamente por eso.
+
+**Decisiones propias de TaskHub, no requisitos de NIST:**
+
+- La lista de bloqueo está **embebida en el código** en lugar de consultar un
+  servicio de credenciales filtradas. Para un proyecto de este tamaño, una
+  llamada externa en cada registro añadiría latencia y un punto de fallo
+  desproporcionados. Conectar una fuente real queda como mejora futura si el
+  proyecto llegara a tener usuarios reales.
+- El umbral de 4 caracteres para comparar la contraseña con el nombre de
+  usuario: por debajo hay demasiados falsos positivos (un usuario "ana"
+  rechazaría frases con "semana" o "mañana").
+
+**Usuarios existentes.** La política se aplica **solo al registro**. Quien creó
+su cuenta cuando el mínimo era de 8 caracteres sigue pudiendo entrar con su
+contraseña de siempre: el validador del inicio de sesión no comprueba longitud
+ni lista de bloqueo. Hacerlo dejaría fuera a esas cuentas y, además, daría
+respuestas distintas según el caso, lo que revela información. Hay un test que
+fija este comportamiento.
+
+**Confirmación de contraseña.** El registro pide escribir la contraseña dos
+veces, pero eso es **asunto del formulario**: se compara en el cliente y no
+viaja a la API, que sigue recibiendo solo `username` y `password`. No se
+almacena, no se hashea y no existe en la base de datos.
+
 ## Administración
 
 Existe un rol `admin` que puede listar usuarios, borrarlos —arrastrando sus
@@ -409,6 +455,10 @@ usuario es un índice sobre `(user_id, LOWER(TRIM(title)))`. El servicio lo
 comprueba antes para devolver un 409 con mensaje claro, pero la garantía real la
 da el índice: dos peticiones simultáneas ya no pueden colarse entre la
 comprobación y la escritura, como sí ocurría con el almacenamiento en ficheros.
+
+**Longitud antes que composición en las contraseñas.** No se exigen mayúsculas,
+números ni símbolos: producen contraseñas predecibles sin ganar resistencia real.
+El detalle está en la sección de política de contraseñas.
 
 **Filtrado en SQL, no en memoria.** Los filtros por estado, prioridad y texto se
 resuelven en la consulta, así que solo viajan las filas que se piden. El resumen

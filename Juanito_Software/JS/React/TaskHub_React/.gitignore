@@ -4,3 +4,11 @@ dist/
 .env.local
 *.log
 .DS_Store
+
+# Salida de los tests: se regenera en cada ejecución y pesa bastante.
+# playwright-report guarda el informe HTML, y test-results las capturas y
+# trazas de los tests que fallan — útiles para depurar en local, pero no algo
+# que deba versionarse. En CI se suben como artefactos del propio job.
+playwright-report/
+test-results/
+coverage/

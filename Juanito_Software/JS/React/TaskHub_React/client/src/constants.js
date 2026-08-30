@@ -17,6 +17,20 @@ export const PRIORITIES = [
   { value: 'high', label: 'Alta' },
 ];
 
+/**
+ * Política de contraseñas, replicada del servidor.
+ *
+ * La autoridad es `server/src/modules/auth/password-policy.ts`. Aquí solo se
+ * duplican los límites para poder avisar antes de enviar el formulario, porque
+ * cliente y servidor son paquetes npm distintos y no comparten módulos.
+ *
+ * **Si cambian allí, hay que cambiarlos aquí.** Un test end-to-end comprueba
+ * que los dos coinciden, así que la desincronización rompe el CI en lugar de
+ * pasar desapercibida.
+ */
+export const MIN_PASSWORD_LENGTH = 15;
+export const MAX_PASSWORD_LENGTH = 72;
+
 export const statusLabel = (value) =>
   STATUSES.find((s) => s.value === value)?.label ?? value;
 

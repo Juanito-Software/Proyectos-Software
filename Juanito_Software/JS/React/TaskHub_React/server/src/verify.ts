@@ -14,7 +14,7 @@ process.env.DB_SCHEMA = testSchema;
 // Credenciales del administrador de prueba. Se fijan antes de importar la
 // configuración, que las lee al cargarse.
 const ADMIN_USER = `admin-${crypto.randomUUID().slice(0, 8)}`;
-const ADMIN_PASS = 'admin-password-de-prueba-larga';
+const ADMIN_PASS = 'clave larga del administrador de pruebas';
 process.env.ADMIN_USERNAME = ADMIN_USER;
 process.env.ADMIN_PASSWORD = ADMIN_PASS;
 
@@ -52,7 +52,7 @@ async function run(): Promise<void> {
     server = app.listen(PORT);
 
     const username = `verify-${crypto.randomUUID().slice(0, 8)}`;
-    const password = 'verify-pass-123';
+    const password = 'frase de paso para verificar';
 
     // ── Autenticación ────────────────────────────────────────────────────
 
@@ -261,6 +261,114 @@ async function run(): Promise<void> {
       'El título duplicado se comprueba por usuario, no globalmente',
       otherSameTitle.status === 201,
       `status ${otherSameTitle.status}`,
+    );
+
+    // ── Política de contraseñas (NIST SP 800-63B Rev 4) ──────────────────
+
+    const registrar = (u: string, p: string) =>
+      fetch(`${BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p }),
+      });
+
+    const nuevo = () => `pol-${crypto.randomUUID().slice(0, 8)}`;
+
+    const corta = await registrar(nuevo(), 'melon y sandia'); // 14
+    check(
+      'Registro con contraseña de 14 caracteres -> 400',
+      corta.status === 400,
+      `status ${corta.status}`,
+    );
+
+    // El caso que define la política: larga, sin mayúsculas, sin números y
+    // sin símbolos. Cualquier sistema con reglas de composición la rechazaría.
+    const fraseUser = nuevo();
+    const frase = await registrar(fraseUser, 'caballo correcto grapa pila');
+    check(
+      'Registro con frase larga sin mayúsculas, números ni símbolos -> 201',
+      frase.status === 201,
+      `status ${frase.status}`,
+    );
+
+    // Y debe poder entrar después con esa misma contraseña.
+    const fraseLogin = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: fraseUser, password: 'caballo correcto grapa pila' }),
+    });
+    check(
+      'Se puede iniciar sesión con la frase de paso',
+      fraseLogin.status === 200,
+      `status ${fraseLogin.status}`,
+    );
+
+    const comun = await registrar(nuevo(), 'passwordpassword');
+    check(
+      'Registro con contraseña de la lista de bloqueo -> 400',
+      comun.status === 400,
+      `status ${comun.status}`,
+    );
+
+    const conNombre = await registrar('pedrito', 'pedrito y su contraseña');
+    check(
+      'Registro con la contraseña conteniendo el usuario -> 400',
+      conNombre.status === 400,
+      `status ${conNombre.status}`,
+    );
+
+    const excesiva = await registrar(nuevo(), 'x'.repeat(73));
+    check(
+      'Registro con más de 72 caracteres -> 400, no se recorta en silencio',
+      excesiva.status === 400,
+      `status ${excesiva.status}`,
+    );
+
+    // Ninguno de los rechazados puede haber creado usuario.
+    const colados = await query<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM users WHERE LOWER(username) IN ('pedrito')`,
+    );
+    check(
+      'Un registro rechazado por la política no crea el usuario',
+      colados[0].count === 0,
+      `${colados[0].count} usuario(s)`,
+    );
+
+    // Compatibilidad: una cuenta con una contraseña que hoy no pasaría la
+    // política debe seguir pudiendo iniciar sesión. Se simula insertando el
+    // hash directamente, como haría una cuenta creada antes del cambio.
+    const bcryptLib = (await import('bcrypt')).default;
+    const antiguoUser = `antiguo-${crypto.randomUUID().slice(0, 8)}`;
+    const antiguaPass = 'corta12'; // 7 caracteres: imposible de registrar hoy
+    await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [
+      antiguoUser,
+      await bcryptLib.hash(antiguaPass, 10),
+    ]);
+    const loginAntiguo = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: antiguoUser, password: antiguaPass }),
+    });
+    check(
+      'Una cuenta anterior a la política entra con su contraseña de siempre',
+      loginAntiguo.status === 200,
+      `status ${loginAntiguo.status}`,
+    );
+
+    // El contrato del registro no incluye la confirmación: es del formulario.
+    const conConfirmacion = await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: nuevo(),
+        password: 'otra frase de paso valida',
+        passwordConfirmation: 'algo completamente distinto',
+      }),
+    });
+    check(
+      'La API ignora passwordConfirmation: la comparación es del formulario',
+      conConfirmacion.status === 201,
+      `status ${conConfirmacion.status}`,
     );
 
     // ── Cabeceras de seguridad ───────────────────────────────────────────
