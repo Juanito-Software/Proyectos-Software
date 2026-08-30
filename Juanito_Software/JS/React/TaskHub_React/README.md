@@ -151,6 +151,10 @@ Como esto vive dentro de un monorepo, hay que apuntar al subdirectorio:
 | Start Command | `npm start --prefix server` |
 | Instance Type | Free |
 
+`install:all` usa `--include=dev` a propósito: con `NODE_ENV=production`, npm
+omite las devDependencies, y ahí están Vite, TypeScript y tsx. Sin ese flag el
+build falla con `vite: not found`.
+
 ### Variables de entorno en Render
 
 | Variable | Valor |
