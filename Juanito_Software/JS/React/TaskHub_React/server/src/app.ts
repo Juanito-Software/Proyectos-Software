@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authRouter } from './modules/auth/auth.router.js';
 import { tasksRouter } from './modules/tasks/tasks.router.js';
+import { adminRouter } from './modules/admin/admin.router.js';
 import { requestLogger } from './middleware/logging.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ApiError } from './utils/api-error.js';
@@ -68,6 +69,7 @@ export function createApp() {
 
   app.use('/api/auth', authRouter);
   app.use('/api/tasks', tasksRouter);
+  app.use('/api/admin', adminRouter);
 
   // ── Cliente React ──────────────────────────────────────────────────────
   // El build del cliente se copia a dist/client durante `npm run build`. En

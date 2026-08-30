@@ -118,6 +118,9 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 | DELETE | `/api/tasks/:id` | Eliminar tarea |
 | GET | `/api/system/stats` | Uptime, peticiones servidas y versión de Node |
 | GET | `/api/health` | Comprobación de vida |
+| GET | `/api/admin/users` | Listado de usuarios con su número de tareas · **admin** |
+| DELETE | `/api/admin/users/:id` | Borra un usuario y, en cascada, sus tareas · **admin** |
+| GET | `/api/admin/stats` | Resumen global de la instancia · **admin** |
 
 Las rutas de tareas requieren cabecera `Authorization: Bearer <token>`. Los títulos deben ser únicos **por usuario** (409 si se repite; dos usuarios distintos sí pueden tener el mismo título).
 
@@ -171,6 +174,8 @@ build falla con `vite: not found`.
 | `DATABASE_URL` | La cadena de Neon, con `?sslmode=require` |
 | `JWT_SECRET` | Una clave larga y aleatoria, **distinta de la de desarrollo** |
 | `NODE_ENV` | `production` |
+| `ADMIN_USERNAME` | Opcional. Nombre del administrador |
+| `ADMIN_PASSWORD` | Opcional. Mínimo 12 caracteres |
 
 `PORT` no se configura: Render la inyecta y `config/env.ts` la lee.
 
@@ -185,9 +190,42 @@ cd server
 npm run verify
 ```
 
-Levanta la API en un puerto temporal y ejecuta **26 comprobaciones end-to-end** contra un **esquema de base de datos propio**, que se crea al empezar y se destruye al terminar — tus datos reales no se tocan, ni siquiera si la suite falla a mitad.
+Levanta la API en un puerto temporal y ejecuta **37 comprobaciones end-to-end** contra un **esquema de base de datos propio**, que se crea al empezar y se destruye al terminar — tus datos reales no se tocan, ni siquiera si la suite falla a mitad.
 
 Cubre: registro, login, acceso sin token, CRUD completo, validación de campos y de filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros, ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre usuarios, borrado, que el índice único rechace duplicados aunque cambien mayúsculas y espacios, y que borrar un usuario arrastre sus tareas.
+
+Y, sobre el rol de administrador: que registrarse nunca conceda el rol —ni
+enviando `role: "admin"` en el cuerpo—, que un usuario normal reciba 403, que
+sin token se reciba 401 y no 403, que el administrador de la semilla exista y
+entre, que el listado no filtre ningún hash de contraseña, y que un
+administrador no pueda borrarse a sí mismo.
+
+## Administración
+
+Existe un rol `admin` que puede listar usuarios, borrarlos —arrastrando sus
+tareas por la clave foránea en cascada— y consultar un resumen global.
+
+**El rol solo se concede por semilla.** Al arrancar, si están definidas
+`ADMIN_USERNAME` y `ADMIN_PASSWORD`, ese usuario se crea o se promueve a
+administrador. No hay ningún camino desde la API pública hasta el rol: el
+registro fuerza `user`, el repositorio no acepta el rol como parámetro y no
+existe ningún endpoint para promocionar a nadie. Quien controla las variables
+de entorno del despliegue decide quién administra.
+
+Tres decisiones que conviene explicar:
+
+**El rol se lee de la base de datos en cada petición, no del JWT.** Si viajara
+dentro del token, retirarle el rol a alguien no surtiría efecto hasta que su
+token caducara, hasta siete días después. Cuesta una consulta, pero el permiso
+comprobado es siempre el vigente.
+
+**403 y no 404.** En las tareas ajenas se devuelve 404 para no revelar que
+existen; aquí no aplica, porque quien pregunta ya está autenticado y la
+existencia de una zona de administración no es un secreto.
+
+**Un administrador no puede borrarse a sí mismo ni dejar la instancia sin
+administradores.** Las dos comprobaciones existen para que un clic no deje la
+aplicación sin nadie que pueda gestionarla.
 
 ## Decisiones de diseño
 

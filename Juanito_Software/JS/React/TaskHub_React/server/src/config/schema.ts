@@ -13,8 +13,26 @@ CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username      TEXT        NOT NULL,
   password_hash TEXT        NOT NULL,
+  -- El rol por defecto es 'user' y el registro nunca lo cambia: un
+  -- administrador solo puede nacer de la semilla de arranque. Así no existe
+  -- ningún camino desde la API pública hacia el rol admin.
+  role          TEXT        NOT NULL DEFAULT 'user'
+                CHECK (role IN ('user', 'admin')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Para bases de datos creadas antes de que existiera el rol.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_role_check'
+  ) THEN
+    ALTER TABLE users ADD CONSTRAINT users_role_check
+      CHECK (role IN ('user', 'admin'));
+  END IF;
+END $$;
 
 -- El nombre de usuario es único sin distinguir mayúsculas. Se hace con un
 -- índice sobre LOWER(username) en lugar de un UNIQUE normal porque el registro

@@ -26,8 +26,20 @@ const clientBuild = path.join(serverDir, '..', 'client', 'dist');
 const clientOut = path.join(serverDir, 'dist', 'client');
 
 if (fs.existsSync(clientBuild)) {
-  fs.rmSync(clientOut, { recursive: true, force: true });
-  fs.cpSync(clientBuild, clientOut, { recursive: true });
+  // Se limpia antes de copiar para no acumular assets de builds anteriores:
+  // Vite les pone un hash en el nombre, así que cada compilación deja
+  // ficheros nuevos y los viejos se quedarían ahí para siempre.
+  //
+  // Si el borrado falla —un fichero bloqueado por un antivirus o por un
+  // editor abierto, cosa habitual en Windows— no se corta el build: se copia
+  // encima y como mucho sobra basura antigua, que no rompe nada.
+  try {
+    fs.rmSync(clientOut, { recursive: true, force: true });
+  } catch (err) {
+    console.warn(`aviso      -> no se pudo limpiar dist/client (${err.code}); se copia encima`);
+  }
+
+  fs.cpSync(clientBuild, clientOut, { recursive: true, force: true });
   console.log('cliente    -> dist/client');
 } else {
   console.log('cliente    -> omitido (no hay client/dist; compílalo con npm run build en client/)');

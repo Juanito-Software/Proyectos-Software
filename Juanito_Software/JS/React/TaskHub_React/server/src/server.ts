@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { initSchema, closePool } from './config/db.js';
+import { seedAdmin } from './config/seed-admin.js';
 
 /**
  * El esquema se crea antes de aceptar peticiones. Es idempotente, así que en
@@ -10,8 +11,9 @@ import { initSchema, closePool } from './config/db.js';
 try {
   await initSchema();
   console.log('Base de datos lista');
+  await seedAdmin();
 } catch (err) {
-  console.error('No se pudo conectar con la base de datos:', err);
+  console.error('No se pudo preparar la base de datos:', err);
   process.exit(1);
 }
 

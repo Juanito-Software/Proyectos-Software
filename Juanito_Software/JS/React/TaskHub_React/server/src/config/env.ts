@@ -16,6 +16,12 @@ export const env = {
   // Sin valor por defecto a propósito: es preferible que la aplicación no
   // arranque a que apunte en silencio a una base de datos equivocada.
   databaseUrl: required('DATABASE_URL'),
+
+  // Semilla del administrador. Opcionales: si no están, la aplicación arranca
+  // sin ningún admin, que es lo correcto por defecto. El rol solo se concede
+  // desde aquí, nunca a través de la API.
+  adminUsername: process.env.ADMIN_USERNAME?.trim() || null,
+  adminPassword: process.env.ADMIN_PASSWORD || null,
 } as const;
 
 export const isProduction = env.nodeEnv === 'production';

@@ -11,11 +11,20 @@ import type { Server } from 'node:http';
 const testSchema = `verify_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 process.env.DB_SCHEMA = testSchema;
 
+// Credenciales del administrador de prueba. Se fijan antes de importar la
+// configuración, que las lee al cargarse.
+const ADMIN_USER = `admin-${crypto.randomUUID().slice(0, 8)}`;
+const ADMIN_PASS = 'admin-password-de-prueba-larga';
+process.env.ADMIN_USERNAME = ADMIN_USER;
+process.env.ADMIN_PASSWORD = ADMIN_PASS;
+
 const { pool, query, initSchema, closePool } = await import('./config/db.js');
+const { seedAdmin } = await import('./config/seed-admin.js');
 const { createApp } = await import('./app.js');
 
 await pool.query(`CREATE SCHEMA IF NOT EXISTS ${testSchema}`);
 await initSchema();
+await seedAdmin();
 
 const PORT = 4050;
 const BASE = `http://localhost:${PORT}`;
@@ -283,6 +292,118 @@ async function run(): Promise<void> {
       'El índice único rechaza el duplicado aunque cambien mayúsculas y espacios',
       rejectedByIndex,
       rejectionCode ? `código ${rejectionCode}` : 'no se rechazó',
+    );
+
+    // ── Administración ───────────────────────────────────────────────────
+
+    const regRole = (regBody.data as unknown as { user?: { role?: string } })?.user?.role;
+    check(
+      'Registrarse crea un usuario con rol "user", nunca admin',
+      regRole === 'user',
+      `rol recibido: ${regRole}`,
+    );
+
+    // Aunque el cliente mande role:"admin" en el registro, el rol lo pone la
+    // base de datos por defecto y el repositorio no lo acepta como parámetro.
+    const sneakyUser = `sneaky-${crypto.randomUUID().slice(0, 8)}`;
+    const sneaky = await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: sneakyUser, password, role: 'admin' }),
+    });
+    const sneakyBody = (await sneaky.json()) as Envelope<{ user: { role: string } }>;
+    check(
+      'Mandar role:"admin" al registrarse no concede el rol',
+      sneakyBody.data?.user?.role === 'user',
+      `rol recibido: ${sneakyBody.data?.user?.role}`,
+    );
+
+    const userAdminAttempt = await fetch(`${BASE}/api/admin/users`, { headers: auth });
+    check(
+      'Un usuario normal recibe 403 en /api/admin',
+      userAdminAttempt.status === 403,
+      `status ${userAdminAttempt.status}`,
+    );
+
+    const noTokenAdmin = await fetch(`${BASE}/api/admin/users`);
+    check(
+      'Sin token, /api/admin devuelve 401 y no 403',
+      noTokenAdmin.status === 401,
+      `status ${noTokenAdmin.status}`,
+    );
+
+    // El administrador entra con la contraseña de la semilla, no registrándose.
+    const adminLogin = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: ADMIN_USER, password: ADMIN_PASS }),
+    });
+    const adminBody = (await adminLogin.json()) as Envelope<{
+      token: string;
+      user: { id: string; role: string };
+    }>;
+    check(
+      'El administrador de la semilla existe y entra con rol admin',
+      adminLogin.status === 200 && adminBody.data?.user?.role === 'admin',
+      `status ${adminLogin.status}, rol ${adminBody.data?.user?.role}`,
+    );
+    const adminAuth = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${adminBody.data?.token ?? ''}`,
+    };
+    const adminId = adminBody.data?.user?.id ?? '';
+
+    const adminUsers = await fetch(`${BASE}/api/admin/users`, { headers: adminAuth });
+    const adminUsersBody = (await adminUsers.json()) as Envelope<
+      { username: string; taskCount: number }[]
+    >;
+    check(
+      'GET /api/admin/users lista a todos con su número de tareas',
+      adminUsers.status === 200 && (adminUsersBody.data?.length ?? 0) >= 3,
+      `${adminUsersBody.data?.length} usuarios`,
+    );
+
+    check(
+      'El listado de administración no expone ningún hash de contraseña',
+      !JSON.stringify(adminUsersBody.data).includes('$2b$'),
+    );
+
+    const selfDelete = await fetch(`${BASE}/api/admin/users/${adminId}`, {
+      method: 'DELETE',
+      headers: adminAuth,
+    });
+    check(
+      'Un administrador no puede borrarse a sí mismo',
+      selfDelete.status === 400,
+      `status ${selfDelete.status}`,
+    );
+
+    const adminStats = await fetch(`${BASE}/api/admin/stats`, { headers: adminAuth });
+    const adminStatsBody = (await adminStats.json()) as Envelope<{ users: number; admins: number }>;
+    check(
+      'GET /api/admin/stats devuelve el resumen global',
+      adminStats.status === 200 && adminStatsBody.data?.admins === 1,
+      JSON.stringify(adminStatsBody.data),
+    );
+
+    // Borrar al usuario colado se lleva por delante la tarea que creó.
+    const sneakyId = (
+      await query<{ id: string }>('SELECT id FROM users WHERE LOWER(username) = LOWER($1)', [
+        sneakyUser,
+      ])
+    )[0].id;
+    const adminDelete = await fetch(`${BASE}/api/admin/users/${sneakyId}`, {
+      method: 'DELETE',
+      headers: adminAuth,
+    });
+    const stillThere = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM users WHERE id = $1',
+      [sneakyId],
+    );
+    check(
+      'El administrador borra a otro usuario y desaparece de la base de datos',
+      adminDelete.status === 200 && stillThere[0].count === 0,
+      `status ${adminDelete.status}`,
     );
 
     // ── Borrado ──────────────────────────────────────────────────────────
