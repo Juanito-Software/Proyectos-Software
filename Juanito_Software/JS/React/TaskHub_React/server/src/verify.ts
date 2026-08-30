@@ -263,6 +263,38 @@ async function run(): Promise<void> {
       `status ${otherSameTitle.status}`,
     );
 
+    // ── Cabeceras de seguridad ───────────────────────────────────────────
+
+    const cabeceras = await fetch(`${BASE}/playground`);
+    const csp = cabeceras.headers.get('content-security-policy') ?? '';
+
+    check(
+      'La CSP está presente y restringe el origen por defecto',
+      csp.includes("default-src 'self'"),
+      csp ? 'presente' : 'AUSENTE',
+    );
+
+    // El playground engancha sus botones con atributos onclick. Con
+    // script-src-attr 'none' —el valor por defecto de helmet— la página carga
+    // pero ningún botón responde, y no hay error visible salvo en la consola
+    // del navegador. Pasó, y ninguna de las otras comprobaciones lo detectó
+    // porque todas hablan con la API, no con la interfaz.
+    check(
+      'La CSP no bloquea los manejadores onclick del playground',
+      !/script-src-attr\s+'none'/.test(csp),
+      /script-src-attr\s+'none'/.test(csp) ? "script-src-attr 'none' los bloquea" : 'permitidos',
+    );
+
+    check(
+      'La CSP impide que la página se cargue dentro de un iframe ajeno',
+      csp.includes("frame-ancestors 'none'"),
+    );
+
+    check(
+      'Se envía X-Content-Type-Options: nosniff',
+      cabeceras.headers.get('x-content-type-options') === 'nosniff',
+    );
+
     // ── CORS ─────────────────────────────────────────────────────────────
     //
     // El navegador manda `Origin` también en las peticiones POST del mismo

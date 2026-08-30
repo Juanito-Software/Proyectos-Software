@@ -55,6 +55,17 @@ export function createApp() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'"],
+          // El playground engancha sus acciones con atributos onclick en el
+          // HTML. helmet pone por defecto script-src-attr 'none', que los
+          // bloquea todos: la página carga pero ningún botón responde.
+          //
+          // Es una concesión consciente y acotada: el playground es una
+          // herramienta de desarrollo de un solo fichero, y su contenido
+          // dinámico ya se inserta con textContent y escapeHTML, nunca
+          // interpretando HTML de terceros. La alternativa —reescribir los
+          // ~40 manejadores como addEventListener— es lo correcto a medio
+          // plazo y está anotado como pendiente.
+          scriptSrcAttr: ["'unsafe-inline'"],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],
