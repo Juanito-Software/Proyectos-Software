@@ -1,0 +1,252 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * Recorrido completo por la aplicación, en un navegador real.
+ *
+ * Cada test se registra con un usuario nuevo: así no dependen unos de otros
+ * ni del estado que haya dejado una ejecución anterior, y el aislamiento por
+ * usuario los mantiene separados aunque compartan base de datos.
+ */
+
+const nuevoUsuario = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+const PASSWORD = 'contrasena-de-prueba-e2e';
+
+async function registrarse(page, username = nuevoUsuario()) {
+  await page.goto('/');
+
+  // La pantalla de acceso arranca en modo "iniciar sesión"; hay que cambiar
+  // al de registro.
+  const enlaceRegistro = page.getByRole('button', { name: /regístrate/i });
+  if (await enlaceRegistro.isVisible().catch(() => false)) {
+    await enlaceRegistro.click();
+  }
+
+  await page.getByPlaceholder(/usuario/i).fill(username);
+  await page.getByPlaceholder(/contraseña/i).fill(PASSWORD);
+  await page.getByRole('button', { name: /registrarse|crear cuenta/i }).click();
+
+  // La cabecera con el nombre solo aparece cuando hay sesión.
+  await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+  return username;
+}
+
+test.describe('Autenticación', () => {
+  test('un usuario nuevo puede registrarse y entra directamente', async ({ page }) => {
+    const username = await registrarse(page);
+    await expect(page.getByRole('heading', { name: 'TaskHub' })).toBeVisible();
+    await expect(page.getByText(username)).toBeVisible();
+  });
+
+  test('la sesión sobrevive a recargar la página', async ({ page }) => {
+    const username = await registrarse(page);
+    await page.reload();
+    // El token está en localStorage: tras recargar no debe pedir credenciales.
+    await expect(page.getByText(username)).toBeVisible();
+  });
+
+  test('salir devuelve a la pantalla de acceso', async ({ page }) => {
+    await registrarse(page);
+    await page.getByRole('button', { name: /salir/i }).click();
+
+    // Se comprueba el campo de usuario y no el botón: tras salir, el
+    // formulario conserva el modo en el que estaba, así que el botón puede
+    // decir "Entrar" o "Registrarse". El campo está en los dos casos.
+    await expect(page.getByPlaceholder('Usuario')).toBeVisible();
+  });
+
+  test('unas credenciales incorrectas muestran error y no dejan entrar', async ({ page }) => {
+    await page.goto('/');
+    await page.getByPlaceholder(/usuario/i).fill('usuario-que-no-existe-jamas');
+    await page.getByPlaceholder(/contraseña/i).fill('loquesea123');
+    await page.getByRole('button', { name: /entrar/i }).click();
+
+    await expect(page.getByText(/incorrect/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /entrar/i })).toBeVisible();
+  });
+});
+
+test.describe('Ciclo de vida de una tarea', () => {
+  test('crear, ver, completar y eliminar', async ({ page }) => {
+    await registrarse(page);
+    const titulo = `Tarea E2E ${Date.now()}`;
+
+    // Todo acotado al formulario de creación: los selectores globales chocan
+    // con los filtros, que tienen las mismas etiquetas y las mismas opciones.
+    const formulario = page.locator('form.task-form').first();
+    await formulario.getByPlaceholder(/título de la tarea/i).fill(titulo);
+    await formulario.getByPlaceholder('Descripción (opcional)').fill('Creada desde Playwright');
+    await formulario.getByLabel(/prioridad/i).selectOption('high');
+    await formulario.getByRole('button', { name: /agregar tarea/i }).click();
+
+    // Los distintivos se localizan por su clase, no por su texto: "Alta" y
+    // "Pendiente" también aparecen dentro de las opciones de los desplegables.
+    const tarjeta = page.locator('li.task-item').filter({ hasText: titulo });
+    await expect(tarjeta).toBeVisible();
+    await expect(tarjeta.locator('.badge--priority-high')).toHaveText('Alta');
+    await expect(tarjeta.locator('.badge--status-pending')).toHaveText('Pendiente');
+
+    // Completar con el checkbox.
+    //
+    // Se usa click() y no check(): el checkbox es un componente controlado
+    // cuyo valor viene del estado de React, y ese estado no cambia hasta que
+    // la API responde. check() comprueba el cambio inmediatamente después del
+    // clic y fallaría siempre. La confirmación real es que aparezca el
+    // distintivo de completada, que solo se pinta con la respuesta del
+    // servidor: es una aserción más fuerte que mirar el propio checkbox.
+    await tarjeta.getByRole('checkbox').click();
+    await expect(tarjeta.locator('.badge--status-completed')).toHaveText('Completada');
+    await expect(tarjeta.getByRole('checkbox')).toBeChecked();
+
+    // Eliminar, aceptando la confirmación del navegador
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: /eliminar/i }).first().click();
+    await expect(page.getByText(titulo)).not.toBeVisible();
+  });
+
+  test('editar cambia título, estado y prioridad', async ({ page }) => {
+    await registrarse(page);
+    const titulo = `Editable ${Date.now()}`;
+
+    await page.getByPlaceholder(/título de la tarea/i).fill(titulo);
+    await page.getByRole('button', { name: /agregar tarea/i }).click();
+    await expect(page.getByText(titulo)).toBeVisible();
+
+    await page.getByRole('button', { name: /^editar$/i }).first().click();
+
+    // Al abrir la edición hay dos formularios en pantalla: el de crear, arriba,
+    // y el de la tarea. Se acota al <li> que se está editando en lugar de usar
+    // selectores globales, que cogerían el de crear.
+    const tarjeta = page.locator('li.task-item--editing');
+    await tarjeta.getByPlaceholder(/título de la tarea/i).fill(`${titulo} (editada)`);
+    await tarjeta.getByLabel(/estado/i).selectOption('in-progress');
+    await tarjeta.getByRole('button', { name: /guardar/i }).click();
+
+    // Igual que antes: "En progreso" también es el texto de una opción en dos
+    // desplegables, así que se busca el distintivo dentro de la tarjeta.
+    const editada = page.locator('li.task-item').filter({ hasText: `${titulo} (editada)` });
+    await expect(editada).toBeVisible();
+    await expect(editada.locator('.badge--status-in-progress')).toHaveText('En progreso');
+  });
+
+  test('no deja crear dos tareas con el mismo título', async ({ page }) => {
+    await registrarse(page);
+    const titulo = `Duplicada ${Date.now()}`;
+
+    for (let i = 0; i < 2; i++) {
+      await page.getByPlaceholder(/título de la tarea/i).fill(titulo);
+      await page.getByRole('button', { name: /agregar tarea/i }).click();
+      await page.waitForTimeout(500);
+    }
+
+    await expect(page.getByText(/ya tienes una tarea con este título/i)).toBeVisible();
+  });
+});
+
+test.describe('Filtros', () => {
+  test('filtrar por estado y por texto, y limpiar', async ({ page }) => {
+    await registrarse(page);
+    const sello = Date.now();
+
+    // Acotado al formulario en lugar de usar .first(): así no depende del
+    // orden en que estén los elementos en el DOM.
+    const formulario = page.locator('form.task-form').first();
+
+    for (const [titulo, estado] of [
+      [`Pendiente ${sello}`, 'pending'],
+      [`Completada ${sello}`, 'completed'],
+    ]) {
+      await formulario.getByPlaceholder(/título de la tarea/i).fill(titulo);
+      await formulario.getByLabel(/estado/i).selectOption(estado);
+      await formulario.getByRole('button', { name: /agregar tarea/i }).click();
+      // La lista se recarga con 300 ms de espera tras cambiar los filtros.
+      await expect(page.locator('li.task-item').filter({ hasText: titulo })).toBeVisible();
+    }
+
+    // Filtrar por estado: solo debe quedar una
+    await page.getByLabel(/filtrar por estado/i).selectOption('completed');
+    await expect(page.getByText(`Completada ${sello}`)).toBeVisible();
+    await expect(page.getByText(`Pendiente ${sello}`)).not.toBeVisible();
+
+    // Limpiar y buscar por texto
+    await page.getByRole('button', { name: /limpiar/i }).click();
+    await page.getByLabel(/buscar tareas/i).fill(`Pendiente ${sello}`);
+    await expect(page.getByText(`Pendiente ${sello}`)).toBeVisible();
+    await expect(page.getByText(`Completada ${sello}`)).not.toBeVisible();
+  });
+
+  test('una búsqueda sin resultados muestra el mensaje correspondiente', async ({ page }) => {
+    await registrarse(page);
+    await page.getByLabel(/buscar tareas/i).fill('texto-que-no-existe-en-ninguna-tarea');
+    await expect(page.getByText(/ninguna tarea coincide/i)).toBeVisible();
+  });
+});
+
+test.describe('Aislamiento entre usuarios', () => {
+  test('un usuario no ve las tareas de otro', async ({ page, browser }) => {
+    await registrarse(page);
+    const titulo = `Privada ${Date.now()}`;
+    await page.getByPlaceholder(/título de la tarea/i).fill(titulo);
+    await page.getByRole('button', { name: /agregar tarea/i }).click();
+    await expect(page.getByText(titulo)).toBeVisible();
+
+    // Un contexto nuevo, no una pestaña nueva: las pestañas del mismo contexto
+    // comparten localStorage, así que la segunda heredaría la sesión de la
+    // primera y no habría dos usuarios distintos. Además, una pestaña recién
+    // creada está en about:blank, donde el navegador ni siquiera permite leer
+    // localStorage.
+    const contextoAjeno = await browser.newContext();
+    const otraPagina = await contextoAjeno.newPage();
+    await registrarse(otraPagina);
+
+    await expect(otraPagina.getByText(/todavía no tienes tareas/i)).toBeVisible();
+    await expect(otraPagina.getByText(titulo)).not.toBeVisible();
+
+    await contextoAjeno.close();
+  });
+});
+
+test.describe('Playground', () => {
+  test('se sirve y comparte la sesión con la aplicación', async ({ page }) => {
+    const username = await registrarse(page);
+
+    await page.goto('/playground');
+    await expect(page.getByRole('heading', { name: 'TaskHub' })).toBeVisible();
+    // Comparte el token por localStorage: no debe volver a pedir credenciales.
+    await expect(page.getByText(username)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('sin sesión, el playground pide entrar', async ({ page }) => {
+    await page.goto('/playground');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await expect(page.getByRole('button', { name: /entrar/i })).toBeVisible();
+  });
+
+  test('el panel de administración no aparece para un usuario normal', async ({ page }) => {
+    await registrarse(page);
+    await page.goto('/playground');
+    await expect(page.getByText('Administración')).not.toBeVisible();
+  });
+});
+
+test.describe('API', () => {
+  test('las rutas de tareas exigen token', async ({ request }) => {
+    const res = await request.get('/api/tasks');
+    expect(res.status()).toBe(401);
+  });
+
+  test('la comprobación de salud responde sin autenticar', async ({ request }) => {
+    const res = await request.get('/api/health');
+    expect(res.ok()).toBeTruthy();
+    expect((await res.json()).success).toBe(true);
+  });
+
+  test('las cabeceras de seguridad están presentes', async ({ request }) => {
+    const res = await request.get('/api/health');
+    const cabeceras = res.headers();
+    // Las pone helmet: si alguien lo quita, este test lo detecta.
+    expect(cabeceras['x-content-type-options']).toBe('nosniff');
+    expect(cabeceras['content-security-policy']).toBeTruthy();
+    expect(cabeceras['x-frame-options']?.toLowerCase()).toBe('sameorigin');
+  });
+});

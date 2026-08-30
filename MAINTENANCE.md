@@ -7,6 +7,12 @@ de los proyectos).
 
 ## Estado de las alertas de seguridad
 
+> **Actualización 2026-08-30.** TaskHub_React es el primer proyecto desplegado
+> públicamente y el primero con pipeline de CI propio. Cambia el criterio de
+> descarte descrito más abajo: al estar en producción, sus alertas entran en el
+> supuesto 1 y ninguna puede descartarse por ser un proyecto experimental.
+> Detalle en la sección del 29 y 30 de agosto.
+
 - **Dependabot:** 2 abiertas, ambas dependencias transitivas del build de
   Angular sin arreglo disponible (las únicas "correcciones" son retrocesos de
   versión). Se dejan abiertas a propósito para que GitHub las cierre cuando
@@ -35,6 +41,217 @@ de los proyectos).
 - **Credenciales en código:** revisadas y retiradas las de
   `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
   el escáner automático; aparecieron leyendo el código.
+
+---
+
+## 2026-08-29 / 2026-08-30 — TaskHub_React: producción, auditoría y CI
+
+Primer proyecto del monorepo desplegado y accesible públicamente:
+**taskhub-react.onrender.com**. Servicio web en Render y PostgreSQL gestionado
+en Neon, los dos en la región de Frankfurt (`eu-central-1`) para que las
+consultas no crucen el Atlántico. Ambos en plan gratuito permanente.
+
+El detalle que decidió el reparto: **el PostgreSQL gratuito de Render caduca a
+los 30 días**. Para una demo enlazada desde un currículum eso significa que
+quien la abra mes y medio después se encuentra un error. Neon no caduca, así
+que la base de datos vive allí y Render solo ejecuta el proceso. Supabase se
+descartó por el mismo motivo: pausa los proyectos tras 7 días sin actividad.
+
+### De ficheros JSON a PostgreSQL
+
+`d5780ab` — El almacenamiento eran dos ficheros JSON. En Render el disco es
+efímero, así que cada despliegue habría borrado los datos: desplegar obligaba a
+migrar.
+
+Se escribió SQL a mano sobre el driver `pg`, sin ORM, con todos los valores
+como parámetros. El único elemento estructural dinámico —qué columnas actualiza
+un `UPDATE`— se resuelve con lista blanca, que es el patrón correcto cuando la
+parametrización no es aplicable.
+
+**Un fallo que el almacenamiento en ficheros escondía:** comprobar si un título
+está repetido y escribirlo son dos operaciones. Con JSON, dos peticiones
+simultáneas pasaban ambas la comprobación y creaban las dos tareas. Ahora lo
+impide un índice único sobre `(user_id, LOWER(TRIM(title)))`, y el servicio
+traduce el error `23505` de Postgres al mismo 409 de siempre en lugar de
+devolver un 500.
+
+**Lo que no salió como estaba previsto:** se dijo que el patrón repository
+aislaría el cambio y que controllers y services no se enterarían. Fue cierto a
+medias: el acceso a datos quedó encapsulado, pero el repositorio pasó de
+síncrono a asíncrono y eso obligó a propagar `async`/`await` hacia arriba. El
+patrón aísla *cómo* se accede a los datos, no que pasen a ser asíncronos.
+
+El aislamiento de la suite dejó de ser una carpeta temporal y pasó a ser un
+esquema de Postgres creado y destruido en cada ejecución, incluso si falla a
+mitad.
+
+### Un proceso para tres cosas
+
+`06a084b`, `ca9068d` — El mismo Express sirve el cliente React compilado en
+`/`, el playground en `/playground` y la API en `/api`. Las rutas desconocidas
+devuelven el `index.html` para que decida el enrutador de React, salvo las de
+`/api/`, que siguen devolviendo 404 en JSON: si no, un error de escritura en
+una llamada devolvería HTML y el cliente fallaría al parsearlo.
+
+El primer despliegue falló con `vite: not found`. Causa: Render define
+`NODE_ENV=production` y npm omite entonces las devDependencies, donde están
+Vite, TypeScript y tsx. Se resolvió forzando `--include=dev` en la instalación.
+
+### Rate limiting inutilizado detrás del proxy
+
+`f9abef2` — Con Render por delante, Express veía la IP del proxy en todas las
+peticiones, así que `express-rate-limit` contaba a todos los visitantes como un
+único cliente: un solo usuario activo podía agotar el límite para el resto.
+Aparecía en los registros como `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`.
+
+Se confía en **exactamente un salto**, no en `true`. Confiar en todos permitiría
+a cualquiera falsificar `X-Forwarded-For` y saltarse el límite con una IP
+inventada distinta en cada petición.
+
+### Rol de administrador por semilla
+
+`6befc84` — Rol `admin` que puede listar usuarios, borrarlos —arrastrando sus
+tareas por la clave foránea— y consultar un resumen global.
+
+**Solo se concede por semilla**, desde `ADMIN_USERNAME` y `ADMIN_PASSWORD` al
+arrancar. No hay ningún camino desde la API pública: el registro fuerza `user`,
+el repositorio no acepta el rol como parámetro y no existe endpoint de
+promoción. Un test manda `role: "admin"` en el registro y comprueba que sale un
+usuario normal.
+
+Tres decisiones registradas por si se revisan más adelante:
+
+- **El rol se lee de la base de datos en cada petición, no del JWT.** Si viajara
+  en el token, retirarle el rol a alguien no surtiría efecto hasta que caducara,
+  hasta siete días después.
+- **403 y no 404**, al contrario que en las tareas ajenas. Allí el 404 evita
+  confirmar que un recurso existe; aquí quien pregunta ya está autenticado y la
+  existencia de una zona de administración no es un secreto. Queda así resuelta
+  la incoherencia aparente entre proyectos: no es criterio cambiante, es que
+  cada situación pide una respuesta distinta.
+- **Un administrador no puede borrarse a sí mismo ni dejar la instancia sin
+  administradores.**
+
+### Auditoría de seguridad completa
+
+Informe en `Juanito_Software/JS/React/TaskHub_React/docs/AUDITORIA_SEGURIDAD.md`.
+
+Lo que estaba bien: cero inyecciones SQL en 16 consultas, aislamiento entre
+usuarios correcto, ningún `innerHTML` ni `dangerouslySetInnerHTML` en el
+cliente React, cero vulnerabilidades en las dependencias del servidor.
+
+Hallazgos corregidos:
+
+| Severidad | Problema | Corrección |
+|---|---|---|
+| **HIGH** | `JWT_SECRET` con valor por defecto publicado en el repositorio: si faltaba la variable, la aplicación arrancaba con una clave conocida y cualquiera podía firmar tokens | En producción se niega a arrancar sin secreto propio, y rechaza el de desarrollo y los de menos de 32 caracteres |
+| **HIGH** | Sin CI: los tests solo corrían si alguien se acordaba | Pipeline de 8 jobs (ver más abajo) |
+| MEDIUM | CORS abierto a cualquier origen | Lista de orígenes en `ALLOWED_ORIGINS`; en producción, ninguno externo por defecto |
+| MEDIUM | Sin ninguna cabecera de seguridad | `helmet` con CSP a medida, compatible con los estilos y scripts en línea del playground |
+| MEDIUM | `jwt.verify` sin restringir el algoritmo | `algorithms: ['HS256']` explícito, al firmar y al verificar |
+| MEDIUM | `nanoid < 3.3.18` (transitiva de Vite) | `npm audit fix`; cliente y servidor a cero |
+| LOW | Contraseñas de 6 caracteres mínimos | 8 como mínimo y 72 como máximo, que es lo que bcrypt tiene en cuenta |
+| LOW | Estado, prioridad e id sin escapar en el playground | Escapados; ya no depende de que el esquema no cambie |
+| LOW | `taskhub: file:..`, el paquete raíz como dependencia de sus propios subpaquetes | Retirada |
+
+**Un bug real que solo apareció al escribir el test de regresión:** el filtro de
+búsqueda parametrizaba correctamente —no había inyección posible— pero no
+escapaba los comodines de `LIKE`. Buscar `%` devolvía todas las tareas y buscar
+`50%` no encontraba ese texto. Se añadió `escapeLikePattern` con `ESCAPE`
+explícito. **El comentario que había en el código afirmando lo contrario era
+falso**, lo que ilustra por qué un comentario no sustituye a un test.
+
+### Tests: de 37 a 162
+
+| Capa | Antes | Ahora | Herramienta |
+|---|---|---|---|
+| End-to-end de API | 37 | **47** | Script propio contra Postgres real |
+| Unitarios del servidor | 0 | **56** | Vitest |
+| Componentes y servicios del cliente | 0 | **43** | Vitest + Testing Library |
+| End-to-end de navegador | 0 | **16** | Playwright + Chromium |
+| Cobertura | No medida | Umbrales que fallan el build | v8 |
+
+Lo añadido cubre lo que la auditoría señaló como huecos: manipulación de tokens
+(firma inválida, caducado, `alg: none`, sin `sub`, usuario inexistente,
+formato inválido), regresión de inyección SQL con cargas reales, validadores,
+escapado de comodines y campo calculado `completed`.
+
+Con esto, TaskHub_React deja de ser el único de los tres TaskHub sin batería de
+ataques a JWT — la tenía el de FastAPI y faltaba aquí.
+
+**Los E2E de navegador destaparon un desajuste entre cliente y servidor que
+ninguna otra capa podía ver:** el campo de contraseña del formulario tenía
+`minLength={6}` mientras el servidor, tras subir el mínimo a 8 en esta misma
+auditoría, rechazaba las de 7 caracteres. El formulario dejaba enviar y el
+error llegaba después, sin que el usuario pudiera preverlo. Es exactamente el
+tipo de fallo que solo aparece cuando algo prueba las dos mitades a la vez.
+
+**Lecciones de la puesta a punto de Playwright**, por si sirven para los
+próximos proyectos:
+
+- Playwright **falla ante un selector ambiguo** en lugar de elegir el primero.
+  Es lo correcto, pero obliga a acotar: "Alta", "Pendiente" o "En progreso"
+  aparecen a la vez como distintivo de una tarjeta y como `<option>` de los
+  desplegables de filtro. La solución es buscar dentro de un contenedor —el
+  formulario, el `<li>` de la tarea— y localizar los distintivos por clase CSS
+  en lugar de por texto.
+- **Un checkbox controlado por React no cambia de estado hasta que responde la
+  API**, así que `check()` falla siempre: comprueba el cambio justo después del
+  clic. Con `click()` más una espera al distintivo se verifica además el viaje
+  completo, que es una aserción más fuerte.
+- **Dos pestañas del mismo contexto comparten `localStorage`**: para simular
+  dos usuarios distintos hace falta un contexto de navegador independiente, no
+  una pestaña nueva.
+- Se sustituyeron las esperas por tiempo fijo (`waitForTimeout`) por esperas a
+  que un elemento aparezca. Los tiempos fijos son la causa más común de tests
+  que fallan de forma intermitente en CI, donde la máquina va más lenta.
+
+Los umbrales de cobertura se fijaron **por debajo** de la medición real (35% de
+sentencias, 40% de ramas). No son un objetivo, son un suelo: impiden que baje
+sin que nadie se entere. Un umbral inalcanzable acaba desactivándose.
+
+### Pipeline de CI
+
+`.github/workflows/taskhub-react-ci.yml`, ocho jobs con filtro de rutas para
+que solo se dispare cuando cambia este proyecto:
+
+`static` (ESLint y TypeScript) · `server-unit` · `client-tests` con cobertura ·
+`api-tests` contra un servicio de PostgreSQL 17 real · `e2e` con Chromium ·
+`build` con `NODE_ENV=production`, que comprueba que el artefacto contiene
+servidor, playground y cliente · `security` con `npm audit` · `ci-ok`, un job
+único del que colgar la protección de rama sin tener que enumerar los demás.
+
+**Política de auditoría:** solo bloquean las vulnerabilidades altas y críticas.
+Con `--audit-level=moderate` el pipeline estaría en rojo permanente por
+dependencias transitivas de herramientas de desarrollo, y un CI siempre en rojo
+deja de mirarse. Las moderadas y bajas quedan para Dependabot.
+
+Se añadió ESLint, que no existía en ningún paquete: TypeScript en el servidor,
+reglas de hooks en el cliente. El criterio es señalar errores reales, no
+cuestiones de formato.
+
+### Pendiente
+
+- **Protección de rama sin configurar.** Al ser un repositorio de una sola
+  persona, lo razonable es exigir que `ci-ok` pase antes de fusionar, sin exigir
+  revisión humana: no hay nadie que pueda aprobarla.
+- **`PUT` y `PATCH` comparten controlador** y hacen los dos actualización
+  parcial. Un `PUT` estricto debería reemplazar el recurso completo. No rompe
+  nada, pero es una desviación de la semántica HTTP.
+- **Tokens de 7 días sin revocación.** No hay refresh ni lista de revocados: un
+  token robado sirve hasta que caduca.
+- **Cobertura del cliente al 36%.** Cubierto lo que rompe cosas —capa de
+  servicios al 96%, los dos componentes de tarea al 100% y al 86%—; sin cubrir
+  `App`, `AuthForm`, `TaskList` y `AuthContext`, que necesitan montar el
+  contexto de sesión.
+- **El checkbox de completada espera a la respuesta del servidor** antes de
+  cambiar de aspecto. Con la base de datos en la misma región son 40-80 ms y no
+  se nota, pero el patrón correcto sería la actualización optimista: pintar el
+  cambio de inmediato y revertirlo si la petición falla.
+- **Los E2E comparten la base de datos de desarrollo** y dejan usuarios
+  `e2e-*` detrás de cada ejecución. En CI da igual porque el contenedor se
+  destruye, pero en local conviene limpiarlos de vez en cuando o darles su
+  propia base de datos.
 
 ---
 

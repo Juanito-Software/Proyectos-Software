@@ -39,7 +39,10 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Contraseña"
           required
-          minLength={6}
+          // Debe coincidir con MIN_PASSWORD_LENGTH del servidor: si aquí
+          // fuera menor, el formulario dejaría enviar y el servidor lo
+          // rechazaría con un error que el usuario no puede prever.
+          minLength={8}
           disabled={loading}
         />
         <button type="submit" disabled={loading}>

@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +11,7 @@ import { requestLogger } from './middleware/logging.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { ApiError } from './utils/api-error.js';
 import { ApiResponse } from './utils/api-response.js';
-import { isProduction } from './config/env.js';
+import { env, isProduction } from './config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,8 +38,65 @@ export function createApp() {
     app.set('trust proxy', 1);
   }
 
-  app.use(cors());
-  app.use(express.json());
+  // ── Cabeceras de seguridad ─────────────────────────────────────────────
+  //
+  // helmet pone una docena de cabeceras que el navegador respeta: impide que
+  // la página se cargue dentro de un iframe ajeno (clickjacking), evita que
+  // el navegador adivine el tipo de contenido, y oculta que el servidor es
+  // Express.
+  //
+  // La CSP se define a mano porque el playground es una página con estilos y
+  // scripts en línea: la política por defecto de helmet los bloquearía y
+  // dejaría el playground inservible. Se permite 'unsafe-inline' solo donde
+  // hace falta y se prohíbe cargar recursos de terceros.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:'],
+          connectSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      // El navegador recordará durante un año que este dominio solo se sirve
+      // por HTTPS. Render ya redirige, pero esto evita la primera petición en
+      // claro de quien escriba la dirección a mano.
+      hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,
+      // Necesario para que el playground pueda cargar tipografías de Google.
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
+  // ── CORS ───────────────────────────────────────────────────────────────
+  //
+  // Antes se aceptaba cualquier origen. Ahora solo los declarados en
+  // ALLOWED_ORIGINS. Las peticiones sin origen (curl, el propio servidor, los
+  // tests) se permiten: CORS es una protección del navegador, y bloquearlas
+  // no aporta seguridad pero sí rompe herramientas legítimas.
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || env.allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error('Origen no permitido por CORS'));
+      },
+      credentials: false,
+    }),
+  );
+
+  // Límite explícito al tamaño del cuerpo: sin él, Express acepta hasta 100 kB
+  // por defecto, pero conviene que el número sea una decisión y no un
+  // accidente. Una tarea no necesita más de 100 kB.
+  app.use(express.json({ limit: '100kb' }));
   app.use(requestLogger);
 
   app.use((_req: Request, _res: Response, next: NextFunction) => {

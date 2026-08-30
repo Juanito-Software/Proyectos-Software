@@ -19,6 +19,18 @@ interface TaskRow {
 
 const COLUMNS = 'id, title, description, status, priority, user_id, created_at, updated_at';
 
+/**
+ * Neutraliza los comodines de LIKE en el texto que escribe el usuario.
+ *
+ * En un patrón de LIKE, `%` significa "cualquier secuencia" y `_` "cualquier
+ * carácter". Alguien que busque "100%" espera encontrar ese texto, no todas
+ * las tareas. La barra invertida se escapa primero, porque es el carácter que
+ * escapa a los otros dos y hacerlo al revés rompería el resultado.
+ */
+export function escapeLikePattern(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 function toTask(row: TaskRow): Task {
   return {
     id: row.id,
@@ -60,10 +72,15 @@ export const tasksRepository = {
     }
     if (filters?.search) {
       // ILIKE es la comparación de texto que ignora mayúsculas en Postgres.
-      // El patrón va como parámetro, así que un título con % o _ se busca tal
-      // cual y no se interpreta como comodín.
-      params.push(`%${filters.search}%`);
-      conditions.push(`(title ILIKE $${params.length} OR description ILIKE $${params.length})`);
+      //
+      // Parametrizar evita la inyección, pero NO evita que los comodines de
+      // LIKE se interpreten: sin escaparlos, buscar "%" devuelve todas las
+      // tareas y buscar "50%" no encuentra el texto "50%". Por eso se escapan
+      // los tres caracteres especiales y se declara ESCAPE explícitamente.
+      params.push(`%${escapeLikePattern(filters.search)}%`);
+      conditions.push(
+        `(title ILIKE $${params.length} ESCAPE '\\' OR description ILIKE $${params.length} ESCAPE '\\')`,
+      );
     }
 
     const rows = await query<TaskRow>(

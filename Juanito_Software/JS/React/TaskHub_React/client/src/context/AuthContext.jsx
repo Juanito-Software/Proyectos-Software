@@ -10,7 +10,12 @@ function loadStoredAuth() {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) return JSON.parse(data);
-  } catch {}
+  } catch (err) {
+    // Un JSON corrupto o el almacenamiento bloqueado (modo privado, política
+    // del navegador) no deben impedir que la aplicación cargue: simplemente
+    // se empieza sin sesión y el usuario vuelve a entrar.
+    console.warn('No se pudo leer la sesión guardada:', err);
+  }
   return null;
 }
 

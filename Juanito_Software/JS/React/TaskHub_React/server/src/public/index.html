@@ -1173,28 +1173,28 @@
 
       container.innerHTML = '';
       tasks.forEach(task => {
-        const statusClass = `badge-${task.status.replace('-', '')}`;
+        const statusClass = `badge-${escapeHTML(task.status.replace('-', ''))}`;
         const createdDate = new Date(task.updatedAt).toLocaleString();
 
         const card = document.createElement('div');
         card.className = 'task-card';
-        card.id = `card-${task.id}`;
+        card.id = `card-${encodeURIComponent(task.id)}`;
         card.innerHTML = `
           <div class="task-content">
             <div class="task-header">
               <span class="task-title">${escapeHTML(task.title)}</span>
-              <span class="badge ${statusClass}">${task.status}</span>
-              <span class="badge badge-${task.priority}">${task.priority}</span>
+              <span class="badge ${statusClass}">${escapeHTML(task.status)}</span>
+              <span class="badge badge-${escapeHTML(task.priority)}">${escapeHTML(task.priority)}</span>
             </div>
             <p class="task-desc">${escapeHTML(task.description || '—')}</p>
             <div class="task-footer">
-              <span>ID: <strong>${task.id.substring(0, 8)}…</strong></span>
+              <span>ID: <strong>${escapeHTML(task.id.substring(0, 8))}…</strong></span>
               <span>•</span>
               <span>Actualizada: ${createdDate}</span>
             </div>
           </div>
           <div class="task-actions">
-            <button class="icon-btn" onclick="openEditModal('${task.id}')" title="Editar">
+            <button class="icon-btn" onclick="openEditModal('${encodeURIComponent(task.id)}')" title="Editar">
               <svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
             </button>
             <button class="icon-btn delete" onclick="deleteTask('${task.id}')" title="Eliminar">

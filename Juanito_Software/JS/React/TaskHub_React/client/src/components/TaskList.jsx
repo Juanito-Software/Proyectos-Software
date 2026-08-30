@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getTasks, createTask } from '../services/api';
 import TaskItem from './TaskItem';
 import TaskForm from './TaskForm';
@@ -22,26 +22,31 @@ export default function TaskList({ user, onLogout }) {
     setTimeout(() => setNotification(null), 3000);
   }
 
-  async function loadTasks(filters = { status, priority, search }) {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getTasks(filters);
-      setTasks(data);
-    } catch (err) {
-      if (err.message === 'Sesión expirada') onLogout?.();
-      setError(err.message || 'Error al cargar tareas');
-    } finally {
-      setLoading(false);
-    }
-  }
+  // useCallback para que la función no se recree en cada render y el efecto
+  // pueda declararla como dependencia sin dispararse en bucle.
+  const loadTasks = useCallback(
+    async (filters) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getTasks(filters);
+        setTasks(data);
+      } catch (err) {
+        if (err.message === 'Sesión expirada') onLogout?.();
+        setError(err.message || 'Error al cargar tareas');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onLogout],
+  );
 
   // La búsqueda espera 300 ms desde la última tecla para no lanzar una
   // petición por cada carácter escrito.
   useEffect(() => {
     const id = setTimeout(() => loadTasks({ status, priority, search }), 300);
     return () => clearTimeout(id);
-  }, [status, priority, search]);
+  }, [status, priority, search, loadTasks]);
 
   async function handleCreateTask(task) {
     try {

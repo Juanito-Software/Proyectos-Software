@@ -1,0 +1,292 @@
+name: TaskHub_React CI
+
+# Este workflow vive dentro del proyecto para que se entienda a qué pertenece,
+# pero GitHub solo ejecuta los que están en .github/workflows de la RAÍZ del
+# repositorio. Al ser un monorepo, hay que copiarlo o enlazarlo allí; en el
+# README del proyecto está explicado.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Juanito_Software/JS/React/TaskHub_React/**'
+      - '.github/workflows/taskhub-react-ci.yml'
+  pull_request:
+    paths:
+      - 'Juanito_Software/JS/React/TaskHub_React/**'
+      - '.github/workflows/taskhub-react-ci.yml'
+  # Permite lanzarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Si se empuja dos veces seguidas, cancela la ejecución anterior: no tiene
+# sentido gastar minutos validando un commit que ya está superado.
+concurrency:
+  group: taskhub-react-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: Juanito_Software/JS/React/TaskHub_React
+
+jobs:
+  # ── Comprobaciones estáticas: rápidas, sin base de datos ────────────────
+  static:
+    name: Lint y comprobación de tipos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm run install:all
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npm run typecheck
+
+  # ── Tests unitarios del servidor ────────────────────────────────────────
+  #
+  # Solo lógica pura: validadores, escapado de comodines y campos calculados.
+  # No necesitan base de datos, así que corren en segundos y sin servicios.
+  server-unit:
+    name: Tests unitarios del servidor
+    runs-on: ubuntu-latest
+    env:
+      # El módulo de configuración se evalúa al importar cualquier cosa, así
+      # que necesita estas variables aunque los tests no toquen la base de
+      # datos. Son valores inertes.
+      DATABASE_URL: postgresql://noop:noop@localhost:5432/noop
+      JWT_SECRET: secreto-inerte-para-tests-unitarios-del-servidor
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm install --include=dev --prefix server
+
+      - name: Vitest
+        run: npm run test --prefix server
+
+  # ── Tests del cliente ───────────────────────────────────────────────────
+  client-tests:
+    name: Tests del cliente y cobertura
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm install --include=dev --prefix client
+
+      # Falla si los tests no pasan o si la cobertura cae por debajo de los
+      # umbrales definidos en client/vite.config.js.
+      - name: Vitest con cobertura
+        run: npm run test:coverage --prefix client
+
+      - name: Guardar el informe de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-cliente
+          path: Juanito_Software/JS/React/TaskHub_React/client/coverage/
+          retention-days: 7
+
+  # ── Suite end-to-end contra Postgres real ───────────────────────────────
+  api-tests:
+    name: Tests end-to-end de la API
+    runs-on: ubuntu-latest
+
+    # Un Postgres de verdad, no un simulador: la suite depende de índices
+    # sobre expresiones, COUNT(*) FILTER, ON CONFLICT y códigos de error
+    # concretos. Contra otra base de datos no probaría lo mismo.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: taskhub
+          POSTGRES_PASSWORD: taskhub_ci
+          POSTGRES_DB: taskhub_test
+        ports:
+          - 5432:5432
+        # Sin esto, los tests arrancarían antes de que la base acepte
+        # conexiones y fallarían de forma intermitente.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://taskhub:taskhub_ci@localhost:5432/taskhub_test
+      # Valores de usar y tirar, válidos solo dentro de este contenedor.
+      # No son secretos: la base de datos se destruye al terminar el job.
+      JWT_SECRET: clave-de-integracion-continua-solo-para-tests-no-produccion
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm run install:all
+
+      - name: Suite end-to-end
+        run: npm run verify
+
+  # ── Build de producción ─────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm run install:all
+
+      # NODE_ENV=production reproduce lo que hace Render, incluido que npm
+      # omita las devDependencies si no se le fuerza. Fue exactamente el
+      # fallo que tumbó el primer despliegue.
+      - name: Compilar cliente y servidor
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Comprobar que el build contiene lo que debe
+        run: |
+          test -f server/dist/server.js          || { echo "falta el servidor compilado"; exit 1; }
+          test -f server/dist/public/index.html  || { echo "falta el playground"; exit 1; }
+          test -f server/dist/client/index.html  || { echo "falta el cliente React"; exit 1; }
+          echo "build correcto"
+
+  # ── End-to-end de navegador ─────────────────────────────────────────────
+  #
+  # La única capa que comprueba que cliente, API y base de datos encajan de
+  # verdad. Va aparte porque descarga un navegador y es la más lenta.
+  e2e:
+    name: End-to-end de navegador
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: taskhub
+          POSTGRES_PASSWORD: taskhub_ci
+          POSTGRES_DB: taskhub_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://taskhub:taskhub_ci@localhost:5432/taskhub_e2e
+      JWT_SECRET: clave-de-integracion-continua-solo-para-e2e-no-produccion
+      NODE_ENV: production
+      PORT: 3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Juanito_Software/JS/React/TaskHub_React/**/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm run install:all
+
+      # El E2E prueba la aplicación compilada, que es la que se despliega, no
+      # el servidor de desarrollo de Vite.
+      - name: Compilar
+        run: npm run build
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      # playwright.config.js arranca el servidor y espera a /api/health.
+      - name: Playwright
+        run: npm run test:e2e
+
+      - name: Guardar el informe si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-playwright
+          path: Juanito_Software/JS/React/TaskHub_React/playwright-report/
+          retention-days: 7
+
+  # ── Auditoría de dependencias ───────────────────────────────────────────
+  security:
+    name: Auditoría de dependencias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Política: solo bloquean las vulnerabilidades ALTAS y CRÍTICAS.
+      #
+      # Con --audit-level=moderate el pipeline acabaría en rojo permanente por
+      # avisos de dependencias transitivas de herramientas de desarrollo, y un
+      # CI que siempre está rojo deja de mirarse. Las moderadas y bajas se
+      # revisan por Dependabot sin cortar el trabajo.
+      - name: npm audit del servidor
+        run: npm audit --audit-level=high
+        working-directory: Juanito_Software/JS/React/TaskHub_React/server
+
+      - name: npm audit del cliente
+        run: npm audit --audit-level=high
+        working-directory: Juanito_Software/JS/React/TaskHub_React/client
+
+  # ── Puerta final ────────────────────────────────────────────────────────
+  #
+  # Un único job del que colgar la regla de protección de rama, en lugar de
+  # tener que marcar los cinco anteriores uno a uno y acordarse de actualizar
+  # la lista cada vez que se añada otro.
+  ci-ok:
+    name: CI en verde
+    runs-on: ubuntu-latest
+    needs: [static, server-unit, client-tests, api-tests, e2e, build, security]
+    if: always()
+    steps:
+      - name: Comprobar que ningún job ha fallado
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "Algún job ha fallado."
+            exit 1
+          fi
+          echo "Todos los jobs en verde."

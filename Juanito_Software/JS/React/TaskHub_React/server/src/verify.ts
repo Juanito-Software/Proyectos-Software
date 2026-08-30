@@ -263,6 +263,134 @@ async function run(): Promise<void> {
       `status ${otherSameTitle.status}`,
     );
 
+    // ── Manipulación de tokens ───────────────────────────────────────────
+    //
+    // Un JWT es texto firmado que viaja por el cliente: hay que asumir que el
+    // atacante lo lee y lo modifica a voluntad. Estas comprobaciones fijan que
+    // ninguna alteración cuele.
+
+    const jwtLib = (await import('jsonwebtoken')).default;
+    const secret = process.env.JWT_SECRET ?? 'clave-solo-para-desarrollo-no-usar-en-produccion';
+
+    const withToken = (t: string) => ({ headers: { Authorization: `Bearer ${t}` } });
+
+    const forged = jwtLib.sign({ userId: crypto.randomUUID(), username: 'falso' }, 'otro-secreto');
+    const forgedRes = await fetch(`${BASE}/api/tasks`, withToken(forged));
+    check(
+      'Token firmado con otro secreto -> 401',
+      forgedRes.status === 401,
+      `status ${forgedRes.status}`,
+    );
+
+    const expired = jwtLib.sign({ userId: crypto.randomUUID(), username: 'x' }, secret, {
+      expiresIn: '-1h',
+    });
+    const expiredRes = await fetch(`${BASE}/api/tasks`, withToken(expired));
+    check('Token caducado -> 401', expiredRes.status === 401, `status ${expiredRes.status}`);
+
+    // Ataque "alg: none": se quita la firma y se declara que no hay algoritmo,
+    // esperando que el verificador acepte el contenido sin comprobar nada.
+    const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const algNone = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ userId: crypto.randomUUID(), username: 'x' })}.`;
+    const algNoneRes = await fetch(`${BASE}/api/tasks`, withToken(algNone));
+    check('Token sin firmar con alg:none -> 401', algNoneRes.status === 401, `status ${algNoneRes.status}`);
+
+    const noSub = jwtLib.sign({ username: 'sin-id' }, secret);
+    const noSubRes = await fetch(`${BASE}/api/tasks`, withToken(noSub));
+    check(
+      'Token válido pero sin userId -> 401',
+      noSubRes.status === 401,
+      `status ${noSubRes.status}`,
+    );
+
+    // Firma correcta y userId con formato de UUID, pero que no existe en la
+    // base de datos: no debe devolver datos de nadie ni reventar.
+    const ghost = jwtLib.sign({ userId: crypto.randomUUID(), username: 'fantasma' }, secret);
+    const ghostRes = await fetch(`${BASE}/api/tasks`, withToken(ghost));
+    const ghostBody = (await ghostRes.json()) as Envelope<unknown[]>;
+    check(
+      'Token de un usuario inexistente no devuelve datos ajenos',
+      ghostRes.status === 200 && Array.isArray(ghostBody.data) && ghostBody.data.length === 0,
+      `status ${ghostRes.status}`,
+    );
+
+    const malformed = await fetch(`${BASE}/api/tasks`, withToken('esto.no.es-un-jwt'));
+    check('Token con formato inválido -> 401', malformed.status === 401, `status ${malformed.status}`);
+
+    // ── Regresión de inyección SQL ───────────────────────────────────────
+    //
+    // Estas cargas romperían la consulta si algún valor se concatenara en el
+    // SQL en lugar de viajar como parámetro. Deben tratarse como texto normal.
+
+    const payloads = [
+      "'; DROP TABLE tasks; --",
+      "' OR '1'='1",
+      "\\'; DELETE FROM users WHERE '1'='1",
+      '%',       // comodín de LIKE: no debe ampliar la búsqueda
+      '_',       // comodín de un carácter en LIKE
+    ];
+
+    let injectionOk = true;
+    let injectionDetail = '';
+    for (const payload of payloads) {
+      const res = await fetch(`${BASE}/api/tasks?search=${encodeURIComponent(payload)}`, {
+        headers: auth,
+      });
+      const body = (await res.json()) as Envelope<unknown[]>;
+      // Se espera 200 con cero resultados: la carga se busca como texto y no
+      // coincide con ninguna tarea. Un 500 delataría SQL roto.
+      if (res.status !== 200 || !Array.isArray(body.data) || body.data.length !== 0) {
+        injectionOk = false;
+        injectionDetail = `"${payload}" -> ${res.status}, ${(body.data as unknown[])?.length} resultado(s)`;
+        break;
+      }
+    }
+    check(
+      'Cargas de inyección SQL en el filtro de búsqueda se tratan como texto',
+      injectionOk,
+      injectionDetail || `${payloads.length} cargas probadas`,
+    );
+
+    // Los comodines de LIKE deben buscarse literalmente. Se crea una tarea que
+    // sí los contiene para comprobar que la búsqueda los encuentra a ellos y
+    // no a todo lo demás.
+    await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ title: 'Descuento del 50% aplicado' }),
+    });
+    const literal = await fetch(`${BASE}/api/tasks?search=${encodeURIComponent('50%')}`, {
+      headers: auth,
+    });
+    const literalBody = (await literal.json()) as Envelope<{ title: string }[]>;
+    check(
+      'Buscar "50%" encuentra ese texto y no todas las tareas',
+      literalBody.data?.length === 1 && literalBody.data[0].title.includes('50%'),
+      `${literalBody.data?.length} resultado(s)`,
+    );
+
+    // La tabla debe seguir existiendo después de todo lo anterior.
+    const tablaViva = await query<{ count: number }>('SELECT COUNT(*) AS count FROM tasks');
+    check(
+      'La tabla tasks sigue intacta tras las cargas de inyección',
+      typeof tablaViva[0].count === 'number',
+      `${tablaViva[0].count} tareas`,
+    );
+
+    // Un título con comillas y punto y coma debe guardarse tal cual.
+    const tituloRaro = "Tarea '; DROP TABLE tasks; --";
+    const rareRes = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ title: tituloRaro }),
+    });
+    const rareBody = (await rareRes.json()) as Envelope<{ id: string; title: string }>;
+    check(
+      'Un título con sintaxis SQL se almacena literalmente',
+      rareRes.status === 201 && rareBody.data?.title === tituloRaro,
+      `guardado como: ${rareBody.data?.title}`,
+    );
+
     // ── Garantía en la base de datos ─────────────────────────────────────
 
     // El servicio comprueba el duplicado antes de insertar, pero comprobar y

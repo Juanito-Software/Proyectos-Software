@@ -21,35 +21,61 @@ verificación, y cada cuenta solo ve sus propias tareas.
 
 ```
 TaskHub/
-├── client/                   # Frontend React (Vite)
+├── client/                       # Frontend React (Vite)
 │   ├── src/
-│   │   ├── components/       # TaskList · TaskItem · TaskForm · AuthForm
-│   │   ├── context/          # AuthContext (sesión compartida con el playground)
-│   │   ├── services/         # api.js · authApi.js (abren el envoltorio de respuesta)
+│   │   ├── components/
+│   │   │   ├── AuthForm.jsx      # login y registro
+│   │   │   ├── TaskForm.jsx      # alta y edición, con estado y prioridad
+│   │   │   ├── TaskForm.test.jsx      ← 9 tests
+│   │   │   ├── TaskItem.jsx      # tarjeta de tarea con sus distintivos
+│   │   │   ├── TaskItem.test.jsx      ← 10 tests
+│   │   │   └── TaskList.jsx      # lista, filtros y búsqueda
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx   # sesión, compartida con el playground
+│   │   ├── services/
+│   │   │   ├── api.js            # tareas; abre el envoltorio de respuesta
+│   │   │   ├── api.test.js            ← 16 tests
+│   │   │   ├── authApi.js        # login y registro
+│   │   │   └── authApi.test.js        ← 8 tests
+│   │   ├── test/setup.js         # limpia DOM y localStorage entre tests
+│   │   ├── constants.js          # etiquetas de estado y prioridad, en un solo sitio
 │   │   ├── App.jsx
 │   │   └── main.jsx
+│   ├── vite.config.js            # build, proxy en desarrollo y umbrales de cobertura
 │   └── package.json
-├── server/                   # Backend Node.js + TypeScript (Express)
+├── server/                       # Backend Node.js + TypeScript (Express)
 │   ├── src/
 │   │   ├── modules/
-│   │   │   ├── auth/         # router · controller · service · validation · JWT
-│   │   │   ├── users/        # repository (SQL) · types (rol user/admin)
-│   │   │   ├── tasks/        # router · controller · service · repository · validation
-│   │   │   └── admin/        # router · controller · service (solo rol admin)
-│   │   ├── middleware/       # auth · admin · rate limit · validación · errores · logging
-│   │   ├── config/           # env · db (pool) · schema (DDL) · seed-admin
-│   │   ├── utils/            # ApiError · ApiResponse
-│   │   ├── types/            # express.d.ts (userId en Request)
-│   │   ├── public/           # playground de la API (se sirve en /playground)
-│   │   ├── app.ts            # fábrica de la app Express
-│   │   ├── server.ts         # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts         # suite end-to-end (npm run verify)
-│   ├── scripts/
-│   │   └── build-assets.mjs  # copia el playground y el cliente compilado a dist/
-│   ├── .env.example          # plantilla de variables de entorno
+│   │   │   ├── auth/             # router · controller · service · JWT
+│   │   │   │   └── auth.validation.test.ts        ← 18 tests
+│   │   │   ├── users/            # repository (SQL) · types (rol user/admin)
+│   │   │   ├── tasks/            # router · controller · service · repository
+│   │   │   │   ├── tasks.repository.test.ts       ← 13 tests
+│   │   │   │   └── tasks.validation.test.ts       ← 25 tests
+│   │   │   └── admin/            # router · controller · service (solo rol admin)
+│   │   ├── middleware/           # auth · admin · rate limit · validación · errores · logging
+│   │   ├── config/               # env · db (pool) · schema (DDL) · seed-admin
+│   │   ├── utils/                # ApiError · ApiResponse
+│   │   ├── types/                # express.d.ts (userId en Request)
+│   │   ├── public/               # playground de la API (se sirve en /playground)
+│   │   ├── app.ts                # fábrica de la app Express
+│   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
+│   │   └── verify.ts             # suite end-to-end de la API      ← 47 tests
+│   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
+│   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
+│   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 16 tests
+├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
+├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
+├── playwright.config.js          # arranca el servidor y espera a /api/health
+├── .github/workflows/            # pipeline de CI (copia; GitHub lee el de la raíz)
 └── README.md
 ```
+
+Los tests viven **junto al código que prueban** (`TaskForm.jsx` y
+`TaskForm.test.jsx` en la misma carpeta), salvo los de navegador, que van en
+`e2e/` porque prueban la aplicación entera y no un fichero concreto.
 
 En producción se despliega **un único proceso**: el mismo Express sirve el
 cliente React compilado en `/`, el playground en `/playground` y la API en
@@ -223,22 +249,69 @@ El build compila el cliente React, luego el servidor, y copia el resultado a
 `server/dist/client`. En producción un único proceso Express sirve las tres
 cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
-## Verificación automática
+## Tests
+
+**162 en total**, repartidos en cuatro capas que prueban cosas distintas:
+
+| Comando | Qué ejecuta | Cuántos | Necesita |
+|---------|-------------|---------|----------|
+| `npm test` | Unitarios de servidor y cliente | 56 + 43 | Nada |
+| `npm run verify` | End-to-end de la API | 47 | PostgreSQL |
+| `npm run test:e2e` | Navegador real (Playwright) | 16 | PostgreSQL y `npm run build` |
+| `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
+
+Los **unitarios** cubren lógica pura —validadores, escapado de comodines de
+`LIKE`, campos calculados, la capa de servicios del cliente y los componentes de
+tarea— y corren en milisegundos sin nada instalado.
+
+La **suite de la API** levanta la aplicación en un puerto temporal contra un
+esquema de base de datos propio, que se crea al empezar y se destruye al
+terminar aunque falle a mitad. Incluye una batería de manipulación de tokens
+(firma inválida, caducado, `alg: none`, sin identificador, usuario inexistente)
+y cargas de inyección SQL que deben tratarse como texto.
+
+Los **de navegador** son la única capa que comprueba que cliente, API y base de
+datos encajan de verdad. La primera vez hay que descargar Chromium:
 
 ```bash
-cd server
-npm run verify
+npx playwright install chromium
 ```
 
-Levanta la API en un puerto temporal y ejecuta **37 comprobaciones end-to-end** contra un **esquema de base de datos propio**, que se crea al empezar y se destruye al terminar — tus datos reales no se tocan, ni siquiera si la suite falla a mitad.
+### Qué cubren las 47 comprobaciones de la API
 
-Cubre: registro, login, acceso sin token, CRUD completo, validación de campos y de filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros, ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre usuarios, borrado, que el índice único rechace duplicados aunque cambien mayúsculas y espacios, y que borrar un usuario arrastre sus tareas.
+Registro, login, acceso sin token, CRUD completo, validación de campos y de
+filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,
+ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre
+usuarios, borrado, que el índice único rechace duplicados aunque cambien
+mayúsculas y espacios, y que borrar un usuario arrastre sus tareas.
 
-Y, sobre el rol de administrador: que registrarse nunca conceda el rol —ni
-enviando `role: "admin"` en el cuerpo—, que un usuario normal reciba 403, que
-sin token se reciba 401 y no 403, que el administrador de la semilla exista y
-entre, que el listado no filtre ningún hash de contraseña, y que un
-administrador no pueda borrarse a sí mismo.
+**Seguridad:** token firmado con otro secreto, caducado, sin firmar con
+`alg: none`, sin identificador de usuario, de un usuario que ya no existe y con
+formato inválido — todos deben devolver 401. Y cargas de inyección SQL en el
+filtro de búsqueda, que deben tratarse como texto sin romper la consulta.
+
+**Rol de administrador:** que registrarse nunca lo conceda —ni enviando
+`role: "admin"` en el cuerpo—, que un usuario normal reciba 403, que sin token
+se reciba 401 y no 403, que el administrador de la semilla exista y entre, que
+el listado no filtre ningún hash de contraseña, y que un administrador no pueda
+borrarse a sí mismo.
+
+## Integración continua
+
+Cada push y cada pull request ejecuta ocho jobs en GitHub Actions: lint, tipos,
+unitarios del servidor, tests del cliente con cobertura, suite de la API contra
+un PostgreSQL real, end-to-end de navegador, build de producción y auditoría de
+dependencias. Todos cuelgan de un job final, `ci-ok`, del que puede colgarse la
+regla de protección de rama sin tener que enumerar los demás.
+
+El pipeline falla si falla cualquier test, si el build no produce servidor,
+playground y cliente, si el lint o los tipos protestan, si la cobertura baja de
+los umbrales, o si aparece una vulnerabilidad **alta o crítica**. Las moderadas
+y bajas no lo bloquean: con `--audit-level=moderate` estaría en rojo permanente
+por dependencias de desarrollo, y un CI siempre en rojo deja de mirarse.
+
+El workflow está en `.github/workflows/taskhub-react-ci.yml`, con una copia en
+la raíz del monorepo, que es donde GitHub los busca.
 
 ## Administración
 
