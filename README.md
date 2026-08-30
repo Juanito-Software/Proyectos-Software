@@ -7,6 +7,10 @@ Antes de utilizar, distribuir o modificar cualquier proyecto, revisa la licencia
 que lo acompaña. Este repositorio no implica por sí mismo derechos de uso sobre todo su
 contenido: las condiciones varían según el programa.
 
+> **▶ Probar sin instalar nada:** [**TaskHub_React**](https://taskhub-react.onrender.com) está desplegado y accesible — gestor de tareas full-stack con React, Express y PostgreSQL, con [playground de la API](https://taskhub-react.onrender.com/playground) para lanzar peticiones reales contra los endpoints. 162 tests y CI en cada push.
+>
+> Está en un plan gratuito: la primera carga puede tardar cerca de un minuto mientras el servicio despierta.
+
 ---
 
 ## 📁 Estructura del repositorio
