@@ -111,12 +111,11 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 ## Funcionalidades
 
 - **Login/Registro**: autenticación con JWT; sesión persistida en localStorage.
-- **Lista de tareas**: título, descripción y estado (pendiente/completada). Solo ves tus tareas.
-- **Agregar tarea**: formulario arriba de la lista.
-- **Editar tarea**: botón "Editar" en cada tarea; se muestra el mismo formulario con los datos actuales.
-- **Eliminar tarea**: botón "Eliminar" con confirmación.
-- **Marcar como completada**: checkbox en cada tarea.
-- **Filtros**: Todas / Pendientes / Completadas.
+- **Lista de tareas**: título, descripción, estado (pendiente / en progreso / completada) y prioridad (baja / media / alta), con distintivos de color. Solo ves tus tareas.
+- **Agregar y editar**: el mismo formulario, con selectores de estado y prioridad.
+- **Eliminar tarea**: con confirmación.
+- **Marcar como completada**: checkbox, como atajo de un clic para el caso más habitual.
+- **Filtros y búsqueda**: por estado, por prioridad y por texto en título o descripción. **Los resuelve la API**, no el navegador: viajan como parámetros de consulta y solo llegan las tareas que se piden. La búsqueda espera 300 ms desde la última tecla para no lanzar una petición por carácter.
 - **Notificaciones**: mensaje breve al crear o actualizar una tarea.
 
 ## API REST (ejemplos)

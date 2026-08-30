@@ -2,28 +2,31 @@ import { useState, useEffect } from 'react';
 import { getTasks, createTask } from '../services/api';
 import TaskItem from './TaskItem';
 import TaskForm from './TaskForm';
-
-const FILTER_ALL = 'all';
-const FILTER_PENDING = 'pending';
-const FILTER_COMPLETED = 'completed';
+import { STATUSES, PRIORITIES } from '../constants';
 
 export default function TaskList({ user, onLogout }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState(FILTER_ALL);
   const [notification, setNotification] = useState(null);
+
+  // Los filtros los resuelve la API, no el navegador: se mandan como
+  // parámetros de consulta y solo viajan las tareas que se piden. Antes se
+  // traían todas y se descartaban aquí, que no escala.
+  const [status, setStatus] = useState('');
+  const [priority, setPriority] = useState('');
+  const [search, setSearch] = useState('');
 
   function showNotification(message) {
     setNotification(message);
     setTimeout(() => setNotification(null), 3000);
   }
 
-  async function loadTasks() {
+  async function loadTasks(filters = { status, priority, search }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getTasks();
+      const data = await getTasks(filters);
       setTasks(data);
     } catch (err) {
       if (err.message === 'Sesión expirada') onLogout?.();
@@ -33,9 +36,12 @@ export default function TaskList({ user, onLogout }) {
     }
   }
 
+  // La búsqueda espera 300 ms desde la última tecla para no lanzar una
+  // petición por cada carácter escrito.
   useEffect(() => {
-    loadTasks();
-  }, []);
+    const id = setTimeout(() => loadTasks({ status, priority, search }), 300);
+    return () => clearTimeout(id);
+  }, [status, priority, search]);
 
   async function handleCreateTask(task) {
     try {
@@ -56,12 +62,7 @@ export default function TaskList({ user, onLogout }) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
-  const filteredTasks =
-    filter === FILTER_PENDING
-      ? tasks.filter((t) => !t.completed)
-      : filter === FILTER_COMPLETED
-        ? tasks.filter((t) => t.completed)
-        : tasks;
+  const hayFiltros = status || priority || search;
 
   return (
     <div className="task-list">
@@ -98,37 +99,62 @@ export default function TaskList({ user, onLogout }) {
       <TaskForm onSubmit={handleCreateTask} />
 
       <div className="filters">
-        <button
-          type="button"
-          className={filter === FILTER_ALL ? 'active' : ''}
-          onClick={() => setFilter(FILTER_ALL)}
+        <input
+          type="search"
+          className="filter-search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar en título y descripción…"
+          aria-label="Buscar tareas"
+        />
+
+        <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filtrar por estado">
+          <option value="">Todos los estados</option>
+          {STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          aria-label="Filtrar por prioridad"
         >
-          Todas
-        </button>
-        <button
-          type="button"
-          className={filter === FILTER_PENDING ? 'active' : ''}
-          onClick={() => setFilter(FILTER_PENDING)}
-        >
-          Pendientes
-        </button>
-        <button
-          type="button"
-          className={filter === FILTER_COMPLETED ? 'active' : ''}
-          onClick={() => setFilter(FILTER_COMPLETED)}
-        >
-          Completadas
-        </button>
+          <option value="">Todas las prioridades</option>
+          {PRIORITIES.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+
+        {hayFiltros && (
+          <button
+            type="button"
+            className="btn-clear-filters"
+            onClick={() => {
+              setStatus('');
+              setPriority('');
+              setSearch('');
+            }}
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
       {loading ? (
         <p>Cargando tareas…</p>
       ) : (
         <ul className="tasks">
-          {filteredTasks.length === 0 ? (
-            <li className="empty">No hay tareas{filter !== FILTER_ALL ? ' en este filtro' : ''}.</li>
+          {tasks.length === 0 ? (
+            <li className="empty">
+              {hayFiltros ? 'Ninguna tarea coincide con los filtros.' : 'Todavía no tienes tareas.'}
+            </li>
           ) : (
-            filteredTasks.map((task) => (
+            tasks.map((task) => (
               <TaskItem
                 key={task.id}
                 task={task}
