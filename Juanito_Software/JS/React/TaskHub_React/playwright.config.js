@@ -1,6 +1,30 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * Salvaguarda: estos tests crean usuarios y borran datos de verdad, así que
+ * no pueden apuntar a la base de datos de producción.
+ *
+ * Pasó: al tener el .env local apuntando a Neon, una tanda de ejecuciones dejó
+ * decenas de usuarios `e2e-*` en la base de datos desplegada. No rompió nada
+ * por suerte, pero uno de los tests elimina usuarios.
+ *
+ * Se aborta si la cadena de conexión parece gestionada. Para saltárselo a
+ * propósito —por ejemplo en un entorno de pruebas remoto— basta con definir
+ * E2E_ALLOW_REMOTE_DB=1.
+ */
+const url = process.env.DATABASE_URL ?? '';
+const pareceProduccion = /neon\.tech|render\.com|supabase\.co|amazonaws\.com/.test(url);
+
+if (pareceProduccion && process.env.E2E_ALLOW_REMOTE_DB !== '1') {
+  throw new Error(
+    'DATABASE_URL apunta a una base de datos gestionada y los tests end-to-end escriben datos reales.\n' +
+      'Usa tu PostgreSQL local:\n' +
+      '  set DATABASE_URL=postgresql://usuario:clave@localhost:5432/taskhub_e2e\n' +
+      'Si de verdad quieres ejecutarlos contra esa base de datos, define E2E_ALLOW_REMOTE_DB=1.',
+  );
+}
+
+/**
  * Tests end-to-end de navegador.
  *
  * Prueban la aplicación entera como la usa una persona: navegador real,

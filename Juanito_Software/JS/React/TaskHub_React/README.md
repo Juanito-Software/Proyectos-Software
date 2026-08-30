@@ -277,6 +277,22 @@ datos encajan de verdad. La primera vez hay que descargar Chromium:
 npx playwright install chromium
 ```
 
+> **Estos tests escriben datos reales**: crean usuarios, tareas y llegan a
+> borrar cuentas. La configuración aborta si `DATABASE_URL` apunta a una base
+> de datos gestionada (Neon, Render, Supabase…), porque con el `.env` de
+> producción dejarían usuarios `e2e-*` en la aplicación desplegada.
+>
+> Para ejecutarlos en local, apunta a una base de datos aparte:
+>
+> ```bash
+> createdb taskhub_e2e
+> set DATABASE_URL=postgresql://usuario:clave@localhost:5432/taskhub_e2e
+> npm run test:e2e
+> ```
+>
+> Y si alguna vez quedan restos, se limpian con:
+> `DELETE FROM users WHERE username LIKE 'e2e-%';`
+
 ### Qué cubren las 47 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
