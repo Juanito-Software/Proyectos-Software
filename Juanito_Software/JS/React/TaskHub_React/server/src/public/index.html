@@ -779,7 +779,39 @@
             <span class="method get">GET</span>
             <span class="path">/api/system/stats</span>
           </div>
-          <span class="endpoint-desc">System health</span>
+          <span class="endpoint-desc">Salud del servidor</span>
+        </div>
+      </div>
+
+      <!-- Endpoints de administración. Solo se muestran a quien tiene el rol,
+           pero eso es cosmética: quien decide de verdad es requireAdmin en el
+           servidor, que comprueba el rol contra la base de datos. Ocultarlos
+           evita confusión, no protege nada. -->
+      <div class="panel" id="admin-panel" style="display:none">
+        <div class="panel-title">Administración</div>
+
+        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/admin/users')">
+          <div class="endpoint-meta">
+            <span class="method get">GET</span>
+            <span class="path">/api/admin/users</span>
+          </div>
+          <span class="endpoint-desc">Listar usuarios</span>
+        </div>
+
+        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/admin/stats')">
+          <div class="endpoint-meta">
+            <span class="method get">GET</span>
+            <span class="path">/api/admin/stats</span>
+          </div>
+          <span class="endpoint-desc">Resumen global</span>
+        </div>
+
+        <div class="endpoint-item" onclick="deleteUserPrompt()">
+          <div class="endpoint-meta">
+            <span class="method delete">DELETE</span>
+            <span class="path">/api/admin/users/:id</span>
+          </div>
+          <span class="endpoint-desc">Eliminar usuario y sus tareas</span>
         </div>
       </div>
 
@@ -944,6 +976,7 @@
     function showAuthOverlay() {
       document.getElementById('auth-overlay').classList.add('active');
       document.getElementById('user-badge').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'none';
     }
 
     function hideAuthOverlay() {
@@ -952,7 +985,29 @@
       if (auth?.user) {
         document.getElementById('current-user').innerText = auth.user.username;
         document.getElementById('user-badge').style.display = 'flex';
+        // El panel de administración solo se enseña a quien tiene el rol. Es
+        // una comodidad visual: si alguien lo forzara desde la consola del
+        // navegador, el servidor seguiría respondiendo 403.
+        document.getElementById('admin-panel').style.display =
+          auth.user.role === 'admin' ? 'block' : 'none';
       }
+    }
+
+    /**
+     * Borrado de un usuario. Pide el id en lugar de ofrecer una lista porque
+     * el flujo natural es mirar antes GET /api/admin/users, copiar el id de
+     * ahí y pegarlo: así se ve el efecto de las dos llamadas en la consola.
+     */
+    async function deleteUserPrompt() {
+      const id = prompt('Id del usuario a eliminar (lo ves en GET /api/admin/users):');
+      if (!id) return;
+
+      const confirmar = confirm(
+        `Se eliminará el usuario ${id} y TODAS sus tareas.\n\nEsta acción no se puede deshacer.`,
+      );
+      if (!confirmar) return;
+
+      await simulateAPI('DELETE', `/api/admin/users/${id.trim()}`);
     }
 
     function toggleAuthMode() {

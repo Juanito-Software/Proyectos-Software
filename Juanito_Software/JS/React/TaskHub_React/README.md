@@ -21,29 +21,39 @@ verificación, y cada cuenta solo ve sus propias tareas.
 
 ```
 TaskHub/
-├── client/          # Frontend React (Vite)
+├── client/                   # Frontend React (Vite)
 │   ├── src/
-│   │   ├── components/   # TaskList, TaskItem, TaskForm
-│   │   ├── services/     # api.js (fetch a la API)
+│   │   ├── components/       # TaskList · TaskItem · TaskForm · AuthForm
+│   │   ├── context/          # AuthContext (sesión compartida con el playground)
+│   │   ├── services/         # api.js · authApi.js (abren el envoltorio de respuesta)
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   └── package.json
-├── server/          # Backend Node.js + TypeScript (Express)
+├── server/                   # Backend Node.js + TypeScript (Express)
 │   ├── src/
 │   │   ├── modules/
-│   │   │   ├── auth/      # router · controller · service · validation · JWT
-│   │   │   ├── users/     # repository (usuarios en data/users.json)
-│   │   │   └── tasks/     # router · controller · service · repository · validation
-│   │   ├── middleware/    # auth, rate limit, validación, errores, logging
-│   │   ├── config/        # env.ts · db.ts (pool de Postgres) · schema.ts (DDL)
-│   │   ├── utils/         # ApiError · ApiResponse
-│   │   ├── app.ts         # fábrica de la app Express
-│   │   ├── server.ts      # arranque + apagado ordenado
-│   │   └── verify.ts      # smoke test end-to-end (npm run verify)
-│   ├── .env.example  # plantilla de variables de entorno
+│   │   │   ├── auth/         # router · controller · service · validation · JWT
+│   │   │   ├── users/        # repository (SQL) · types (rol user/admin)
+│   │   │   ├── tasks/        # router · controller · service · repository · validation
+│   │   │   └── admin/        # router · controller · service (solo rol admin)
+│   │   ├── middleware/       # auth · admin · rate limit · validación · errores · logging
+│   │   ├── config/           # env · db (pool) · schema (DDL) · seed-admin
+│   │   ├── utils/            # ApiError · ApiResponse
+│   │   ├── types/            # express.d.ts (userId en Request)
+│   │   ├── public/           # playground de la API (se sirve en /playground)
+│   │   ├── app.ts            # fábrica de la app Express
+│   │   ├── server.ts         # arranque, semilla del admin y apagado ordenado
+│   │   └── verify.ts         # suite end-to-end (npm run verify)
+│   ├── scripts/
+│   │   └── build-assets.mjs  # copia el playground y el cliente compilado a dist/
+│   ├── .env.example          # plantilla de variables de entorno
 │   └── package.json
 └── README.md
 ```
+
+En producción se despliega **un único proceso**: el mismo Express sirve el
+cliente React compilado en `/`, el playground en `/playground` y la API en
+`/api`.
 
 ## Cómo ejecutarlo
 
