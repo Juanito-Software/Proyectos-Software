@@ -1,6 +1,15 @@
-# TaskHub – Gestor de tareas colaborativo minimalista
+# TaskHub – Gestor de tareas multiusuario
 
-Aplicación full-stack para aprender **React** (frontend), **Express** (backend) y **API REST**. Varios usuarios pueden crear, editar y marcar tareas como completadas.
+Aplicación full-stack con **React** (frontend), **Express + TypeScript** (backend) y **PostgreSQL**. Cada usuario tiene su propia cuenta y ve únicamente sus tareas: los datos están aislados por usuario a nivel de consulta, no solo en la interfaz.
+
+## Demo en vivo
+
+**[taskhub-react.onrender.com](https://taskhub-react.onrender.com)** — regístrate con cualquier usuario y contraseña.
+
+- La aplicación está en la raíz.
+- El **[playground de la API](https://taskhub-react.onrender.com/playground)** permite lanzar peticiones reales contra los endpoints y ver las respuestas JSON, sin clonar el repositorio.
+
+> Está en planes gratuitos (Render + Neon): el servicio se duerme tras 15 minutos sin tráfico, así que **la primera carga puede tardar cerca de un minuto**. Las siguientes van rápidas.
 
 ## Estructura del proyecto
 

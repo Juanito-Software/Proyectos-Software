@@ -69,7 +69,7 @@ export default function TaskList({ user, onLogout }) {
         <div className="header-row">
           <div>
             <h1>TaskHub</h1>
-            <p className="subtitle">Gestor de tareas colaborativo</p>
+            <p className="subtitle">Tus tareas, solo tuyas</p>
           </div>
           <div className="user-bar">
             {/* El playground comparte el token con la aplicación, así que se

@@ -1,7 +1,7 @@
 {
   "name": "taskhub-server",
   "version": "1.0.0",
-  "description": "API REST para gestor de tareas colaborativo",
+  "description": "API REST para gestor de tareas multiusuario, con datos aislados por usuario",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {

@@ -2,7 +2,7 @@
   "name": "taskhub",
   "version": "1.0.0",
   "private": true,
-  "description": "Gestor de tareas colaborativo minimalista - Full stack React + Express",
+  "description": "Gestor de tareas multiusuario - Full stack React + Express + PostgreSQL",
   "scripts": {
     "dev": "concurrently --kill-others-on-fail -n server,client \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "server": "npm run dev --prefix server",
