@@ -161,14 +161,14 @@ escapaba los comodines de `LIKE`. Buscar `%` devolvía todas las tareas y buscar
 explícito. **El comentario que había en el código afirmando lo contrario era
 falso**, lo que ilustra por qué un comentario no sustituye a un test.
 
-### Tests: de 37 a 162
+### Tests: de 37 a 229
 
 | Capa | Antes | Ahora | Herramienta |
 |---|---|---|---|
-| End-to-end de API | 37 | **47** | Script propio contra Postgres real |
-| Unitarios del servidor | 0 | **56** | Vitest |
-| Componentes y servicios del cliente | 0 | **43** | Vitest + Testing Library |
-| End-to-end de navegador | 0 | **16** | Playwright + Chromium |
+| End-to-end de API | 37 | **62** | Script propio contra Postgres real |
+| Unitarios del servidor | 0 | **86** | Vitest |
+| Componentes y servicios del cliente | 0 | **61** | Vitest + Testing Library |
+| End-to-end de navegador | 0 | **20** | Playwright + Chromium |
 | Cobertura | No medida | Umbrales que fallan el build | v8 |
 
 Lo añadido cubre lo que la auditoría señaló como huecos: manipulación de tokens
@@ -229,6 +229,72 @@ deja de mirarse. Las moderadas y bajas quedan para Dependabot.
 Se añadió ESLint, que no existía en ningún paquete: TypeScript en el servidor,
 reglas de hooks en el cliente. El criterio es señalar errores reales, no
 cuestiones de formato.
+
+### Política de contraseñas según NIST SP 800-63B Rev 4
+
+Último cambio funcional de la tanda. Se revisó la política de contraseñas y se
+añadió confirmación en el registro.
+
+**Lo que exige la norma** (Revisión 4, julio de 2025):
+
+- **15 caracteres mínimo** cuando la contraseña es el único factor de
+  autenticación. El mínimo de 8 solo vale con MFA, que TaskHub no tiene, así
+  que se subió de 8 a 15.
+- **Prohibido exigir composición.** La Rev 4 pasó de desaconsejar a prohibir
+  los requisitos de mayúsculas, números y símbolos. El motivo es que producen
+  contraseñas predecibles: obligado a poner una mayúscula, casi todo el mundo
+  la pone la primera; obligado a un número, casi todo el mundo pone un `1` o el
+  año al final. `Password1!` está en las primeras posiciones de cualquier
+  diccionario de ataque; `café con leche y dos tostadas` no está en ninguno.
+- **Aceptar todos los caracteres**, espacios incluidos.
+- **Comprobar contra contraseñas comprometidas o predecibles.**
+
+**Decisiones propias de TaskHub, que no son requisitos de NIST:**
+
+- El **máximo de 72** es el límite técnico de bcrypt, que solo lee los primeros
+  72 bytes. Se rechaza lo que pase de ahí en lugar de recortarlo en silencio,
+  que sí es lo que exige la norma.
+- La **lista de bloqueo va embebida en el código** en lugar de consultar un
+  servicio de credenciales filtradas. Una llamada de red por registro añadiría
+  latencia y un punto de fallo desproporcionados para este proyecto. Conectar
+  una fuente real queda como mejora futura.
+- El **umbral de 4 caracteres** para comparar la contraseña con el nombre de
+  usuario. Con 3 aparecían falsos positivos: un usuario "ana" no habría podido
+  usar frases con "semana" o "mañana".
+
+**Confirmación de contraseña.** El registro pide escribirla dos veces, pero es
+asunto exclusivo del formulario: se compara en el cliente, no viaja a la API y
+no se persiste. El contrato de `POST /api/auth/register` sigue siendo
+`username` y `password`. Hay un test que manda `passwordConfirmation` con un
+valor distinto y comprueba que el servidor lo ignora.
+
+**Compatibilidad.** La política se aplica **solo al registro**. El validador
+del inicio de sesión no comprueba longitud ni lista de bloqueo, así que las
+cuentas creadas con el mínimo anterior de 8 caracteres siguen entrando. Un test
+lo fija insertando un usuario con contraseña de 7 caracteres y verificando que
+puede iniciar sesión. Aplicar la política al login habría invalidado cuentas
+existentes y, además, daría respuestas distintas según el caso, revelando
+información sobre la cuenta antes de comprobar las credenciales.
+
+**Tres cosas que aparecieron al implementarlo:**
+
+1. El **administrador tenía su propia regla de 12 caracteres**, independiente
+   de la general. En cuanto la política subiera a 15, la cuenta con más
+   permisos habría quedado con un mínimo más laxo que un usuario normal. Ahora
+   `seed-admin` usa la misma función de validación.
+2. La comprobación de longitud del manejador del formulario resultó
+   **inalcanzable desde la interfaz**: el `minLength` del campo bloquea el
+   envío antes. Se mantiene como segunda barrera —por si el atributo se pierde
+   o el navegador autocompleta— y el test se ajustó para comprobar lo que de
+   verdad ocurre.
+3. `getByPlaceholder` de Playwright busca **por subcadena**, así que
+   `'Contraseña'` casaba también con `'Repite la contraseña'` y catorce tests
+   fallaron a la vez por ambigüedad. Ahora usan `{ exact: true }`.
+
+**Tests: de 162 a 229.** Los nuevos incluyen varios cuya única función es
+impedir que alguien reintroduzca reglas de composición más adelante: afirman
+que `caballo correcto grapa pila` es una contraseña válida y que el campo del
+formulario **no** lleva atributo `pattern`.
 
 ### CD: despliegue automático, no encadenado al CI
 
