@@ -57,7 +57,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
 | `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
-| `JS/React/TaskHub_React` | Gestor de tareas en TypeScript (variante React) |
+| `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). ▶ Demo en vivo · playground de la API — 162 tests y CI en cada push |
 
 ### 🐍 Python
 
