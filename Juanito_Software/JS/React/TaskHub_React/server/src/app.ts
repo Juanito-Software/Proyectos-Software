@@ -9,6 +9,7 @@ import { tasksRouter } from './modules/tasks/tasks.router.js';
 import { adminRouter } from './modules/admin/admin.router.js';
 import { requestLogger } from './middleware/logging.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
+import { apiLimiter } from './middleware/rateLimit.middleware.js';
 import { ApiError } from './utils/api-error.js';
 import { ApiResponse } from './utils/api-response.js';
 import { env, isProduction } from './config/env.js';
@@ -143,9 +144,15 @@ export function createApp() {
   // redirect:false evita que express.static conteste con un 301 a
   // "/playground/" con barra final, que es lo que hace por defecto al servir
   // un directorio. La URL va a acabar en un CV: mejor sin saltos.
+  //
+  // Va con el limitador general porque cada petición acaba en una lectura de
+  // disco. La ruta es fija —no entra nada del usuario en el path, así que no
+  // hay recorrido de directorios—, pero sin límite alguien puede pedirla en
+  // bucle y dejar al servicio ocupado sirviendo el mismo archivo. Es lo que
+  // señalaba CodeQL con «missing rate limiting».
   const playgroundDir = path.join(__dirname, 'public');
-  app.use('/playground', express.static(playgroundDir, { redirect: false }));
-  app.get('/playground', (_req: Request, res: Response) => {
+  app.use('/playground', apiLimiter, express.static(playgroundDir, { redirect: false }));
+  app.get('/playground', apiLimiter, (_req: Request, res: Response) => {
     res.sendFile(path.join(playgroundDir, 'index.html'));
   });
 

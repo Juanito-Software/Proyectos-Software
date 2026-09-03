@@ -555,6 +555,53 @@ Se cambió por espías, que se instalan y se retiran dentro de su propio archivo
 **Tests: de 453 a 501.** Umbrales de cobertura subidos a 95/94/93/96, siempre
 justo por debajo de lo real para que actúen como trinquete.
 
+### Alertas de seguridad: qué era del proyecto y qué no
+
+Fecha: 3 de septiembre de 2026.
+
+Tras los commits de la sesión aparecieron unas treinta alertas en el panel de
+seguridad. La mitad no venían de este trabajo, así que lo primero fue separar.
+
+**Dependabot no reacciona a los commits, reacciona a los avisos publicados.** Las
+alertas de `qs`, `fast-uri` y `browserslist` salieron todas «hace 15 horas»
+porque ese día se publicaron los avisos, no porque hubiera cambiado ningún
+`package-lock.json` — de hecho los de Angular, JSGameChat y gym-app llevan meses
+sin tocarse. Las de JasperReports y PyTorch son de hace dos y tres meses.
+
+De todo el listado, **cuatro cosas sí eran de este proyecto**, todas de CodeQL:
+
+**1. El token de refresco acababa en el registro del CI.** `verify.ts` imprimía
+la cabecera `Set-Cookie` entera como detalle de tres comprobaciones, y ahí va el
+token en claro. Esa salida queda guardada en el registro de GitHub Actions, que
+ve cualquiera con acceso al repositorio: dejaba allí un token utilizable durante
+siete días. Es el hallazgo real de la tanda, y lo introduje yo el día anterior al
+escribir los tests de la cookie. Ahora se censura el valor y se conservan los
+atributos, que es lo que el test comprueba.
+
+**2. `Math.random()` en los tests de navegador.** Se usaba para generar nombres
+de usuario únicos. CodeQL lo marca como «insecure randomness» sin poder saber
+que ahí no se genera ninguna credencial, pero además tenía un problema propio:
+`Date.now()` con un número de tres cifras colisiona cuando varios tests arrancan
+en el mismo milisegundo, y dos usuarios iguales hacen fallar el registro. Se
+cambió a `crypto.randomUUID()`, que arregla las dos cosas. Silenciar la alerta
+habría dejado el fallo de colisión ahí.
+
+**3. La ruta del playground sin limitador.** Cada petición acaba en una lectura
+de disco y no tenía límite. La ruta es fija —no entra nada del usuario en el
+path, así que no hay recorrido de directorios—, pero sin límite se puede pedir en
+bucle. Ahora pasa por `apiLimiter`, igual que el resto.
+
+**4. Los workflows sin `permissions`.** Siete alertas, una por job. El token que
+GitHub inyecta puede escribir en el repositorio por defecto, y cualquier acción
+de terceros que corra en el pipeline lo hereda. Se declaró `contents: read` a
+nivel de workflow en los dos, `ci.yml` y `taskhub-react-ci.yml`.
+
+El resto sigue abierto y pertenece a otros proyectos del monorepo: PyTorch en
+`FPS-AI-Toolkit`, JasperReports en el informe de `LeaderBoard_Unity`, y varias
+transitivas de npm en Angular, JSGameChat, unified-chat-widget y gym-app. El
+`qs` de TaskHub_React es transitiva de Express y depende de que Express publique
+una versión con el arreglo.
+
 ### CD: despliegue automático, no encadenado al CI
 
 Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el

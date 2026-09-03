@@ -384,6 +384,32 @@ por dependencias de desarrollo, y un CI siempre en rojo deja de mirarse.
 El workflow está en `.github/workflows/taskhub-react-ci.yml`, con una copia en
 la raíz del monorepo, que es donde GitHub los busca.
 
+El token que GitHub inyecta en cada job va con `permissions: contents: read`.
+Por defecto ese token puede **escribir** en el repositorio, y cualquier acción de
+terceros que se ejecute en el pipeline lo hereda: si una resultara comprometida,
+tendría permiso para crear commits o publicar releases. Aquí solo hace falta leer
+el código, así que se declara eso y nada más.
+
+### Análisis estático de seguridad
+
+El repositorio tiene **CodeQL** activado, y sus avisos se corrigen en lugar de
+descartarse. Tres ejemplos de este proyecto, porque ilustran por qué conviene
+mirarlos uno a uno en vez de silenciarlos en bloque:
+
+- **Registro en claro de información sensible.** La suite de la API imprimía la
+  cabecera `Set-Cookie` completa como detalle de tres comprobaciones, y ahí va el
+  token de refresco. Esa salida queda guardada en el registro del CI: dejaba allí
+  una credencial utilizable durante siete días. Ahora se censura el valor y se
+  conservan los atributos, que es lo que el test comprueba.
+- **Aleatoriedad insegura.** Los tests de navegador generaban nombres de usuario
+  con `Math.random()`. La alerta era un falso positivo en cuanto a seguridad —ahí
+  no se genera ninguna credencial—, pero al mirarlo apareció un fallo real:
+  `Date.now()` con tres cifras colisiona cuando varios tests arrancan en el mismo
+  milisegundo, y dos usuarios iguales hacen fallar el registro. Se cambió a
+  `crypto.randomUUID()`, que resuelve las dos cosas.
+- **Ruta sin limitador.** La del playground acaba en una lectura de disco y no
+  tenía límite de peticiones. Ahora pasa por el mismo `apiLimiter` que el resto.
+
 ### CD — Render Auto-Deploy
 
 Cada commit a `main` dispara también un despliegue automático en Render, que

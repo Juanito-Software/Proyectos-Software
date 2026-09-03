@@ -20,6 +20,13 @@ on:
   pull_request:
     branches: [main]
 
+# Permisos del token que GitHub inyecta en cada job. Solo se lee código y se
+# descargan dependencias: nada de escritura. Por defecto ese token puede
+# escribir en el repositorio, y cualquier acción de terceros que corra aquí lo
+# hereda. Declarado a nivel de workflow, lo heredan todos los jobs.
+permissions:
+  contents: read
+
 # Cancela ejecuciones anteriores del mismo ref si llega un push nuevo.
 concurrency:
   group: ci-${{ github.ref }}

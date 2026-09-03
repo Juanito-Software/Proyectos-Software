@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { test, expect } from '@playwright/test';
 
 /**
@@ -8,7 +9,18 @@ import { test, expect } from '@playwright/test';
  * usuario los mantiene separados aunque compartan base de datos.
  */
 
-const nuevoUsuario = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+/**
+ * Nombre de usuario único para cada test.
+ *
+ * Con `crypto.randomUUID()` y no con `Math.random()` por dos motivos. El
+ * práctico: `Date.now()` más un número de tres cifras colisiona de verdad
+ * cuando varios tests arrancan dentro del mismo milisegundo, y dos usuarios con
+ * el mismo nombre hacen fallar el registro por conflicto. El otro: CodeQL marca
+ * cualquier `Math.random()` como «insecure randomness» sin poder saber que aquí
+ * no se genera ninguna credencial, y silenciar el aviso caso por caso enseña a
+ * ignorarlos.
+ */
+const nuevoUsuario = () => `e2e-${crypto.randomUUID().slice(0, 12)}`;
 
 // Cumple los cuatro requisitos: 15+ caracteres, mayúscula, número y símbolo.
 const PASSWORD = 'Frase larga de prueba e2e 7!';

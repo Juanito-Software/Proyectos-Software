@@ -519,10 +519,22 @@ async function run(): Promise<void> {
       return null;
     };
 
-    /** Atributos declarados en la cabecera Set-Cookie del refresco. */
+    /**
+     * Atributos declarados en la cabecera Set-Cookie del refresco, **sin el
+     * valor del token**.
+     *
+     * La censura no es cosmética. Esta cadena acaba en `console.log` a través
+     * del detalle de cada comprobación, y esa salida queda guardada en el
+     * registro del CI, que es visible para cualquiera que pueda ver el
+     * repositorio. Imprimir la cabecera entera dejaría allí un token de
+     * refresco utilizable durante siete días. Lo detectó CodeQL con
+     * «clear-text logging of sensitive information».
+     */
     const atributosCookie = (res: Response): string => {
       for (const cookie of res.headers.getSetCookie()) {
-        if (cookie.startsWith('taskhub_refresh=')) return cookie;
+        if (cookie.startsWith('taskhub_refresh=')) {
+          return cookie.replace(/^taskhub_refresh=[^;]*/, 'taskhub_refresh=<censurado>');
+        }
       }
       return '';
     };
@@ -841,9 +853,10 @@ async function run(): Promise<void> {
     check('POST /api/auth/logout -> 200', salida.status === 200, `status ${salida.status}`);
     check(
       'El logout borra la cookie del navegador',
-      atributosCookie(salida).includes('taskhub_refresh=;') ||
-        /taskhub_refresh=;/.test(salida.headers.getSetCookie().join('|')),
-      salida.headers.getSetCookie().join(' | ') || 'sin Set-Cookie',
+      /taskhub_refresh=;/.test(salida.headers.getSetCookie().join('|')),
+      // Sin volcar la cabecera: la de borrado va vacía, pero imprimirla tal
+      // cual invitaría a copiar el mismo patrón donde sí lleva token.
+      `${salida.headers.getSetCookie().length} cabecera(s) Set-Cookie`,
     );
 
     const trasSalir = await renovar(refresco1);

@@ -18,6 +18,19 @@ on:
   # Permite lanzarlo a mano desde la pestaña Actions.
   workflow_dispatch:
 
+# Permisos del token que GitHub inyecta en cada job.
+#
+# Por defecto ese token puede ESCRIBIR en el repositorio —crear commits, abrir
+# releases, publicar paquetes—, y cualquier acción de terceros que se ejecute
+# aquí lo hereda. Este pipeline solo necesita leer el código y descargar
+# dependencias, así que se declara lo mínimo y se acabó: si una acción resultara
+# comprometida, no tendría con qué tocar el repositorio.
+#
+# Declarado a nivel de workflow, lo heredan los ocho jobs. Es lo que señalaba
+# CodeQL con «workflow does not contain permissions», una alerta por job.
+permissions:
+  contents: read
+
 # Si se empuja dos veces seguidas, cancela la ejecución anterior: no tiene
 # sentido gastar minutos validando un commit que ya está superado.
 concurrency:
