@@ -1,9 +1,26 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginApi, register as registerApi } from '../services/authApi';
-import { setAuthToken } from '../services/api';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  login as loginApi,
+  register as registerApi,
+  logout as logoutApi,
+  refreshSession,
+} from '../services/authApi';
+import { setAuthToken, configurarAuth } from '../services/api';
 
 const AuthContext = createContext(null);
 
+/**
+ * Qué se guarda y qué no.
+ *
+ * Aquí solo van el usuario y el **token de acceso**, que dura quince minutos.
+ * El token de refresco no aparece: vive en una cookie HttpOnly que este código
+ * no puede leer ni escribir, que es justo lo que se busca — un XSS puede
+ * llevarse el token de acceso y disponer de un cuarto de hora, pero no la
+ * credencial que renueva la sesión durante días.
+ *
+ * La clave se mantiene, porque el playground lee de ella para compartir sesión
+ * con la aplicación.
+ */
 const STORAGE_KEY = 'taskhub_auth';
 
 function loadStoredAuth() {
@@ -32,21 +49,86 @@ export function AuthProvider({ children }) {
     }
   }, [auth]);
 
+  /**
+   * Enlaza el contexto con la capa de servicios.
+   *
+   * `api.js` renueva por su cuenta cuando una petición choca con un 401; estos
+   * dos avisos son los que permiten que el resultado llegue hasta React, para
+   * que el token guardado no se quede desfasado y para que la interfaz vuelva
+   * al formulario cuando la sesión muere de verdad.
+   */
+  useEffect(() => {
+    configurarAuth({
+      alRenovar: (datos) => {
+        setAuth((actual) =>
+          actual ? { user: datos.user ?? actual.user, token: datos.accessToken } : actual,
+        );
+      },
+      alPerderSesion: () => setAuth(null),
+    });
+    return () => configurarAuth({});
+  }, []);
+
+  /**
+   * Al arrancar con una sesión guardada, se renueva antes de nada.
+   *
+   * El token de acceso dura quince minutos, así que el guardado en
+   * `localStorage` casi siempre estará caducado al volver. Sin esto, la primera
+   * petición fallaría y el usuario vería un parpadeo hasta que la renovación
+   * automática se pusiera al día. Si la cookie ya no vale, se cierra la sesión
+   * sin ruido y aparece el formulario.
+   */
+  useEffect(() => {
+    if (!auth?.token) return;
+
+    let cancelado = false;
+    refreshSession()
+      .then((datos) => {
+        if (!cancelado) setAuth({ user: datos.user, token: datos.accessToken });
+      })
+      .catch(() => {
+        if (!cancelado) setAuth(null);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+    // Solo al montar: renovar en cada cambio de `auth` sería un bucle, porque
+    // la propia renovación lo cambia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function login(username, password) {
-    const { user, token } = await loginApi(username, password);
-    setAuthToken(token);
-    setAuth({ user, token });
+    const { user, accessToken } = await loginApi(username, password);
+    setAuthToken(accessToken);
+    setAuth({ user, token: accessToken });
   }
 
   async function register(username, password) {
-    const { user, token } = await registerApi(username, password);
-    setAuthToken(token);
-    setAuth({ user, token });
+    const { user, accessToken } = await registerApi(username, password);
+    setAuthToken(accessToken);
+    setAuth({ user, token: accessToken });
   }
 
-  function logout() {
-    setAuth(null);
-  }
+  /**
+   * Cierra sesión **en el servidor** antes de olvidarla aquí.
+   *
+   * Es la diferencia con la versión anterior, que solo vaciaba el estado local:
+   * el token seguía siendo válido durante días para quien tuviera una copia.
+   * Ahora se revoca la familia de refresco, y si la llamada falla se cierra
+   * igualmente en local — dejar al usuario dentro porque la red falló sería
+   * peor que quedarse con una sesión huérfana en la base de datos, que además
+   * caduca sola.
+   */
+  const logout = useCallback(async () => {
+    try {
+      await logoutApi();
+    } catch (err) {
+      console.warn('No se pudo cerrar la sesión en el servidor:', err);
+    } finally {
+      setAuth(null);
+    }
+  }, []);
 
   const value = {
     user: auth?.user ?? null,

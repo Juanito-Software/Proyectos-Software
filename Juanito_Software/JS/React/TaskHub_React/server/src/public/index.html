@@ -956,13 +956,61 @@
       else localStorage.removeItem(STORAGE_KEY);
     }
 
-    /** fetch con el token puesto. Si el token caduca (401), vuelve al login. */
-    async function authFetch(url, options = {}) {
+    /**
+     * Renovación en curso, para que dos peticiones que caduquen a la vez no
+     * disparen dos renovaciones con la misma cookie. El servidor tomaría la
+     * segunda por reutilización del token y cerraría la sesión entera.
+     */
+    let renovacionEnCurso = null;
+
+    /**
+     * Cambia la cookie de refresco por un token de acceso nuevo.
+     *
+     * El token de refresco no se ve desde aquí: va en una cookie HttpOnly que
+     * el navegador manda sola. Por eso esta función no recibe nada.
+     */
+    function renovarSesion() {
+      if (!renovacionEnCurso) {
+        renovacionEnCurso = fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+          .then(async (res) => {
+            const payload = await res.json().catch(() => null);
+            if (!res.ok || !payload?.success) throw new Error('sesión no renovable');
+            setAuth({ user: payload.data.user, token: payload.data.accessToken });
+            return payload.data;
+          })
+          .finally(() => {
+            renovacionEnCurso = null;
+          });
+      }
+      return renovacionEnCurso;
+    }
+
+    /**
+     * fetch con el token puesto.
+     *
+     * El token de acceso dura quince minutos, así que caducar es lo normal, no
+     * la excepción: ante un 401 se renueva y se repite la petición una sola
+     * vez. Solo si la renovación también falla se vuelve al formulario.
+     */
+    async function authFetch(url, options = {}, reintentado = false) {
       const auth = getAuth();
       const headers = { ...(options.headers || {}) };
       if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
 
       const res = await fetch(url, { ...options, headers });
+
+      if (res.status === 401 && !reintentado) {
+        try {
+          await renovarSesion();
+          return authFetch(url, options, true);
+        } catch {
+          // Cae al bloque de abajo: la sesión está muerta de verdad.
+        }
+      }
+
       if (res.status === 401) {
         setAuth(null);
         showAuthOverlay();
@@ -1040,7 +1088,9 @@
         updateConsole('POST', url, `${res.status} ${res.statusText}`, payload, !res.ok);
 
         if (res.ok && payload.success) {
-          setAuth({ user: payload.data.user, token: payload.data.token });
+          // El token de refresco no viene en el cuerpo: el servidor lo pone en
+          // una cookie HttpOnly. Aquí solo se guarda el de acceso.
+          setAuth({ user: payload.data.user, token: payload.data.accessToken });
           errorBox.classList.remove('active');
           document.getElementById('auth-form').reset();
           hideAuthOverlay();
@@ -1056,7 +1106,28 @@
       }
     }
 
-    function logout() {
+    /**
+     * Cierra la sesión también en el servidor.
+     *
+     * Vaciar el localStorage no bastaría: el token de refresco vive en una
+     * cookie y seguiría sirviendo para sacar tokens de acceso nuevos durante
+     * días. La llamada revoca la familia entera.
+     */
+    async function logout() {
+      const url = '/api/auth/logout';
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const payload = await res.json().catch(() => null);
+        updateConsole('POST', url, `${res.status} ${res.statusText}`, payload, !res.ok);
+      } catch (err) {
+        // Si la red falla se cierra igualmente en local: dejar al usuario
+        // dentro por un fallo de red sería peor.
+        updateConsole('POST', url, 'error de red', { error: err.message }, true);
+      }
+
       setAuth(null);
       activeTasks = [];
       selectedTaskId = null;

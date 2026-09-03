@@ -68,13 +68,13 @@ async function run(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    const regBody = (await reg.json()) as Envelope<{ token: string }>;
+    const regBody = (await reg.json()) as Envelope<{ accessToken: string }>;
     check(
       'POST /api/auth/register',
-      reg.status === 201 && regBody.success === true && !!regBody.data?.token,
+      reg.status === 201 && regBody.success === true && !!regBody.data?.accessToken,
       `status ${reg.status}`,
     );
-    const token = regBody.data?.token ?? '';
+    const token = regBody.data?.accessToken ?? '';
     const auth = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
     const login = await fetch(`${BASE}/api/auth/login`, {
@@ -248,7 +248,8 @@ async function run(): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: otherUsername, password }),
     });
-    const otherToken = ((await otherReg.json()) as Envelope<{ token: string }>).data?.token ?? '';
+    const otherToken =
+      ((await otherReg.json()) as Envelope<{ accessToken: string }>).data?.accessToken ?? '';
     const otherAuth = { 'Content-Type': 'application/json', Authorization: `Bearer ${otherToken}` };
 
     const otherList = await fetch(`${BASE}/api/tasks`, { headers: otherAuth });
@@ -501,6 +502,453 @@ async function run(): Promise<void> {
       `status ${loginConConfirmacion.status}`,
     );
 
+    // ── Tokens de acceso y refresco ──────────────────────────────────────
+    //
+    // El grueso de esta sección no comprueba que la renovación funcione, sino
+    // que NO funcione cuando no debe: token gastado, revocado, de otro usuario,
+    // usado como token de acceso. La rotación solo aporta seguridad si la
+    // reutilización se detecta.
+
+    /** Saca el token de refresco de la cabecera Set-Cookie de una respuesta. */
+    const cookieDeRespuesta = (res: Response): string | null => {
+      for (const cookie of res.headers.getSetCookie()) {
+        const m = /^taskhub_refresh=([^;]*)/.exec(cookie);
+        // Una cookie de borrado llega con el valor vacío: no es un token.
+        if (m && m[1]) return decodeURIComponent(m[1]);
+      }
+      return null;
+    };
+
+    /** Atributos declarados en la cabecera Set-Cookie del refresco. */
+    const atributosCookie = (res: Response): string => {
+      for (const cookie of res.headers.getSetCookie()) {
+        if (cookie.startsWith('taskhub_refresh=')) return cookie;
+      }
+      return '';
+    };
+
+    const entrar = (u: string, p: string) =>
+      fetch(`${BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p }),
+      });
+
+    const renovar = (refresco: string | null) =>
+      fetch(`${BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(refresco ? { Cookie: `taskhub_refresh=${refresco}` } : {}),
+        },
+      });
+
+    const cerrarSesion = (refresco: string | null) =>
+      fetch(`${BASE}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(refresco ? { Cookie: `taskhub_refresh=${refresco}` } : {}),
+        },
+      });
+
+    // ── Forma de las credenciales ────────────────────────────────────────
+
+    const sesion = await entrar(username, password);
+    const sesionBody = (await sesion.json()) as Envelope<{ accessToken: string; refreshToken?: string }>;
+    const refrescoInicial = cookieDeRespuesta(sesion);
+
+    check(
+      'El login devuelve un token de acceso en el cuerpo',
+      !!sesionBody.data?.accessToken,
+      sesionBody.data?.accessToken ? 'presente' : 'AUSENTE',
+    );
+
+    check(
+      'El token de refresco llega por cookie, no en el cuerpo',
+      !!refrescoInicial && sesionBody.data?.refreshToken === undefined,
+      `cookie ${refrescoInicial ? 'presente' : 'ausente'}, cuerpo ${sesionBody.data?.refreshToken === undefined ? 'limpio' : 'CONTIENE EL REFRESCO'}`,
+    );
+
+    const atributos = atributosCookie(sesion);
+    check(
+      'La cookie de refresco es HttpOnly: el JavaScript de la página no la ve',
+      /HttpOnly/i.test(atributos),
+      atributos || 'sin cabecera',
+    );
+    check(
+      'La cookie va con SameSite=Strict, que es lo que cierra el CSRF',
+      /SameSite=Strict/i.test(atributos),
+      atributos || 'sin cabecera',
+    );
+    check(
+      'La cookie se limita a /api/auth y no viaja al resto de la API',
+      /Path=\/api\/auth/i.test(atributos),
+      atributos || 'sin cabecera',
+    );
+
+    const jwtDecode = (await import('jsonwebtoken')).default;
+    const claims = jwtDecode.decode(sesionBody.data?.accessToken ?? '') as {
+      typ?: string;
+      exp: number;
+      iat: number;
+    } | null;
+
+    check(
+      'El token de acceso se identifica como tal con typ=access',
+      claims?.typ === 'access',
+      `typ=${claims?.typ}`,
+    );
+
+    const duracionMin = claims ? (claims.exp - claims.iat) / 60 : -1;
+    check(
+      'El token de acceso dura minutos, no días',
+      duracionMin > 0 && duracionMin <= 60,
+      `${duracionMin} minutos`,
+    );
+
+    // ── El token guardado no es el token ─────────────────────────────────
+
+    const hashes = await query<{ token_hash: string }>(
+      `SELECT token_hash FROM refresh_sessions ORDER BY created_at DESC LIMIT 1`,
+    );
+    check(
+      'En la base de datos se guarda el hash del refresco, nunca el token',
+      hashes.length > 0 &&
+        hashes[0].token_hash !== refrescoInicial &&
+        /^[0-9a-f]{64}$/.test(hashes[0].token_hash),
+      hashes[0]?.token_hash?.slice(0, 16) + '…',
+    );
+
+    // ── Rotación ─────────────────────────────────────────────────────────
+
+    const rot1 = await renovar(refrescoInicial);
+    const rot1Body = (await rot1.json()) as Envelope<{ accessToken: string }>;
+    const refrescoB = cookieDeRespuesta(rot1);
+
+    check('Renovar con un refresco válido -> 200', rot1.status === 200, `status ${rot1.status}`);
+    check(
+      'La renovación entrega un token de acceso nuevo',
+      !!rot1Body.data?.accessToken && rot1Body.data.accessToken !== sesionBody.data?.accessToken,
+      'distinto del anterior',
+    );
+    check(
+      'La renovación entrega también un refresco nuevo: el token es de un solo uso',
+      !!refrescoB && refrescoB !== refrescoInicial,
+      refrescoB ? 'rotado' : 'NO SE ROTÓ',
+    );
+
+    const accesoTrasRenovar = await fetch(`${BASE}/api/tasks`, {
+      headers: { Authorization: `Bearer ${rot1Body.data?.accessToken}` },
+    });
+    check(
+      'El token de acceso recién renovado sirve para pedir datos',
+      accesoTrasRenovar.status === 200,
+      `status ${accesoTrasRenovar.status}`,
+    );
+
+    const familias = await query<{ family_id: string; total: number }>(
+      `SELECT family_id, COUNT(*)::int AS total
+         FROM refresh_sessions
+        GROUP BY family_id
+        HAVING COUNT(*) > 1
+        LIMIT 1`,
+    );
+    check(
+      'La rotación encadena el token nuevo a la misma familia',
+      familias.length === 1 && familias[0].total === 2,
+      `${familias[0]?.total ?? 0} eslabones en la familia`,
+    );
+
+    // ── Detección de reutilización ───────────────────────────────────────
+    //
+    // El token A ya se gastó. Presentarlo otra vez significa que alguien tiene
+    // una copia, y por tanto también el B que salió de él: hay que revocar la
+    // familia entera, no solo rechazar esta petición.
+    //
+    // Se retrasa artificialmente `revoked_at` para salir de la ventana de
+    // tolerancia, que existe para no confundir dos pestañas simultáneas con un
+    // ataque. Sin este retroceso habría que esperar diez segundos reales.
+    await pool.query(
+      `UPDATE refresh_sessions
+          SET revoked_at = now() - interval '1 hour'
+        WHERE token_hash = $1`,
+      [crypto.createHash('sha256').update(refrescoInicial ?? '').digest('hex')],
+    );
+
+    const reutilizado = await renovar(refrescoInicial);
+    check(
+      'Reutilizar un refresco ya gastado -> 401',
+      reutilizado.status === 401,
+      `status ${reutilizado.status}`,
+    );
+
+    const trasReuso = await renovar(refrescoB);
+    check(
+      'La reutilización revoca la familia entera: el refresco vigente tampoco vale',
+      trasReuso.status === 401,
+      `status ${trasReuso.status}`,
+    );
+
+    const motivos = await query<{ revoked_reason: string; total: number }>(
+      `SELECT revoked_reason, COUNT(*)::int AS total
+         FROM refresh_sessions
+        WHERE revoked_reason = 'reuse-detected'
+        GROUP BY revoked_reason`,
+    );
+    check(
+      'La revocación por reutilización queda registrada con su motivo',
+      motivos.length === 1 && motivos[0].total >= 1,
+      `${motivos[0]?.total ?? 0} fila(s) marcadas como reuse-detected`,
+    );
+
+    // ── Renovaciones simultáneas ─────────────────────────────────────────
+    //
+    // Dos pestañas del mismo usuario, o la aplicación y el playground a la vez,
+    // pueden renovar con la misma cookie. Solo una debe ganar, pero eso NO es
+    // un ataque: si la perdedora matara la familia, el usuario se quedaría
+    // fuera por el simple hecho de tener dos pestañas abiertas.
+    //
+    // Lo que hace segura la carrera es la condición `revoked_at IS NULL` dentro
+    // del propio UPDATE. PostgreSQL serializa las escrituras sobre una misma
+    // fila, así que de dos rotaciones del mismo token solo una la encuentra sin
+    // revocar. Eso se comprueba aquí de forma DETERMINISTA, llamando dos veces
+    // seguidas: si el guardián no estuviera, la segunda también encontraría
+    // fila y las dos rotaciones saldrían adelante.
+    //
+    // Se hace secuencial y no con Promise.all a propósito. Lanzar peticiones en
+    // paralelo aquí daba un falso positivo: el driver del entorno de desarrollo
+    // solo admite una conexión, tumbaba la segunda con "connection terminated"
+    // y el test pasaba porque solo una había respondido 200 — no porque el
+    // guardián funcionara. Un test que pasa por el motivo equivocado es peor
+    // que no tenerlo.
+
+    const concUser = `conc-${crypto.randomUUID().slice(0, 8)}`;
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: concUser, password }),
+    });
+    const concLogin = await entrar(concUser, password);
+    const concRefresco = cookieDeRespuesta(concLogin);
+    const concHash = crypto.createHash('sha256').update(concRefresco ?? '').digest('hex');
+
+    const { sessionsRepository } = await import('./modules/auth/sessions.repository.js');
+
+    const primeraRotacion = await sessionsRepository.marcarRotado(concHash);
+    const segundaRotacion = await sessionsRepository.marcarRotado(concHash);
+
+    check(
+      'La rotación es atómica: el mismo token no puede rotarse dos veces',
+      primeraRotacion !== null && segundaRotacion === null,
+      `primera ${primeraRotacion ? 'gana' : 'falla'}, segunda ${segundaRotacion ? 'GANA TAMBIÉN' : 'rechazada'}`,
+    );
+
+    // La perdedora, dentro de la ventana de tolerancia, se rechaza pero NO
+    // revoca la familia: es el escenario de las dos pestañas.
+    const perdedora = await renovar(concRefresco);
+    check(
+      'La renovación perdedora se rechaza con 401',
+      perdedora.status === 401,
+      `status ${perdedora.status}`,
+    );
+
+    const familiaConc = await query<{ revoked_reason: string }>(
+      `SELECT revoked_reason FROM refresh_sessions
+        WHERE user_id = (SELECT id FROM users WHERE username = $1)
+          AND revoked_reason = 'reuse-detected'`,
+      [concUser],
+    );
+    check(
+      'Dentro de la ventana de tolerancia NO se marca como reutilización',
+      familiaConc.length === 0,
+      `${familiaConc.length} fila(s) marcadas por error`,
+    );
+
+    // ── Entradas inválidas en la renovación ──────────────────────────────
+
+    const sinCookie = await renovar(null);
+    check('Renovar sin cookie -> 401', sinCookie.status === 401, `status ${sinCookie.status}`);
+
+    const inventado = await renovar('token-que-nunca-ha-existido-jamas');
+    check(
+      'Renovar con un refresco inventado -> 401',
+      inventado.status === 401,
+      `status ${inventado.status}`,
+    );
+
+    const malformado = await renovar('%%%no-es-base64url%%%');
+    check(
+      'Renovar con un refresco malformado -> 401',
+      malformado.status === 401,
+      `status ${malformado.status}`,
+    );
+
+    // El token de acceso es un JWT; el de refresco, bytes aleatorios. Ninguno
+    // de los dos puede hacer el papel del otro.
+    const accesoComoRefresco = await renovar(rot1Body.data?.accessToken ?? '');
+    check(
+      'Un token de acceso NO sirve como refresco',
+      accesoComoRefresco.status === 401,
+      `status ${accesoComoRefresco.status}`,
+    );
+
+    const refrescoComoAcceso = await fetch(`${BASE}/api/tasks`, {
+      headers: { Authorization: `Bearer ${concRefresco}` },
+    });
+    check(
+      'Un token de refresco NO sirve como token de acceso',
+      refrescoComoAcceso.status === 401,
+      `status ${refrescoComoAcceso.status}`,
+    );
+
+    // Los tokens de la versión anterior no llevaban typ y duraban siete días.
+    const antiguo = jwtDecode.sign(
+      { userId: crypto.randomUUID(), username: 'antiguo' },
+      process.env.JWT_SECRET ?? 'clave-solo-para-desarrollo-no-usar-en-produccion',
+      { expiresIn: '7d' },
+    );
+    const conTokenAntiguo = await fetch(`${BASE}/api/tasks`, {
+      headers: { Authorization: `Bearer ${antiguo}` },
+    });
+    check(
+      'Un token de la política anterior (sin typ, 7 días) queda invalidado',
+      conTokenAntiguo.status === 401,
+      `status ${conTokenAntiguo.status}`,
+    );
+
+    // ── Cierre de sesión ─────────────────────────────────────────────────
+
+    const salidaUser = `salida-${crypto.randomUUID().slice(0, 8)}`;
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: salidaUser, password }),
+    });
+
+    const sesion1 = await entrar(salidaUser, password);
+    const refresco1 = cookieDeRespuesta(sesion1);
+    const sesion2 = await entrar(salidaUser, password);
+    const refresco2 = cookieDeRespuesta(sesion2);
+
+    check(
+      'Dos inicios de sesión del mismo usuario abren sesiones independientes',
+      !!refresco1 && !!refresco2 && refresco1 !== refresco2,
+      'refrescos distintos',
+    );
+
+    const salida = await cerrarSesion(refresco1);
+    check('POST /api/auth/logout -> 200', salida.status === 200, `status ${salida.status}`);
+    check(
+      'El logout borra la cookie del navegador',
+      atributosCookie(salida).includes('taskhub_refresh=;') ||
+        /taskhub_refresh=;/.test(salida.headers.getSetCookie().join('|')),
+      salida.headers.getSetCookie().join(' | ') || 'sin Set-Cookie',
+    );
+
+    const trasSalir = await renovar(refresco1);
+    check(
+      'Tras cerrar sesión, su refresco deja de valer',
+      trasSalir.status === 401,
+      `status ${trasSalir.status}`,
+    );
+
+    const otraSesion = await renovar(refresco2);
+    check(
+      'Cerrar una sesión no afecta a las demás del mismo usuario',
+      otraSesion.status === 200,
+      `status ${otraSesion.status}`,
+    );
+    // La renovación anterior rotó el token: para seguir usando esa sesión hay
+    // que quedarse con la cookie nueva.
+    const refresco2Rotado = cookieDeRespuesta(otraSesion);
+
+    // El logout revoca en el SERVIDOR, no solo en el navegador: es la
+    // diferencia con la implementación anterior.
+    const revocadas = await query<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM refresh_sessions
+        WHERE user_id = (SELECT id FROM users WHERE username = $1)
+          AND revoked_reason = 'logout'`,
+      [salidaUser],
+    );
+    check(
+      'La revocación se registra en el servidor, no depende del cliente',
+      revocadas[0].count >= 1,
+      `${revocadas[0].count} fila(s) revocadas por logout`,
+    );
+
+    // ── Cierre de todas las sesiones ─────────────────────────────────────
+
+    const globalUser = `global-${crypto.randomUUID().slice(0, 8)}`;
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: globalUser, password }),
+    });
+
+    const gs1 = await entrar(globalUser, password);
+    const gs2 = await entrar(globalUser, password);
+    const gs3 = await entrar(globalUser, password);
+    const gr1 = cookieDeRespuesta(gs1);
+    const gr2 = cookieDeRespuesta(gs2);
+    const gr3 = cookieDeRespuesta(gs3);
+    const gAcceso = ((await gs3.json()) as Envelope<{ accessToken: string }>).data?.accessToken;
+
+    const sinAutenticar = await fetch(`${BASE}/api/auth/logout-all`, { method: 'POST' });
+    check(
+      'Cerrar todas las sesiones exige estar autenticado',
+      sinAutenticar.status === 401,
+      `status ${sinAutenticar.status}`,
+    );
+
+    const todas = await fetch(`${BASE}/api/auth/logout-all`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gAcceso}` },
+    });
+    check(
+      'POST /api/auth/logout-all -> 200',
+      todas.status === 200,
+      `status ${todas.status}`,
+    );
+
+    // Secuencial y no en paralelo: lo que se comprueba es que las tres estén
+    // revocadas, no la concurrencia, y el driver del entorno de desarrollo solo
+    // admite una conexión.
+    const resultados = [await renovar(gr1), await renovar(gr2), await renovar(gr3)];
+    check(
+      'Tras cerrar todas, ninguna de las tres sesiones puede renovar',
+      resultados.every((r) => r.status === 401),
+      resultados.map((r) => r.status).join(', '),
+    );
+
+    // El identificador sale del token, no del cuerpo: nadie puede cerrar las
+    // sesiones de otro.
+    const ajenoSesiones = await renovar(refresco2Rotado);
+    check(
+      'Cerrar todas las sesiones propias no toca las de otro usuario',
+      ajenoSesiones.status === 200,
+      `status ${ajenoSesiones.status}`,
+    );
+
+    // ── Renovación de una cuenta que ya no existe ────────────────────────
+
+    const borrableUser = `borrable-${crypto.randomUUID().slice(0, 8)}`;
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: borrableUser, password }),
+    });
+    const sesionBorrable = await entrar(borrableUser, password);
+    const refrescoBorrable = cookieDeRespuesta(sesionBorrable);
+    await pool.query('DELETE FROM users WHERE username = $1', [borrableUser]);
+
+    const trasBorrar = await renovar(refrescoBorrable);
+    check(
+      'Renovar con la cuenta ya borrada -> 401',
+      trasBorrar.status === 401,
+      `status ${trasBorrar.status}`,
+    );
+
     // ── Cabeceras de seguridad ───────────────────────────────────────────
 
     const cabeceras = await fetch(`${BASE}/playground`);
@@ -601,7 +1049,14 @@ async function run(): Promise<void> {
 
     // Firma correcta y userId con formato de UUID, pero que no existe en la
     // base de datos: no debe devolver datos de nadie ni reventar.
-    const ghost = jwtLib.sign({ userId: crypto.randomUUID(), username: 'fantasma' }, secret);
+    // Con typ:'access' a propósito: el objetivo es que el token SEA válido y
+    // llegue al repositorio, para comprobar que un usuario inexistente no
+    // devuelve datos ajenos. Sin el claim lo pararía antes el middleware y el
+    // test no probaría lo que dice probar.
+    const ghost = jwtLib.sign(
+      { userId: crypto.randomUUID(), username: 'fantasma', typ: 'access' },
+      secret,
+    );
     const ghostRes = await fetch(`${BASE}/api/tasks`, withToken(ghost));
     const ghostBody = (await ghostRes.json()) as Envelope<unknown[]>;
     check(
@@ -763,7 +1218,7 @@ async function run(): Promise<void> {
       body: JSON.stringify({ username: ADMIN_USER, password: ADMIN_PASS }),
     });
     const adminBody = (await adminLogin.json()) as Envelope<{
-      token: string;
+      accessToken: string;
       user: { id: string; role: string };
     }>;
     check(
@@ -773,7 +1228,7 @@ async function run(): Promise<void> {
     );
     const adminAuth = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${adminBody.data?.token ?? ''}`,
+      Authorization: `Bearer ${adminBody.data?.accessToken ?? ''}`,
     };
     const adminId = adminBody.data?.user?.id ?? '';
 

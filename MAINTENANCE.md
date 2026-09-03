@@ -432,6 +432,71 @@ y `server/sch-temp.ts` eran scripts de diagnóstico de un solo uso —uno imprim
 la CSP para localizar el `script-src-attr 'none'` que rompió el playground, el
 otro contaba esquemas `verify_` huérfanos—. Se borraron.
 
+### Sesiones revocables: access token corto y refresh rotativo
+
+Fecha: 3 de septiembre de 2026.
+
+Era el hueco de seguridad más real que quedaba, y estaba anotado como pendiente
+desde la auditoría: **tokens de siete días sin forma de revocarlos**. Un token
+robado servía una semana, y el logout solo vaciaba el navegador — quien tuviera
+una copia seguía dentro.
+
+**Lo que hay ahora.** Dos credenciales en vez de una. Un JWT de acceso de quince
+minutos, que es lo que viaja en `Authorization`, y un token de refresco de siete
+días guardado en la tabla `refresh_sessions`. Solo el segundo se puede revocar,
+y por eso el primero dura tan poco: un JWT firmado vale hasta que caduca, y la
+alternativa —una lista negra consultada en cada petición— cuesta una consulta
+por llamada para resolver un problema que se resuelve acortando la ventana.
+
+**El refresco no es un JWT, y eso es lo que hace segura la separación.** Son 32
+bytes aleatorios. Si los dos fueran JWT, distinguirlos dependería de comprobar
+un claim `typ` en cada sitio, y olvidarlo una sola vez bastaría para que un
+refresco valiera como token de acceso. Siendo opaco, el middleware intentaría
+verificar una firma inexistente y falla solo. El claim está igualmente, como
+segunda barrera.
+
+**Rotación con detección de reutilización.** Cada renovación gasta el token y
+entrega otro con el mismo `family_id`. Si reaparece uno ya gastado, no basta con
+rechazarlo: quien pudo copiarlo tiene también el siguiente de la cadena, así que
+se revoca la familia entera.
+
+Con una excepción que hubo que añadir: dos pestañas del mismo usuario pueden
+renovar a la vez con la misma cookie, y eso no es un ataque. Dentro de una
+ventana de diez segundos la perdedora se rechaza sin matar la familia. Es un
+compromiso explícito —estrecha la detección durante esos segundos— pero la
+alternativa era cerrar la sesión a quien tuviera dos pestañas abiertas.
+
+**El refresco va en cookie HttpOnly**, no en localStorage. Es la credencial que
+importa: sirve para emitir tokens de acceso durante días. Meter una cookie
+obligaba a mirar CSRF, que la documentación anterior citaba como ausente
+precisamente porque no había cookies. Queda cerrado con `SameSite=Strict`, que
+impide que el navegador la mande en peticiones nacidas de otro sitio, más el
+hecho de que la cookie no autoriza ninguna ruta de datos y va limitada a
+`Path=/api/auth`. CORS se queda con `credentials: false`: todo es mismo origen
+en producción, y en desarrollo Vite hace de proxy.
+
+**Dos cosas que aparecieron al implementarlo:**
+
+1. **Dos renovaciones seguidas devolvían el mismo token de acceso.** El único
+   campo variable de un JWT es `iat`, con resolución de segundos, así que dos
+   emisiones dentro del mismo segundo salían byte a byte idénticas —con la misma
+   caducidad—. Se añadió `jti` con un UUID.
+2. **Un test de concurrencia que pasaba por el motivo equivocado.** Lanzaba dos
+   renovaciones en paralelo y comprobaba que solo una respondiera 200. Pasaba,
+   pero porque el driver del entorno de desarrollo solo admite una conexión y
+   tumbaba la segunda, no porque el guardián de la rotación funcionara. Se
+   sustituyó por una comprobación determinista: dos llamadas seguidas a
+   `marcarRotado`, de las que la segunda tiene que devolver `null`.
+
+**Migración de los tokens antiguos: se invalidaron todos.** No llevan el claim
+`typ`, así que dejaron de valer en el primer despliegue y todo el mundo tuvo que
+volver a entrar. Fue deliberado: mantenerlos por comodidad habría dejado abierta
+una semana justo la puerta que el cambio venía a cerrar.
+
+**Tests: de 344 a 453.** La revisión individual de los 344 anteriores está en
+`docs/AUDITORIA_TESTS_344.md`. Cobertura del cliente: del 54,93 % al 72,34 %,
+con `AuthContext.jsx` pasando de 0 % a 100 %.
+
 ### CD: despliegue automático, no encadenado al CI
 
 Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el
@@ -453,12 +518,12 @@ que dependa de `ci-ok`— queda para cuando la aplicación se estabilice.
 - **`PUT` y `PATCH` comparten controlador** y hacen los dos actualización
   parcial. Un `PUT` estricto debería reemplazar el recurso completo. No rompe
   nada, pero es una desviación de la semántica HTTP.
-- **Tokens de 7 días sin revocación.** No hay refresh ni lista de revocados: un
-  token robado sirve hasta que caduca.
-- **Cobertura del cliente al 36%.** Cubierto lo que rompe cosas —capa de
-  servicios al 96%, los dos componentes de tarea al 100% y al 86%—; sin cubrir
-  `App`, `AuthForm`, `TaskList` y `AuthContext`, que necesitan montar el
-  contexto de sesión.
+- ~~**Tokens de 7 días sin revocación.**~~ Resuelto: access token de 15 minutos
+  y refresh rotativo con tabla de sesiones.
+- **Cobertura del cliente al 72%.** Subió del 36% al cubrir `AuthForm` (80%) y
+  `AuthContext` (100%). Quedan a cero `App.jsx` y `TaskList.jsx`, que es el
+  componente más grande de la aplicación: lista, filtros, búsqueda con retardo
+  y notificaciones.
 - **El checkbox de completada espera a la respuesta del servidor** antes de
   cambiar de aspecto. Con la base de datos en la misma región son 40-80 ms y no
   se nota, pero el patrón correcto sería la actualización optimista: pintar el

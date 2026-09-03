@@ -12,7 +12,7 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
   }
 
   try {
-    const payload = tokenService.verifyToken(token);
+    const payload = tokenService.verifyAccessToken(token);
     req.userId = payload.userId;
     req.username = payload.username;
     next();

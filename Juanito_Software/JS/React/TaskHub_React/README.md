@@ -32,12 +32,14 @@ TaskHub/
 │   │   │   ├── TaskItem.test.jsx      ← 10 tests
 │   │   │   └── TaskList.jsx      # lista, filtros y búsqueda
 │   │   ├── context/
-│   │   │   └── AuthContext.jsx   # sesión, compartida con el playground
+│   │   │   ├── AuthContext.jsx   # sesión, renovación automática y logout
+│   │   │   └── AuthContext.test.jsx   ← 20 tests
 │   │   ├── services/
 │   │   │   ├── api.js            # tareas; abre el envoltorio de respuesta
 │   │   │   ├── api.test.js            ← 16 tests
+│   │   │   ├── api.refresh.test.js    ← 9 tests
 │   │   │   ├── authApi.js        # login y registro
-│   │   │   └── authApi.test.js        ← 8 tests
+│   │   │   └── authApi.test.js        ← 16 tests
 │   │   ├── test/setup.js         # limpia DOM y localStorage entre tests
 │   │   ├── constants.js          # etiquetas de estado y prioridad, en un solo sitio
 │   │   ├── passwordPolicy.js     # réplica de la política; el servidor manda
@@ -52,7 +54,12 @@ TaskHub/
 │   │   │   ├── auth/             # router · controller · service · JWT
 │   │   │   │   ├── password-policy.ts            # política de contraseñas, fuente de verdad
 │   │   │   │   ├── password-policy.test.ts       ← 73 tests
-│   │   │   │   └── auth.validation.test.ts       ← 30 tests
+│   │   │   │   ├── auth.validation.test.ts       ← 30 tests
+│   │   │   │   ├── sessions.repository.ts        # familias de refresco en SQL
+│   │   │   │   ├── refresh-token.ts              # generación y hash del refresco
+│   │   │   │   ├── token.service.test.ts         ← 19 tests
+│   │   │   │   ├── auth.cookie.ts                # cookie HttpOnly del refresco
+│   │   │   │   └── auth.cookie.test.ts           ← 12 tests
 │   │   │   ├── users/            # repository (SQL) · types (rol user/admin)
 │   │   │   ├── tasks/            # router · controller · service · repository
 │   │   │   │   ├── tasks.repository.test.ts       ← 13 tests
@@ -66,13 +73,15 @@ TaskHub/
 │   │   ├── public/               # playground de la API (se sirve en /playground)
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 73 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 109 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
-├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 25 tests
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 30 tests
 ├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
+├── docs/AUDITORIA_TESTS_229.md   # revisión test a test tras la política de contraseñas
+├── docs/AUDITORIA_TESTS_344.md   # revisión test a test tras los refresh tokens
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
 ├── .github/workflows/            # pipeline de CI (copia; GitHub lee el de la raíz)
@@ -142,7 +151,7 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 
 ## Funcionalidades
 
-- **Login/Registro**: autenticación con JWT; sesión persistida en localStorage.
+- **Login/Registro**: token de acceso JWT de 15 minutos más un token de refresco rotativo en cookie HttpOnly. La sesión se renueva sola y el cierre revoca en el servidor.
 - **Lista de tareas**: título, descripción, estado (pendiente / en progreso / completada) y prioridad (baja / media / alta), con distintivos de color. Solo ves tus tareas.
 - **Agregar y editar**: el mismo formulario, con selectores de estado y prioridad.
 - **Eliminar tarea**: con confirmación.
@@ -156,6 +165,9 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 |--------|------|-------------|
 | POST | `/api/auth/register` | Registro (`username`, `password`) |
 | POST | `/api/auth/login` | Login (`username`, `password`) |
+| POST | `/api/auth/refresh` | Cambia la cookie de refresco por credenciales nuevas |
+| POST | `/api/auth/logout` | Cierra la sesión **en el servidor** |
+| POST | `/api/auth/logout-all` | Cierra todas las sesiones del usuario |
 | GET | `/api/tasks` | Listar tareas del usuario. Filtros: `?status=`, `?priority=`, `?search=` |
 | GET | `/api/tasks/stats` | Resumen del usuario por estado |
 | GET | `/api/tasks/:id` | Obtener una tarea |
@@ -169,7 +181,7 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 | DELETE | `/api/admin/users/:id` | Borra un usuario y, en cascada, sus tareas · **admin** |
 | GET | `/api/admin/stats` | Resumen global de la instancia · **admin** |
 
-Las rutas de tareas requieren cabecera `Authorization: Bearer <token>`. Los títulos deben ser únicos **por usuario** (409 si se repite; dos usuarios distintos sí pueden tener el mismo título).
+Las rutas de tareas requieren cabecera `Authorization: Bearer <accessToken>`. Los títulos deben ser únicos **por usuario** (409 si se repite; dos usuarios distintos sí pueden tener el mismo título).
 
 ### Formato de respuesta
 
@@ -257,13 +269,13 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**344 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**453 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 149 + 97 | Nada |
-| `npm run verify` | End-to-end de la API | 73 | PostgreSQL |
-| `npm run test:e2e` | Navegador real (Playwright) | 25 | PostgreSQL y `npm run build` |
+| `npm test` | Unitarios de servidor y cliente | 180 + 134 | Nada |
+| `npm run verify` | End-to-end de la API | 109 | PostgreSQL |
+| `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
 Los **unitarios** cubren lógica pura —validadores, escapado de comodines de
@@ -323,13 +335,20 @@ DELETE FROM users WHERE username LIKE 'e2e-%';
 
 Las tareas asociadas se van solas por el borrado en cascada.
 
-### Qué cubren las 62 comprobaciones de la API
+### Qué cubren las 109 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
 filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,
 ambos endpoints de estadísticas, que el playground se sirva, aislamiento entre
 usuarios, borrado, que el índice único rechace duplicados aunque cambien
 mayúsculas y espacios, y que borrar un usuario arrastre sus tareas.
+
+Más la sesión completa: forma y atributos de la cookie de refresco, rotación,
+detección de reutilización con revocación de la familia, tolerancia a
+renovaciones simultáneas, logout con revocación en servidor, cierre de todas las
+sesiones, y la batería de intentos que deben fallar — un token de acceso usado
+como refresco, un refresco usado como token de acceso, y un token de la política
+anterior.
 
 **Seguridad:** token firmado con otro secreto, caducado, sin firmar con
 `alg: none`, sin identificador de usuario, de un usuario que ya no existe y con
@@ -376,6 +395,114 @@ desplegar un commit con tests fallando permite depurar en el entorno real.
 Encadenarlos es lo correcto cuando la aplicación se estabilice, y se hace
 desactivando el auto-deploy y llamando a un *Deploy Hook* de Render desde un
 job que dependa de `ci-ok`.
+
+## Sesiones: token de acceso y token de refresco
+
+Hay **dos credenciales con papeles distintos**, y la diferencia entre ellas es
+lo que permite revocar una sesión de verdad.
+
+| | Token de acceso | Token de refresco |
+|---|---|---|
+| Qué es | JWT firmado (HS256) | 32 bytes aleatorios, **no es un JWT** |
+| Dura | 15 minutos | 7 días |
+| Viaja en | `Authorization: Bearer` | Cookie `HttpOnly` |
+| Sirve para | Cualquier ruta protegida | Solo `POST /api/auth/refresh` |
+| Se guarda en el servidor | No | Sí, su SHA-256, en `refresh_sessions` |
+| Se puede revocar | No hasta que caduque | Sí, al instante |
+
+**Por qué el de refresco no es un JWT.** Si los dos lo fueran, separarlos
+dependería de comprobar un claim `typ` en todos los sitios, y olvidarlo en uno
+solo bastaría para que un refresco valiera como token de acceso. Siendo bytes
+opacos, esa confusión es imposible: el middleware intentaría verificar una firma
+que no existe. El claim `typ: 'access'` está igualmente, como segunda barrera.
+
+**Por qué el de acceso dura tan poco.** Un JWT firmado sigue siendo válido hasta
+que caduca, aunque se cierre la sesión: no hay forma de retirarlo sin consultar
+una lista negra en cada petición, y eso costaría una consulta por llamada. La
+respuesta no es la lista negra, es que la ventana sea pequeña. Quince minutos es
+el máximo que puede sobrevivir un token robado.
+
+### Rotación y detección de reutilización
+
+Cada renovación **gasta** el token de refresco y entrega otro. La fila vieja se
+marca revocada y la nueva nace con el mismo `family_id`, así que una sesión es
+la cadena de filas que comparten familia.
+
+Esa cadena es lo que permite distinguir dos cosas que se parecen:
+
+```
+Refresco A  →  renovar  →  A revocado, nace B          ← normal
+Refresco A  →  renovar otra vez                        ← alguien tiene una copia
+                ↓
+        se revoca la FAMILIA entera, no solo A
+```
+
+Revocar solo el token presentado no serviría de nada: quien pudo copiar A tiene
+también B. Por eso cae la cadena completa y la sesión se cierra en todos los
+dispositivos que la compartían.
+
+**Con una excepción deliberada.** Dos pestañas del mismo usuario pueden renovar a
+la vez con la misma cookie, y eso no es un ataque. Dentro de una ventana de
+tolerancia (`REFRESH_GRACE_SECONDS`, 10 por defecto) la segunda se rechaza sin
+matar la familia, y el cliente reintenta con la cookie ya rotada. Es un
+compromiso explícito: estrecha la detección durante esos segundos a cambio de no
+echar a la calle a quien solo tenía dos pestañas abiertas.
+
+La rotación es **atómica**: `UPDATE ... WHERE token_hash = $1 AND revoked_at IS
+NULL`. PostgreSQL serializa las escrituras sobre una misma fila, así que de dos
+rotaciones simultáneas solo una la encuentra sin revocar. No hace falta
+transacción explícita ni bloqueo — una sola sentencia ya lo es.
+
+### Por qué el refresco va en cookie y no en localStorage
+
+Es la credencial que de verdad importa: sirve para emitir tokens de acceso
+durante días. `HttpOnly` la deja fuera del alcance de `document.cookie`, así que
+un XSS puede llevarse el token de acceso —quince minutos— pero no la llave que
+renueva la sesión.
+
+Meter una cookie en una aplicación que no las usaba obliga a mirar **CSRF**, que
+es el riesgo clásico de autenticar por cookie. Aquí queda cerrado por tres vías:
+
+1. **`SameSite=Strict`**: el navegador no manda la cookie en peticiones que
+   nazcan de otro sitio. Es la defensa principal y hace innecesario un token
+   anti-CSRF.
+2. **La cookie no autoriza nada.** Ninguna ruta de datos la mira; las protegidas
+   exigen la cabecera `Authorization`, que una petición cross-site no puede
+   fijar.
+3. **`Path=/api/auth`**: ni siquiera se envía al resto de la API.
+
+CORS se queda como estaba, con `credentials: false`. No hace falta relajarlo: en
+producción la aplicación, el playground y la API salen del mismo origen, y en
+desarrollo Vite hace de proxy, así que el navegador nunca ve una petición
+cross-origin.
+
+### Cerrar sesión
+
+`POST /api/auth/logout` revoca la familia **en el servidor**. Antes el logout
+solo vaciaba el estado del navegador, y el token seguía siendo válido durante
+días para quien tuviera una copia. Cerrar una sesión no toca las demás del mismo
+usuario; para eso está `POST /api/auth/logout-all`, que las cierra todas y saca
+el identificador del token, nunca del cuerpo de la petición.
+
+### Qué pasó con los tokens de 7 días ya emitidos
+
+**Se invalidaron todos.** Los de la política anterior no llevan el claim
+`typ: 'access'`, así que el middleware los rechaza desde el primer despliegue y
+todo el mundo tuvo que volver a entrar.
+
+Fue una decisión, no un descuido. Mantenerlos vivos por comodidad habría dejado
+abierta durante una semana justo la puerta que este cambio venía a cerrar:
+tokens de larga duración imposibles de revocar. Un cierre de sesión molesto es
+más barato que eso.
+
+### Variables de entorno
+
+| Variable | Por defecto | Para qué |
+|---|---|---|
+| `ACCESS_TOKEN_TTL` | `15m` | Duración del token de acceso |
+| `REFRESH_TOKEN_TTL` | `7d` | Duración de la sesión sin volver a escribir la contraseña |
+| `REFRESH_GRACE_SECONDS` | `10` | Tolerancia para renovaciones simultáneas |
+| `JWT_SECRET` | — | Firma del token de acceso. Obligatoria en producción |
 
 ## Política de contraseñas
 
@@ -503,6 +630,7 @@ por estado se calcula con una única agregación.
 ## Próximos pasos (opcional)
 
 - **Despliegue**: servicio web en Render y base de datos en Neon.
+- ~~**Revocación de sesiones**~~: access tokens de 15 minutos y refresh rotativo con tabla de sesiones.
 - ~~**Base de datos real**~~: migrado de ficheros JSON a PostgreSQL.
 - ~~**Autenticación**~~: implementado con JWT (login/registro).
 - ~~**Asignar tareas a usuarios**~~: cada tarea tiene `userId` y solo se muestran las del usuario.

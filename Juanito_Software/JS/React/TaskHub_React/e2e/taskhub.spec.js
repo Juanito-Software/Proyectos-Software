@@ -171,6 +171,109 @@ test.describe('Autenticación', () => {
     await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
   });
 
+  test('el token de refresco no es accesible desde JavaScript', async ({ page }) => {
+    // Es el motivo de haberlo movido a una cookie HttpOnly: un XSS puede
+    // llevarse el token de acceso y disponer de quince minutos, pero no la
+    // credencial que renueva la sesión durante días.
+    await registrarse(page);
+
+    const cookiesVisibles = await page.evaluate(() => document.cookie);
+    expect(cookiesVisibles).not.toContain('taskhub_refresh');
+
+    // Y en el almacenamiento tampoco: allí solo va el token de acceso.
+    const guardado = await page.evaluate(() => localStorage.getItem('taskhub_auth'));
+    expect(guardado).not.toContain('refresh');
+
+    // Pero el navegador sí la tiene, marcada como HttpOnly.
+    const cookies = await page.context().cookies();
+    const refresco = cookies.find((c) => c.name === 'taskhub_refresh');
+    expect(refresco).toBeDefined();
+    expect(refresco.httpOnly).toBe(true);
+    expect(refresco.sameSite).toBe('Strict');
+  });
+
+  test('con el token de acceso caducado, la sesión se renueva sola', async ({ page }) => {
+    // Simula la caducidad borrando el token de acceso del almacenamiento y
+    // dejando intacta la cookie de refresco, que es exactamente el estado en
+    // que queda el navegador pasados quince minutos. La aplicación debe
+    // renovar por su cuenta y seguir dentro, sin pedir credenciales.
+    const username = await registrarse(page);
+
+    await page.evaluate(() => {
+      const auth = JSON.parse(localStorage.getItem('taskhub_auth'));
+      auth.token = 'token-caducado-a-proposito';
+      localStorage.setItem('taskhub_auth', JSON.stringify(auth));
+    });
+
+    await page.reload();
+
+    // Sigue dentro: no ha aparecido el formulario.
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).not.toBeVisible();
+
+    // Y el token guardado ya no es el inventado: se ha renovado de verdad.
+    const tokenActual = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('taskhub_auth')).token,
+    );
+    expect(tokenActual).not.toBe('token-caducado-a-proposito');
+  });
+
+  test('la renovación rota el token: la cookie cambia', async ({ page }) => {
+    await registrarse(page);
+
+    const antes = (await page.context().cookies()).find((c) => c.name === 'taskhub_refresh').value;
+
+    // Fuerza una renovación caducando el token de acceso.
+    await page.evaluate(() => {
+      const auth = JSON.parse(localStorage.getItem('taskhub_auth'));
+      auth.token = 'caducado';
+      localStorage.setItem('taskhub_auth', JSON.stringify(auth));
+    });
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'TaskHub' })).toBeVisible({ timeout: 15_000 });
+
+    const despues = (await page.context().cookies()).find((c) => c.name === 'taskhub_refresh').value;
+    expect(despues).not.toBe(antes);
+  });
+
+  test('tras cerrar sesión, el servidor no acepta renovar aunque se conserve la cookie', async ({
+    page,
+  }) => {
+    // La diferencia con la implementación anterior: el logout revoca en el
+    // servidor. Antes bastaba con recuperar el token del navegador para seguir
+    // dentro; ahora el refresco está revocado y no hay vuelta atrás.
+    const username = await registrarse(page);
+    const guardado = await page.evaluate(() => localStorage.getItem('taskhub_auth'));
+
+    await page.getByRole('button', { name: /salir/i }).click();
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+
+    // Se restaura a mano lo que había, imitando a quien copia el localStorage.
+    await page.evaluate((valor) => localStorage.setItem('taskhub_auth', valor), guardado);
+    await page.reload();
+
+    // La renovación al arrancar falla y vuelve al formulario.
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(username)).not.toBeVisible();
+  });
+
+  test('el refresco pide credenciales nuevas al servidor y no solo mira el almacenamiento', async ({
+    page,
+  }) => {
+    // Comprueba que la renovación es una llamada real a la API, no un apaño
+    // del cliente para no enseñar el formulario.
+    const llamadas = [];
+    page.on('request', (req) => {
+      if (req.url().includes('/api/auth/refresh')) llamadas.push(req.method());
+    });
+
+    await registrarse(page);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'TaskHub' })).toBeVisible({ timeout: 15_000 });
+
+    expect(llamadas).toContain('POST');
+  });
+
   test('unas credenciales incorrectas muestran error y no dejan entrar', async ({ page }) => {
     await page.goto('/');
     await page.getByPlaceholder('Usuario', { exact: true }).fill('usuario-que-no-existe-jamas');

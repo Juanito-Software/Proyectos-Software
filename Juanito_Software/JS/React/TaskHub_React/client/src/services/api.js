@@ -1,9 +1,22 @@
+import { refreshSession } from './authApi';
+
 const API_BASE = '/api/tasks';
 
 let apiAuthToken = null;
 
+/** Avisos hacia AuthContext: uno cuando se renuevan credenciales, otro cuando
+ *  la sesión se pierde definitivamente. Se registran en lugar de importar el
+ *  contexto para no crear una dependencia circular entre servicio y contexto. */
+let alRenovar = null;
+let alPerderSesion = null;
+
 export function setAuthToken(token) {
   apiAuthToken = token;
+}
+
+export function configurarAuth({ alRenovar: renovar, alPerderSesion: perder } = {}) {
+  alRenovar = renovar ?? null;
+  alPerderSesion = perder ?? null;
 }
 
 function getHeaders(token) {
@@ -13,15 +26,59 @@ function getHeaders(token) {
 }
 
 /**
+ * Renovación en curso, si la hay.
+ *
+ * Sirve para que varias peticiones que se topen con un 401 a la vez compartan
+ * una sola llamada de renovación. Sin esto, cargar la pantalla dispararía tres
+ * o cuatro renovaciones simultáneas con la misma cookie, y el servidor las
+ * tomaría por reutilización del token: la sesión se cerraría sola.
+ */
+let renovacionEnCurso = null;
+
+function renovar() {
+  if (!renovacionEnCurso) {
+    renovacionEnCurso = refreshSession()
+      .then((datos) => {
+        apiAuthToken = datos.accessToken;
+        alRenovar?.(datos);
+        return datos;
+      })
+      .catch((err) => {
+        // El refresco tampoco vale: la sesión está muerta de verdad.
+        alPerderSesion?.();
+        throw err;
+      })
+      .finally(() => {
+        renovacionEnCurso = null;
+      });
+  }
+  return renovacionEnCurso;
+}
+
+/**
  * La API responde siempre con el sobre { success, data, timestamp } (o
  * { success:false, error } si falla). Este helper lo abre y devuelve solo
  * `data`, para que los componentes sigan recibiendo la tarea o el array de
  * tareas tal cual, sin enterarse del envoltorio.
+ *
+ * Ante un 401 intenta renovar y repite la petición **una sola vez**. El límite
+ * importa: si el servidor devolviera 401 por cualquier otro motivo, reintentar
+ * sin tope dejaría el cliente dando vueltas indefinidamente.
  */
-async function request(url, options = {}, fallbackError = 'Error en la petición') {
+async function request(url, options = {}, fallbackError = 'Error en la petición', reintentado = false) {
   const res = await fetch(url, { ...options, headers: getHeaders(apiAuthToken) });
 
-  if (res.status === 401) throw new Error('Sesión expirada');
+  if (res.status === 401) {
+    if (reintentado) throw new Error('Sesión expirada');
+
+    try {
+      await renovar();
+    } catch {
+      throw new Error('Sesión expirada');
+    }
+
+    return request(url, options, fallbackError, true);
+  }
 
   const payload = await res.json().catch(() => null);
 
