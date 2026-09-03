@@ -602,6 +602,92 @@ transitivas de npm en Angular, JSGameChat, unified-chat-widget y gym-app. El
 `qs` de TaskHub_React es transitiva de Express y depende de que Express publique
 una versión con el arreglo.
 
+### Auditoría integral y los arreglos que salieron de ella
+
+Fecha: 3 de septiembre de 2026. El informe completo está en
+`docs/AUDITORIA_INTEGRAL.md`, con la puntuación por áreas y el roadmap.
+
+**Resultado: 7,4/10, sin ninguna vulnerabilidad explotable.** No hay forma de
+leer ni modificar datos de otro usuario, escalar privilegios ni mantener acceso
+tras una revocación más allá de los quince minutos documentados. Lo que salió
+no estaba en la autenticación —que es hoy la parte más sólida— sino alrededor.
+
+**El hallazgo más importante no era un bug.** No existía **ni un solo test** que
+comprobara que un usuario no puede modificar ni borrar la tarea de otro. Solo se
+probaba la lectura. El código era correcto —`user_id` va en el `WHERE` de las
+tres operaciones—, pero si alguien lo quitara en un refactor, los 501 tests
+seguirían en verde mientras cualquiera podría editar las tareas de los demás. Es
+el patrón OWASP A01, y ahora hay siete comprobaciones que además verifican **en
+la base de datos** que la fila no cambió, no solo el código de estado.
+
+**Cuatro bugs reproducibles, todos arreglados:**
+
+1. **Cualquier identificador mal formado devolvía 500.** `GET`, `PUT`, `PATCH` y
+   `DELETE` sobre `/api/tasks/:id` pasaban el parámetro a una consulta donde la
+   columna es `UUID`; PostgreSQL lanzaba el error 22P02 y la petición acababa en
+   500. Un 500 significa «el servidor ha fallado con una petición válida», y
+   aquí pasaba justo lo contrario. Ahora hay un `validarUuid` que responde 400.
+2. **Un usuario borrado conservaba acceso quince minutos**, y al crear una tarea
+   reventaba con un 500 por violación de clave foránea. Se traduce el código
+   23503 a un 401, igual que ya se hacía con el 23505 → 409. La ventana de
+   lectura se mantiene y queda documentada en `authMiddleware`: cerrarla costaría
+   una consulta en cada petición autenticada, y para adelantar quince minutos una
+   expulsión no compensa.
+3. **`limpiarCaducadas()` no la llamaba nadie.** Estaba escrita y documentada
+   desde el primer día: código muerto, con la tabla de sesiones creciendo sin
+   techo. Ahora hay un temporizador diario en `session-cleanup.ts`, con `unref`
+   para que no impida que el proceso salga.
+4. **Sin límite de longitud en `description` ni en `search`.** Se aceptaban
+   50 000 y 5 000 caracteres. Los límites nuevos —5 000 y 200— llevan escrito
+   el porqué: el de búsqueda importa más porque acaba en un `ILIKE '%…%'` que no
+   puede usar índice y recorre la tabla entera.
+
+**Registro de eventos de seguridad.** Era el peor apartado de OWASP: el único
+evento que dejaba rastro era la detección de reutilización de un token. Ahora se
+registran inicio de sesión correcto y fallido, alta, cierre, cierre global,
+renovación, rechazo de renovación, reutilización, denegación de autorización y
+borrado de cuenta.
+
+En los fallos de inicio de sesión el **motivo se distingue en el registro pero
+no en la respuesta**: al atacante se le sigue dando siempre el mismo mensaje, y
+quien mira los logs puede separar «atacan una cuenta que existe» de «prueban
+nombres al azar», que son dos ataques distintos.
+
+`security-log.ts` censura por su cuenta cualquier campo que huela a credencial.
+Y aquí apareció un fallo propio: la primera versión tapaba **cualquier** clave
+que casara con el patrón, así que `tokensRevocados: 3` salía como `<censurado>`.
+Lo detectó su propio test. La regla que separa una cosa de otra es que una
+credencial siempre es una cadena y un recuento nunca, así que ahora solo se
+censuran los valores de texto.
+
+**Un test mío que pasaba por el motivo equivocado.** La comprobación de
+`DELETE /api/admin/users/<no-uuid>` usaba un usuario normal y afirmaba que la
+respuesta «no era 500». Pasaba, pero porque `requireAdmin` devolvía 403 antes de
+que la petición llegara al validador: no comprobaba nada de lo que decía. Se
+movió al bloque donde hay token de administrador y ahora exige un 400.
+
+**Cobertura del servidor, por fin medida.** El cliente estaba al 96,95 % con
+umbrales; el servidor al 35,76 % **sin medirse en ninguna parte**. El número
+sigue siendo bajo y conviene leerlo bien: esa suite solo cubre lógica pura, y
+todo lo que necesita base de datos lo ejercita `npm run verify` con 130
+comprobaciones. Pero ahora hay umbral y un job en el CI, así que una rama nueva
+sin cubrir ya no entra en silencio.
+
+**Las tres vulnerabilidades moderadas de `qs`, cerradas.** Aquí hay que
+rectificar lo que se dijo antes: no era cierto que hubiera que esperar a
+Express. `npm audit fix` no arregla nada —deja `qs` en 6.15.3, dentro del rango
+vulnerable— pero `qs@6.16.0` está publicada, y un `overrides` en el
+`package.json` del servidor la fuerza sin tocar Express. Resultado: **0
+vulnerabilidades**.
+
+**bcrypt de 10 a 12 rondas.** Medido en la máquina de desarrollo: 48 ms, 94 ms y
+189 ms por hash con 10, 11 y 12. No era urgente —con quince caracteres,
+composición obligatoria y lista de bloqueo ya no quedan contraseñas que un
+diccionario vaya a encontrar—, pero cuesta poco y solo se paga al entrar. Los
+hashes antiguos siguen validando: el coste va dentro del propio hash.
+
+**Tests: de 501 a 558.**
+
 ### CD: despliegue automático, no encadenado al CI
 
 Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el
@@ -617,12 +703,17 @@ que dependa de `ci-ok`— queda para cuando la aplicación se estabilice.
 ### Pendiente
 
 - **Encadenar el despliegue al CI**, según lo anterior.
+- **Limitación de intentos por cuenta además de por IP.** Hoy el contador es por
+  dirección, así que un ataque distribuido contra un solo usuario no se frena.
+- **Acciones del CI fijadas a etiqueta mayor, no a SHA.** Son oficiales de
+  GitHub y el riesgo es bajo, pero una etiqueta se puede mover.
 - **Protección de rama sin configurar.** Al ser un repositorio de una sola
   persona, lo razonable es exigir que `ci-ok` pase antes de fusionar, sin exigir
   revisión humana: no hay nadie que pueda aprobarla.
 - **`PUT` y `PATCH` comparten controlador** y hacen los dos actualización
   parcial. Un `PUT` estricto debería reemplazar el recurso completo. No rompe
-  nada, pero es una desviación de la semántica HTTP.
+  nada, pero es una desviación de la semántica HTTP. Desde la auditoría al menos
+  tiene tests: antes no había ninguno en ninguna capa.
 - ~~**Tokens de 7 días sin revocación.**~~ Resuelto: access token de 15 minutos
   y refresh rotativo con tabla de sesiones.
 - ~~**Cobertura del cliente al 72%.**~~ Resuelto: 96,95%, con `TaskList.jsx` y

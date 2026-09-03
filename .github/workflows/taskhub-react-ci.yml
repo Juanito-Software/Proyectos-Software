@@ -89,8 +89,20 @@ jobs:
       - name: Instalar dependencias
         run: npm install --include=dev --prefix server
 
-      - name: Vitest
-        run: npm run test --prefix server
+      - name: Vitest con cobertura
+        # Con cobertura y umbral, no solo "los tests pasan". Hasta ahora la
+        # cobertura del servidor no se medía en ninguna parte: el cliente tenía
+        # trinquete y el servidor no, así que una rama nueva sin cubrir entraba
+        # sin que nada avisara.
+        run: npm run test:coverage --prefix server
+
+      - name: Guardar el informe de cobertura del servidor
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: cobertura-servidor
+          path: Juanito_Software/JS/React/TaskHub_React/server/coverage/
+          retention-days: 7
 
   # ── Tests del cliente ───────────────────────────────────────────────────
   client-tests:

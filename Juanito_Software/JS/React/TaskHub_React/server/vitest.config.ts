@@ -29,6 +29,29 @@ export default defineConfig({
         'src/**/*.repository.ts',
         'src/types/**',
       ],
+      /**
+       * Umbrales como trinquete, igual que en el cliente.
+       *
+       * El número es **bajo a propósito** y no hay que leerlo como «el
+       * servidor está mal probado». Lo que mide esta suite es solo la lógica
+       * pura; todo lo que necesita base de datos —servicios, controladores,
+       * repositorios— lo ejercita `npm run verify` con 130 comprobaciones
+       * contra PostgreSQL real, y eso no aparece aquí.
+       *
+       * Aun así el umbral hace falta. Hasta ahora esta cobertura **no se medía
+       * en ninguna parte**: el cliente tenía trinquete y el servidor no, así
+       * que una rama nueva sin cubrir entraba sin que nada avisara. Vale más un
+       * suelo modesto que se defiende que ninguno.
+       *
+       * Va justo por debajo de lo real (37,19 / 50,31 / 31,46 / 36,46). Cuando
+       * suba, hay que subirlo.
+       */
+      thresholds: {
+        statements: 36,
+        branches: 49,
+        functions: 30,
+        lines: 35,
+      },
     },
   },
 });

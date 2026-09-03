@@ -1,6 +1,7 @@
 import { usersRepository } from '../users/users.repository.js';
 import { query } from '../../config/db.js';
 import { ApiError } from '../../utils/api-error.js';
+import { registrarEventoSeguridad } from '../../utils/security-log.js';
 
 export const adminService = {
   listUsers() {
@@ -31,6 +32,16 @@ export const adminService = {
     }
 
     await usersRepository.deleteById(targetId);
+
+    // Borrar la cuenta arrastra en cascada sus tareas y sus sesiones de
+    // refresco, así que no puede renovar. Su token de acceso sigue siendo
+    // válido hasta que caduque; ver la nota en authMiddleware.
+    registrarEventoSeguridad('cuenta.borrada', {
+      usuario: target.username,
+      userId: targetId,
+      borradaPor: requesterId,
+    });
+
     return { id: targetId, username: target.username };
   },
 

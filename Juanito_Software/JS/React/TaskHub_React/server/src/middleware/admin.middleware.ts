@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { usersRepository } from '../modules/users/users.repository.js';
 import { ApiError } from '../utils/api-error.js';
+import { registrarEventoSeguridad } from '../utils/security-log.js';
 
 /**
  * Exige rol de administrador. Va siempre después de authMiddleware, que es
@@ -8,9 +9,10 @@ import { ApiError } from '../utils/api-error.js';
  *
  * El rol se consulta en la base de datos en cada petición, y no se lee del
  * JWT, a propósito. Si estuviera dentro del token, quitarle el rol a alguien
- * no tendría efecto hasta que su token caducara — hasta siete días después,
- * con la configuración actual. Cuesta una consulta, pero el permiso que se
- * comprueba es siempre el permiso actual.
+ * no tendría efecto hasta que su token de acceso caducara — hasta quince
+ * minutos con la configuración actual, y siete días con la anterior a los
+ * refresh tokens. Cuesta una consulta, pero el permiso que se comprueba es
+ * siempre el permiso actual.
  *
  * Devuelve 403 y no 404 porque aquí el recurso no es secreto: quien pregunta
  * ya está autenticado y sabe que existe una zona de administración. Ocultarla
@@ -32,6 +34,15 @@ export async function requireAdmin(
     }
 
     if (user.role !== 'admin') {
+      // Un usuario normal llamando a /api/admin no es necesariamente un
+      // ataque —puede ser un enlace guardado—, pero repetido sí lo es, y sin
+      // registrarlo no hay forma de distinguir una cosa de la otra.
+      registrarEventoSeguridad('autorizacion.denegada', {
+        usuario: user.username,
+        userId: user.id,
+        motivo: 'se-requiere-admin',
+        ruta: req.originalUrl,
+      });
       next(ApiError.forbidden('Se requieren permisos de administrador'));
       return;
     }

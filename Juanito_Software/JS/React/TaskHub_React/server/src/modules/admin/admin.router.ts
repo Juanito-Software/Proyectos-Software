@@ -3,6 +3,7 @@ import { adminController } from './admin.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { requireAdmin } from '../../middleware/admin.middleware.js';
 import { apiLimiter } from '../../middleware/rateLimit.middleware.js';
+import { validate, validarUuid } from '../../middleware/validate.middleware.js';
 
 const router = Router();
 
@@ -18,7 +19,9 @@ router.use(requireAdmin);
 router.get('/users', adminController.listUsers);
 
 // DELETE /api/admin/users/:id - Borra el usuario y, en cascada, sus tareas
-router.delete('/users/:id', adminController.removeUser);
+// El :id se valida antes de consultar: la columna es UUID y un valor mal
+// formado acababa en 500 en vez de 400.
+router.delete('/users/:id', validate(validarUuid('id')), adminController.removeUser);
 
 // GET /api/admin/stats - Resumen de toda la instancia
 router.get('/stats', adminController.stats);

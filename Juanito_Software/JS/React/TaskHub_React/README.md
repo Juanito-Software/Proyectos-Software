@@ -70,14 +70,16 @@ TaskHub/
 │   │   │   │   └── tasks.validation.test.ts       ← 25 tests
 │   │   │   └── admin/            # router · controller · service (solo rol admin)
 │   │   ├── middleware/           # auth · admin · rate limit · validación · errores · logging
-│   │   │   └── rateLimit.middleware.test.ts       ← 8 tests
-│   │   ├── config/               # env · db (pool) · schema (DDL) · seed-admin
-│   │   ├── utils/                # ApiError · ApiResponse
+│   │   │   ├── rateLimit.middleware.test.ts       ← 8 tests
+│   │   │   └── validate.middleware.test.ts        ← 15 tests
+│   │   ├── config/               # env · db · schema · seed-admin · limpieza de sesiones
+│   │   ├── utils/                # ApiError · ApiResponse · registro de seguridad
+│   │   │   └── security-log.test.ts               ← 21 tests
 │   │   ├── types/                # express.d.ts (userId en Request)
 │   │   ├── public/               # playground de la API (se sirve en /playground)
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 109 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 130 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
@@ -86,6 +88,7 @@ TaskHub/
 ├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
 ├── docs/AUDITORIA_TESTS_229.md   # revisión test a test tras la política de contraseñas
 ├── docs/AUDITORIA_TESTS_344.md   # revisión test a test tras los refresh tokens
+├── docs/AUDITORIA_INTEGRAL.md    # auditoría de seguridad, bugs y cobertura
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
 ├── .github/workflows/            # pipeline de CI (copia; GitHub lee el de la raíz)
@@ -273,12 +276,12 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**501 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**558 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 180 + 182 | Nada |
-| `npm run verify` | End-to-end de la API | 109 | PostgreSQL |
+| `npm test` | Unitarios de servidor y cliente | 216 + 182 | Nada |
+| `npm run verify` | End-to-end de la API | 130 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 

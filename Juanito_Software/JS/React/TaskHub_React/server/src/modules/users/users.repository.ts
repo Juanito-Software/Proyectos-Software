@@ -2,7 +2,26 @@ import bcrypt from 'bcrypt';
 import { query } from '../../config/db.js';
 import { User, PublicUser, AdminUserView, UserRole } from './users.types.js';
 
-const SALT_ROUNDS = 10;
+/**
+ * Coste de bcrypt.
+ *
+ * Cada ronda dobla el trabajo. Medido en esta máquina: 10 rondas son 48 ms por
+ * hash, 11 son 94 y 12 son 189. Se elige **12**, que es la recomendación
+ * habitual desde hace años y sigue siendo cómodo: doscientos milisegundos solo
+ * se pagan al entrar o al registrarse, nunca en el resto de peticiones.
+ *
+ * El salto de 10 a 12 no era urgente aquí, y conviene decir por qué: la
+ * política obliga a quince caracteres con mayúscula, número y símbolo, y
+ * rechaza los patrones previsibles, así que ya no hay contraseñas que un
+ * diccionario vaya a encontrar por muchos hashes por segundo que calcule.
+ * Subirlo es cinturón sobre tirantes, y cuesta poco.
+ *
+ * **Los hashes antiguos siguen funcionando.** El coste va codificado dentro del
+ * propio hash (`$2b$10$…`), así que `bcrypt.compare` usa el que tenga cada uno.
+ * Quien se registró con 10 rondas entra igual; su hash pasará a 12 la próxima
+ * vez que cambie la contraseña — cuando exista esa funcionalidad.
+ */
+const SALT_ROUNDS = 12;
 
 /**
  * Fila tal y como la devuelve Postgres: columnas en snake_case y fechas como
@@ -98,8 +117,11 @@ export const usersRepository = {
 
   /** Listado para el panel, con el número de tareas de cada usuario. */
   async listAll(): Promise<AdminUserView[]> {
-    const rows = await query<UserRow & { task_count: number }>(
-      `SELECT u.id, u.username, u.role, u.created_at, u.password_hash,
+    const rows = await query<Omit<UserRow, 'password_hash'> & { task_count: number }>(
+      // El hash NO se selecciona. El mapeo de abajo lo descartaba igualmente,
+      // pero traerlo desde la base de datos sin necesitarlo es una fuga
+      // esperando a que alguien añada un `...row` al objeto de salida.
+      `SELECT u.id, u.username, u.role, u.created_at,
               COUNT(t.id) AS task_count
          FROM users u
          LEFT JOIN tasks t ON t.user_id = u.id

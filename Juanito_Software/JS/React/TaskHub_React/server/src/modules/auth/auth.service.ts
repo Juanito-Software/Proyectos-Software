@@ -6,6 +6,7 @@ import {
   hashRefreshToken,
 } from './sessions.repository.js';
 import { ApiError } from '../../utils/api-error.js';
+import { registrarEventoSeguridad } from '../../utils/security-log.js';
 import { env } from '../../config/env.js';
 import { RegisterDTO, LoginDTO } from './auth.types.js';
 
@@ -37,21 +38,36 @@ export const authService = {
       throw ApiError.conflict('El usuario ya existe');
     }
     const credenciales = await abrirSesion(user.id, user.username);
+    registrarEventoSeguridad('registro.correcto', { usuario: user.username, userId: user.id });
     return { user, ...credenciales };
   },
 
   async login({ username, password }: LoginDTO) {
     const user = await usersRepository.findByUsername(username.trim());
     if (!user) {
+      // El motivo se distingue en el REGISTRO pero no en la respuesta: al
+      // atacante se le da siempre el mismo mensaje, y quien revisa los logs sí
+      // puede separar "atacan una cuenta que existe" de "prueban nombres al
+      // azar", que son dos ataques distintos.
+      registrarEventoSeguridad('login.fallido', {
+        usuario: username.trim(),
+        motivo: 'usuario-inexistente',
+      });
       throw ApiError.unauthorized('Usuario o contraseña incorrectos');
     }
     const valid = await usersRepository.verifyPassword(user, password);
     if (!valid) {
       // Mismo mensaje que "usuario no existe": evita que un atacante use la
       // respuesta para averiguar qué nombres de usuario están registrados.
+      registrarEventoSeguridad('login.fallido', {
+        usuario: user.username,
+        userId: user.id,
+        motivo: 'credenciales-invalidas',
+      });
       throw ApiError.unauthorized('Usuario o contraseña incorrectos');
     }
     const credenciales = await abrirSesion(user.id, user.username);
+    registrarEventoSeguridad('login.correcto', { usuario: user.username, userId: user.id });
     return { user: usersRepository.toPublic(user), ...credenciales };
   },
 
@@ -78,6 +94,7 @@ export const authService = {
    */
   async refresh(refreshToken: string | undefined) {
     if (!refreshToken || typeof refreshToken !== 'string') {
+      registrarEventoSeguridad('refresh.rechazado', { motivo: 'sin-cookie' });
       throw ApiError.unauthorized('No hay sesión que renovar');
     }
 
@@ -88,12 +105,20 @@ export const authService = {
       await this.analizarFalloDeRotacion(hash);
       throw ApiError.unauthorized('Sesión inválida o expirada');
     }
+    registrarEventoSeguridad('refresh.correcto', {
+      userId: rotado.user_id,
+      familia: rotado.family_id,
+    });
 
     // El usuario pudo haberse borrado con la sesión abierta. Sin esto se
     // emitiría un token de acceso a nombre de una fila que ya no existe.
     const user = await usersRepository.findById(rotado.user_id);
     if (!user) {
       await sessionsRepository.revocarFamilia(rotado.family_id, 'logout');
+      registrarEventoSeguridad('refresh.rechazado', {
+        userId: rotado.user_id,
+        motivo: 'cuenta-borrada',
+      });
       throw ApiError.unauthorized('Sesión inválida o expirada');
     }
 
@@ -126,19 +151,26 @@ export const authService = {
 
     const revocadoHace = Date.now() - new Date(sesion.revoked_at!).getTime();
     if (revocadoHace <= env.refreshGraceMs) {
-      // Ventana de tolerancia: dos peticiones legítimas a la vez.
+      // Ventana de tolerancia: dos peticiones legítimas a la vez. Se deja
+      // rastro igualmente: si estas líneas se disparan en avalancha, algo va
+      // mal en el cliente y conviene enterarse.
+      registrarEventoSeguridad('refresh.rechazado', {
+        userId: sesion.user_id,
+        familia: sesion.family_id,
+        motivo: 'rotacion-simultanea',
+      });
       return;
     }
 
     // Reutilización de verdad. Quien presenta este token tiene una copia de la
     // cadena, así que el siguiente eslabón también está comprometido.
     const revocados = await sessionsRepository.revocarFamilia(sesion.family_id, 'reuse-detected');
-    console.warn(
-      `[seguridad] Reutilización de token de refresco detectada. ` +
-        `Usuario ${sesion.user_id}, familia ${sesion.family_id}, ` +
-        `token gastado hace ${Math.round(revocadoHace / 1000)}s. ` +
-        `${revocados} token(s) revocados.`,
-    );
+    registrarEventoSeguridad('refresh.reutilizacion', {
+      userId: sesion.user_id,
+      familia: sesion.family_id,
+      gastadoHaceSegundos: Math.round(revocadoHace / 1000),
+      tokensRevocados: revocados,
+    });
   },
 
   /** Cierra una sesión concreta. Las demás del mismo usuario siguen abiertas. */
@@ -148,11 +180,20 @@ export const authService = {
     const sesion = await sessionsRepository.buscarPorHash(hashRefreshToken(refreshToken));
     // Se revoca la familia y no solo la fila: si quedara viva la última de la
     // cadena, el logout no habría cerrado nada.
-    if (sesion) await sessionsRepository.revocarFamilia(sesion.family_id, 'logout');
+    if (sesion) {
+      const revocados = await sessionsRepository.revocarFamilia(sesion.family_id, 'logout');
+      registrarEventoSeguridad('logout', {
+        userId: sesion.user_id,
+        familia: sesion.family_id,
+        tokensRevocados: revocados,
+      });
+    }
   },
 
   /** Cierra todas las sesiones del usuario, en todos sus dispositivos. */
   async logoutAll(userId: string): Promise<number> {
-    return sessionsRepository.revocarTodasDelUsuario(userId, 'logout-all');
+    const revocados = await sessionsRepository.revocarTodasDelUsuario(userId, 'logout-all');
+    registrarEventoSeguridad('logout.global', { userId, tokensRevocados: revocados });
+    return revocados;
   },
 };

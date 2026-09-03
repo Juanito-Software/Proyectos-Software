@@ -502,6 +502,218 @@ async function run(): Promise<void> {
       `status ${loginConConfirmacion.status}`,
     );
 
+    // ── Autorización: recursos de otro usuario ───────────────────────────
+    //
+    // Hasta ahora solo se comprobaba la LECTURA: que el listado ajeno viniera
+    // vacío y que un GET de una tarea ajena devolviera 404. La escritura no se
+    // probaba en ningún sitio.
+    //
+    // Es el hueco más grave que sacó la auditoría. El código mete `user_id` en
+    // el WHERE de las tres operaciones, así que funciona; pero si alguien
+    // quitara esa condición en un refactor, la suite entera seguiría en verde
+    // mientras cualquier usuario podría editar y borrar las tareas de los
+    // demás. Es el patrón OWASP A01, y no basta con mirar el código de
+    // estado: hay que comprobar en la base de datos que la fila no cambió.
+
+    /** Estado de una tarea directamente en la base de datos, sin pasar por la API. */
+    const filaDeTarea = async (id: string) => {
+      const filas = await query<{ title: string; status: string; user_id: string }>(
+        'SELECT title, status, user_id FROM tasks WHERE id = $1',
+        [id],
+      );
+      return filas[0] ?? null;
+    };
+
+    const victimaUser = `victima-${crypto.randomUUID().slice(0, 8)}`;
+    const atacanteUser = `atacante-${crypto.randomUUID().slice(0, 8)}`;
+
+    const victimaReg = await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: victimaUser, password }),
+    });
+    const victimaToken =
+      ((await victimaReg.json()) as Envelope<{ accessToken: string }>).data?.accessToken ?? '';
+
+    const atacanteReg = await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: atacanteUser, password }),
+    });
+    const atacanteToken =
+      ((await atacanteReg.json()) as Envelope<{ accessToken: string }>).data?.accessToken ?? '';
+
+    const cabeceraVictima = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${victimaToken}`,
+    };
+    const cabeceraAtacante = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${atacanteToken}`,
+    };
+
+    const tareaVictima = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: cabeceraVictima,
+      body: JSON.stringify({ title: 'Secreto de la víctima', description: 'no tocar' }),
+    });
+    const idVictima =
+      ((await tareaVictima.json()) as Envelope<{ id: string }>).data?.id ?? '';
+
+    // ── Lectura ──────────────────────────────────────────────────────────
+
+    const leerAjena = await fetch(`${BASE}/api/tasks/${idVictima}`, { headers: cabeceraAtacante });
+    check(
+      'IDOR · GET de una tarea ajena -> 404',
+      leerAjena.status === 404,
+      `status ${leerAjena.status}`,
+    );
+
+    // ── PATCH ────────────────────────────────────────────────────────────
+
+    const patchAjena = await fetch(`${BASE}/api/tasks/${idVictima}`, {
+      method: 'PATCH',
+      headers: cabeceraAtacante,
+      body: JSON.stringify({ title: 'Secuestrada', status: 'completed' }),
+    });
+    check(
+      'IDOR · PATCH de una tarea ajena -> 404',
+      patchAjena.status === 404,
+      `status ${patchAjena.status}`,
+    );
+
+    const trasPatch = await filaDeTarea(idVictima);
+    check(
+      'IDOR · el PATCH ajeno NO modificó la fila',
+      trasPatch?.title === 'Secreto de la víctima' && trasPatch?.status === 'pending',
+      `title="${trasPatch?.title}" status=${trasPatch?.status}`,
+    );
+
+    // ── PUT ──────────────────────────────────────────────────────────────
+    //
+    // PUT no tenía ni un solo test en ninguna capa, y comparte controlador con
+    // PATCH: si el aislamiento se rompiera solo en uno de los dos, nadie se
+    // enteraría.
+
+    const putAjena = await fetch(`${BASE}/api/tasks/${idVictima}`, {
+      method: 'PUT',
+      headers: cabeceraAtacante,
+      body: JSON.stringify({ title: 'Reemplazada', description: 'por el atacante' }),
+    });
+    check(
+      'IDOR · PUT de una tarea ajena -> 404',
+      putAjena.status === 404,
+      `status ${putAjena.status}`,
+    );
+
+    const trasPut = await filaDeTarea(idVictima);
+    check(
+      'IDOR · el PUT ajeno NO modificó la fila',
+      trasPut?.title === 'Secreto de la víctima',
+      `title="${trasPut?.title}"`,
+    );
+
+    // ── DELETE ───────────────────────────────────────────────────────────
+
+    const borrarAjena = await fetch(`${BASE}/api/tasks/${idVictima}`, {
+      method: 'DELETE',
+      headers: cabeceraAtacante,
+    });
+    check(
+      'IDOR · DELETE de una tarea ajena -> 404',
+      borrarAjena.status === 404,
+      `status ${borrarAjena.status}`,
+    );
+
+    const trasBorradoAjeno = await filaDeTarea(idVictima);
+    check(
+      'IDOR · el DELETE ajeno NO borró la fila',
+      trasBorradoAjeno !== null,
+      trasBorradoAjeno ? 'la tarea sigue ahí' : 'LA TAREA HA DESAPARECIDO',
+    );
+
+    // Y la dueña sigue pudiendo hacerlo todo: el aislamiento no puede estar
+    // bloqueando también al legítimo.
+    const patchPropia = await fetch(`${BASE}/api/tasks/${idVictima}`, {
+      method: 'PATCH',
+      headers: cabeceraVictima,
+      body: JSON.stringify({ status: 'completed' }),
+    });
+    check(
+      'La dueña sí puede modificar su propia tarea',
+      patchPropia.status === 200,
+      `status ${patchPropia.status}`,
+    );
+
+    // ── Administración ───────────────────────────────────────────────────
+
+    const borrarUsuarioAjeno = await fetch(`${BASE}/api/admin/users/${crypto.randomUUID()}`, {
+      method: 'DELETE',
+      headers: cabeceraAtacante,
+    });
+    check(
+      'Un usuario normal no puede borrar cuentas -> 403',
+      borrarUsuarioAjeno.status === 403,
+      `status ${borrarUsuarioAjeno.status}`,
+    );
+
+    // ── Identificadores mal formados ─────────────────────────────────────
+    //
+    // Antes de validar la forma, cualquiera de estos llegaba a una consulta
+    // donde la columna es UUID y acababa en 500 con el error de PostgreSQL.
+
+    const malFormado = 'no-soy-un-uuid';
+    for (const [metodo, cuerpo] of [
+      ['GET', null],
+      ['PATCH', JSON.stringify({ title: 'x' })],
+      ['PUT', JSON.stringify({ title: 'x' })],
+      ['DELETE', null],
+    ] as [string, string | null][]) {
+      const res = await fetch(`${BASE}/api/tasks/${malFormado}`, {
+        method: metodo,
+        headers: cabeceraVictima,
+        ...(cuerpo ? { body: cuerpo } : {}),
+      });
+      check(
+        `${metodo} /api/tasks/<no-uuid> -> 400, nunca 500`,
+        res.status === 400,
+        `status ${res.status}`,
+      );
+    }
+
+    // ── Límites de entrada ───────────────────────────────────────────────
+
+    const descripcionEnorme = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: cabeceraVictima,
+      body: JSON.stringify({ title: 'Con descripción enorme', description: 'x'.repeat(5001) }),
+    });
+    check(
+      'POST con descripción de más de 5 000 caracteres -> 400',
+      descripcionEnorme.status === 400,
+      `status ${descripcionEnorme.status}`,
+    );
+
+    const descripcionEnLimite = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: cabeceraVictima,
+      body: JSON.stringify({ title: 'Descripción justa', description: 'x'.repeat(5000) }),
+    });
+    check(
+      'POST con descripción de exactamente 5 000 -> 201',
+      descripcionEnLimite.status === 201,
+      `status ${descripcionEnLimite.status}`,
+    );
+
+    const busquedaEnorme = await fetch(`${BASE}/api/tasks?search=${'a'.repeat(201)}`, {
+      headers: cabeceraVictima,
+    });
+    check(
+      'Búsqueda de más de 200 caracteres -> 400',
+      busquedaEnorme.status === 400,
+      `status ${busquedaEnorme.status}`,
+    );
+
     // ── Tokens de acceso y refresco ──────────────────────────────────────
     //
     // El grueso de esta sección no comprueba que la renovación funcione, sino
@@ -962,6 +1174,83 @@ async function run(): Promise<void> {
       `status ${trasBorrar.status}`,
     );
 
+    // El token de ACCESO de esa cuenta sigue siendo válido hasta que caduque:
+    // es la contrapartida asumida de no consultar la base de datos en cada
+    // petición. Lo que no puede pasar es que el servidor reviente al usarlo.
+    const accesoBorrable =
+      ((await sesionBorrable.json()) as Envelope<{ accessToken: string }>).data?.accessToken ?? '';
+    const cabeceraBorrable = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accesoBorrable}`,
+    };
+
+    const crearBorrado = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: cabeceraBorrable,
+      body: JSON.stringify({ title: 'Tarea de una cuenta que ya no existe' }),
+    });
+    check(
+      'Crear una tarea con la cuenta borrada -> 401, no 500 por clave foránea',
+      crearBorrado.status === 401,
+      `status ${crearBorrado.status}`,
+    );
+
+    // ── Limpieza de sesiones caducadas ───────────────────────────────────
+    //
+    // `limpiarCaducadas()` existía desde el primer día y no la llamaba nadie:
+    // la tabla crecía sin techo. Aquí se comprueba que hace lo que dice y, más
+    // importante, que NO se lleva por delante las sesiones vivas.
+
+    const antesDeLimpiar = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM refresh_sessions WHERE expires_at < now()',
+    );
+
+    // Se caduca a mano una sesión viva para tener algo que limpiar.
+    const limpiezaUser = `limpieza-${crypto.randomUUID().slice(0, 8)}`;
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: limpiezaUser, password }),
+    });
+    await pool.query(
+      `UPDATE refresh_sessions SET expires_at = now() - interval '1 day'
+        WHERE user_id = (SELECT id FROM users WHERE username = $1)`,
+      [limpiezaUser],
+    );
+
+    const vivasAntes = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM refresh_sessions WHERE expires_at > now()',
+    );
+
+    const { sessionsRepository: repoSesiones } = await import(
+      './modules/auth/sessions.repository.js'
+    );
+    const borradas = await repoSesiones.limpiarCaducadas();
+
+    check(
+      'limpiarCaducadas() elimina las sesiones ya caducadas',
+      borradas >= antesDeLimpiar[0].count + 1,
+      `${borradas} eliminada(s)`,
+    );
+
+    const vivasDespues = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM refresh_sessions WHERE expires_at > now()',
+    );
+    check(
+      'limpiarCaducadas() NO toca las sesiones vivas',
+      vivasDespues[0].count === vivasAntes[0].count,
+      `${vivasAntes[0].count} antes, ${vivasDespues[0].count} después`,
+    );
+
+    const caducadasDespues = await query<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM refresh_sessions WHERE expires_at < now()',
+    );
+    check(
+      'Tras limpiar no queda ninguna caducada',
+      caducadasDespues[0].count === 0,
+      `${caducadasDespues[0].count} restante(s)`,
+    );
+
     // ── Cabeceras de seguridad ───────────────────────────────────────────
 
     const cabeceras = await fetch(`${BASE}/playground`);
@@ -1244,6 +1533,23 @@ async function run(): Promise<void> {
       Authorization: `Bearer ${adminBody.data?.accessToken ?? ''}`,
     };
     const adminId = adminBody.data?.user?.id ?? '';
+
+    // El identificador mal formado se comprueba AQUÍ y no antes, con el token
+    // de administrador de verdad.
+    //
+    // La primera versión de este test usaba un usuario normal y afirmaba que
+    // la respuesta "no era 500". Pasaba, pero por el motivo equivocado:
+    // `requireAdmin` devolvía 403 antes de que la petición llegara siquiera al
+    // validador de UUID, así que no comprobaba nada de lo que decía comprobar.
+    const adminMalFormado = await fetch(`${BASE}/api/admin/users/no-soy-un-uuid`, {
+      method: 'DELETE',
+      headers: adminAuth,
+    });
+    check(
+      'DELETE /api/admin/users/<no-uuid> -> 400, nunca 500',
+      adminMalFormado.status === 400,
+      `status ${adminMalFormado.status}`,
+    );
 
     const adminUsers = await fetch(`${BASE}/api/admin/users`, { headers: adminAuth });
     const adminUsersBody = (await adminUsers.json()) as Envelope<

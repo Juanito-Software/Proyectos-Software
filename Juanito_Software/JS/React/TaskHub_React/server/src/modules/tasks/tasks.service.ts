@@ -25,6 +25,28 @@ function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23505';
 }
 
+/**
+ * 23503 es «violación de clave foránea».
+ *
+ * En este servicio solo puede significar una cosa: se intenta crear una tarea
+ * para un `user_id` que ya no está en `users`. Y eso solo pasa en un escenario
+ * — el usuario se borró mientras tenía la sesión abierta, y su token de acceso
+ * sigue siendo criptográficamente válido hasta que caduque.
+ *
+ * Sin traducirlo, la petición acababa en **500** con el mensaje de PostgreSQL:
+ * el servidor daba a entender que había fallado él, cuando lo que ocurre es que
+ * la cuenta que pide ya no existe. El 401 es la respuesta correcta y además
+ * coincide con la que da `requireAdmin` en el mismo escenario, que hasta ahora
+ * era la única parte de la aplicación que lo trataba bien.
+ *
+ * La alternativa —comprobar en cada petición que el usuario existe— cerraría
+ * también el hueco de la lectura, pero cuesta una consulta más por petición.
+ * Ver la nota en `authMiddleware` sobre por qué no se hace.
+ */
+function isForeignKeyViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23503';
+}
+
 export const tasksService = {
   async listForUser(userId: string, filters?: TaskFilters) {
     const tasks = await tasksRepository.findAllByUser(userId, filters);
@@ -66,6 +88,9 @@ export const tasksService = {
     } catch (err) {
       if (isUniqueViolation(err)) {
         throw ApiError.conflict('Ya tienes una tarea con este título');
+      }
+      if (isForeignKeyViolation(err)) {
+        throw ApiError.unauthorized('La cuenta ya no existe');
       }
       throw err;
     }
