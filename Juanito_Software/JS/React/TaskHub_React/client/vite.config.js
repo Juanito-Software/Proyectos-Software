@@ -35,11 +35,15 @@ export default defineConfig({
        * SUBIR estos números conforme se añadan tests. Un umbral inalcanzable
        * acaba desactivándose, que es peor que no tenerlo.
        */
+      // Los umbrales van justo por debajo de la cobertura real (54.93 / 74.52 /
+      // 47.22 / 56.31) para que funcionen como trinquete: si un cambio la baja,
+      // el CI se entera. Cuando suba, hay que volver a subirlos — un umbral muy
+      // por debajo de lo real deja de proteger nada.
       thresholds: {
-        statements: 35,
-        branches: 40,
-        functions: 33,
-        lines: 35,
+        statements: 52,
+        branches: 70,
+        functions: 45,
+        lines: 53,
       },
     },
   },

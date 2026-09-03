@@ -1,5 +1,31 @@
 import rateLimit from 'express-rate-limit';
 
+export const AUTH_LIMIT_POR_DEFECTO = 10;
+
+/**
+ * Cuántos intentos fallidos de autenticación se permiten por ventana.
+ *
+ * La suite de verificación necesita subirlo: comprueba una decena de
+ * contraseñas que deben ser rechazadas, y todas cuentan como intento fallido —
+ * que es justamente lo que este limitador existe para frenar. Sin la variable,
+ * la suite se estrangula a sí misma y los fallos posteriores son falsos.
+ *
+ * **En producción la variable se ignora.** Un límite de autenticación que se
+ * puede aflojar desde el entorno es un límite que no protege: bastaría con
+ * colar `AUTH_RATE_LIMIT=100000` en el panel de despliegue para dejar la fuerza
+ * bruta vía libre. Fuera de producción no hay nada que proteger.
+ */
+export function resolverAuthLimit(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const bruto = env.AUTH_RATE_LIMIT;
+  if (!bruto) return AUTH_LIMIT_POR_DEFECTO;
+  if (env.NODE_ENV === 'production') return AUTH_LIMIT_POR_DEFECTO;
+
+  const valor = Number(bruto);
+  return Number.isInteger(valor) && valor > 0 ? valor : AUTH_LIMIT_POR_DEFECTO;
+}
+
 /**
  * Límite estricto para las rutas de autenticación.
  *
@@ -13,7 +39,7 @@ import rateLimit from 'express-rate-limit';
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: resolverAuthLimit(),
   skipSuccessfulRequests: true,
   standardHeaders: 'draft-7',
   legacyHeaders: false,

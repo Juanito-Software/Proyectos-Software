@@ -346,6 +346,40 @@
   font-weight: 500;
 }
 
+/* Lista de requisitos de la contraseña, que se van marcando al escribir. */
+.password-requirements {
+  list-style: none;
+  margin: 0.4rem 0 0.5rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.requirement {
+  color: #6b7280;
+}
+
+/* El estado no depende solo del color: cada línea lleva además ✓ o ·, para
+   quien no distinga verde de gris. */
+.requirement--ok {
+  color: #15803d;
+  font-weight: 500;
+}
+
+/* Visible solo para lectores de pantalla: saca el elemento del flujo sin
+   usar display:none, que lo ocultaría también a la voz. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Enlace al playground de la API. Discreto a propósito: es una herramienta
    para desarrolladores, no una acción de la aplicación. */
 .playground-link {

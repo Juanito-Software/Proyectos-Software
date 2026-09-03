@@ -1,5 +1,63 @@
 # ============================================================
 # Política de fin de línea del repositorio
 # ------------------------------------------------------------
-# * text=auto : Git detecta archivos de texto y los almacena
-#  
+# El archivo anterior estaba truncado: solo tenía la cabecera de
+# comentarios y se cortaba a media frase, sin llegar a declarar
+# ninguna regla. Por eso git no normalizaba nada y aparecían como
+# modificados archivos cuyo contenido era idéntico y solo cambiaba
+# el CRLF por LF.
+#
+# `text=auto eol=lf` hace dos cosas distintas:
+#   - text=auto : git detecta qué archivos son texto y los guarda
+#     SIEMPRE con LF dentro del repositorio.
+#   - eol=lf    : al sacarlos al disco también los deja con LF.
+#
+# Se fija el eol explícitamente en lugar de dejarlo al criterio de
+# `core.autocrlf`, que es configuración de cada máquina: así el
+# resultado es el mismo en Windows, en Linux y en el runner del CI,
+# sin depender de cómo tenga cada uno su git.
+# ============================================================
+
+* text=auto eol=lf
+
+# ------------------------------------------------------------
+# Excepción: los .bat de Windows necesitan CRLF
+# ------------------------------------------------------------
+# El intérprete de comandos de Windows puede fallar al leer un
+# archivo por lotes con finales de línea LF, sobre todo en las
+# etiquetas de `goto`. Hay 79 en el repositorio, así que la
+# excepción no es teórica.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Los scripts de shell, al revés: LF obligatorio o no arrancan.
+*.sh text eol=lf
+
+# ------------------------------------------------------------
+# Binarios: que git no los toque ni intente hacerles diff
+# ------------------------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.odt binary
+*.jar binary
+*.jasper binary
+*.dia binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.mp3 binary
+*.mp4 binary
+*.wav binary
+
+# ------------------------------------------------------------
+# Archivos generados: fuera de las estadísticas de lenguaje y sin
+# diff en las revisiones, que solo añaden ruido.
+# ------------------------------------------------------------
+package-lock.json linguist-generated=true -diff
+*.lock linguist-generated=true -diff

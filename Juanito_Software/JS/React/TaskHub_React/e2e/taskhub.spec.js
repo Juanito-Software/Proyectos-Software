@@ -9,7 +9,9 @@ import { test, expect } from '@playwright/test';
  */
 
 const nuevoUsuario = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-const PASSWORD = 'frase larga de prueba e2e';
+
+// Cumple los cuatro requisitos: 15+ caracteres, mayúscula, número y símbolo.
+const PASSWORD = 'Frase larga de prueba e2e 7!';
 
 async function registrarse(page, username = nuevoUsuario()) {
   await page.goto('/');
@@ -78,31 +80,79 @@ test.describe('Autenticación', () => {
     await expect(page.getByPlaceholder('Repite la contraseña')).toBeVisible();
   });
 
-  test('una contraseña demasiado corta no permite registrarse', async ({ page }) => {
+  // Las cuatro reglas, cada una con su test. La longitud viene de NIST; la
+  // mayúscula, el número y el símbolo son decisión propia de TaskHub, más
+  // estricta que la norma.
+  const INVALIDAS = [
+    ['demasiado corta', 'Corto-Horse12!'],
+    ['sin mayúscula', 'cafe con leche y 2 tostadas!'],
+    ['sin número', 'Cafe con leche y tostadas!'],
+    ['sin símbolo', 'Cafe con leche y 2 tostadas'],
+  ];
+
+  for (const [caso, password] of INVALIDAS) {
+    test(`una contraseña ${caso} no permite registrarse`, async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: /regístrate/i }).click();
+
+      await page.getByPlaceholder('Usuario', { exact: true }).fill(nuevoUsuario());
+      await page.getByPlaceholder('Contraseña', { exact: true }).fill(password);
+      await page.getByPlaceholder('Repite la contraseña').fill(password);
+      await page.getByRole('button', { name: /registrarse/i }).click();
+
+      // No se entra: sigue viéndose el formulario de registro. Lo para la
+      // validación del navegador (minLength o pattern) antes de que la
+      // petición llegue a salir.
+      await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+      await expect(page.getByPlaceholder('Repite la contraseña')).toBeVisible();
+    });
+  }
+
+  test('la lista de requisitos se va marcando al escribir', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: /regístrate/i }).click();
 
-    const corta = 'melon y sandia'; // 14, uno menos del mínimo
-    await page.getByPlaceholder('Usuario', { exact: true }).fill(nuevoUsuario());
-    await page.getByPlaceholder('Contraseña', { exact: true }).fill(corta);
-    await page.getByPlaceholder('Repite la contraseña').fill(corta);
-    await page.getByRole('button', { name: /registrarse/i }).click();
+    const campo = page.getByPlaceholder('Contraseña', { exact: true });
+    const cumplidos = page.locator('[data-cumplido="si"]');
 
-    // No se entra: sigue viéndose el formulario.
-    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+    await expect(cumplidos).toHaveCount(0);
+
+    await campo.fill('cafeconlecheytostadas'); // solo longitud
+    await expect(cumplidos).toHaveCount(1);
+
+    await campo.fill('Cafeconlecheytostadas'); // + mayúscula
+    await expect(cumplidos).toHaveCount(2);
+
+    await campo.fill('Cafeconlecheytostadas2'); // + número
+    await expect(cumplidos).toHaveCount(3);
+
+    await campo.fill('Cafe con leche y 2 tostadas!'); // + símbolo
+    await expect(cumplidos).toHaveCount(4);
   });
 
-  test('una frase larga sin números ni símbolos es válida', async ({ page }) => {
-    // El caso que define la política: sin este test, alguien podría
-    // reintroducir reglas de composición sin que nada lo detecte.
+  test('una contraseña de exactamente 15 caracteres es válida', async ({ page }) => {
     const username = nuevoUsuario();
     await page.goto('/');
     await page.getByRole('button', { name: /regístrate/i }).click();
 
-    const frase = 'caballo correcto grapa pila';
+    const quince = 'Correct-Horse2!'; // justo en el mínimo
     await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
-    await page.getByPlaceholder('Contraseña', { exact: true }).fill(frase);
-    await page.getByPlaceholder('Repite la contraseña').fill(frase);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(quince);
+    await page.getByPlaceholder('Repite la contraseña').fill(quince);
+    await page.getByRole('button', { name: /registrarse/i }).click();
+
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('una contraseña larga y válida deja registrarse y volver a entrar', async ({ page }) => {
+    const username = nuevoUsuario();
+    await page.goto('/');
+    await page.getByRole('button', { name: /regístrate/i }).click();
+
+    const larga = 'Una frase larga de paso que recuerdo sin esfuerzo 2026!';
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(larga);
+    await page.getByPlaceholder('Repite la contraseña').fill(larga);
     await page.getByRole('button', { name: /registrarse/i }).click();
 
     await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
@@ -116,7 +166,7 @@ test.describe('Autenticación', () => {
     await page.getByRole('button', { name: /inicia sesión/i }).click();
 
     await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
-    await page.getByPlaceholder('Contraseña', { exact: true }).fill(frase);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(larga);
     await page.getByRole('button', { name: /entrar/i }).click();
     await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
   });

@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '../constants';
+import {
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
+  PASSWORD_PATTERN,
+  estadoRequisitos,
+  validarPasswordCliente,
+} from '../passwordPolicy';
 
 export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
   const [username, setUsername] = useState('');
@@ -13,6 +19,10 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
   // Solo se avisa de que no coinciden cuando ya se ha escrito algo en el
   // segundo campo: si no, saldría un error nada más empezar a teclear.
   const mismatch = !isLogin && confirmation.length > 0 && password !== confirmation;
+
+  // Qué requisitos lleva cumplidos, para ir marcándolos según escribe. Solo se
+  // calcula en el registro; al entrar la política no se aplica.
+  const requisitos = isLogin ? null : estadoRequisitos(password);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,8 +41,12 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
         setLocalError('Las contraseñas no coinciden');
         return;
       }
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        setLocalError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
+
+      // Longitud y composición. Es solo experiencia de uso: quien se salte el
+      // formulario se encontrará la misma comprobación en el servidor.
+      const problema = validarPasswordCliente(password);
+      if (problema) {
+        setLocalError(problema);
         return;
       }
     }
@@ -78,13 +92,20 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
           placeholder="Contraseña"
           aria-label="Contraseña"
           required
-          // Solo se exige la longitud en el registro. Al entrar no se aplica,
-          // porque las cuentas creadas con la política anterior siguen siendo
-          // válidas y deben poder iniciar sesión.
+          // Longitud y composición solo se exigen en el registro. Al entrar no
+          // se aplican, porque las cuentas creadas con la política anterior
+          // siguen siendo válidas y deben poder iniciar sesión.
           minLength={isLogin ? undefined : MIN_PASSWORD_LENGTH}
           maxLength={MAX_PASSWORD_LENGTH}
+          pattern={isLogin ? undefined : PASSWORD_PATTERN}
+          title={
+            isLogin
+              ? undefined
+              : 'Al menos una mayúscula, un número y un símbolo'
+          }
           autoComplete={isLogin ? 'current-password' : 'new-password'}
           disabled={loading}
+          aria-describedby={isLogin ? undefined : 'requisitos-password'}
         />
 
         {!isLogin && (
@@ -108,12 +129,23 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
               </p>
             )}
 
-            {/* Con un mínimo de 15 caracteres, decir solo "mínimo 15" empuja a
-                inventar algo difícil de recordar. Sugerir una frase es lo que
-                hace la política llevadera. */}
+            {/* Se marcan según se escriben en lugar de soltarlos todos al
+                enviar: con cuatro requisitos, descubrirlos de uno en uno a
+                base de intentos fallidos es lo que acaba en "Password123!". */}
+            <ul id="requisitos-password" className="password-requirements">
+              <Requisito cumplido={requisitos.longitud}>
+                Al menos {MIN_PASSWORD_LENGTH} caracteres
+              </Requisito>
+              <Requisito cumplido={requisitos.mayuscula}>Al menos una letra mayúscula</Requisito>
+              <Requisito cumplido={requisitos.digito}>Al menos un número</Requisito>
+              <Requisito cumplido={requisitos.simbolo}>
+                Al menos un símbolo (! ? # $ % &amp; * - _ …)
+              </Requisito>
+            </ul>
+
             <p className="field-hint">
-              Mínimo {MIN_PASSWORD_LENGTH} caracteres. Una frase que recuerdes funciona mejor que
-              una palabra corta con símbolos — por ejemplo, <em>café con leche y dos tostadas</em>.
+              Una frase con algún retoque cumple todo sin ser difícil de recordar — por ejemplo,{' '}
+              <em>Café con leche y 2 tostadas!</em>
             </p>
           </>
         )}
@@ -130,5 +162,24 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
         </button>
       </p>
     </div>
+  );
+}
+
+/**
+ * Una línea de la lista de requisitos.
+ *
+ * El estado no se transmite solo con el color: lleva el símbolo (✓ / ·) y un
+ * texto oculto para lectores de pantalla, porque distinguir verde de gris no
+ * está al alcance de todo el mundo.
+ */
+function Requisito({ cumplido, children }) {
+  return (
+    <li
+      className={cumplido ? 'requirement requirement--ok' : 'requirement'}
+      data-cumplido={cumplido ? 'si' : 'no'}
+    >
+      <span aria-hidden="true">{cumplido ? '✓' : '·'}</span>{' '}
+      <span className="sr-only">{cumplido ? 'Cumplido:' : 'Pendiente:'}</span> {children}
+    </li>
   );
 }

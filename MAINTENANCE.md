@@ -296,6 +296,142 @@ impedir que alguien reintroduzca reglas de composición más adelante: afirman
 que `caballo correcto grapa pila` es una contraseña válida y que el campo del
 formulario **no** lleva atributo `pattern`.
 
+> **Nota posterior (3 de septiembre de 2026).** Esa decisión se revirtió: la
+> política pasó a exigir mayúscula, número y símbolo. Los tests citados en el
+> párrafo anterior cumplieron su función —fallaron y obligaron a tomar la
+> decisión de forma consciente— y se sustituyeron por sus inversos. Ver la
+> entrada siguiente.
+
+### Composición obligatoria: una decisión más estricta que NIST
+
+Fecha: 3 de septiembre de 2026.
+
+Se revirtió la ausencia de reglas de composición. La política pasa a exigir, en
+el registro y además de los 15 caracteres, **al menos una mayúscula, un número y
+un símbolo**.
+
+**Esto no es una lectura distinta de NIST: es apartarse de NIST.** La Revisión 4
+dice que los verificadores **no deben** imponer reglas de composición. La
+documentación del proyecto no debe presentarlas como requisito de la norma, y se
+reescribió el README y la sección anterior para dejarlo separado:
+
+| Alineado con NIST | Decisión propia de TaskHub |
+|---|---|
+| Mínimo de 15 caracteres | Mayúscula obligatoria |
+| Admitir contraseñas largas | Número obligatorio |
+| No truncar en silencio | Símbolo obligatorio |
+| Aceptar cualquier carácter, espacios incluidos | Contenido de la lista de bloqueo |
+| Comprobar contra una lista de bloqueo | Máximo de 72 bytes (límite de bcrypt) |
+| Almacenamiento con hash | Umbral de 4 caracteres del nombre de usuario |
+
+**El efecto secundario se asume y se compensa.** Obligar a mezclar tipos de
+carácter empuja a `Password123!`, `Verano2026!` o `P@ssw0rd`, que cumplen los
+cuatro requisitos y están en la primera página de cualquier diccionario de
+ataque. Aplicar la regla sin más habría dejado la aplicación **peor** que antes.
+Por eso se añadió `esPatronPredecible`: rechaza una palabra común rodeada de
+dígitos y símbolos aunque cumpla la composición.
+
+**Un fallo encontrado escribiendo esa comprobación.** La primera versión quitaba
+todo lo que no fuera letra y comparaba el resto contra la lista de palabras
+comunes. Con `P@ssword2026!!!` quedaba `pssword`, que no está en la lista, y se
+colaba. Lo detectó un test propio. La corrección deshace las sustituciones de
+estilo *leet* antes de comparar y prueba cuatro normalizaciones distintas,
+porque el relleno (`2026!!!`) y la sustitución (`@` por `a`) se estorban entre
+sí: aplicar solo una de las dos operaciones no llega a `password` por ninguno de
+los dos caminos.
+
+**El máximo pasó de caracteres a bytes.** bcrypt cuenta bytes. Una contraseña de
+72 caracteres con acentos o eñes son más de 72 bytes en UTF-8, y bcrypt
+descartaba el sobrante sin avisar — justo el truncamiento silencioso que la
+norma prohíbe. La comprobación anterior, con `.length`, dejaba ese caso pasar.
+Es un fallo que estaba desde el principio y que solo salió al revisar el límite.
+
+**La suite de API se estrangulaba a sí misma.** Al añadir las comprobaciones de
+las tres reglas, `verify.ts` pasó a hacer una decena de registros que deben ser
+rechazados, y cada rechazo cuenta como intento fallido de autenticación. El
+limitador cortaba a partir del décimo y todo lo posterior fallaba con 429 en vez
+de por lo que se estaba probando. Se resolvió con `AUTH_RATE_LIMIT`, que **se
+ignora cuando `NODE_ENV` es `production`**: un límite de fuerza bruta que se
+puede aflojar desde el entorno no protege de nada, bastaría con colar la
+variable en el panel de despliegue. Tres tests nuevos fijan ese comportamiento.
+
+**Interfaz.** El formulario muestra los cuatro requisitos y los marca según se
+escribe, en vez de soltarlos todos al enviar. Con cuatro reglas, descubrirlas de
+una en una a base de rechazos es precisamente lo que acaba en `Password123!`. El
+estado no se transmite solo con el color: cada línea lleva `✓` o `·` y un texto
+para lectores de pantalla.
+
+**Compatibilidad.** Sin cambios respecto a lo anterior: la política se aplica
+solo al registro. Se añadió un test que inserta directamente el hash de
+`caballo correcto grapa pila` y comprueba que esa cuenta sigue pudiendo entrar.
+
+**Tests: de 229 a 344.** La auditoría individual de los 229 anteriores está en
+`docs/AUDITORIA_TESTS_229.md`: 150 quedaron intactos, 63 necesitaron actualizar
+fixture o aserción y 10 eran incompatibles con la política nueva y se
+sustituyeron por sus inversos. Ninguno se borró ni se desactivó.
+
+### `.gitattributes` estaba truncado y nunca normalizó nada
+
+Fecha: 3 de septiembre de 2026. Afecta a **todo el monorepo**, no solo a TaskHub.
+
+Al revisar el estado del repositorio aparecían como modificados una docena de
+archivos de TaskHub_React que nadie había tocado —`App.jsx`, `main.jsx`,
+`db.ts`, `schema.ts`, `index.html`…—. El diff era CRLF contra LF: contenido
+idéntico, final de línea distinto.
+
+La causa era que **`.gitattributes` estaba cortado a media frase**. Tenía cuatro
+líneas, todas de comentario, y terminaba en `#  ` sin salto de línea final. Las
+reglas nunca llegaron a escribirse, y así estaba también en el commit: no era un
+archivo mal editado en local, era un archivo mal commiteado en su día. Sin
+ninguna regla activa, git no normalizaba, y cada editor que guardara con CRLF
+dejaba el archivo marcado como modificado para siempre.
+
+El alcance real era mucho mayor de lo que parecía: **`git status` listaba unos
+920 archivos modificados en todo el monorepo** —el vault de Obsidian, los
+proyectos de Java, los de PHP— y prácticamente todos eran ruido de finales de
+línea. Con el archivo reparado, la cifra baja a 44, que son cambios de contenido
+de verdad.
+
+La regla que se ha puesto es `* text=auto eol=lf`, con dos matices:
+
+- Se fija `eol=lf` explícitamente en lugar de dejarlo a `core.autocrlf`, que es
+  configuración de cada máquina. Así el resultado es el mismo en Windows, en
+  Linux y en el runner del CI, sin depender de cómo tenga cada uno su git.
+- **Excepción para `*.bat` y `*.cmd`, que van con CRLF.** El intérprete de
+  Windows puede fallar al leer un archivo por lotes con LF, sobre todo en las
+  etiquetas de `goto`. Hay 79 `.bat` en el repositorio, así que la excepción no
+  es teórica. Los `.sh` llevan la marca contraria, LF obligatorio.
+
+Para los archivos de código no hizo falta `git add --renormalize`: el índice ya
+guardaba LF y era el árbol de trabajo el que tenía CRLF, así que en cuanto hubo
+reglas git dejó de ver diferencia.
+
+**Para los scripts sí hizo falta, y ahí apareció un fallo de verdad.** Los 79
+`.bat`, el `mvnw.cmd` y los `.sh` estaban guardados **en el repositorio** con
+CRLF, no solo en disco: nunca hubo normalización que lo impidiera. Al declararlos
+como texto, git pasó a querer almacenarlos con LF y los marcó todos como
+modificados, lo que obligó a renormalizarlos:
+
+```
+git add --renormalize "*.bat" "*.cmd" "*.sh"
+```
+
+En los `.bat` el efecto es puramente interno —siguen saliendo con CRLF al disco
+por la excepción `eol=crlf`, así que en Windows no cambia nada—, pero en los
+`.sh` era un error real: `install-linux.sh` e `install-macos.sh` tenían
+`#!/bin/bash\r` en la primera línea. En Linux eso falla con `bad interpreter:
+/bin/bash^M`, porque el `\r` forma parte de la ruta del intérprete. Los scripts
+llevaban rotos desde que se subieron y solo salió a la luz al mirar los finales
+de línea.
+
+El renormalizado se acotó con esas tres extensiones en lugar de usar `.`, que
+habría arrastrado al índice el trabajo en curso de otros proyectos.
+
+**De paso, dos temporales que llevaban meses versionados.** `server/csp-temp.ts`
+y `server/sch-temp.ts` eran scripts de diagnóstico de un solo uso —uno imprimía
+la CSP para localizar el `script-src-attr 'none'` que rompió el playground, el
+otro contaba esquemas `verify_` huérfanos—. Se borraron.
+
 ### CD: despliegue automático, no encadenado al CI
 
 Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el

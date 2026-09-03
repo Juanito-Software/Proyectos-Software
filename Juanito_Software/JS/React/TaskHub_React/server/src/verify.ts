@@ -11,10 +11,17 @@ import type { Server } from 'node:http';
 const testSchema = `verify_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
 process.env.DB_SCHEMA = testSchema;
 
+// La suite prueba una decena de contraseñas que deben ser rechazadas, y cada
+// rechazo cuenta como intento fallido de autenticación. Con el límite de
+// producción (10 por cuarto de hora) la propia suite se estrangularía y todo lo
+// que viniera después fallaría por 429 en vez de por lo que se está probando.
+// La variable se ignora cuando NODE_ENV es production; ver rateLimit.middleware.
+process.env.AUTH_RATE_LIMIT = '1000';
+
 // Credenciales del administrador de prueba. Se fijan antes de importar la
 // configuración, que las lee al cargarse.
 const ADMIN_USER = `admin-${crypto.randomUUID().slice(0, 8)}`;
-const ADMIN_PASS = 'clave larga del administrador de pruebas';
+const ADMIN_PASS = 'Clave larga del Admin 7!';
 process.env.ADMIN_USERNAME = ADMIN_USER;
 process.env.ADMIN_PASSWORD = ADMIN_PASS;
 
@@ -52,7 +59,7 @@ async function run(): Promise<void> {
     server = app.listen(PORT);
 
     const username = `verify-${crypto.randomUUID().slice(0, 8)}`;
-    const password = 'frase de paso para verificar';
+    const password = 'Frase de paso para verificar 7!';
 
     // ── Autenticación ────────────────────────────────────────────────────
 
@@ -263,7 +270,15 @@ async function run(): Promise<void> {
       `status ${otherSameTitle.status}`,
     );
 
-    // ── Política de contraseñas (NIST SP 800-63B Rev 4) ──────────────────
+    // ── Política de contraseñas ──────────────────────────────────────────
+    //
+    // Longitud mínima, admitir contraseñas largas, no truncar y comparar contra
+    // una lista de bloqueo vienen de NIST SP 800-63B Rev 4. Exigir mayúscula,
+    // número y símbolo es decisión propia de TaskHub y es MÁS restrictivo que
+    // la norma, que dice que no deberían imponerse reglas de composición.
+    //
+    // Lo que se comprueba aquí es que la validación existe en la API y no solo
+    // en el formulario: estas peticiones no pasan por el navegador.
 
     const registrar = (u: string, p: string) =>
       fetch(`${BASE}/api/auth/register`, {
@@ -274,34 +289,78 @@ async function run(): Promise<void> {
 
     const nuevo = () => `pol-${crypto.randomUUID().slice(0, 8)}`;
 
-    const corta = await registrar(nuevo(), 'melon y sandia'); // 14
+    const corta = await registrar(nuevo(), 'Corto-Horse12!'); // 14
     check(
       'Registro con contraseña de 14 caracteres -> 400',
       corta.status === 400,
       `status ${corta.status}`,
     );
 
-    // El caso que define la política: larga, sin mayúsculas, sin números y
-    // sin símbolos. Cualquier sistema con reglas de composición la rechazaría.
-    const fraseUser = nuevo();
-    const frase = await registrar(fraseUser, 'caballo correcto grapa pila');
+    // Justo en el mínimo, cumpliendo los cuatro requisitos.
+    const quinceUser = nuevo();
+    const quince = await registrar(quinceUser, 'Correct-Horse2!');
+    const cuerpoRegistro = await quince.text();
     check(
-      'Registro con frase larga sin mayúsculas, números ni símbolos -> 201',
-      frase.status === 201,
-      `status ${frase.status}`,
+      'Registro con exactamente 15 caracteres y composición válida -> 201',
+      quince.status === 201,
+      `status ${quince.status}`,
     );
 
     // Y debe poder entrar después con esa misma contraseña.
-    const fraseLogin = await fetch(`${BASE}/api/auth/login`, {
+    const quinceLogin = await fetch(`${BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: fraseUser, password: 'caballo correcto grapa pila' }),
+      body: JSON.stringify({ username: quinceUser, password: 'Correct-Horse2!' }),
     });
     check(
-      'Se puede iniciar sesión con la frase de paso',
-      fraseLogin.status === 200,
-      `status ${fraseLogin.status}`,
+      'Se puede iniciar sesión después de registrarse',
+      quinceLogin.status === 200,
+      `status ${quinceLogin.status}`,
     );
+
+    // Una contraseña larga y válida, con espacios: la norma exige admitirlos.
+    const largaUser = nuevo();
+    const largaOk = await registrar(largaUser, 'Una frase larga de paso con 2 espacios!');
+    check(
+      'Registro con contraseña larga y con espacios -> 201',
+      largaOk.status === 201,
+      `status ${largaOk.status}`,
+    );
+
+    // ── Las tres reglas de composición, una a una ────────────────────────
+
+    const sinMayuscula = await registrar(nuevo(), 'correct-horse-2026!');
+    check(
+      'Registro sin mayúscula -> 400',
+      sinMayuscula.status === 400,
+      `status ${sinMayuscula.status}`,
+    );
+
+    const sinNumero = await registrar(nuevo(), 'Correct-Horse-Battery!');
+    check('Registro sin número -> 400', sinNumero.status === 400, `status ${sinNumero.status}`);
+
+    const sinSimbolo = await registrar(nuevo(), 'Correct Horse Battery 2026');
+    check('Registro sin símbolo -> 400', sinSimbolo.status === 400, `status ${sinSimbolo.status}`);
+
+    // El espacio no cuenta como símbolo: si contara, esta pasaría.
+    const soloEspacios = await registrar(nuevo(), 'Frase Con Espacios 2026');
+    check(
+      'El espacio no cuenta como símbolo -> 400',
+      soloEspacios.status === 400,
+      `status ${soloEspacios.status}`,
+    );
+
+    // El caso que antes definía la política y que ahora deja de valer: una
+    // frase larga sin mayúsculas, números ni símbolos. Queda como registro
+    // explícito del cambio de criterio.
+    const fraseSinComposicion = await registrar(nuevo(), 'caballo correcto grapa pila');
+    check(
+      'Una frase sin composición ya no basta para registrarse -> 400',
+      fraseSinComposicion.status === 400,
+      `status ${fraseSinComposicion.status}`,
+    );
+
+    // ── Lista de bloqueo y patrones previsibles ──────────────────────────
 
     const comun = await registrar(nuevo(), 'passwordpassword');
     check(
@@ -310,16 +369,26 @@ async function run(): Promise<void> {
       `status ${comun.status}`,
     );
 
-    const conNombre = await registrar('pedrito', 'pedrito y su contraseña');
+    // Cumple los cuatro requisitos y aun así es de las primeras que se prueban:
+    // es literalmente lo que produce obligar a mezclar tipos de carácter. Sin
+    // esta comprobación, la regla de composición dejaría la aplicación peor.
+    const previsible = await registrar(nuevo(), 'Password123456!');
+    check(
+      'Registro con "palabra común + adornos" -> 400 pese a cumplir composición',
+      previsible.status === 400,
+      `status ${previsible.status}`,
+    );
+
+    const conNombre = await registrar('pedrito', 'Pedrito y su clave 7!');
     check(
       'Registro con la contraseña conteniendo el usuario -> 400',
       conNombre.status === 400,
       `status ${conNombre.status}`,
     );
 
-    const excesiva = await registrar(nuevo(), 'x'.repeat(73));
+    const excesiva = await registrar(nuevo(), 'A1!' + 'x'.repeat(73));
     check(
-      'Registro con más de 72 caracteres -> 400, no se recorta en silencio',
+      'Registro con más de 72 bytes -> 400, no se recorta en silencio',
       excesiva.status === 400,
       `status ${excesiva.status}`,
     );
@@ -334,10 +403,22 @@ async function run(): Promise<void> {
       `${colados[0].count} usuario(s)`,
     );
 
-    // Compatibilidad: una cuenta con una contraseña que hoy no pasaría la
-    // política debe seguir pudiendo iniciar sesión. Se simula insertando el
-    // hash directamente, como haría una cuenta creada antes del cambio.
+    // Y la respuesta de un registro correcto no puede llevar el hash ni la
+    // contraseña: es lo que se guarda, no algo que se devuelva.
+    check(
+      'La respuesta del registro no expone contraseña ni hash',
+      !cuerpoRegistro.includes('Correct-Horse2!') &&
+        !/password_hash|passwordHash|\$2[aby]\$/.test(cuerpoRegistro),
+      `${cuerpoRegistro.length} bytes de respuesta revisados`,
+    );
+
+    // ── Compatibilidad con cuentas anteriores a la política ──────────────
+    //
+    // Endurecer la política no invalida cuentas existentes. Se simula
+    // insertando el hash directamente, como haría una cuenta creada antes.
+
     const bcryptLib = (await import('bcrypt')).default;
+
     const antiguoUser = `antiguo-${crypto.randomUUID().slice(0, 8)}`;
     const antiguaPass = 'corta12'; // 7 caracteres: imposible de registrar hoy
     await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [
@@ -355,13 +436,34 @@ async function run(): Promise<void> {
       `status ${loginAntiguo.status}`,
     );
 
-    // El contrato del registro no incluye la confirmación: es del formulario.
+    // El caso concreto del cambio de hoy: una cuenta creada cuando bastaba una
+    // frase de paso sin composición sigue entrando con ella.
+    const fraseUser = `frase-${crypto.randomUUID().slice(0, 8)}`;
+    const fraseAntigua = 'caballo correcto grapa pila';
+    await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', [
+      fraseUser,
+      await bcryptLib.hash(fraseAntigua, 10),
+    ]);
+    const loginFrase = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: fraseUser, password: fraseAntigua }),
+    });
+    check(
+      'Una cuenta con frase sin composición sigue pudiendo entrar',
+      loginFrase.status === 200,
+      `status ${loginFrase.status}`,
+    );
+
+    // ── La confirmación no forma parte del contrato de la API ────────────
+
+    const confirmacionUser = nuevo();
     const conConfirmacion = await fetch(`${BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: nuevo(),
-        password: 'otra frase de paso valida',
+        username: confirmacionUser,
+        password: 'Otra frase de paso 7!',
         passwordConfirmation: 'algo completamente distinto',
       }),
     });
@@ -369,6 +471,34 @@ async function run(): Promise<void> {
       'La API ignora passwordConfirmation: la comparación es del formulario',
       conConfirmacion.status === 201,
       `status ${conConfirmacion.status}`,
+    );
+
+    // Y no se guarda en ninguna parte: la tabla de usuarios no tiene dónde.
+    const columnas = await query<{ column_name: string }>(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_schema = $1 AND table_name = 'users'`,
+      [testSchema],
+    );
+    check(
+      'passwordConfirmation no se persiste: no existe tal columna',
+      !columnas.some((c) => /confirm/i.test(c.column_name)),
+      columnas.map((c) => c.column_name).join(', '),
+    );
+
+    // El login sigue con su contrato de siempre: usuario y contraseña.
+    const loginConConfirmacion = await fetch(`${BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: confirmacionUser,
+        password: 'Otra frase de paso 7!',
+        passwordConfirmation: 'irrelevante',
+      }),
+    });
+    check(
+      'El login funciona con username y password, e ignora la confirmación',
+      loginConConfirmacion.status === 200,
+      `status ${loginConConfirmacion.status}`,
     );
 
     // ── Cabeceras de seguridad ───────────────────────────────────────────

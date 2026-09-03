@@ -25,7 +25,7 @@ TaskHub/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── AuthForm.jsx      # login y registro, con confirmación
-│   │   │   ├── AuthForm.test.jsx      ← 18 tests
+│   │   │   ├── AuthForm.test.jsx      ← 32 tests
 │   │   │   ├── TaskForm.jsx      # alta y edición, con estado y prioridad
 │   │   │   ├── TaskForm.test.jsx      ← 9 tests
 │   │   │   ├── TaskItem.jsx      # tarjeta de tarea con sus distintivos
@@ -40,6 +40,8 @@ TaskHub/
 │   │   │   └── authApi.test.js        ← 8 tests
 │   │   ├── test/setup.js         # limpia DOM y localStorage entre tests
 │   │   ├── constants.js          # etiquetas de estado y prioridad, en un solo sitio
+│   │   ├── passwordPolicy.js     # réplica de la política; el servidor manda
+│   │   ├── passwordPolicy.test.js     ← 22 tests
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── vite.config.js            # build, proxy en desarrollo y umbrales de cobertura
@@ -48,27 +50,28 @@ TaskHub/
 │   ├── src/
 │   │   ├── modules/
 │   │   │   ├── auth/             # router · controller · service · JWT
-│   │   │   │   ├── password-policy.ts            # política NIST, fuente de verdad
-│   │   │   │   ├── password-policy.test.ts       ← 24 tests
-│   │   │   │   └── auth.validation.test.ts       ← 24 tests
+│   │   │   │   ├── password-policy.ts            # política de contraseñas, fuente de verdad
+│   │   │   │   ├── password-policy.test.ts       ← 73 tests
+│   │   │   │   └── auth.validation.test.ts       ← 30 tests
 │   │   │   ├── users/            # repository (SQL) · types (rol user/admin)
 │   │   │   ├── tasks/            # router · controller · service · repository
 │   │   │   │   ├── tasks.repository.test.ts       ← 13 tests
 │   │   │   │   └── tasks.validation.test.ts       ← 25 tests
 │   │   │   └── admin/            # router · controller · service (solo rol admin)
 │   │   ├── middleware/           # auth · admin · rate limit · validación · errores · logging
+│   │   │   └── rateLimit.middleware.test.ts       ← 8 tests
 │   │   ├── config/               # env · db (pool) · schema (DDL) · seed-admin
 │   │   ├── utils/                # ApiError · ApiResponse
 │   │   ├── types/                # express.d.ts (userId en Request)
 │   │   ├── public/               # playground de la API (se sirve en /playground)
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 62 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 73 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
-├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 20 tests
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 25 tests
 ├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
@@ -254,13 +257,13 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**229 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**344 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 86 + 61 | Nada |
-| `npm run verify` | End-to-end de la API | 62 | PostgreSQL |
-| `npm run test:e2e` | Navegador real (Playwright) | 20 | PostgreSQL y `npm run build` |
+| `npm test` | Unitarios de servidor y cliente | 149 + 97 | Nada |
+| `npm run verify` | End-to-end de la API | 73 | PostgreSQL |
+| `npm run test:e2e` | Navegador real (Playwright) | 25 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
 Los **unitarios** cubren lógica pura —validadores, escapado de comodines de
@@ -376,25 +379,49 @@ job que dependa de `ci-ok`.
 
 ## Política de contraseñas
 
-Sigue **NIST SP 800-63B Revisión 4** (julio de 2025). La implementación está en
-`server/src/modules/auth/password-policy.ts`, que es la única fuente de verdad:
-la usan tanto el registro como la semilla del administrador.
+La implementación está en `server/src/modules/auth/password-policy.ts`, que es
+la única fuente de verdad: la usan tanto el registro como la semilla del
+administrador. El formulario replica las reglas en `client/src/passwordPolicy.js`
+para avisar antes de enviar, pero quien decide es el servidor.
+
+La política combina recomendaciones de **NIST SP 800-63B Revisión 4** (julio de
+2025) con requisitos propios más estrictos. Conviene no mezclarlos:
 
 | Regla | Valor | Origen |
 |---|---|---|
 | Longitud mínima | **15 caracteres** | NIST: exige 15 cuando la contraseña es el único factor; los 8 solo valen con MFA, y TaskHub no la tiene |
-| Longitud máxima | 72 caracteres | **Límite técnico**, no requisito de NIST: bcrypt solo lee los primeros 72 bytes |
-| Reglas de composición | **Ninguna** | NIST Rev 4 las **prohíbe**, no solo las desaconseja |
+| Contraseñas largas permitidas | Hasta 72 bytes | NIST pide admitir al menos 64 |
+| Sin truncamiento silencioso | Se rechaza, no se recorta | NIST |
 | Caracteres permitidos | Todos, espacios incluidos | NIST |
+| Almacenamiento | bcrypt con sal | NIST |
 | Lista de bloqueo | Contraseñas comunes, caracteres repetidos, secuencias de teclado y el propio nombre de usuario | NIST exige la comprobación; **el contenido concreto de la lista es decisión de TaskHub** |
+| **Al menos una mayúscula** | Obligatoria | **Decisión de TaskHub** |
+| **Al menos un número** | Obligatorio | **Decisión de TaskHub** |
+| **Al menos un símbolo** | Obligatorio | **Decisión de TaskHub** |
+| Longitud máxima | 72 **bytes** | **Límite técnico**, no requisito de NIST: bcrypt solo lee los primeros 72 bytes |
 
-**Por qué no se exige "una mayúscula, un número y un símbolo".** Esas reglas
-producen contraseñas predecibles —`Password1!`, `Verano2026!`— que un atacante
-prueba de las primeras. `caballo correcto grapa pila` no tiene ni una mayúscula
-ni un número, y es muchísimo más resistente que `P4ss!`. NIST prohíbe esas
-reglas desde la Revisión 4 justamente por eso.
+**Las tres reglas de composición son más estrictas que NIST, no una lectura de
+NIST.** La Revisión 4 no se limita a desaconsejarlas: dice que los verificadores
+**no deben** imponerlas. TaskHub las aplica igualmente como requisito de
+producto, y este README no pretende justificarlo apelando a la norma.
 
-**Decisiones propias de TaskHub, no requisitos de NIST:**
+Lo que sí hay que hacer es asumir el efecto secundario conocido. Obligar a
+mezclar tipos de carácter empuja a la gente hacia formas predecibles:
+`Password123!`, `Verano2026!`, `P@ssw0rd`. Son las primeras que prueba un ataque
+por diccionario, y cumplen los cuatro requisitos sin esfuerzo. Por eso la lista
+de bloqueo **cubre expresamente los patrones que la propia regla fomenta**: una
+palabra común rodeada de dígitos y símbolos se rechaza aunque cumpla la
+composición, y la comprobación deshace antes las sustituciones de estilo *leet*,
+de forma que `P@ssword2026!!!` cae igual que `Password2026!!!`. Sin esa
+contrapartida, exigir composición dejaría la aplicación menos segura que sin
+exigirla.
+
+**Por qué 72 bytes y no 72 caracteres.** bcrypt cuenta bytes. Una contraseña de
+72 caracteres con acentos o eñes pasa de los 72 bytes en UTF-8, y bcrypt
+descartaría el sobrante sin avisar — justo el truncamiento silencioso que la
+norma prohíbe. Medir con `.length` dejaba ese caso pasar.
+
+**Otras decisiones propias de TaskHub, no requisitos de NIST:**
 
 - La lista de bloqueo está **embebida en el código** en lugar de consultar un
   servicio de credenciales filtradas. Para un proyecto de este tamaño, una
@@ -404,13 +431,20 @@ reglas desde la Revisión 4 justamente por eso.
 - El umbral de 4 caracteres para comparar la contraseña con el nombre de
   usuario: por debajo hay demasiados falsos positivos (un usuario "ana"
   rechazaría frases con "semana" o "mañana").
+- El espacio **no cuenta como símbolo**. Si contara, cualquier frase con
+  espacios cumpliría el requisito sin llevar un solo símbolo y la regla no
+  comprobaría nada.
 
 **Usuarios existentes.** La política se aplica **solo al registro**. Quien creó
-su cuenta cuando el mínimo era de 8 caracteres sigue pudiendo entrar con su
-contraseña de siempre: el validador del inicio de sesión no comprueba longitud
-ni lista de bloqueo. Hacerlo dejaría fuera a esas cuentas y, además, daría
-respuestas distintas según el caso, lo que revela información. Hay un test que
-fija este comportamiento.
+su cuenta cuando el mínimo era de 8 caracteres, o cuando no se exigía
+composición, sigue pudiendo entrar con su contraseña de siempre: el validador
+del inicio de sesión no comprueba longitud, composición ni lista de bloqueo.
+Hacerlo dejaría fuera a esas cuentas y, además, daría respuestas distintas según
+el caso, lo que revela información antes siquiera de comprobar las credenciales.
+Hay tests en las capas unitaria y de API que fijan este comportamiento.
+
+No hay ningún mecanismo de cambio de contraseña forzoso, así que tampoco se ha
+añadido uno: endurecer la política no invalida nada.
 
 **Confirmación de contraseña.** El registro pide escribir la contraseña dos
 veces, pero eso es **asunto del formulario**: se compara en el cliente y no
@@ -456,8 +490,10 @@ comprueba antes para devolver un 409 con mensaje claro, pero la garantía real l
 da el índice: dos peticiones simultáneas ya no pueden colarse entre la
 comprobación y la escritura, como sí ocurría con el almacenamiento en ficheros.
 
-**Longitud antes que composición en las contraseñas.** No se exigen mayúsculas,
-números ni símbolos: producen contraseñas predecibles sin ganar resistencia real.
+**Composición obligatoria, con su contrapartida.** Se exigen mayúscula, número y
+símbolo además de los 15 caracteres. Es una decisión de producto más estricta
+que NIST, que desaconseja esas reglas por el patrón predecible que provocan; el
+patrón se ataja bloqueando expresamente las contraseñas que ese patrón produce.
 El detalle está en la sección de política de contraseñas.
 
 **Filtrado en SQL, no en memoria.** Los filtros por estado, prioridad y texto se
