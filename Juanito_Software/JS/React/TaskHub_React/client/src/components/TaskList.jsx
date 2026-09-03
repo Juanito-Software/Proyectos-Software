@@ -58,9 +58,19 @@ export default function TaskList({ user, onLogout }) {
     }
   }
 
-  function handleUpdateTask(updated) {
+  /**
+   * Sustituye una tarea de la lista.
+   *
+   * `silencioso` lo usa el checkbox, que pinta el cambio antes de que responda
+   * el servidor y llama a esto dos o tres veces por clic —el valor supuesto, el
+   * confirmado, y el original si hubo que revertir—. Sacar un aviso en cada
+   * una sería ruido, y además el propio checkbox ya es la confirmación visual.
+   * La edición sí avisa, porque allí el formulario se cierra y sin el mensaje
+   * no queda claro que se haya guardado.
+   */
+  function handleUpdateTask(updated, { silencioso = false } = {}) {
     setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-    showNotification('Tarea actualizada');
+    if (!silencioso) showNotification('Tarea actualizada');
   }
 
   function handleDeleteTask(id) {

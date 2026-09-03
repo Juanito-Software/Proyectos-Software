@@ -53,10 +53,12 @@ test.describe('Autenticación', () => {
     await registrarse(page);
     await page.getByRole('button', { name: /salir/i }).click();
 
-    // Se comprueba el campo de usuario y no el botón: tras salir, el
-    // formulario conserva el modo en el que estaba, así que el botón puede
-    // decir "Entrar" o "Registrarse". El campo está en los dos casos.
     await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+
+    // Y vuelve en modo "iniciar sesión", no en el que estuviera. Quien acaba de
+    // registrarse y sale casi siempre quiere entrar, no crear otra cuenta.
+    await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
+    await expect(page.getByPlaceholder('Repite la contraseña')).not.toBeVisible();
   });
 
   test('la confirmación que no coincide impide registrarse', async ({ page }) => {
@@ -157,13 +159,9 @@ test.describe('Autenticación', () => {
 
     await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
 
-    // Y se puede volver a entrar con ella.
+    // Y se puede volver a entrar con ella. Al salir, el formulario vuelve solo
+    // a modo "iniciar sesión", así que no hay que cambiarlo a mano.
     await page.getByRole('button', { name: /salir/i }).click();
-
-    // Al salir, el formulario conserva el modo en el que estaba: como este
-    // test venía de registrarse, sigue en "Crear cuenta". Hay que cambiar a
-    // inicio de sesión antes de buscar el botón "Entrar".
-    await page.getByRole('button', { name: /inicia sesión/i }).click();
 
     await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
     await page.getByPlaceholder('Contraseña', { exact: true }).fill(larga);

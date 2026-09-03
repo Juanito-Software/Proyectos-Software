@@ -497,6 +497,64 @@ una semana justo la puerta que el cambio venía a cerrar.
 `docs/AUDITORIA_TESTS_344.md`. Cobertura del cliente: del 54,93 % al 72,34 %,
 con `AuthContext.jsx` pasando de 0 % a 100 %.
 
+### Experiencia de uso y cobertura del cliente
+
+Fecha: 3 de septiembre de 2026.
+
+Los dos fallos de experiencia de uso que estaban anotados como pendientes, más
+la parte del cliente que seguía sin cubrir.
+
+**El checkbox de completada esperaba a la respuesta del servidor** antes de
+cambiar de aspecto. Con la base de datos en la misma región son 40-80 ms y
+apenas se nota, pero desde una conexión lenta la casilla se quedaba quieta lo
+suficiente para que pareciera que el clic no había funcionado, y la gente vuelve
+a pulsar. Ahora se pinta el cambio de inmediato y se revierte con un aviso si la
+petición falla, que es la contrapartida obligatoria: enseñar un cambio que no
+llegó a guardarse sería peor que tardar en enseñarlo.
+
+Un detalle que había que resolver: `completed` es un campo calculado a partir de
+`status`, así que el estado optimista tiene que traducir los dos. Cambiar solo
+`completed` dejaba la tarjeta incoherente durante el instante en que se pinta,
+con la casilla marcada y el distintivo diciendo «Pendiente». La regla —marcar
+lleva a `completed`, desmarcar vuelve a `pending`— queda duplicada entre cliente
+y servidor, y el test de navegador que marca una tarea y comprueba el distintivo
+es lo que detectaría que las dos se separen.
+
+También hubo que distinguir las actualizaciones silenciosas: el ciclo optimista
+llama a `onUpdate` dos o tres veces por clic, y el aviso «Tarea actualizada»
+salía repetido. El checkbox no avisa —él mismo es la confirmación visual—; la
+edición sí, porque el formulario se cierra y sin el mensaje no queda claro que
+se haya guardado.
+
+**Al salir, el formulario conservaba el modo** en el que estuviera. Quien acababa
+de registrarse y pulsaba Salir se encontraba otra vez «Crear cuenta», con su
+campo de confirmación y sus cuatro requisitos de contraseña, cuando lo que casi
+siempre quiere es volver a entrar. Ahora vuelve a modo «iniciar sesión» al
+perder la sesión, sea por Salir o porque caducara. El reinicio va atado al cambio
+de `isAuthenticated` y no a cada render, para no estorbar a quien pulsa
+«Regístrate» estando ya fuera.
+
+Los dos tests de navegador que **rodeaban** este comportamiento en lugar de
+arreglarlo se han enderezado: uno comprobaba el campo de usuario en vez del
+botón porque «podía decir Entrar o Registrarse», y el otro tenía que pulsar
+«Inicia sesión» antes de buscar el botón «Entrar».
+
+**Cobertura del cliente: del 72% al 96,95%.** `TaskList.jsx` eran 163 líneas sin
+un solo test siendo el componente central de la aplicación, y `App.jsx` otras 51
+con el enrutado. Los dos están ahora al 100%, y de paso los tests de `TaskList`
+son los que fijan que **los filtros los resuelve la API**: si alguien los
+reimplementara en el navegador, la lista seguiría pareciendo correcta con pocas
+tareas y dejaría de escalar sin que nada avisara.
+
+**Un `vi.mock` que podía romper otro archivo.** `TaskItem.test.jsx` sustituía el
+módulo de servicios entero, y esa sustitución vive en el registro de módulos,
+que se comparte entre archivos cuando la suite corre sin aislamiento. Según el
+orden de ejecución, dejaba a `api.refresh.test.js` sin el módulo de verdad.
+Se cambió por espías, que se instalan y se retiran dentro de su propio archivo.
+
+**Tests: de 453 a 501.** Umbrales de cobertura subidos a 95/94/93/96, siempre
+justo por debajo de lo real para que actúen como trinquete.
+
 ### CD: despliegue automático, no encadenado al CI
 
 Render publica en cada commit a `main` mediante Auto-Deploy. **El CI y el
@@ -520,14 +578,10 @@ que dependa de `ci-ok`— queda para cuando la aplicación se estabilice.
   nada, pero es una desviación de la semántica HTTP.
 - ~~**Tokens de 7 días sin revocación.**~~ Resuelto: access token de 15 minutos
   y refresh rotativo con tabla de sesiones.
-- **Cobertura del cliente al 72%.** Subió del 36% al cubrir `AuthForm` (80%) y
-  `AuthContext` (100%). Quedan a cero `App.jsx` y `TaskList.jsx`, que es el
-  componente más grande de la aplicación: lista, filtros, búsqueda con retardo
-  y notificaciones.
-- **El checkbox de completada espera a la respuesta del servidor** antes de
-  cambiar de aspecto. Con la base de datos en la misma región son 40-80 ms y no
-  se nota, pero el patrón correcto sería la actualización optimista: pintar el
-  cambio de inmediato y revertirlo si la petición falla.
+- ~~**Cobertura del cliente al 72%.**~~ Resuelto: 96,95%, con `TaskList.jsx` y
+  `App.jsx` al 100%.
+- ~~**El checkbox de completada espera a la respuesta del servidor.**~~
+  Resuelto: actualización optimista con reversión y aviso si falla.
 - **Los E2E comparten la base de datos de desarrollo** y dejan usuarios
   `e2e-*` detrás de cada ejecución. En CI da igual porque el contenedor se
   destruye, pero en local conviene limpiarlos de vez en cuando o darles su

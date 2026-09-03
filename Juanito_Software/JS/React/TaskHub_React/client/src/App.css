@@ -346,6 +346,14 @@
   font-weight: 500;
 }
 
+/* Aviso cuando un cambio optimista no llegó a guardarse. */
+.task-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
 /* Lista de requisitos de la contraseña, que se van marcando al escribir. */
 .password-requirements {
   list-style: none;

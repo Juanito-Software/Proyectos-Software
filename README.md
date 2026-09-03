@@ -7,7 +7,7 @@ Antes de utilizar, distribuir o modificar cualquier proyecto, revisa la licencia
 que lo acompaña. Este repositorio no implica por sí mismo derechos de uso sobre todo su
 contenido: las condiciones varían según el programa.
 
-> **▶ Probar sin instalar nada:** [**TaskHub_React**](https://taskhub-react.onrender.com) está desplegado y accesible — gestor de tareas full-stack con React, Express y PostgreSQL, con [playground de la API](https://taskhub-react.onrender.com/playground) para lanzar peticiones reales contra los endpoints. 453 tests y CI en cada push.
+> **▶ Probar sin instalar nada:** [**TaskHub_React**](https://taskhub-react.onrender.com) está desplegado y accesible — gestor de tareas full-stack con React, Express y PostgreSQL, con [playground de la API](https://taskhub-react.onrender.com/playground) para lanzar peticiones reales contra los endpoints. 501 tests y CI en cada push.
 >
 > Está en un plan gratuito: la primera carga puede tardar cerca de un minuto mientras el servicio despierta.
 
@@ -61,7 +61,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
 | `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
-| `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 453 tests y CI en cada push |
+| `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 501 tests y CI en cada push |
 
 ### 🐍 Python
 

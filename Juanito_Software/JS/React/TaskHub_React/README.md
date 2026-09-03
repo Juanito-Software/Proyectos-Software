@@ -1,5 +1,7 @@
 # TaskHub – Gestor de tareas multiusuario
 
+[![CI](https://github.com/Juanito-Software/Proyectos-Software/actions/workflows/taskhub-react-ci.yml/badge.svg)](https://github.com/Juanito-Software/Proyectos-Software/actions/workflows/taskhub-react-ci.yml)
+
 Aplicación full-stack con **React** (frontend), **Express + TypeScript** (backend) y **PostgreSQL**. Cada usuario tiene su propia cuenta y ve únicamente sus tareas: los datos están aislados por usuario a nivel de consulta, no solo en la interfaz.
 
 ## Demo en vivo
@@ -29,8 +31,9 @@ TaskHub/
 │   │   │   ├── TaskForm.jsx      # alta y edición, con estado y prioridad
 │   │   │   ├── TaskForm.test.jsx      ← 9 tests
 │   │   │   ├── TaskItem.jsx      # tarjeta de tarea con sus distintivos
-│   │   │   ├── TaskItem.test.jsx      ← 10 tests
-│   │   │   └── TaskList.jsx      # lista, filtros y búsqueda
+│   │   │   ├── TaskItem.test.jsx      ← 18 tests
+│   │   │   ├── TaskList.jsx      # lista, filtros y búsqueda
+│   │   │   └── TaskList.test.jsx      ← 25 tests
 │   │   ├── context/
 │   │   │   ├── AuthContext.jsx   # sesión, renovación automática y logout
 │   │   │   └── AuthContext.test.jsx   ← 20 tests
@@ -44,7 +47,8 @@ TaskHub/
 │   │   ├── constants.js          # etiquetas de estado y prioridad, en un solo sitio
 │   │   ├── passwordPolicy.js     # réplica de la política; el servidor manda
 │   │   ├── passwordPolicy.test.js     ← 22 tests
-│   │   ├── App.jsx
+│   │   ├── App.jsx               # formulario de acceso o lista, según sesión
+│   │   ├── App.test.jsx               ← 15 tests
 │   │   └── main.jsx
 │   ├── vite.config.js            # build, proxy en desarrollo y umbrales de cobertura
 │   └── package.json
@@ -155,7 +159,7 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 - **Lista de tareas**: título, descripción, estado (pendiente / en progreso / completada) y prioridad (baja / media / alta), con distintivos de color. Solo ves tus tareas.
 - **Agregar y editar**: el mismo formulario, con selectores de estado y prioridad.
 - **Eliminar tarea**: con confirmación.
-- **Marcar como completada**: checkbox, como atajo de un clic para el caso más habitual.
+- **Marcar como completada**: checkbox, como atajo de un clic para el caso más habitual. El cambio se pinta al instante y se revierte si la petición falla, así que no hay espera visible.
 - **Filtros y búsqueda**: por estado, por prioridad y por texto en título o descripción. **Los resuelve la API**, no el navegador: viajan como parámetros de consulta y solo llegan las tareas que se piden. La búsqueda espera 300 ms desde la última tecla para no lanzar una petición por carácter.
 - **Notificaciones**: mensaje breve al crear o actualizar una tarea.
 
@@ -269,11 +273,11 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**453 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**501 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 180 + 134 | Nada |
+| `npm test` | Unitarios de servidor y cliente | 180 + 182 | Nada |
 | `npm run verify` | End-to-end de la API | 109 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
