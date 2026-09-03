@@ -38,9 +38,11 @@ de los proyectos).
   que **cerrar una familia significa cerrar la lista de alertas de esa familia,
   no garantizar que el patrón no exista en otro sitio**; lo segundo requiere
   buscar el patrón, no fiarse del listado.
-- **Credenciales en código:** revisadas y retiradas las de
-  `LeaderBoard_Unity` y `unified-chat-widget`. Ninguna quedaba detectable por
-  el escáner automático; aparecieron leyendo el código.
+- **Credenciales en código:** dos incidentes revisados y corregidos, con todas
+  las credenciales afectadas **rotadas o revocadas**. Ninguna era detectable por
+  el escáner automático; aparecieron leyendo el código. Los detalles de dónde
+  estuvo cada una se omiten a propósito: este historial es público y señalarlos
+  equivaldría a señalar los commits anteriores al arreglo.
 
 ---
 
@@ -735,15 +737,21 @@ posible, y siempre con el motivo registrado.
 
 ### Credenciales expuestas
 
-Un archivo de notas de `unified-chat-widget` contenía una copia literal de un
-`.env` con credenciales reales de varios servicios de terceros. El escáner de
-GitHub solo había detectado una de ellas, por ser la única con un formato
-reconocible; el resto pasaba inadvertido.
+Se encontraron credenciales de servicios de terceros escritas en un fichero
+versionado. El escáner de secretos de GitHub solo había detectado una de ellas,
+por ser la única con un formato reconocible; el resto pasaba inadvertido.
 
-Se sustituyeron todos los valores por marcadores de posición y se rotaron o
-restringieron las credenciales afectadas. El `.env` real nunca estuvo
-versionado: la fuga se produjo al copiar su contenido a un archivo que sí lo
-estaba.
+**Todas las credenciales afectadas se rotaron o revocaron**, y los valores del
+repositorio se sustituyeron por marcadores de posición. El origen de la fuga no
+fue el `.env` —que nunca estuvo versionado— sino copiar su contenido a un
+fichero que sí lo estaba.
+
+> Los detalles concretos —qué ficheros, qué proyectos, qué servicios— se han
+> retirado de este documento a propósito. Este historial es público, y describir
+> dónde estuvo cada fuga es un mapa hacia los commits anteriores al arreglo. Las
+> credenciales están rotadas, así que ese mapa no lleva a nada utilizable, pero
+> no hay ninguna razón para publicarlo. La conclusión técnica se conserva; las
+> coordenadas, no.
 
 Se revisaron además las otras alertas del escáner de secretos, de las que dos
 resultaron ser falsos positivos (marcadores de posición y un nombre de clase
@@ -2323,26 +2331,28 @@ la familia 1 para desactivar el modo debug de Flask, y su `str(e)` se pasó por
 alto en la familia 2. La alerta apareció como nueva porque esa misma edición
 provocó el reanálisis del fichero. No se escapó del listado: se dejó a medias.
 
-### Credenciales en el código de LeaderBoard_Unity
+### Segunda fuga de credenciales, encontrada leyendo el código
 
-Al revisar los mensajes de error de esa API aparecieron cuatro credenciales
-reales escritas directamente en el código y versionadas. Ninguna la había
-detectado el escáner de secretos de GitHub: no tienen un formato reconocible,
-así que no hay patrón que buscar. Es el mismo tipo de fuga que la del archivo
-de notas del widget, y refuerza la misma conclusión — **las herramientas
-automáticas encuentran los secretos con formato conocido; el resto solo
-aparece leyendo el código**.
+Al revisar los mensajes de error de una de las API aparecieron más credenciales
+escritas directamente en el código y versionadas. **Ninguna la había detectado
+el escáner de secretos de GitHub**: no tienen un formato reconocible, así que no
+hay patrón que buscar.
 
-Afectaba a la contraseña de aplicación del correo de notificaciones, a la clave
-de firma de los JWT y a las contraseñas de dos usuarios de PostgreSQL, estas
-últimas repetidas además en el README del proyecto, en dos scripts SQL, en un
-archivo de notas, en la configuración de PostgreSQL y en el ejecutor de
-informes de Jasper.
+Es el mismo tipo de fuga que la anterior y refuerza la misma conclusión —
+**las herramientas automáticas encuentran los secretos con formato conocido; el
+resto solo aparece leyendo el código**. Dos incidentes independientes con la
+misma causa dejan poco margen a la interpretación.
 
-De las cuatro, la más grave era la clave de firma de los JWT: con ella se
-pueden fabricar tokens válidos para cualquier usuario, incluido el rol de
-administrador, sin necesidad de credenciales. Las cuatro han sido rotadas o
-revocadas.
+**Todas se han rotado o revocado.** Como en el caso anterior, los detalles —qué
+proyecto, qué servicios, en cuántos ficheros estaba repetida cada una— se han
+retirado de este documento: es público, y describirlos sería señalar los commits
+donde siguen estando los valores viejos.
+
+Sí merece la pena registrar la lección que dejó la más grave de ellas: era una
+clave de firma de JWT, y con una clave de firma se pueden **fabricar tokens
+válidos para cualquier usuario, incluido el rol de administrador, sin conocer
+ninguna contraseña**. No todas las credenciales filtradas cuestan lo mismo, y
+esa es de las que lo cuestan todo.
 
 **Cambios aplicados:** todas las credenciales pasan a leerse de variables de
 entorno, con un `.env.example` documentado y `python-dotenv` añadido a las
