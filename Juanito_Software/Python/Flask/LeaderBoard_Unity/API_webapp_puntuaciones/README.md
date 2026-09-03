@@ -202,12 +202,19 @@ JWT_EXPIRATION_HOURS=1
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=True
-MAIL_USERNAME=deadvalleygame@gmail.com
-MAIL_PASSWORD=mwig lnax nfpm dwjg
+MAIL_USERNAME=<cuenta de correo del proyecto>
+MAIL_PASSWORD=<contraseña de aplicación, NO la del correo>
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000,https://misitio.com
 ```
+
+> **Ninguno de estos valores va al repositorio.** El `.env` está en
+> `.gitignore` y aquí solo se documenta qué variables hacen falta, nunca su
+> contenido. Para `MAIL_PASSWORD` se usa una **contraseña de aplicación** de
+> Google, no la contraseña de la cuenta: se genera en la configuración de
+> seguridad de Google y se puede revocar por separado sin cambiar el acceso al
+> correo.
 
 #### 5. Configurar PostgreSQL
 

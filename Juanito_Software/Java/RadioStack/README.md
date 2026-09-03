@@ -28,7 +28,9 @@ para la trasminion de radio estoy usando Icecast + BUTT
 
 1. Crear base de datos PostgreSQL: `CREATE DATABASE radiostack;` y usuario `radiostack` / contraseña `radiostack` (o ajustar `application.yml`).
 2. Arrancar la API; Flyway creará las tablas y un usuario admin por defecto.
-3. Login en el cliente admin: **admin@radiostack.local** / **admin123**.
+3. Login en el cliente admin con **admin@radiostack.local** y la contraseña
+   por defecto que fija `DataInitializer` (ver el aviso del paso 4 de la
+   guía detallada: hay que cambiarla antes de desplegar en ningún sitio).
 
 ### Pasos 1 a 1 para probar desde JavaFX (incluyendo WebSocket)
 
@@ -49,10 +51,17 @@ para la trasminion de radio estoy usando Icecast + BUTT
      - WebSocket STOMP en `/ws/chat` (endpoint SockJS) y `/app` como prefijo de aplicación.
 
 4. **Verificar que el usuario admin existe**
-   - La primera vez que arranca la API se crea el usuario:
-     - Email: `admin@radiostack.local`
-     - Password: `admin123`
+   - La primera vez que arranca la API, `DataInitializer` crea una cuenta de
+     administración con el correo `admin@radiostack.local` y **una contraseña
+     por defecto escrita en el propio código**.
    - Puedes comprobarlo con `POST /api/v1/auth/login` (Postman/curl) o directamente desde el cliente JavaFX (siguiente paso).
+
+   > ⚠️ **Esa contraseña por defecto sirve para arrancar en local y para nada
+   > más.** Está en el código fuente, que es público, así que cualquiera la
+   > conoce: si este proyecto se despliega en algún sitio accesible desde fuera
+   > sin cambiarla antes, la zona de administración queda abierta. Lo pendiente
+   > es leerla de una variable de entorno y negarse a arrancar si no está
+   > definida, que es lo que hace TaskHub con su semilla de administrador.
 
 5. **Arrancar el cliente JavaFX (interfaz de administración)**
    - En otra terminal:
@@ -63,7 +72,7 @@ para la trasminion de radio estoy usando Icecast + BUTT
 6. **Iniciar sesión desde JavaFX contra la API REST**
    - En la pantalla de login:
      - Email: `admin@radiostack.local`
-     - Contraseña: `admin123`
+     - Contraseña: la que fija `DataInitializer` al arrancar por primera vez
    - El cliente JavaFX llamará a `POST /api/v1/auth/login` y, si es correcto, cambiará a la pantalla de **Dashboard**.
 
 7. **Navegar por el Dashboard**

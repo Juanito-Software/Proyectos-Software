@@ -85,10 +85,7 @@ TaskHub/
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
 ├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 30 tests
-├── docs/AUDITORIA_SEGURIDAD.md   # informe de la auditoría de seguridad
-├── docs/AUDITORIA_TESTS_229.md   # revisión test a test tras la política de contraseñas
-├── docs/AUDITORIA_TESTS_344.md   # revisión test a test tras los refresh tokens
-├── docs/AUDITORIA_INTEGRAL.md    # auditoría de seguridad, bugs y cobertura
+├── docs/AUDITORIA.md             # auditoría: seguridad, bugs, tests y cobertura
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
 ├── .github/workflows/            # pipeline de CI (copia; GitHub lee el de la raíz)
@@ -276,18 +273,26 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**558 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**818 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 216 + 182 | Nada |
+| `npm test` | Unitarios de servidor y cliente | 476 + 182 | Nada |
 | `npm run verify` | End-to-end de la API | 130 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
-Los **unitarios** cubren lógica pura —validadores, escapado de comodines de
-`LIKE`, campos calculados, la capa de servicios del cliente y los componentes de
-tarea— y corren en milisegundos sin nada instalado.
+Los **unitarios** cubren lógica pura —validadores, política de contraseñas,
+escapado de comodines de `LIKE`, servicios, controladores, middleware, la capa
+de servicios del cliente y los componentes— y corren en milisegundos sin nada
+instalado. En el servidor llegan al **99,5% de esa lógica**, con el umbral
+puesto justo por debajo en `vitest.config.ts` para que una rama nueva sin cubrir
+ponga el CI en rojo.
+
+Ese porcentaje mide solo lo que corre sin base de datos: los repositorios, los
+routers y el cableado de Express están excluidos a propósito porque quien los
+ejercita es `npm run verify` contra PostgreSQL real. Un 99,5% aquí no significa
+que el servidor entero esté probado al 99,5%.
 
 La **suite de la API** levanta la aplicación en un puerto temporal contra un
 esquema de base de datos propio, que se crea al empezar y se destruye al

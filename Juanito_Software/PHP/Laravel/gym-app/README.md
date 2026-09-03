@@ -97,15 +97,30 @@ Abrir en el navegador:
 
 ## Usuarios de prueba
 
-### Administrador
-- Email: `bernaldezperedaj@gmail.com`
-- Password: `Tomate1?`
+La aplicación tiene tres roles —administrador, entrenador y usuario— y para
+recorrerla entera hacen falta los tres. **No vienen creados**: el seeder deja el
+ejemplo comentado a propósito, para no meter cuentas con contraseña conocida en
+ninguna base de datos que luego se despliegue por error.
 
-### Entrenador
-- Email: `entrenador1@prueba.com`
-- Password: `Tomate1?`
+Se crean en un minuto con Tinker, eligiendo tú la contraseña:
 
-### Usuario
-- Email: `prueba3@prueba.com`
-- Password: `Tomate1?`
+```bash
+php artisan tinker
+```
+
+```php
+foreach ([['admin@example.test','admin'],
+          ['entrenador@example.test','entrenador'],
+          ['usuario@example.test','usuario']] as [$correo, $rol]) {
+    \App\Models\User::create([
+        'name'     => $rol,
+        'email'    => $correo,
+        'password' => bcrypt('la-que-tu-elijas'),
+        'role'     => $rol,
+    ]);
+}
+```
+
+> Usa una contraseña de usar y tirar, no una de las tuyas. Y si en algún momento
+> este proyecto se despliega, que estas cuentas no viajen con él.
 

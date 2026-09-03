@@ -28,29 +28,44 @@ export default defineConfig({
         'src/**/*.router.ts',
         'src/**/*.repository.ts',
         'src/types/**',
+        // `app.ts` es cableado de Express —helmet, la CSP, los estáticos, el
+        // montaje de rutas—, la misma categoría que los routers: no se puede
+        // ejercitar sin levantar el servidor, y quien lo levanta es
+        // `npm run verify`. Los `*.types.ts` son solo declaraciones, sin
+        // código que ejecutar.
+        'src/app.ts',
+        'src/**/*.types.ts',
       ],
       /**
        * Umbrales como trinquete, igual que en el cliente.
        *
-       * El número es **bajo a propósito** y no hay que leerlo como «el
-       * servidor está mal probado». Lo que mide esta suite es solo la lógica
-       * pura; todo lo que necesita base de datos —servicios, controladores,
-       * repositorios— lo ejercita `npm run verify` con 130 comprobaciones
-       * contra PostgreSQL real, y eso no aparece aquí.
+       * Qué mide este número y qué no: **solo la lógica que corre sin base de
+       * datos**. Los repositorios, los routers y el cableado de Express están
+       * excluidos arriba y los ejercita `npm run verify` con 130 comprobaciones
+       * contra PostgreSQL real. Un 99% aquí no significa «el servidor entero
+       * está probado al 99%»; significa que de la lógica pura no queda casi
+       * nada sin tocar.
        *
-       * Aun así el umbral hace falta. Hasta ahora esta cobertura **no se medía
-       * en ninguna parte**: el cliente tenía trinquete y el servidor no, así
-       * que una rama nueva sin cubrir entraba sin que nada avisara. Vale más un
-       * suelo modesto que se defiende que ninguno.
+       * Va justo por debajo de lo real (99,54 / 98,95 / 98,73 / 99,51), que es
+       * como debe funcionar un trinquete: si alguien añade una rama y no la
+       * cubre, el CI se pone rojo en lugar de dejarla pasar en silencio.
        *
-       * Va justo por debajo de lo real (37,19 / 50,31 / 31,46 / 36,46). Cuando
-       * suba, hay que subirlo.
+       * Lo que queda fuera son cuatro ramas defensivas que no se pueden forzar
+       * desde el exterior sin retorcer los dobles hasta que el test deje de
+       * significar nada: un `if` de guarda en `auth.controller`, dos ramas de
+       * normalización en los validadores y una en `password-policy`. Queda
+       * anotado por si algún día se encuentra la manera de llegar a ellas.
+       *
+       * Un aviso para quien suba estos números: **el 100% no es el objetivo**.
+       * Llegar al último punto obliga a escribir tests que existen para mover
+       * el contador, no para detectar fallos, y esos son peores que la línea
+       * sin cubrir que sustituyen.
        */
       thresholds: {
-        statements: 36,
-        branches: 49,
-        functions: 30,
-        lines: 35,
+        statements: 99,
+        branches: 98,
+        functions: 98,
+        lines: 99,
       },
     },
   },
