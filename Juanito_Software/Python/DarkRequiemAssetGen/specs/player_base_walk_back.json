@@ -1,0 +1,22 @@
+{
+  "kind": "character",
+  "subject": "penniless starving wretch with no possessions, wearing only a single ragged loincloth and nothing else",
+  "facing": "N",
+  "grid": 128,
+  "palette": "dark_requiem_32",
+  "seed": 42000,
+  "variants": 4,
+  "backend": "sdxl-pixelart",
+  "pose": "mid-stride walking pose, one leg forward, arms swinging, dynamic movement",
+  "extra_prompt": "completely unarmored, no armor of any kind, no helmet, no shield, no weapon, skin fully exposed except for the loincloth at the hips",
+  "extra_negative": "knight, plate armor, chainmail, gauntlets, greaves, pauldrons, breastplate, full armor, suit of armor, metal armor, shining armor, warrior in armor, soldier, guard uniform, armor, helmet, weapon, shield, ornate clothing, jewelry, cape, hat, cloak, hood, tattoos, scars, tunic, shirt, robe, trousers, pants, boots, shoes, sandals, gloves, bracers, belt buckle, fine fabric, pristine clean clothing, rich fabric, embroidery, gold trim",
+  "tags": [
+    "wearing nothing but a single tattered burlap loincloth tied at the waist",
+    "bare chest, bare arms, bare legs, bare feet",
+    "gaunt lean malnourished body, visible ribs",
+    "dirty grime-streaked skin, weathered and dusty",
+    "unkempt disheveled hair",
+    "clean silhouette for armor overlay"
+  ],
+  "spec_version": 1
+}

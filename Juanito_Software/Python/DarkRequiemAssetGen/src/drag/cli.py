@@ -198,6 +198,10 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
     backend_key = args.backend or spec.backend
     backend = get_backend(backend_key)
+    if args.guidance is not None and hasattr(backend, "guidance"):
+        backend.guidance = args.guidance
+    if args.steps is not None and hasattr(backend, "steps"):
+        backend.steps = args.steps
     palette = Palette.load(args.palette or spec.palette)
     # Por defecto se keyea magenta: PromptBuilder lo pide explicitamente en
     # cada prompt, asi que adivinar el fondo aqui seria tirar informacion que
@@ -340,7 +344,7 @@ def build_parser() -> argparse.ArgumentParser:
     pp = sub.add_parser("pixelpass", help="Convertir imagenes en pixel art real")
     pp.add_argument("input")
     pp.add_argument("-o", "--output", default="out")
-    pp.add_argument("-g", "--grid", type=int, default=32)
+    pp.add_argument("-g", "--grid", type=int, default=128)
     pp.add_argument("-p", "--palette", default="dark_requiem_32")
     pp.add_argument("--keep-background", action="store_true")
     pp.add_argument("--bg-tolerance", type=float, default=0.10)
@@ -355,7 +359,7 @@ def build_parser() -> argparse.ArgumentParser:
     m = sub.add_parser("metrics", help="Metricas objetivas + CSV")
     m.add_argument("input")
     m.add_argument("-p", "--palette", default="dark_requiem_32")
-    m.add_argument("-g", "--grid", type=int, default=32)
+    m.add_argument("-g", "--grid", type=int, default=128)
     m.add_argument("--csv")
     m.set_defaults(func=cmd_metrics)
 
@@ -395,6 +399,12 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--bg-key", default="#FF00FF",
                    help="Color de fondo a eliminar. El prompt lo pide magenta.")
     g.add_argument("--no-raw", action="store_true", help="No conservar los 1024x1024")
+    g.add_argument("--guidance", type=float,
+                   help="Sobrescribe el guidance_scale del backend (SDXL: 7.5 por "
+                        "defecto). Subirlo a 9-11 fuerza mas el negativo cuando el "
+                        "modelo insiste en ignorar un rasgo pedido, p.ej. armadura "
+                        "que no deberia aparecer.")
+    g.add_argument("--steps", type=int, help="Sobrescribe num_inference_steps del backend")
     g.set_defaults(func=cmd_generate)
 
     bch = sub.add_parser("bench", help="Fase 2: benchmark de backends")
@@ -405,7 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
     br.add_argument("-b", "--backends", default="mock")
     br.add_argument("-o", "--output", default="bench/out")
     br.add_argument("-p", "--palette", default="dark_requiem_32")
-    br.add_argument("-g", "--grid", type=int, default=32)
+    br.add_argument("-g", "--grid", type=int, default=128)
     br.add_argument("--render-size", type=int, default=1024)
     br.add_argument("--bg-key", default="#FF00FF")
     br.add_argument("--keep-raw", action="store_true")
@@ -428,7 +438,7 @@ def build_parser() -> argparse.ArgumentParser:
     pk.add_argument("-c", "--columns", type=int)
     pk.add_argument("--padding", type=int, default=0)
     pk.add_argument("--no-pot", action="store_true", help="No redondear a potencia de 2")
-    pk.add_argument("--ppu", type=int, default=32, help="Pixels per unit")
+    pk.add_argument("--ppu", type=int, default=128, help="Pixels per unit")
     pk.add_argument("--pivot", default="0.5,0.0", help="Pivote; 0.5,0.0 = pies")
     pk.set_defaults(func=cmd_pack)
 

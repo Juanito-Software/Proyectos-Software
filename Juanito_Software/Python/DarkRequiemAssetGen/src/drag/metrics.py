@@ -41,7 +41,7 @@ class ImageMetrics:
 def measure(
     src: Image.Image | str | Path,
     palette: Palette,
-    target_grid: int = 32,
+    target_grid: int = 128,
     offpalette_tol: float = 0.02,
     orphan_frac: float = 0.001,
 ) -> ImageMetrics:

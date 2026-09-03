@@ -26,11 +26,18 @@ class AssetSpec:
     kind: Kind
     subject: str
     facing: Facing = "S"
-    grid: int = 32
+    grid: int = 128
     palette: str = "dark_requiem_32"
     seed: int | None = None
     variants: int = 4
     backend: str = "sdxl-pixelart"
+    # None = usa la pose por defecto del kind ("standing idle pose", etc. en
+    # prompts.py). Se pone aparte de extra_prompt a proposito: el texto de
+    # pose por defecto va DENTRO de la plantilla del kind, asi que meter la
+    # pose por extra_prompt la duplicaria en el prompt en vez de sustituirla
+    # -- "standing idle pose" y "mid-stride walking pose" a la vez es la
+    # misma clase de contradiccion que rompio los tiles del fondo magenta.
+    pose: str | None = None
     extra_prompt: str = ""
     extra_negative: str = ""
     tags: tuple[str, ...] = field(default_factory=tuple)

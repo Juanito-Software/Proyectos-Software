@@ -2,7 +2,7 @@
   "kind": "character",
   "subject": "dark medieval knight with great sword",
   "facing": "S",
-  "grid": 32,
+  "grid": 128,
   "palette": "dark_requiem_32",
   "seed": 1337,
   "variants": 4,

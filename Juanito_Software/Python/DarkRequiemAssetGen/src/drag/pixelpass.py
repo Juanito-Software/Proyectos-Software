@@ -2,8 +2,8 @@
 
 Esta es la capa que justifica el proyecto. Un modelo de difusion produce una
 imagen de 1024x1024 con bordes antialiaseados, cientos de colores y una rejilla
-que casi nunca esta alineada. Unity no quiere eso: quiere 32x32 exactos, alpha
-dura, y una paleta cerrada.
+que casi nunca esta alineada. Unity no quiere eso: quiere una rejilla NxN exacta
+(el default del proyecto es 64x64), alpha dura, y una paleta cerrada.
 
 Orden de operaciones (importa, y mucho):
 
@@ -38,7 +38,7 @@ from .palette import Palette, hex_to_rgb, srgb_to_oklab
 
 @dataclass(frozen=True)
 class PixelPassConfig:
-    grid: int = 32
+    grid: int = 128
     remove_background: bool = True
     bg_tolerance: float = 0.10          # distancia OKLab; ~0.10 es generosa
     bg_key: str | None = None           # "#FF00FF" para no adivinar el fondo
@@ -176,7 +176,7 @@ def remove_background(
 
 def trim_and_frame(rgba: np.ndarray, margin: float = 0.06, square: bool = True) -> np.ndarray:
     """Recorta al contenido opaco y encuadra. Sin esto, un sprite generado con
-    mucho aire alrededor pierde la mitad de su resolucion util al bajar a 32."""
+    mucho aire alrededor pierde la mitad de su resolucion util al bajar de escala."""
     alpha = rgba[..., 3]
     ys, xs = np.nonzero(alpha > 0)
     if ys.size == 0:
@@ -226,7 +226,7 @@ def modal_downscale(
 def despeckle(idx: np.ndarray, alpha: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Elimina pixeles opacos totalmente aislados y rellena agujeros de 1px.
 
-    A 32x32 un pixel suelto no es detalle, es ruido: en movimiento parpadea.
+    A rejilla pequena un pixel suelto no es detalle, es ruido: en movimiento parpadea.
     """
     a = alpha.copy()
     idxo = idx.copy()

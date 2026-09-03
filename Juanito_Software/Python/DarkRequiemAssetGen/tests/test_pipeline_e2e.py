@@ -40,7 +40,11 @@ def backend():
 @pytest.fixture
 def spec() -> AssetSpec:
     return AssetSpec(
-        kind="character", subject="dark medieval knight", seed=1337, variants=2, backend="mock"
+        kind="character", subject="dark medieval knight", seed=1337, variants=2, backend="mock",
+        # Fijo explicito a 32: este fixture prueba la deteccion de rejilla
+        # incoherente y el contenido del sidecar contra ese numero concreto,
+        # y no quiero que dependa de cual sea el default del proyecto hoy.
+        grid=32,
     )
 
 

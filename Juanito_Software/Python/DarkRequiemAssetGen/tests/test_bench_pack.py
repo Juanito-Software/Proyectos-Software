@@ -96,9 +96,9 @@ def test_la_corrida_produce_una_fila_por_imagen(corrida):
     assert all(float(f["seconds"]) > 0 for f in filas)
 
 
-def test_las_imagenes_del_benchmark_existen_y_son_32(corrida):
+def test_las_imagenes_del_benchmark_existen_y_son_el_grid_por_defecto(corrida):
     for f in csv.DictReader(corrida.open(encoding="utf-8")):
-        assert Image.open(f["sprite_path"]).size == (32, 32)
+        assert Image.open(f["sprite_path"]).size == (128, 128)
 
 
 def test_reanudar_no_regenera_nada(corrida, palette):
@@ -223,7 +223,7 @@ def test_el_meta_fija_los_ajustes_de_pixel_art(tmp_path):
     assert "spriteMeshType: 0" in txt, "Tight desalinea pivotes entre frames"
     assert "spriteMode: 2" in txt, "el atlas necesita modo Multiple"
     assert "alphaIsTransparency: 1" in txt
-    assert "spritePixelsToUnits: 32" in txt
+    assert "spritePixelsToUnits: 128" in txt
 
 
 def test_el_meta_declara_todos_los_sprites(tmp_path):

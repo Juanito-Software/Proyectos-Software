@@ -10,7 +10,7 @@ Los cuatro ajustes que de verdad importan para pixel art, y que este `.meta`
 fija de una vez:
 
 - `filterMode: 0` (Point). El unico responsable de que tu sprite se vea nitido.
-- `textureCompression: 0` (sin comprimir). DXT sobre 32x32 con paleta cerrada
+- `textureCompression: 0` (sin comprimir). DXT sobre pixel art de paleta cerrada
   destroza justo los colores que te has molestado en cuantizar.
 - `enableMipMap: 0`. Los mipmaps en 2D no aportan y emborronan a distancia.
 - `spriteMeshType: 0` (FullRect). Con Tight, Unity recorta el mesh al alfa y
@@ -152,7 +152,7 @@ def _internal_id(seed: str) -> int:
 def unity_meta(
     sheet: Sheet,
     texture_name: str,
-    pixels_per_unit: int = 32,
+    pixels_per_unit: int = 128,
     pivot: tuple[float, float] = (0.5, 0.0),
     max_texture_size: int = 2048,
 ) -> str:
@@ -316,7 +316,7 @@ def export_for_unity(
     columns: int | None = None,
     padding: int = 0,
     power_of_two: bool = True,
-    pixels_per_unit: int = 32,
+    pixels_per_unit: int = 128,
     pivot: tuple[float, float] = (0.5, 0.0),
 ) -> tuple[Path, Path, Path]:
     """Atlas + frames.json + .meta. Devuelve las tres rutas."""

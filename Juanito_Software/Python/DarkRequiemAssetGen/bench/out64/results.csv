@@ -1,0 +1,33 @@
+backend,spec_index,kind,subject,seed,seconds,sprite_path,raw_unique_colors,raw_offpalette_pct,raw_orphan_color_pct,raw_grid_adherence,final_unique_colors,final_offpalette_pct,final_soft_alpha_pct,subject_coverage,sospechosa
+sdxl-pixelart,0,character,dark medieval knight with great sword,1337,43.86,bench\out64\sdxl-pixelart\00_character_seed1337.png,39773,98.602,12.984,0.5,19,0.0,0.0,0.2839,0
+sdxl-pixelart,0,character,dark medieval knight with great sword,20250,26.58,bench\out64\sdxl-pixelart\00_character_seed20250.png,33454,99.248,11.026,0.5,16,0.0,0.0,0.793,0
+sdxl-pixelart,0,character,dark medieval knight with great sword,48611,26.48,bench\out64\sdxl-pixelart\00_character_seed48611.png,44805,96.683,24.921,0.5,19,0.0,0.0,0.2261,0
+sdxl-pixelart,0,character,dark medieval knight with great sword,77003,25.44,bench\out64\sdxl-pixelart\00_character_seed77003.png,53626,97.824,25.233,0.5,21,0.0,0.0,0.2869,0
+sdxl-pixelart,1,character,hooded plague doctor with lantern,1337,25.86,bench\out64\sdxl-pixelart\01_character_seed1337.png,53972,92.863,30.172,0.5,26,0.0,0.0,0.2942,0
+sdxl-pixelart,1,character,hooded plague doctor with lantern,20250,25.52,bench\out64\sdxl-pixelart\01_character_seed20250.png,21251,98.981,8.863,0.5,13,0.0,0.0,0.8066,0
+sdxl-pixelart,1,character,hooded plague doctor with lantern,48611,25.22,bench\out64\sdxl-pixelart\01_character_seed48611.png,40087,91.066,27.633,0.562,23,0.0,0.0,0.2847,0
+sdxl-pixelart,1,character,hooded plague doctor with lantern,77003,25.42,bench\out64\sdxl-pixelart\01_character_seed77003.png,31747,97.682,25.322,0.5,17,0.0,0.0,0.2649,0
+sdxl-pixelart,2,enemy,rotting skeleton warrior with rusted axe,1337,25.53,bench\out64\sdxl-pixelart\02_enemy_seed1337.png,63284,99.369,13.615,0.5,29,0.0,0.0,0.4077,0
+sdxl-pixelart,2,enemy,rotting skeleton warrior with rusted axe,20250,25.53,bench\out64\sdxl-pixelart\02_enemy_seed20250.png,68460,97.245,17.311,0.5,16,0.0,0.0,0.7959,0
+sdxl-pixelart,2,enemy,rotting skeleton warrior with rusted axe,48611,25.43,bench\out64\sdxl-pixelart\02_enemy_seed48611.png,80879,98.069,21.699,0.5,21,0.0,0.0,0.3193,0
+sdxl-pixelart,2,enemy,rotting skeleton warrior with rusted axe,77003,25.61,bench\out64\sdxl-pixelart\02_enemy_seed77003.png,106824,99.504,26.422,0.5,25,0.0,0.0,0.2544,0
+sdxl-pixelart,3,enemy,hulking stone gargoyle with spread wings,1337,25.43,bench\out64\sdxl-pixelart\03_enemy_seed1337.png,74084,97.413,27.962,0.5,16,0.0,0.0,0.3345,0
+sdxl-pixelart,3,enemy,hulking stone gargoyle with spread wings,20250,26.18,bench\out64\sdxl-pixelart\03_enemy_seed20250.png,68549,95.885,33.869,0.5,22,0.0,0.0,0.8066,0
+sdxl-pixelart,3,enemy,hulking stone gargoyle with spread wings,48611,26.21,bench\out64\sdxl-pixelart\03_enemy_seed48611.png,97329,97.615,33.641,0.5,19,0.0,0.0,0.363,0
+sdxl-pixelart,3,enemy,hulking stone gargoyle with spread wings,77003,26.51,bench\out64\sdxl-pixelart\03_enemy_seed77003.png,73729,98.159,46.169,0.5,17,0.0,0.0,0.4189,0
+sdxl-pixelart,4,item,vial of green poison,1337,28.31,bench\out64\sdxl-pixelart\04_item_seed1337.png,27232,99.9,4.021,0.438,28,0.0,0.0,0.3118,0
+sdxl-pixelart,4,item,vial of green poison,20250,26.03,bench\out64\sdxl-pixelart\04_item_seed20250.png,49998,99.663,7.064,0.438,25,0.0,0.0,0.2878,0
+sdxl-pixelart,4,item,vial of green poison,48611,24.96,bench\out64\sdxl-pixelart\04_item_seed48611.png,104537,18.495,21.504,0.5,19,0.0,0.0,0.2803,0
+sdxl-pixelart,4,item,vial of green poison,77003,25.05,bench\out64\sdxl-pixelart\04_item_seed77003.png,57349,99.594,8.012,0.5,28,0.0,0.0,0.3013,0
+sdxl-pixelart,5,item,ornate brass key with skull bow,1337,25.82,bench\out64\sdxl-pixelart\05_item_seed1337.png,46113,99.015,10.871,0.5,15,0.0,0.0,0.1567,0
+sdxl-pixelart,5,item,ornate brass key with skull bow,20250,26.66,bench\out64\sdxl-pixelart\05_item_seed20250.png,56840,99.498,10.75,0.5,15,0.0,0.0,0.1416,0
+sdxl-pixelart,5,item,ornate brass key with skull bow,48611,26.36,bench\out64\sdxl-pixelart\05_item_seed48611.png,56004,99.439,15.843,0.5,9,0.0,0.0,0.1697,0
+sdxl-pixelart,5,item,ornate brass key with skull bow,77003,26.46,bench\out64\sdxl-pixelart\05_item_seed77003.png,94122,99.567,21.146,0.5,16,0.0,0.0,0.2488,0
+sdxl-pixelart,6,tile,cracked stone dungeon floor,1337,26.33,bench\out64\sdxl-pixelart\06_tile_seed1337.png,31109,100.0,64.254,0.562,15,0.0,0.0,0.8203,0
+sdxl-pixelart,6,tile,cracked stone dungeon floor,20250,26.19,bench\out64\sdxl-pixelart\06_tile_seed20250.png,17426,100.0,64.104,0.562,9,0.0,0.0,0.8203,0
+sdxl-pixelart,6,tile,cracked stone dungeon floor,48611,26.3,bench\out64\sdxl-pixelart\06_tile_seed48611.png,23379,99.998,65.973,0.562,11,0.0,0.0,0.8203,0
+sdxl-pixelart,6,tile,cracked stone dungeon floor,77003,25.97,bench\out64\sdxl-pixelart\06_tile_seed77003.png,23293,100.0,60.943,0.562,12,0.0,0.0,0.8203,0
+sdxl-pixelart,7,tile,dark cobblestone path,1337,25.12,bench\out64\sdxl-pixelart\07_tile_seed1337.png,3205,100.0,27.008,0.562,9,0.0,0.0,0.8203,0
+sdxl-pixelart,7,tile,dark cobblestone path,20250,26.08,bench\out64\sdxl-pixelart\07_tile_seed20250.png,7777,99.883,33.77,0.562,12,0.0,0.0,0.8203,0
+sdxl-pixelart,7,tile,dark cobblestone path,48611,26.52,bench\out64\sdxl-pixelart\07_tile_seed48611.png,3083,100.0,23.796,0.875,7,0.0,0.0,0.8203,0
+sdxl-pixelart,7,tile,dark cobblestone path,77003,25.82,bench\out64\sdxl-pixelart\07_tile_seed77003.png,3522,100.0,29.109,0.938,7,0.0,0.0,0.8203,0

@@ -125,7 +125,7 @@ def run_benchmark(
     backend_keys: list[str],
     palette: Palette,
     out_dir: str | Path,
-    grid: int = 32,
+    grid: int = 128,
     render_size: int = 1024,
     keep_raw: bool = False,
     bg_key: str | None = "#FF00FF",

@@ -2,7 +2,7 @@
   "kind": "item",
   "subject": "vial of green poison",
   "facing": "S",
-  "grid": 32,
+  "grid": 128,
   "palette": "dark_requiem_32",
   "seed": null,
   "variants": 6,

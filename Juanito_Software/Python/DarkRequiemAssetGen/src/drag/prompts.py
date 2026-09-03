@@ -28,11 +28,26 @@ BASE_STYLE = (
 )
 
 KIND_TEMPLATES = {
-    "character": "full body character sprite of {subject}, {facing}, centered, standing idle pose",
-    "enemy": "full body enemy sprite of {subject}, {facing}, centered, menacing idle pose",
+    "character": (
+        "full body character sprite of {subject}, {facing}, centered, "
+        "{pose}, distinct facial detail clearly visible "
+        "(eyes, mask or visor readable, not a blank head)"
+    ),
+    "enemy": (
+        "full body enemy sprite of {subject}, {facing}, centered, "
+        "{pose}, distinct facial detail clearly visible "
+        "(eyes, skull or muzzle readable, not a blank head)"
+    ),
     "item": "single inventory item icon of {subject}, centered, isolated object, no character",
     "tile": "seamless terrain tile of {subject}, top-down, tileable, no border",
     "prop": "single environment prop of {subject}, {facing}, centered, isolated object",
+}
+
+#: Pose por defecto cuando el spec no fija AssetSpec.pose. Solo character y
+#: enemy usan {pose} en su plantilla; los demas kinds ignoran esta tabla.
+DEFAULT_POSE = {
+    "character": "standing idle pose",
+    "enemy": "menacing idle pose",
 }
 
 BASE_NEGATIVE = (
@@ -43,8 +58,8 @@ BASE_NEGATIVE = (
 )
 
 KIND_NEGATIVE = {
-    "character": "extra limbs, deformed hands, blurred face",
-    "enemy": "extra limbs, deformed anatomy",
+    "character": "extra limbs, deformed hands, blurred face, blank face, featureless head, faceless",
+    "enemy": "extra limbs, deformed anatomy, blank face, featureless head, faceless",
     "item": "hands holding it, character, background scenery",
     "tile": "object in center, character, isolated subject, vignette",
     "prop": "character, hands, crowd",
@@ -57,7 +72,8 @@ def build_prompt(spec: AssetSpec) -> tuple[str, str]:
     """Devuelve (positivo, negativo) para un spec dado."""
     template = KIND_TEMPLATES[spec.kind]
     facing = FACING_WORDS.get(spec.facing, FACING_WORDS["S"])
-    body = template.format(subject=spec.subject, facing=facing)
+    pose = spec.pose or DEFAULT_POSE.get(spec.kind, "idle pose")
+    body = template.format(subject=spec.subject, facing=facing, pose=pose)
     style = BASE_STYLE.format(grid=spec.grid)
 
     parts = [body, style]

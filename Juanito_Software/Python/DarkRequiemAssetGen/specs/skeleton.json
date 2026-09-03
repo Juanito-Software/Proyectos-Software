@@ -1,14 +1,16 @@
 {
   "kind": "enemy",
-  "subject": "rotting skeleton warrior",
-  "facing": "SE",
-  "grid": 32,
+  "subject": "rotting skeleton warrior with rusted axe",
+  "facing": "S",
+  "grid": 128,
   "palette": "dark_requiem_32",
-  "seed": null,
+  "seed": 1337,
   "variants": 4,
   "backend": "sdxl-pixelart",
   "extra_prompt": "",
   "extra_negative": "",
-  "tags": [],
+  "tags": [
+    "broken ribcage"
+  ],
   "spec_version": 1
 }
