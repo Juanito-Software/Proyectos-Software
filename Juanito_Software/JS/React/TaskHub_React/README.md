@@ -331,11 +331,11 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**912 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**937 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 523 + 212 | Nada |
+| `npm test` | Unitarios de servidor y cliente | 548 + 212 | Nada |
 | `npm run verify` | End-to-end de la API | 147 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
@@ -762,44 +762,80 @@ añadido uno: endurecer la política no invalida nada. Quien quiera ponerse al d
 puede hacerlo desde el botón «Contraseña» de la cabecera, y ahí sí se aplica la
 política nueva.
 
-### Límite de intentos: por IP y por cuenta
+### Límite de intentos: tres capas
 
-Hay **dos contadores**, y hacen falta los dos.
+Hay **tres mecanismos** sobre el inicio de sesión, y cada uno tapa lo que el
+anterior deja abierto.
 
-`authLimiter` cuenta intentos fallidos **por dirección de origen**: diez cada
+**1. Por dirección de origen.** `authLimiter`: diez intentos fallidos cada
 quince minutos. Frena a quien ataca desde un sitio, que es el caso corriente.
 
-Lo que no frena es a quien reparte. Con mil direcciones, diez intentos desde cada
-una son diez mil contra la misma cuenta sin que ninguna agote su cuota. Por eso
-`accountLimiter` cuenta **por nombre de usuario**, veinte cada quince minutos, y
-le da igual de dónde venga cada intento. La clave se normaliza en minúsculas
-igual que el índice único de la tabla: sin eso, alternar mayúsculas abriría un
-cubo nuevo por cada variante.
+Lo que no frena es a quien reparte. Con mil direcciones, diez intentos desde
+cada una son diez mil contra la misma cuenta sin que ninguna agote su cuota.
 
-El cubo se crea con el nombre que llegue, **exista o no** en la base de datos. Si
-solo se contaran los usuarios reales, la diferencia de comportamiento entre un
+**2. Retrasos progresivos por cuenta.** `accountSlowDown` cuenta por **nombre de
+usuario**, no por origen, así que las mil direcciones caen todas en el mismo
+cubo. Y en lugar de denegar, retrasa:
+
+| Intentos fallidos | Retraso |
+|---|---|
+| 1-3 | ninguno |
+| 4 | 1 s |
+| 5 | 2 s |
+| 6 | 4 s |
+| 7 | 8 s |
+| 8 o más | 30 s (tope) |
+
+**Toda la defensa está en la asimetría de esa curva.** Quien conoce su
+contraseña acierta al primer o segundo intento y no nota nada. Quien se
+equivoca de verdad falla tres o cuatro veces y espera un segundo. Quien prueba a
+ciegas necesita miles de intentos, y a treinta segundos cada uno pasa de miles
+por minuto a **menos de ciento veinte por hora**.
+
+**3. Tope duro, como red de seguridad.** `accountLimiter` corta a los doscientos
+intentos por cuenta. Está deliberadamente lejos, y ese número tiene una historia.
+
+#### Por qué se retrasa en vez de bloquear
+
+La primera versión de esto era solo un bloqueo duro a los veinte intentos.
+Resolvía el ataque repartido e introducía otro: **si bloquear es posible,
+cualquiera que sepa un nombre de usuario puede provocarlo aposta** y dejar a su
+dueño sin poder entrar.
+
+Afinar el umbral no lo arregla. El problema no es el número, es el mecanismo: un
+bloqueo es un binario —permitido o denegado—, y cualquier binario que un
+atacante pueda forzar se convierte en un arma. Con veinte deja fuera a
+cualquiera; con doscientos, si esos doscientos son alcanzables, también.
+
+Lo que sí lo arregla es cambiar el castigo. **Un retraso no tiene estado
+«bloqueado» que forzar.** Nadie queda fuera: el dueño de la cuenta atacada
+escribe su contraseña, espera lo que toque y entra.
+
+El tope duro sigue ahí para el caso patológico, pero con los retrasos por medio
+llegar a doscientos exige **más de una hora de martilleo continuado** para
+conseguir un bloqueo de quince minutos. Deja de ser un arma y pasa a ser lo que
+debe ser: un límite que en la práctica no se toca.
+
+#### Detalles que importan
+
+La clave se normaliza en minúsculas igual que el índice único de la tabla: sin
+eso, alternar mayúsculas abriría un cubo nuevo por cada variante.
+
+El cubo se crea con el nombre que llegue, **exista o no** en la base de datos.
+Si solo se contaran los usuarios reales, la diferencia de comportamiento entre un
 nombre registrado y uno inventado sería una forma de enumerarlos.
 
-**El precio, dicho claro: esto permite bloquear una cuenta ajena a propósito.**
-Cualquiera que sepa un nombre de usuario puede fallar veinte veces y dejarlo sin
-poder iniciar sesión durante un cuarto de hora. Es el compromiso clásico de este
-mecanismo, y se acepta por tres razones:
+Solo cuentan los fallos: quien entra a la primera no acumula nada aunque lo haga
+cien veces al día.
 
-1. El límite por cuenta es **el doble** que el de IP, así que quien se equivoca
-   de verdad al teclear no lo alcanza nunca.
-2. El bloqueo es temporal y acotado: quince minutos, no permanente.
-3. Y sobre todo, **no expulsa a nadie**. Solo impide iniciar sesión de nuevo;
-   quien ya está dentro sigue dentro, porque su renovación va por la cookie de
-   refresco y no vuelve a pasar por la contraseña. El daño es «no puedo entrar
-   desde un dispositivo nuevo durante un rato», no «me han echado».
-
-La alternativa sin ese precio son los retardos progresivos, que no bloquean a
-nadie pero exigen mantener estado propio. Queda como mejora futura.
-
-Hay una comprobación en la suite de API que fija justo el punto delicado: desde
-**la misma dirección** que acaba de quedar bloqueada para una cuenta, otra cuenta
-sigue respondiendo con normalidad. Si el contador siguiera siendo por IP, ahí
-saldría un 429 y el limitador nuevo no aportaría nada sobre el que ya había.
+**Qué comprueban los tests.** La curva de retrasos se fija con tests unitarios
+sobre la función pura que la calcula —medir esperas reales daría un test lento y
+frágil sin comprobar nada más—, incluyendo que sea monótona, que respete el
+techo y que la fuerza bruta quede por debajo de doscientos intentos por hora. Y
+en la suite de API hay una comprobación del punto delicado: desde **la misma
+dirección** que acaba de quedar bloqueada para una cuenta, otra cuenta sigue
+respondiendo con normalidad. Si el contador siguiera siendo por IP, ahí saldría
+un 429.
 
 **Confirmación de contraseña.** El registro pide escribir la contraseña dos
 veces, pero eso es **asunto del formulario**: se compara en el cliente y no

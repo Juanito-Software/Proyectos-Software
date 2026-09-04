@@ -18,6 +18,19 @@ process.env.DB_SCHEMA = testSchema;
 // La variable se ignora cuando NODE_ENV es production; ver rateLimit.middleware.
 process.env.AUTH_RATE_LIMIT = '1000';
 
+// El tope duro por cuenta es 200 en producción. Aquí se baja a 20 para poder
+// comprobar el mecanismo sin lanzar doscientas peticiones, y los retrasos
+// progresivos se apagan del todo: con la curva puesta, esos veintiún intentos
+// tardarían siete minutos en vez de dos segundos. Ambas variables se ignoran
+// cuando NODE_ENV es 'production'.
+//
+// Lo que se prueba aquí es que la clave del contador es la CUENTA y no la
+// dirección. La curva de retrasos se fija aparte, con tests unitarios sobre la
+// función pura que la calcula: medir esperas reales daría un test lento y
+// frágil sin comprobar nada más.
+process.env.ACCOUNT_RATE_LIMIT = '20';
+process.env.ACCOUNT_SLOWDOWN_AFTER = '10000';
+
 // Credenciales del administrador de prueba. Se fijan antes de importar la
 // configuración, que las lee al cargarse.
 const ADMIN_USER = `admin-${crypto.randomUUID().slice(0, 8)}`;
@@ -1798,7 +1811,7 @@ async function run(): Promise<void> {
       });
     }
 
-    // Veintiuno: uno más que el límite por defecto.
+    // Veintiuno: uno más que el límite que fija esta suite arriba.
     let ultimo = 0;
     for (let i = 0; i < 21; i++) {
       const r = await entrar(victima, 'contraseña-que-no-es-2026!');

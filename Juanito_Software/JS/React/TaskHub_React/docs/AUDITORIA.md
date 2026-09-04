@@ -45,7 +45,7 @@ integral.
 | Contraseñas | Mínimo 6 caracteres | 15 caracteres, lista de bloqueo y composición |
 | Cabeceras HTTP | Ninguna | `helmet` con CSP a medida y HSTS |
 | CORS | Abierto a cualquier origen | Delegado de mismo origen |
-| Tests | 37 comprobaciones de API | **912** en cuatro capas |
+| Tests | 37 comprobaciones de API | **937** en cuatro capas |
 | Cobertura del servidor | No medida | **99,6 %** de la lógica pura, con umbral en el CI |
 | Cobertura del cliente | No medida | **96,9 %**, con umbral |
 | Interfaz | Estilos por defecto, sin tokens | Sistema de tokens, modo oscuro y foco de teclado visible |
@@ -53,7 +53,7 @@ integral.
 | Vulnerabilidades | 1 alta (cliente) | **0** |
 | Eventos de seguridad | Ninguno | Registro estructurado en los puntos clave |
 | Cambio de contraseña | No existía | Con revocación global y sesión nueva para el dispositivo actual |
-| Límite de intentos | Solo por IP | Por IP **y** por cuenta, contra ataques repartidos |
+| Límite de intentos | Solo por IP | Tres capas: IP, retrasos progresivos por cuenta y tope duro lejano |
 
 ---
 
@@ -141,6 +141,35 @@ restricción vieja y el primer cambio de contraseña habría fallado **solo en
 producción**. Se añadió una migración explícita que la rehace, y se verificó
 contra PostgreSQL real.
 
+**Limitación de intentos: el rodeo que mereció la pena.** La primera versión fue
+un contador por cuenta con bloqueo duro a los veinte intentos. Resolvía el
+problema que tenía —el limitador por IP no frena a quien reparte el ataque entre
+mil direcciones, porque ninguna agota su cuota— e introducía otro: si bloquear
+es posible, cualquiera que sepa un nombre de usuario puede provocarlo aposta.
+
+Se documentó como compromiso asumido. Pero el compromiso no hacía falta: el
+problema no era el umbral sino el mecanismo. Un bloqueo es un binario, y
+cualquier binario que un atacante pueda forzar acaba siendo un arma; subir el
+número solo desplaza dónde está el borde.
+
+La versión definitiva **retrasa en lugar de denegar**, con la curva creciendo
+desde el cuarto fallo hasta un techo de treinta segundos. Quien conoce su
+contraseña no nota nada; quien prueba a ciegas pasa de miles de intentos por
+minuto a menos de ciento veinte por hora. Y nadie queda bloqueado, porque ya no
+existe el estado que provocar. El tope duro se conserva a doscientos como red de
+seguridad, tan lejos que alcanzarlo exige más de una hora de martilleo.
+
+La curva se fija con tests unitarios sobre la función pura que la calcula —que
+sea monótona, que respete el techo, que la fuerza bruta quede por debajo de
+cierto ritmo—. Medir esperas reales habría dado un test lento y frágil sin
+comprobar nada más.
+
+Un apunte de proceso: al extraer esa función, el umbral de cobertura **detectó
+que la lambda original quedaba sin probar** y puso el CI en rojo. Estaba escrita
+dentro de la configuración del middleware, donde solo la ejecuta la librería en
+tiempo de petición. Se extrajo con nombre y se cubrió. Es justo el trabajo para
+el que está puesto el trinquete.
+
 **Lo que esto cuesta.** El middleware de autenticación no consulta la base de
 datos: valida la firma y sigue. Eso hace que cada petición sea barata, a cambio
 de una ventana de hasta quince minutos entre que se revoca una cuenta y deja de
@@ -183,7 +212,7 @@ ese caso, no una revisión a ojo.
 | **A04 Insecure Design** | ⚠️ | Ya hay **cambio de contraseña** con revocación global. Siguen sin existir recuperación por correo ni verificación, porque el modelo de datos no guarda direcciones: es una ausencia conocida y acotada, no un defecto |
 | **A05 Security Misconfiguration** | ✅ | `helmet` con CSP a medida, HSTS en producción, `trust proxy` acotado, CORS de mismo origen, cuerpo limitado |
 | **A06 Vulnerable Components** | ✅ | **0 vulnerabilidades** en cliente y servidor |
-| **A07 Identification & Auth Failures** | ✅ | Rotación con detección de reutilización, revocación en servidor, política de contraseñas descrita arriba, y **doble limitación de intentos: por IP y por cuenta**, que es lo que cierra el ataque repartido entre muchas direcciones |
+| **A07 Identification & Auth Failures** | ✅ | Rotación con detección de reutilización, revocación en servidor, política de contraseñas descrita arriba, y **tres capas de limitación**: por IP, retrasos progresivos por cuenta y tope duro. Cierra el ataque repartido entre muchas direcciones sin abrir un bloqueo malicioso |
 | **A08 Software & Data Integrity** | ⚠️ | Las acciones del CI están fijadas a etiqueta mayor, no a SHA. Son acciones oficiales; el riesgo es bajo pero una etiqueta se puede mover |
 | **A09 Logging & Monitoring** | ⚠️ | Era el punto más flojo y ha mejorado mucho: hoy se registran los eventos de seguridad relevantes en formato estructurado, con redacción automática de cualquier campo que parezca una credencial. Falta la capa de agregación y alertas, que ya no es código de aplicación |
 | **A10 SSRF** | ✅ | No aplica: el servidor no hace peticiones salientes |
@@ -243,11 +272,11 @@ con las WCAG, y este documento no va a insinuar que lo sea.
 
 ## 7. Tests
 
-**912 comprobaciones** en cuatro capas que prueban cosas distintas:
+**937 comprobaciones** en cuatro capas que prueban cosas distintas:
 
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
-| Unitarios de servidor | 523 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
+| Unitarios de servidor | 548 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
 | Unitarios de cliente | 212 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
 | API contra PostgreSQL | 147 | — | — | PostgreSQL |
 | Navegador (Playwright) | 30 | — | — | PostgreSQL y build |
@@ -343,7 +372,7 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 | Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, cambio de contraseña con revocación global, CSRF cerrado por tres vías |
 | Autorización | 9/10 | El código era correcto desde el principio; ahora además está vigilado en escritura |
 | Seguridad | 9/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos, y límite de intentos por IP y por cuenta. Falta la capa de alertas |
-| Testing | 9/10 | 912 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
+| Testing | 9/10 | 937 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
 | E2E | 8,5/10 | 30 pruebas del ciclo completo, incluidas renovación y revocación |
 | CI/CD | 8,5/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`. Falta que el job espere a que Render termine, no solo a que acepte |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
@@ -425,7 +454,7 @@ Comprobado en esta auditoría, no supuesto:
 | ESLint | ✅ 0 problemas |
 | TypeScript `--noEmit` | ✅ 0 errores |
 | Build | ✅ Playground y cliente |
-| Unitarios de servidor | ✅ 523/523 |
+| Unitarios de servidor | ✅ 548/548 |
 | Cobertura de servidor | ✅ 99,58 / 98,77 / 98,80 / 99,56 |
 | Unitarios de cliente | ✅ 212/212 |
 | API contra PostgreSQL | ✅ 147/147 |

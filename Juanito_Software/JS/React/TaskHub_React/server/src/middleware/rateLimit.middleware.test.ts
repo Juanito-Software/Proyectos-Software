@@ -5,6 +5,11 @@ import {
   claveDeCuenta,
   resolverCuentaLimit,
   CUENTA_LIMIT_POR_DEFECTO,
+  calcularRetraso,
+  RETRASO_DESDE,
+  RETRASO_MAXIMO_MS,
+  resolverRetrasoDesde,
+  retrasoDelMiddleware,
 } from './rateLimit.middleware.js';
 
 /**
@@ -141,5 +146,136 @@ describe('resolverCuentaLimit', () => {
     // lo ataca aposta, así que tiene que quedar lejos de lo que alcanza quien
     // solo se equivoca al teclear.
     expect(CUENTA_LIMIT_POR_DEFECTO).toBeGreaterThan(AUTH_LIMIT_POR_DEFECTO);
+  });
+});
+
+describe('retrasos progresivos', () => {
+  /**
+   * La curva es toda la defensa, así que se fija entera.
+   *
+   * Si `calcularRetraso` devolviera siempre cero, el middleware seguiría
+   * montado, el pipeline seguiría en verde y la protección habría desaparecido
+   * sin dejar rastro. Es exactamente el tipo de fallo que no se ve en una
+   * revisión por encima.
+   */
+
+  it.each([
+    [1, 0],
+    [2, 0],
+    [3, 0],
+    [4, 1_000],
+    [5, 2_000],
+    [6, 4_000],
+    [7, 8_000],
+    [8, 16_000],
+  ])('con %i intentos fallidos, retraso de %i ms', (intentos, esperado) => {
+    expect(calcularRetraso(intentos)).toBe(esperado);
+  });
+
+  it('los primeros intentos son gratis', () => {
+    // Quien conoce su contraseña acierta a la primera o segunda. Si el retraso
+    // empezara en el primer fallo, castigaríamos a todo el mundo por una errata.
+    for (let i = 0; i <= RETRASO_DESDE; i++) {
+      expect(calcularRetraso(i)).toBe(0);
+    }
+  });
+
+  it('nunca supera el techo', () => {
+    // Sin tope, el retraso se dispararía a horas y el servidor acabaría con
+    // conexiones abiertas eternamente. Además, un proxy inverso con tiempo de
+    // espera propio cortaría antes.
+    for (const intentos of [9, 10, 20, 100, 1_000]) {
+      expect(calcularRetraso(intentos)).toBe(RETRASO_MAXIMO_MS);
+    }
+  });
+
+  it('la curva es monótona: nunca baja', () => {
+    let anterior = -1;
+    for (let i = 0; i <= 30; i++) {
+      const actual = calcularRetraso(i);
+      expect(actual).toBeGreaterThanOrEqual(anterior);
+      anterior = actual;
+    }
+  });
+
+  it('un número de intentos negativo o cero no da retraso negativo', () => {
+    // No debería ocurrir, pero un retraso negativo pasado a setTimeout haría
+    // cosas raras en vez de fallar a la vista.
+    expect(calcularRetraso(0)).toBe(0);
+    expect(calcularRetraso(-5)).toBe(0);
+  });
+
+  it('el umbral es configurable y desplaza la curva entera', () => {
+    expect(calcularRetraso(4, 10)).toBe(0);
+    expect(calcularRetraso(11, 10)).toBe(1_000);
+    expect(calcularRetraso(12, 10)).toBe(2_000);
+  });
+
+  it('la fuerza bruta deja de ser viable: menos de 200 intentos por hora', () => {
+    // La cuenta que justifica el diseño. Con el retraso en su techo, un atacante
+    // que martillee sin parar durante una hora no pasa de este número — frente a
+    // los miles por minuto que conseguiría sin retraso.
+    const porHora = 3_600_000 / RETRASO_MAXIMO_MS;
+
+    expect(porHora).toBeLessThan(200);
+  });
+
+  it('el tope duro queda muy por encima de lo alcanzable en una ventana', () => {
+    // Es lo que convierte el bloqueo en un caso patológico y no en un arma:
+    // llegar a él dentro de la ventana de quince minutos es imposible con los
+    // retrasos puestos.
+    const alcanzablesEnLaVentana = (15 * 60 * 1000) / RETRASO_MAXIMO_MS;
+
+    expect(alcanzablesEnLaVentana).toBeLessThan(CUENTA_LIMIT_POR_DEFECTO);
+  });
+});
+
+describe('resolverRetrasoDesde', () => {
+  it('sin variable usa el valor por defecto', () => {
+    expect(resolverRetrasoDesde({})).toBe(RETRASO_DESDE);
+  });
+
+  it('fuera de producción la variable manda', () => {
+    // Es lo que permite a la suite de API apagar los retrasos y comprobar el
+    // tope duro en segundos en vez de en minutos.
+    expect(resolverRetrasoDesde({ ACCOUNT_SLOWDOWN_AFTER: '10000' })).toBe(10000);
+  });
+
+  it('en producción la variable se IGNORA', () => {
+    // El caso que importa: un retraso que se apaga desde el panel de despliegue
+    // deja la fuerza bruta a velocidad completa.
+    expect(
+      resolverRetrasoDesde({ ACCOUNT_SLOWDOWN_AFTER: '999999', NODE_ENV: 'production' }),
+    ).toBe(RETRASO_DESDE);
+  });
+
+  it.each([['no-numero'], ['0'], ['-3'], ['2.5']])(
+    'un valor inválido (%s) cae al por defecto',
+    (valor) => {
+      expect(resolverRetrasoDesde({ ACCOUNT_SLOWDOWN_AFTER: valor })).toBe(RETRASO_DESDE);
+    },
+  );
+});
+
+describe('retrasoDelMiddleware', () => {
+  /**
+   * Es la función que la librería llama en cada petición. Estaba escrita como
+   * lambda dentro de la configuración y ningún test la alcanzaba: el umbral de
+   * cobertura de funciones lo detectó al bajar del 98%, que es exactamente para
+   * lo que está puesto.
+   */
+
+  it('aplica la misma curva que calcularRetraso', () => {
+    for (const intentos of [0, 1, 3, 4, 5, 8, 100]) {
+      expect(retrasoDelMiddleware(intentos)).toBe(calcularRetraso(intentos));
+    }
+  });
+
+  it('respeta el techo', () => {
+    expect(retrasoDelMiddleware(1_000)).toBe(RETRASO_MAXIMO_MS);
+  });
+
+  it('no retrasa los primeros intentos', () => {
+    expect(retrasoDelMiddleware(1)).toBe(0);
   });
 });

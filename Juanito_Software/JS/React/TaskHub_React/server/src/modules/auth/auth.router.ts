@@ -6,7 +6,11 @@ import {
   loginValidator,
   changePasswordValidator,
 } from './auth.validation.js';
-import { authLimiter, accountLimiter } from '../../middleware/rateLimit.middleware.js';
+import {
+  authLimiter,
+  accountLimiter,
+  accountSlowDown,
+} from '../../middleware/rateLimit.middleware.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -21,12 +25,27 @@ const router = Router();
 router.use(authLimiter);
 
 router.post('/register', validate(registerValidator), authController.register);
-// Dos limitadores, no uno. `authLimiter` (arriba, para todo el router) cuenta
-// por dirección de origen; `accountLimiter` cuenta por nombre de usuario. El
-// primero frena a quien ataca desde un sitio, el segundo a quien reparte el
-// ataque entre muchos. Solo se aplica aquí: es la única ruta donde se adivina
-// una contraseña a partir de un nombre de usuario del cuerpo.
-router.post('/login', accountLimiter, validate(loginValidator), authController.login);
+// Tres capas sobre el inicio de sesión, que es la única ruta donde se adivina
+// una contraseña a partir de un nombre de usuario del cuerpo:
+//
+// 1. `authLimiter` (arriba, para todo el router) corta por dirección de origen.
+//    Frena a quien ataca desde un sitio, que es el caso corriente.
+// 2. `accountSlowDown` retrasa por cuenta, con la curva creciendo desde el
+//    cuarto fallo. Es la defensa principal contra el ataque repartido entre
+//    muchas direcciones, y **no bloquea a nadie**: por eso va antes que el
+//    limitador duro, para hacer el trabajo cuando aún no hace falta cortar.
+// 3. `accountLimiter` es el tope duro, doscientos, como red de seguridad para
+//    el caso patológico.
+//
+// El orden importa: el retraso primero encarece cada intento, así que llegar al
+// tope duro exige más de una hora de martilleo continuado.
+router.post(
+  '/login',
+  accountSlowDown,
+  accountLimiter,
+  validate(loginValidator),
+  authController.login,
+);
 
 // Sin authMiddleware a propósito: la renovación se pide cuando el token de
 // acceso ya ha caducado. Quien autentica aquí es la cookie de refresco.
