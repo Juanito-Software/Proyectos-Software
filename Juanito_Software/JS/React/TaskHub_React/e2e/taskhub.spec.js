@@ -295,6 +295,120 @@ test.describe('Autenticación', () => {
   });
 });
 
+/**
+ * Cambio de contraseña.
+ *
+ * Las otras tres capas de tests ya comprueban las piezas: el servicio revoca y
+ * vuelve a abrir sesión, el controlador responde, el formulario valida. Pero
+ * ninguna puede comprobar lo que de verdad promete esta función, porque la
+ * promesa es sobre **dos navegadores a la vez**: cambiar la contraseña en un
+ * dispositivo tiene que expulsar a los demás. Eso solo se ve aquí.
+ */
+const PASSWORD_NUEVA = 'Otra frase distinta y larga 9!';
+
+async function entrar(page, username, password) {
+  await page.goto('/');
+  await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+  await page.getByPlaceholder('Contraseña', { exact: true }).fill(password);
+  await page.getByRole('button', { name: /entrar/i }).click();
+  await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+}
+
+async function cambiarPassword(page, actual, nueva) {
+  // `exact` en casi todo, y no por costumbre: estos selectores casan por
+  // subcadena, y aquí hay tres nombres que se contienen unos a otros. El botón
+  // «Contraseña» de la cabecera está dentro de «Cambiar contraseña», y la
+  // etiqueta «Contraseña nueva» está dentro de «Repite la contraseña nueva».
+  // Sin `exact` cada uno de esos dos selectores encuentra dos elementos.
+  await page.getByRole('button', { name: 'Contraseña', exact: true }).click();
+  await page.getByLabel('Contraseña actual', { exact: true }).fill(actual);
+  await page.getByLabel('Contraseña nueva', { exact: true }).fill(nueva);
+  await page.getByLabel('Repite la contraseña nueva', { exact: true }).fill(nueva);
+  await page.getByRole('button', { name: /cambiar contraseña/i }).click();
+}
+
+test.describe('Cambio de contraseña', () => {
+  test('expulsa al otro dispositivo y deja dentro a este', async ({ page, browser }) => {
+    // Es la razón de ser de toda la función. Si la revocación global se
+    // rompiera —por ejemplo invirtiendo el orden y abriendo la sesión nueva
+    // antes de revocar— los tres niveles de tests de abajo seguirían en verde:
+    // el servicio llamaría a las dos funciones, el controlador respondería 200
+    // y el formulario enseñaría su confirmación. Solo un segundo navegador
+    // delata que el dispositivo ajeno sigue dentro.
+    const username = await registrarse(page);
+
+    // Segundo dispositivo: contexto aparte, con sus propias cookies.
+    const otroDispositivo = await browser.newContext();
+    const otraPagina = await otroDispositivo.newPage();
+    await entrar(otraPagina, username, PASSWORD);
+
+    await cambiarPassword(page, PASSWORD, PASSWORD_NUEVA);
+    await expect(page.getByText(/contraseña cambiada/i)).toBeVisible({ timeout: 15_000 });
+
+    // Este sigue dentro aunque recargue: al terminar, el servidor le abrió una
+    // sesión limpia y el navegador se quedó con la cookie nueva.
+    await page.reload();
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+
+    // El otro no. Conviene ser preciso sobre cuándo: lo que se revoca es el
+    // token de refresco, no el de acceso, que sigue vivo hasta que caduque. Por
+    // eso hace falta la recarga, que es cuando la aplicación pide credenciales
+    // nuevas al servidor y se encuentra con la familia revocada. Ese hueco de
+    // quince minutos es el precio conocido de no consultar la base de datos en
+    // cada petición.
+    await otraPagina.reload();
+    await expect(otraPagina.getByPlaceholder('Usuario', { exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(otraPagina.getByText(username)).not.toBeVisible();
+
+    await otroDispositivo.close();
+  });
+
+  test('la contraseña vieja deja de valer y la nueva entra', async ({ page }) => {
+    const username = await registrarse(page);
+
+    await cambiarPassword(page, PASSWORD, PASSWORD_NUEVA);
+    await expect(page.getByText(/contraseña cambiada/i)).toBeVisible({ timeout: 15_000 });
+
+    await page.getByRole('button', { name: /salir/i }).click();
+    await expect(page.getByPlaceholder('Usuario', { exact: true })).toBeVisible();
+
+    // La vieja ya no abre nada.
+    await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(PASSWORD);
+    await page.getByRole('button', { name: /entrar/i }).click();
+    await expect(page.getByText(/incorrect/i)).toBeVisible({ timeout: 10_000 });
+
+    // La nueva sí. Sin esta segunda mitad, el test pasaría igual con un cambio
+    // que hubiera dejado la cuenta inaccesible con las dos contraseñas.
+    await page.getByPlaceholder('Contraseña', { exact: true }).fill(PASSWORD_NUEVA);
+    await page.getByRole('button', { name: /entrar/i }).click();
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('con la contraseña actual equivocada no cambia nada', async ({ page }) => {
+    // Exigir la actual es lo que impide que un token de acceso robado se
+    // convierta en la pérdida definitiva de la cuenta. Aquí se comprueba que
+    // el rechazo llega del servidor y que no tiene efectos colaterales: ni
+    // cambia la contraseña ni cierra la sesión en curso.
+    const username = await registrarse(page);
+
+    await cambiarPassword(page, 'Esta no es la de antes 9!', PASSWORD_NUEVA);
+    await expect(page.getByText('La contraseña actual no es correcta')).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // La sesión sigue viva tras recargar: no se ha revocado nada.
+    await page.reload();
+    await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
+
+    // Y la contraseña original sigue siendo la buena.
+    await page.getByRole('button', { name: /salir/i }).click();
+    await entrar(page, username, PASSWORD);
+  });
+});
+
 test.describe('Ciclo de vida de una tarea', () => {
   test('crear, ver, completar y eliminar', async ({ page }) => {
     await registrarse(page);
