@@ -79,12 +79,12 @@ TaskHub/
 │   │   ├── public/               # playground de la API (se sirve en /playground)
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 130 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 147 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
-├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 30 tests
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 33 tests
 ├── docs/AUDITORIA.md             # auditoría: seguridad, bugs, tests y cobertura
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
@@ -335,9 +335,9 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 548 + 212 | Nada |
+| `npm test` | Unitarios de servidor y cliente | 548 + 224 | Nada |
 | `npm run verify` | End-to-end de la API | 147 | PostgreSQL |
-| `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
+| `npm run test:e2e` | Navegador real (Playwright) | 33 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
 Los **unitarios** cubren lógica pura —validadores, política de contraseñas,

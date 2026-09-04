@@ -277,9 +277,9 @@ con las WCAG, y este documento no va a insinuar que lo sea.
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
 | Unitarios de servidor | 548 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
-| Unitarios de cliente | 212 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
+| Unitarios de cliente | 224 | **96,5 %** stmts · 96,6 % ramas | 95/94/93/96 | Nada |
 | API contra PostgreSQL | 147 | — | — | PostgreSQL |
-| Navegador (Playwright) | 30 | — | — | PostgreSQL y build |
+| Navegador (Playwright) | 33 | — | — | PostgreSQL y build |
 
 **Qué mide el 99,5 % y qué no.** Solo la lógica que corre sin base de datos. Los
 repositorios, los routers y el cableado de Express están excluidos a propósito
@@ -456,9 +456,9 @@ Comprobado en esta auditoría, no supuesto:
 | Build | ✅ Playground y cliente |
 | Unitarios de servidor | ✅ 548/548 |
 | Cobertura de servidor | ✅ 99,58 / 98,77 / 98,80 / 99,56 |
-| Unitarios de cliente | ✅ 212/212 |
+| Unitarios de cliente | ✅ 224/224 |
 | API contra PostgreSQL | ✅ 147/147 |
-| Navegador (Playwright) | ✅ 30/30 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
+| Navegador (Playwright) | ✅ 33/33 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
 | Búsqueda de secretos en el repositorio | ✅ Sin hallazgos |
 | Búsqueda de XSS | ✅ Sin hallazgos |
