@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { authController } from './auth.controller.js';
 import { validate } from '../../middleware/validate.middleware.js';
-import { registerValidator, loginValidator } from './auth.validation.js';
-import { authLimiter } from '../../middleware/rateLimit.middleware.js';
+import {
+  registerValidator,
+  loginValidator,
+  changePasswordValidator,
+} from './auth.validation.js';
+import { authLimiter, accountLimiter } from '../../middleware/rateLimit.middleware.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 
 const router = Router();
@@ -17,7 +21,12 @@ const router = Router();
 router.use(authLimiter);
 
 router.post('/register', validate(registerValidator), authController.register);
-router.post('/login', validate(loginValidator), authController.login);
+// Dos limitadores, no uno. `authLimiter` (arriba, para todo el router) cuenta
+// por dirección de origen; `accountLimiter` cuenta por nombre de usuario. El
+// primero frena a quien ataca desde un sitio, el segundo a quien reparte el
+// ataque entre muchos. Solo se aplica aquí: es la única ruta donde se adivina
+// una contraseña a partir de un nombre de usuario del cuerpo.
+router.post('/login', accountLimiter, validate(loginValidator), authController.login);
 
 // Sin authMiddleware a propósito: la renovación se pide cuando el token de
 // acceso ya ha caducado. Quien autentica aquí es la cookie de refresco.
@@ -32,5 +41,19 @@ router.post('/logout', authController.logout);
 // del token de acceso, nunca del cuerpo de la petición: si viniera del cuerpo,
 // cualquiera podría cerrar las sesiones de otro.
 router.post('/logout-all', authMiddleware, authController.logoutAll);
+
+// Exige sesión: el usuario sale del token de acceso, nunca del cuerpo. Si
+// viniera del cuerpo, cualquiera podría cambiar la contraseña de otro con solo
+// escribir su identificador.
+//
+// Y hereda el `authLimiter` de arriba, que aquí importa más de lo que parece:
+// esta ruta comprueba la contraseña actual, así que sin límite sería un oráculo
+// para adivinarla a ciegas con un token robado.
+router.post(
+  '/change-password',
+  authMiddleware,
+  validate(changePasswordValidator),
+  authController.changePassword,
+);
 
 export const authRouter = router;

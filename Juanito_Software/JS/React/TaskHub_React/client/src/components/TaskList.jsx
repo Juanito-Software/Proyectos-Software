@@ -3,9 +3,11 @@ import { getTasks, createTask } from '../services/api';
 import TaskItem from './TaskItem';
 import TaskForm from './TaskForm';
 import ThemeToggle from './ThemeToggle';
+import ChangePasswordForm from './ChangePasswordForm';
 import { STATUSES, PRIORITIES } from '../constants';
 
 export default function TaskList({ user, onLogout }) {
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -102,6 +104,14 @@ export default function TaskList({ user, onLogout }) {
               API Playground
             </a>
             <ThemeToggle />
+            <button
+              type="button"
+              className="btn-logout"
+              onClick={() => setCambiandoPassword((v) => !v)}
+              aria-expanded={cambiandoPassword}
+            >
+              Contraseña
+            </button>
             <span className="user-name">{user?.username}</span>
             <button type="button" className="btn-logout" onClick={onLogout}>
               Salir
@@ -109,6 +119,10 @@ export default function TaskList({ user, onLogout }) {
           </div>
         </div>
       </header>
+
+      {cambiandoPassword && (
+        <ChangePasswordForm onDone={() => setCambiandoPassword(false)} />
+      )}
 
       {notification && <div className="notification" role="status">{notification}</div>}
       {error && <div className="error">{error}</div>}

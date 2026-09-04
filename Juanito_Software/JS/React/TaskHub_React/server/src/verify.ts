@@ -1637,6 +1637,209 @@ async function run(): Promise<void> {
       `${orphanTasks[0].count} tarea(s) huérfana(s)`,
     );
 
+    // ── Cambio de contraseña ─────────────────────────────────────────────
+    //
+    // Es la ruta que más cosas tiene que hacer bien a la vez: comprobar la
+    // contraseña actual, aplicar la política a la nueva, revocar todas las
+    // sesiones y abrir una limpia. Aquí se comprueba contra PostgreSQL real,
+    // porque varias de esas garantías solo se ven mirando las filas.
+
+    const cambUser = `cambio-${crypto.randomUUID().slice(0, 8)}`;
+    const cambActual = password;
+    const cambNueva = 'Café con leche y 2 tostadas!';
+
+    await fetch(`${BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: cambUser, password: cambActual }),
+    });
+
+    // Tres sesiones, como si fueran tres dispositivos.
+    const cs1 = await entrar(cambUser, cambActual);
+    const cs2 = await entrar(cambUser, cambActual);
+    const cs3 = await entrar(cambUser, cambActual);
+    const cr1 = cookieDeRespuesta(cs1);
+    const cr2 = cookieDeRespuesta(cs2);
+    const cAcceso = ((await cs3.json()) as Envelope<{ accessToken: string }>).data?.accessToken;
+
+    const cambiar = (cuerpo: unknown, token?: string) =>
+      fetch(`${BASE}/api/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(cuerpo),
+      });
+
+    const sinToken = await cambiar({ actual: cambActual, nueva: cambNueva });
+    check(
+      'Cambiar la contraseña exige estar autenticado',
+      sinToken.status === 401,
+      `status ${sinToken.status}`,
+    );
+
+    const actualMal = await cambiar({ actual: 'no-es-la-suya', nueva: cambNueva }, cAcceso);
+    check(
+      'Con la contraseña actual equivocada -> 401',
+      actualMal.status === 401,
+      `status ${actualMal.status}`,
+    );
+
+    // Y, sobre todo, que ese intento fallido no cambió nada.
+    const siguePudiendoEntrar = await entrar(cambUser, cambActual);
+    check(
+      'Un intento con la actual equivocada NO cambia la contraseña',
+      siguePudiendoEntrar.status === 200,
+      `status ${siguePudiendoEntrar.status}`,
+    );
+
+    const nuevaDebil = await cambiar({ actual: cambActual, nueva: 'corta' }, cAcceso);
+    check(
+      'La contraseña nueva pasa la política -> 400 si no',
+      nuevaDebil.status === 400,
+      `status ${nuevaDebil.status}`,
+    );
+
+    const nuevaIgual = await cambiar({ actual: cambActual, nueva: cambActual }, cAcceso);
+    check(
+      'Repetir la contraseña actual -> 400',
+      nuevaIgual.status === 400,
+      `status ${nuevaIgual.status}`,
+    );
+
+    const cambiada = await cambiar({ actual: cambActual, nueva: cambNueva }, cAcceso);
+    check(
+      'POST /api/auth/change-password -> 200',
+      cambiada.status === 200,
+      `status ${cambiada.status}`,
+    );
+
+    // El refresco sale por cookie, nunca en el cuerpo. Es la cuarta ruta que
+    // emite credenciales y la más fácil de escribir mal.
+    const cuerpoCambio = await cambiada.clone().text();
+    check(
+      'El cambio no filtra el token de refresco en el cuerpo',
+      !cuerpoCambio.includes('refreshToken'),
+      cuerpoCambio.includes('refreshToken') ? 'APARECE en el cuerpo' : 'solo en la cookie',
+    );
+    check(
+      'El cambio entrega la cookie de refresco nueva',
+      cookieDeRespuesta(cambiada) !== null,
+      cookieDeRespuesta(cambiada) !== null ? 'Set-Cookie presente' : 'sin Set-Cookie',
+    );
+
+    // Las otras dos sesiones quedan fuera.
+    const otras = [await renovar(cr1), await renovar(cr2)];
+    check(
+      'Al cambiar la contraseña, las demás sesiones dejan de renovar',
+      otras.every((r) => r.status === 401),
+      otras.map((r) => r.status).join(', '),
+    );
+
+    // Y quedan marcadas con su propio motivo, que es lo que permite
+    // distinguir un cambio de contraseña de un cierre de sesión normal.
+    const motivosCambio = await query<{ count: number }>(
+      `SELECT COUNT(*) AS count FROM refresh_sessions s
+         JOIN users u ON u.id = s.user_id
+        WHERE u.username = $1 AND s.revoked_reason = 'password-changed'`,
+      [cambUser],
+    );
+    check(
+      "Las sesiones revocadas llevan el motivo 'password-changed'",
+      motivosCambio[0].count > 0,
+      `${motivosCambio[0].count} filas`,
+    );
+
+    const conVieja = await entrar(cambUser, cambActual);
+    check(
+      'La contraseña vieja ya no sirve para entrar',
+      conVieja.status === 401,
+      `status ${conVieja.status}`,
+    );
+
+    const conNueva = await entrar(cambUser, cambNueva);
+    check(
+      'La contraseña nueva sí sirve para entrar',
+      conNueva.status === 200,
+      `status ${conNueva.status}`,
+    );
+
+    // El hash cambió de verdad en la base de datos, y sigue siendo un hash.
+    const hashTras = await query<{ password_hash: string }>(
+      'SELECT password_hash FROM users WHERE username = $1',
+      [cambUser],
+    );
+    check(
+      'La contraseña se guarda hasheada, nunca en claro',
+      !hashTras[0].password_hash.includes(cambNueva) &&
+        hashTras[0].password_hash.startsWith('$2'),
+      // Solo el prefijo del algoritmo y el coste: identifica bcrypt sin sacar
+      // material del hash al registro.
+      hashTras[0].password_hash.slice(0, 7),
+    );
+
+    // ── Límite por cuenta ────────────────────────────────────────────────
+    //
+    // Va al final a propósito: agota la cuota de una cuenta concreta, y
+    // hacerlo antes contaminaría cualquier prueba posterior con ese usuario.
+    //
+    // La suite sube AUTH_RATE_LIMIT a 1000, así que el limitador por IP no
+    // interfiere y lo que se mide aquí es únicamente el contador por cuenta,
+    // que usa su valor por defecto.
+
+    const victima = `limite-${crypto.randomUUID().slice(0, 8)}`;
+    const atacada = `otra-${crypto.randomUUID().slice(0, 8)}`;
+    for (const u of [victima, atacada]) {
+      await fetch(`${BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password }),
+      });
+    }
+
+    // Veintiuno: uno más que el límite por defecto.
+    let ultimo = 0;
+    for (let i = 0; i < 21; i++) {
+      const r = await entrar(victima, 'contraseña-que-no-es-2026!');
+      ultimo = r.status;
+    }
+    check(
+      'Tras agotar los intentos de una cuenta -> 429',
+      ultimo === 429,
+      `status ${ultimo}`,
+    );
+
+    // La prueba de que la clave es la CUENTA y no la dirección: desde esta
+    // misma IP, que acaba de ser bloqueada para `victima`, otra cuenta sigue
+    // respondiendo con normalidad. Si el contador fuera por IP, esto también
+    // daría 429 y el limitador nuevo no aportaría nada sobre el que ya había.
+    const otraCuenta = await entrar(atacada, 'tampoco-es-esta-2026!');
+    check(
+      'El bloqueo es por cuenta, no por dirección: otra cuenta sigue respondiendo',
+      otraCuenta.status === 401,
+      `status ${otraCuenta.status}`,
+    );
+
+    // Y alternar mayúsculas no abre un cubo nuevo: la clave se normaliza igual
+    // que el índice único de la base de datos.
+    const conMayusculas = await entrar(victima.toUpperCase(), 'da-igual-2026!');
+    check(
+      'Alternar mayúsculas no esquiva el límite por cuenta',
+      conMayusculas.status === 429,
+      `status ${conMayusculas.status}`,
+    );
+
+    // La cuenta bloqueada tampoco entra con la contraseña BUENA mientras dure
+    // la ventana. Es el precio del mecanismo, y conviene que esté fijado por un
+    // test para que nadie lo descubra por sorpresa en producción.
+    const conLaBuena = await entrar(victima, password);
+    check(
+      'Mientras dura el bloqueo, ni siquiera la contraseña correcta entra',
+      conLaBuena.status === 429,
+      `status ${conLaBuena.status}`,
+    );
+
     console.log(`\n${passed} passed, ${failed} failed\n`);
   } catch (err) {
     console.error('💥 La suite de verificación falló al ejecutarse:', err);

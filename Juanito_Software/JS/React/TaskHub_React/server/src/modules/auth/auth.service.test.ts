@@ -495,3 +495,174 @@ describe('registro', () => {
     expect(Object.keys(r.user)).not.toContain('passwordHash');
   });
 });
+
+describe('cambio de contraseña', () => {
+  /**
+   * Las cinco garantías que hacen que esta función sirva para algo. Cuatro de
+   * ellas fallan en silencio si se rompen: la contraseña se cambiaría igual y
+   * el usuario creería estar protegido.
+   */
+
+  const ACTUAL = 'La-que-tenia-antes-2026!';
+  const NUEVA = 'Café con leche y 2 tostadas!';
+
+  /**
+   * El doble de `verifyPassword` mira **qué contraseña** le pasan.
+   *
+   * Escrito como `mockResolvedValue(true)` a secas decía que sí a todo, y eso
+   * incluía la comprobación de «¿la nueva es igual que la actual?», con lo que
+   * el caso feliz fallaba por un motivo inventado. El real compara un texto
+   * concreto contra el hash guardado: si el doble no distingue, no está
+   * imitando nada.
+   */
+  beforeEach(() => {
+    espias.verifyPassword.mockImplementation(
+      async (_user: unknown, password: unknown) => password === ACTUAL,
+    );
+    vi.spyOn(usersRepository, 'updatePassword').mockResolvedValue(true);
+  });
+
+  it('cambia la contraseña cuando la actual es correcta', async () => {
+    const update = vi.spyOn(usersRepository, 'updatePassword').mockResolvedValue(true);
+
+    await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(update).toHaveBeenCalledWith(USUARIO.id, NUEVA);
+  });
+
+  it('exige la contraseña actual aunque ya haya sesión', async () => {
+    // Sin esto, un token de acceso robado bastaría para quedarse con la cuenta
+    // para siempre. Con esto, el robo solo dura lo que dure el token.
+    espias.verifyPassword.mockResolvedValue(false);
+
+    await expect(
+      authService.changePassword(USUARIO.id, 'la-equivocada', NUEVA),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  it('si la actual falla, NO se toca la contraseña', async () => {
+    const update = vi.spyOn(usersRepository, 'updatePassword').mockResolvedValue(true);
+    espias.verifyPassword.mockResolvedValue(false);
+
+    await authService.changePassword(USUARIO.id, 'mal', NUEVA).catch(() => {});
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('revoca TODAS las sesiones con su propio motivo', async () => {
+    // El motivo importa: una avalancha de 'password-changed' en poco tiempo
+    // significa algo muy distinto de una avalancha de 'logout'.
+    await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(espias.revocarTodas).toHaveBeenCalledWith(USUARIO.id, 'password-changed');
+  });
+
+  it('y deja al usuario dentro con credenciales nuevas', async () => {
+    // Revocar todas incluiría la suya. Sin abrir una sesión nueva, el usuario
+    // quedaría expulsado justo después de hacer lo correcto — y una medida de
+    // seguridad incómoda es una medida que la gente evita.
+    const r = await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(r.accessToken).toBeTruthy();
+    expect(r.refreshToken).toBeTruthy();
+    expect(espias.crearFamilia).toHaveBeenCalledTimes(1);
+  });
+
+  it('la sesión nueva se abre DESPUÉS de revocar, no antes', async () => {
+    // Al revés se revocaría la que se acaba de crear y el usuario saldría
+    // igualmente. El orden es el único que funciona.
+    const orden: string[] = [];
+    espias.revocarTodas.mockImplementation(async () => {
+      orden.push('revocar');
+      return 2;
+    });
+    espias.crearFamilia.mockImplementation(async () => {
+      orden.push('crear');
+      return sesion();
+    });
+
+    await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(orden).toEqual(['revocar', 'crear']);
+  });
+
+  it('rechaza una contraseña nueva que no cumple la política', async () => {
+    await expect(
+      authService.changePassword(USUARIO.id, ACTUAL, 'corta'),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('la política se aplica CON el nombre de usuario', async () => {
+    // Una contraseña que contiene el nombre de usuario se rechaza. El nombre
+    // sale de la base de datos, no del cuerpo de la petición.
+    await expect(
+      authService.changePassword(USUARIO.id, ACTUAL, `${USUARIO.username}Aa1!${USUARIO.username}`),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('rechaza repetir la contraseña que ya tenía', async () => {
+    // Se compara con bcrypt contra el hash guardado, no con los textos: el
+    // texto de la actual es lo único que tenemos, y el de la nueva podría
+    // coincidir sin ser literalmente igual. Aquí el doble dice que sí a las
+    // dos, que es lo que haría bcrypt si fueran la misma.
+    espias.verifyPassword.mockResolvedValue(true);
+
+    await expect(
+      authService.changePassword(USUARIO.id, ACTUAL, NUEVA),
+    ).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('si la cuenta ya no existe, 401 y no 500', async () => {
+    espias.findById.mockResolvedValue(null);
+
+    await expect(
+      authService.changePassword('fantasma', 'x', NUEVA),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  it('si la cuenta desaparece justo antes del UPDATE, tampoco es 500', async () => {
+    // La carrera: existía al comprobar y ya no al escribir.
+    vi.spyOn(usersRepository, 'updatePassword').mockResolvedValue(false);
+
+    await expect(
+      authService.changePassword(USUARIO.id, ACTUAL, NUEVA),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+
+  it('registra el cambio como evento de seguridad', async () => {
+    await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(eventos()).toContainEqual(
+      expect.objectContaining({ evento: 'password.cambiada', usuario: USUARIO.username }),
+    );
+  });
+
+  it('registra también el intento fallido, que es la señal que importa', async () => {
+    // Varios de estos seguidos con un token válido significan que alguien está
+    // probando la contraseña actual a ciegas.
+    espias.verifyPassword.mockResolvedValue(false);
+
+    await authService.changePassword(USUARIO.id, 'mal', NUEVA).catch(() => {});
+
+    expect(eventos()).toContainEqual(
+      expect.objectContaining({
+        evento: 'password.cambio-rechazado',
+        motivo: 'actual-incorrecta',
+      }),
+    );
+  });
+
+  it('ningún registro contiene las contraseñas', async () => {
+    await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    const todo = JSON.stringify(eventos());
+    expect(todo).not.toContain(NUEVA);
+    expect(todo).not.toContain(ACTUAL);
+  });
+
+  it('el usuario devuelto no lleva el hash', async () => {
+    const r = await authService.changePassword(USUARIO.id, ACTUAL, NUEVA);
+
+    expect(JSON.stringify(r.user)).not.toContain('$2b$');
+  });
+});

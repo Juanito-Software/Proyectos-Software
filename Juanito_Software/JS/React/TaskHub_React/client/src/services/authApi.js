@@ -73,3 +73,34 @@ export async function logoutAll(accessToken) {
 
   return payload.data;
 }
+
+/**
+ * Cambia la contraseña de quien ya ha iniciado sesión.
+ *
+ * Devuelve **credenciales nuevas**, no un simple «hecho». El servidor revoca
+ * todas las sesiones al cambiar la contraseña —incluida la de este navegador—
+ * y abre una limpia a continuación, así que quien llame a esto tiene que
+ * guardar el token de acceso que vuelve o se quedará fuera en la siguiente
+ * petición.
+ *
+ * Necesita la cabecera `Authorization` porque la ruta exige sesión: el usuario
+ * se saca del token, nunca del cuerpo.
+ */
+export async function changePassword(accessToken, actual, nueva) {
+  const res = await fetch(`${AUTH_BASE}/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ actual, nueva }),
+  });
+
+  const payload = await res.json().catch(() => null);
+
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error || 'No se pudo cambiar la contraseña');
+  }
+
+  return payload.data;
+}

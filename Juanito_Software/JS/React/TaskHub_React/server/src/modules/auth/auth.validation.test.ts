@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { Request } from 'express';
-import { registerValidator, loginValidator } from './auth.validation.js';
+import {
+  registerValidator,
+  loginValidator,
+  changePasswordValidator,
+} from './auth.validation.js';
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_BYTES } from './password-policy.js';
 
 const req = (body: unknown) => ({ body }) as unknown as Request;
@@ -161,5 +165,49 @@ describe('loginValidator', () => {
     ['ambos vacíos', { username: '', password: '' }],
   ])('rechaza: %s', (_caso, body) => {
     expect(loginValidator(req(body))).not.toBeNull();
+  });
+});
+
+describe('changePasswordValidator', () => {
+  /**
+   * Solo comprueba la forma del cuerpo. La política de la contraseña nueva es
+   * cosa del servicio, y hay un test aquí abajo que fija esa frontera: si
+   * alguien la moviera a este validador, tendría que pasar el nombre de usuario
+   * desde el cuerpo de la petición — es decir, fiarse de un dato que controla
+   * el cliente para decidir si una contraseña es válida.
+   */
+
+  const req = (body: unknown) => ({ body }) as unknown as Request;
+
+  it('acepta las dos contraseñas', () => {
+    expect(changePasswordValidator(req({ actual: 'x', nueva: 'y' }))).toBeNull();
+  });
+
+  it.each([
+    ['sin actual', { nueva: 'y' }],
+    ['sin nueva', { actual: 'x' }],
+    ['actual vacía', { actual: '', nueva: 'y' }],
+    ['nueva vacía', { actual: 'x', nueva: '' }],
+    ['cuerpo vacío', {}],
+    ['sin cuerpo', undefined],
+  ])('rechaza: %s', (_caso, body) => {
+    expect(changePasswordValidator(req(body))).not.toBeNull();
+  });
+
+  it('rechaza valores que no son texto', () => {
+    expect(changePasswordValidator(req({ actual: 12345, nueva: 'y' }))).not.toBeNull();
+    expect(changePasswordValidator(req({ actual: 'x', nueva: { a: 1 } }))).not.toBeNull();
+  });
+
+  it('acumula los dos errores cuando faltan ambas', () => {
+    expect(changePasswordValidator(req({}))).toHaveLength(2);
+  });
+
+  it('NO aplica la política a la contraseña nueva', () => {
+    // Una contraseña de tres letras pasa este validador. La rechaza el
+    // servicio, que es quien conoce el nombre de usuario contra el que hay que
+    // compararla. Este test existe para que quede escrito dónde está esa
+    // frontera y por qué.
+    expect(changePasswordValidator(req({ actual: 'x', nueva: 'abc' }))).toBeNull();
   });
 });
