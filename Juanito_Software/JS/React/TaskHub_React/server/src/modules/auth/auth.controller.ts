@@ -91,4 +91,22 @@ export const authController = {
       next(err);
     }
   },
+
+  /**
+   * Cambia la contraseña y deja al usuario dentro.
+   *
+   * Usa `responder`, el mismo ayudante que register y login, porque devuelve
+   * credenciales nuevas: el refresco tiene que salir por `Set-Cookie` y no en
+   * el cuerpo. Si esto respondiera con un `res.json` corriente, el token de
+   * refresco acabaría en el JSON y el `HttpOnly` no habría servido de nada.
+   */
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { actual, nueva } = req.body ?? {};
+      const result = await authService.changePassword(req.userId!, actual, nueva);
+      responder(res, 200, result, 'Contraseña cambiada. Las demás sesiones se han cerrado');
+    } catch (err) {
+      next(err);
+    }
+  },
 };

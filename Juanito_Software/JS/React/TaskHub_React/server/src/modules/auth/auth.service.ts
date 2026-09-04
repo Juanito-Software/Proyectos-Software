@@ -9,6 +9,7 @@ import { ApiError } from '../../utils/api-error.js';
 import { registrarEventoSeguridad } from '../../utils/security-log.js';
 import { env } from '../../config/env.js';
 import { RegisterDTO, LoginDTO } from './auth.types.js';
+import { validarPassword } from './password-policy.js';
 
 /**
  * Credenciales que se devuelven al cliente.
@@ -195,5 +196,79 @@ export const authService = {
     const revocados = await sessionsRepository.revocarTodasDelUsuario(userId, 'logout-all');
     registrarEventoSeguridad('logout.global', { userId, tokensRevocados: revocados });
     return revocados;
+  },
+
+  /**
+   * Cambia la contraseña de quien ya ha iniciado sesión.
+   *
+   * **Por qué se pide la contraseña actual teniendo ya sesión.** Un token de
+   * acceso robado permitiría cambiar la contraseña y quedarse con la cuenta
+   * para siempre; exigir la actual convierte ese robo en un problema temporal
+   * en vez de definitivo. Es el motivo por el que todas las aplicaciones serias
+   * la piden aunque parezca redundante.
+   *
+   * **Por qué se revocan TODAS las sesiones.** Cambiar la contraseña es lo que
+   * hace alguien que sospecha que le han entrado. Si las demás sesiones
+   * siguieran vivas, el cambio no serviría de nada: el intruso mantendría su
+   * acceso hasta que su refresco caducara, siete días después.
+   *
+   * **Y por qué se abre una sesión nueva a continuación.** Revocar todas
+   * incluiría la del propio usuario, que se vería expulsado justo después de
+   * hacer lo correcto. En vez de eso se le entrega una credencial nueva: él
+   * sigue dentro y todos los demás dispositivos quedan fuera. Es lo que hacen
+   * GitHub o Google, y es la diferencia entre una medida de seguridad que se
+   * usa y una que se evita por incómoda.
+   */
+  async changePassword(userId: string, actual: string, nueva: string) {
+    const user = await usersRepository.findById(userId);
+    if (!user) {
+      // El token era válido pero la cuenta ya no está. Mismo caso que en
+      // `requireAdmin`: la sesión está muerta aunque la firma sea buena.
+      throw ApiError.unauthorized('La cuenta ya no existe');
+    }
+
+    if (!(await usersRepository.verifyPassword(user, actual))) {
+      registrarEventoSeguridad('password.cambio-rechazado', {
+        userId,
+        usuario: user.username,
+        motivo: 'actual-incorrecta',
+      });
+      // Mensaje concreto a propósito: aquí no hay enumeración que evitar,
+      // porque quien pregunta ya ha demostrado ser el dueño de la sesión. Y
+      // decirle «la contraseña actual no es correcta» le ahorra adivinar si el
+      // problema está en la vieja o en la nueva.
+      throw ApiError.unauthorized('La contraseña actual no es correcta');
+    }
+
+    // La nueva pasa exactamente la misma política que en el registro, con el
+    // nombre de usuario incluido para que no pueda usarlo como contraseña.
+    const veredicto = validarPassword(nueva, user.username);
+    if (!veredicto.valida) {
+      throw ApiError.badRequest(veredicto.error!);
+    }
+
+    // Repetir la que ya tenía dejaría al usuario convencido de haber cambiado
+    // algo sin haberlo hecho —y habría echado a todos sus dispositivos para
+    // nada—. Se compara con bcrypt, no con los textos, porque el hash es lo
+    // único que hay guardado.
+    if (await usersRepository.verifyPassword(user, nueva)) {
+      throw ApiError.badRequest('La contraseña nueva debe ser distinta de la actual');
+    }
+
+    if (!(await usersRepository.updatePassword(userId, nueva))) {
+      // La cuenta desapareció entre la comprobación de arriba y este UPDATE.
+      throw ApiError.unauthorized('La cuenta ya no existe');
+    }
+
+    const revocadas = await sessionsRepository.revocarTodasDelUsuario(userId, 'password-changed');
+    const credenciales = await abrirSesion(user.id, user.username);
+
+    registrarEventoSeguridad('password.cambiada', {
+      userId,
+      usuario: user.username,
+      sesionesRevocadas: revocadas,
+    });
+
+    return { user: usersRepository.toPublic(user), ...credenciales };
   },
 };

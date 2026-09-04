@@ -627,3 +627,41 @@ button {
   top: 1.25rem;
   right: 1.25rem;
 }
+
+/* ── Cambio de contraseña ─────────────────────────────────────────────── */
+.cambio-password {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--sombra-sm);
+}
+
+.cambio-password h2 {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.cambio-password input {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
+.cambio-password .form-actions button[type='submit'] {
+  background: var(--acento);
+  color: var(--acento-texto);
+  border-color: var(--acento);
+}
+
+.cambio-password .form-actions button[type='submit']:hover:not(:disabled) {
+  background: var(--acento-hover);
+  border-color: var(--acento-hover);
+}
+
+.cambio-ok {
+  margin: 0 0 0.75rem;
+  color: var(--exito-texto);
+  font-weight: 500;
+}

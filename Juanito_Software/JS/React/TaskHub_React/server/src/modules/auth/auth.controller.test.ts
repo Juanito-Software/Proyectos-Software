@@ -222,3 +222,82 @@ describe('propagación de errores', () => {
     expect(capturado.cuerpo).toBeNull();
   });
 });
+
+describe('cambio de contraseña', () => {
+  /**
+   * El controlador devuelve credenciales nuevas, así que le aplica la misma
+   * invariante que register, login y refresh: **el refresco sale por cookie y
+   * jamás en el cuerpo**. Es la cuarta ruta que la emite, y la más fácil de
+   * escribir mal, porque parece una actualización cualquiera.
+   */
+
+  beforeEach(() => {
+    espias.changePassword = vi
+      .spyOn(authService, 'changePassword')
+      .mockResolvedValue(CREDENCIALES);
+  });
+
+  it('el cuerpo no contiene el token de refresco', async () => {
+    const { capturado } = await ejecutar(
+      authController.changePassword,
+      peticion({ userId: 'user-1', body: { actual: 'a', nueva: 'b' } }),
+    );
+
+    expect(JSON.stringify(capturado.cuerpo)).not.toContain(CREDENCIALES.refreshToken);
+    expect(JSON.stringify(capturado.cuerpo)).not.toContain('refreshToken');
+  });
+
+  it('sí lo manda por cookie', async () => {
+    const { capturado } = await ejecutar(
+      authController.changePassword,
+      peticion({ userId: 'user-1', body: { actual: 'a', nueva: 'b' } }),
+    );
+
+    expect(capturado.cookiePuesta).toEqual({
+      nombre: REFRESH_COOKIE,
+      valor: CREDENCIALES.refreshToken,
+    });
+  });
+
+  it('el usuario sale del TOKEN, nunca del cuerpo', async () => {
+    // Si viniera del cuerpo, cualquiera con sesión podría cambiar la
+    // contraseña de otro escribiendo su identificador.
+    await ejecutar(
+      authController.changePassword,
+      peticion({ userId: 'user-9', body: { actual: 'a', nueva: 'b', userId: 'victima' } }),
+    );
+
+    expect(espias.changePassword).toHaveBeenCalledWith('user-9', 'a', 'b');
+  });
+
+  it('responde 200', async () => {
+    const { capturado } = await ejecutar(
+      authController.changePassword,
+      peticion({ userId: 'user-1', body: { actual: 'a', nueva: 'b' } }),
+    );
+
+    expect(capturado.status).toBe(200);
+  });
+
+  it('propaga el fallo a next() sin escribir cuerpo', async () => {
+    espias.changePassword.mockRejectedValue(
+      ApiError.unauthorized('La contraseña actual no es correcta'),
+    );
+
+    const { error, capturado } = await ejecutar(
+      authController.changePassword,
+      peticion({ userId: 'user-1', body: { actual: 'mal', nueva: 'b' } }),
+    );
+
+    expect((error as ApiError).statusCode).toBe(401);
+    expect(capturado.cuerpo).toBeNull();
+  });
+
+  it('sin cuerpo no revienta: lo rechaza el servicio', async () => {
+    // El validador ya lo habría parado con un 400, pero el controlador no debe
+    // lanzar un TypeError si alguien lo llama de otra forma.
+    await expect(
+      ejecutar(authController.changePassword, peticion({ userId: 'user-1' })),
+    ).resolves.toBeDefined();
+  });
+});

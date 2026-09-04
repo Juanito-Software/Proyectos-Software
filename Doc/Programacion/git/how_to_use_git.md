@@ -296,3 +296,69 @@ style: format code with rustfmt
 | test     | tests                             |
 | archive  | mover a archive/                  |
 
+---
+
+Tu día a día pasa a ser esto:
+
+```bash
+git nueva paginacion-tareas      # ①
+# ... programas, git add, git commit — las veces que quieras ...
+git subir                        # ②
+```
+
+**Y ya está.** No esperas nada, no vuelves a `main`, no borras ramas.
+
+## Qué hace cada uno
+
+**①** te pone en `main`, la actualiza y te crea la rama. Empiezas siempre desde lo último.
+
+Entre medias trabajas **igual que siempre**: `git add`, `git commit`, tantos commits como te apetezca. Haz commits pequeños y sucios si quieres, da igual — el `--squash` los va a aplastar en uno solo al integrar. El mensaje que cuenta es el del PR, que sale de tus commits.
+
+**②** sube la rama, abre el PR y programa la integración. A partir de ahí trabaja la máquina: arranca el CI, y cuando `CI en verde` pasa, se integra solo, se borra la rama remota y se dispara el despliegue.
+
+## Situaciones que te vas a encontrar
+
+**El CI falla.** El PR se queda abierto, no se integra nada. Arreglas, `git add`, `git commit`, y:
+
+```bash
+git push
+```
+
+A secas — el `-u` del primer push ya dejó la rama vinculada. El PR se actualiza, el CI vuelve a correr y **la integración automática sigue armada**. No tienes que repetir `git subir`.
+
+**Quieres empezar otra cosa sin esperar.** Puedes:
+
+```bash
+git nueva otra-cosa
+```
+
+El PR anterior sigue su curso por su cuenta. Trabajar en paralelo es gratis.
+
+**Quieres ver cómo va.**
+
+```bash
+gh pr status      # tus PRs abiertos y su estado
+gh pr checks      # los checks del PR de la rama actual
+```
+
+**Te arrepientes.**
+
+```bash
+gh pr merge --disable-auto    # desprograma la integración
+gh pr close                   # cierra el PR sin integrar
+```
+
+## El único fleco
+
+`--delete-branch` borra la rama **remota**, pero la tuya local se queda. No molesta, pero se acumulan. De vez en cuando:
+
+```bash
+git checkout main && git pull
+git branch --merged main | grep -v main | xargs git branch -d
+```
+
+La segunda línea borra las locales que ya están integradas. Es segura: `-d` en minúscula se niega a borrar nada que no esté integrado.
+
+---
+
+Comparado con lo de antes son **dos comandos más** —`nueva` al principio y `subir` en vez de `push`—, y a cambio ningún commit roto entra en `main` ni llega a producción.

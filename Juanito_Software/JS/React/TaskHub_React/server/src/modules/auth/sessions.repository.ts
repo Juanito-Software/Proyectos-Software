@@ -27,7 +27,12 @@ export interface RefreshSession {
 }
 
 /** Motivo por el que un token de refresco dejó de valer. */
-export type MotivoRevocacion = 'rotated' | 'logout' | 'logout-all' | 'reuse-detected';
+export type MotivoRevocacion =
+  | 'rotated'
+  | 'logout'
+  | 'logout-all'
+  | 'reuse-detected'
+  | 'password-changed';
 
 export const sessionsRepository = {
   /**

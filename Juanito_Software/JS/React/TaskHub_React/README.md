@@ -163,6 +163,7 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 - **Filtros y búsqueda**: por estado, por prioridad y por texto en título o descripción. **Los resuelve la API**, no el navegador: viajan como parámetros de consulta y solo llegan las tareas que se piden. La búsqueda espera 300 ms desde la última tecla para no lanzar una petición por carácter.
 - **Notificaciones**: mensaje breve al crear o actualizar una tarea.
 - **Modo claro y oscuro**: sigue la preferencia del sistema mientras nadie diga lo contrario, y recuerda la elección si se usa el conmutador.
+- **Cambio de contraseña**: pide la actual, aplica la misma política que el registro y cierra las sesiones del resto de dispositivos.
 
 ## Interfaz y accesibilidad
 
@@ -330,12 +331,12 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**831 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**937 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 476 + 195 | Nada |
-| `npm run verify` | End-to-end de la API | 130 | PostgreSQL |
+| `npm test` | Unitarios de servidor y cliente | 548 + 212 | Nada |
+| `npm run verify` | End-to-end de la API | 147 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
@@ -404,7 +405,7 @@ DELETE FROM users WHERE username LIKE 'e2e-%';
 
 Las tareas asociadas se van solas por el borrado en cascada.
 
-### Qué cubren las 109 comprobaciones de la API
+### Qué cubren las 147 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
 filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,
@@ -638,6 +639,38 @@ días para quien tuviera una copia. Cerrar una sesión no toca las demás del mi
 usuario; para eso está `POST /api/auth/logout-all`, que las cierra todas y saca
 el identificador del token, nunca del cuerpo de la petición.
 
+### Cambiar la contraseña
+
+`POST /api/auth/change-password` exige sesión y **la contraseña actual**.
+
+Pedirla teniendo ya un token parece redundante y no lo es: sin ese requisito, un
+token de acceso robado permitiría cambiar la contraseña y quedarse con la cuenta
+para siempre. Con él, el robo dura lo que dure el token — quince minutos.
+
+La contraseña nueva pasa exactamente la misma política que en el registro,
+incluida la comparación contra el nombre de usuario. Ese nombre se saca de la
+base de datos a partir del token, **nunca del cuerpo de la petición**: validar
+contra un dato que controla el cliente no valida nada. Repetir la contraseña que
+ya se tenía se rechaza, porque expulsaría todos los dispositivos sin cambiar
+nada.
+
+**Al terminar se revocan todas las sesiones y se abre una nueva.** Es la parte
+que más se piensa. Cambiar la contraseña es lo que hace quien sospecha que le
+han entrado; si las demás sesiones siguieran vivas, el intruso conservaría su
+acceso hasta que caducara su refresco, siete días después. Pero revocar «todas»
+incluiría la del propio usuario, que se vería expulsado justo después de hacer
+lo correcto — así que a continuación se le entrega una credencial nueva. Él sigue
+dentro, el resto de dispositivos fuera. Es lo que hacen GitHub o Google, y es la
+diferencia entre una medida que se usa y una que se evita por incómoda.
+
+Las sesiones cerradas así quedan marcadas con el motivo `password-changed`, y no
+con `logout-all`: una avalancha de las primeras significa que varias cuentas se
+sienten comprometidas a la vez, que es una señal muy distinta.
+
+Lo que **no** hay todavía es «he olvidado mi contraseña». Eso exige correo, y el
+correo exige dominio verificado y proveedor de envío: sin eso los mensajes caen
+en spam y la función existe sin funcionar.
+
 ### Qué pasó con los tokens de 7 días ya emitidos
 
 **Se invalidaron todos.** Los de la política anterior no llevan el claim
@@ -725,7 +758,84 @@ el caso, lo que revela información antes siquiera de comprobar las credenciales
 Hay tests en las capas unitaria y de API que fijan este comportamiento.
 
 No hay ningún mecanismo de cambio de contraseña forzoso, así que tampoco se ha
-añadido uno: endurecer la política no invalida nada.
+añadido uno: endurecer la política no invalida nada. Quien quiera ponerse al día
+puede hacerlo desde el botón «Contraseña» de la cabecera, y ahí sí se aplica la
+política nueva.
+
+### Límite de intentos: tres capas
+
+Hay **tres mecanismos** sobre el inicio de sesión, y cada uno tapa lo que el
+anterior deja abierto.
+
+**1. Por dirección de origen.** `authLimiter`: diez intentos fallidos cada
+quince minutos. Frena a quien ataca desde un sitio, que es el caso corriente.
+
+Lo que no frena es a quien reparte. Con mil direcciones, diez intentos desde
+cada una son diez mil contra la misma cuenta sin que ninguna agote su cuota.
+
+**2. Retrasos progresivos por cuenta.** `accountSlowDown` cuenta por **nombre de
+usuario**, no por origen, así que las mil direcciones caen todas en el mismo
+cubo. Y en lugar de denegar, retrasa:
+
+| Intentos fallidos | Retraso |
+|---|---|
+| 1-3 | ninguno |
+| 4 | 1 s |
+| 5 | 2 s |
+| 6 | 4 s |
+| 7 | 8 s |
+| 8 o más | 30 s (tope) |
+
+**Toda la defensa está en la asimetría de esa curva.** Quien conoce su
+contraseña acierta al primer o segundo intento y no nota nada. Quien se
+equivoca de verdad falla tres o cuatro veces y espera un segundo. Quien prueba a
+ciegas necesita miles de intentos, y a treinta segundos cada uno pasa de miles
+por minuto a **menos de ciento veinte por hora**.
+
+**3. Tope duro, como red de seguridad.** `accountLimiter` corta a los doscientos
+intentos por cuenta. Está deliberadamente lejos, y ese número tiene una historia.
+
+#### Por qué se retrasa en vez de bloquear
+
+La primera versión de esto era solo un bloqueo duro a los veinte intentos.
+Resolvía el ataque repartido e introducía otro: **si bloquear es posible,
+cualquiera que sepa un nombre de usuario puede provocarlo aposta** y dejar a su
+dueño sin poder entrar.
+
+Afinar el umbral no lo arregla. El problema no es el número, es el mecanismo: un
+bloqueo es un binario —permitido o denegado—, y cualquier binario que un
+atacante pueda forzar se convierte en un arma. Con veinte deja fuera a
+cualquiera; con doscientos, si esos doscientos son alcanzables, también.
+
+Lo que sí lo arregla es cambiar el castigo. **Un retraso no tiene estado
+«bloqueado» que forzar.** Nadie queda fuera: el dueño de la cuenta atacada
+escribe su contraseña, espera lo que toque y entra.
+
+El tope duro sigue ahí para el caso patológico, pero con los retrasos por medio
+llegar a doscientos exige **más de una hora de martilleo continuado** para
+conseguir un bloqueo de quince minutos. Deja de ser un arma y pasa a ser lo que
+debe ser: un límite que en la práctica no se toca.
+
+#### Detalles que importan
+
+La clave se normaliza en minúsculas igual que el índice único de la tabla: sin
+eso, alternar mayúsculas abriría un cubo nuevo por cada variante.
+
+El cubo se crea con el nombre que llegue, **exista o no** en la base de datos.
+Si solo se contaran los usuarios reales, la diferencia de comportamiento entre un
+nombre registrado y uno inventado sería una forma de enumerarlos.
+
+Solo cuentan los fallos: quien entra a la primera no acumula nada aunque lo haga
+cien veces al día.
+
+**Qué comprueban los tests.** La curva de retrasos se fija con tests unitarios
+sobre la función pura que la calcula —medir esperas reales daría un test lento y
+frágil sin comprobar nada más—, incluyendo que sea monótona, que respete el
+techo y que la fuerza bruta quede por debajo de doscientos intentos por hora. Y
+en la suite de API hay una comprobación del punto delicado: desde **la misma
+dirección** que acaba de quedar bloqueada para una cuenta, otra cuenta sigue
+respondiendo con normalidad. Si el contador siguiera siendo por IP, ahí saldría
+un 429.
 
 **Confirmación de contraseña.** El registro pide escribir la contraseña dos
 veces, pero eso es **asunto del formulario**: se compara en el cliente y no

@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { login, register, refreshSession, logout, logoutAll } from './authApi';
+import {
+  login,
+  register,
+  refreshSession,
+  logout,
+  logoutAll,
+  changePassword,
+} from './authApi';
 
 /**
  * Autenticación: la parte del cliente donde un fallo silencioso es más caro.
@@ -154,5 +161,100 @@ describe('logoutAll', () => {
     global.fetch = mockFetch(401, { success: false, error: 'Token de autenticación requerido' });
     await expect(logoutAll(null)).rejects.toThrow('Token de autenticación requerido');
     expect(global.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
+
+  it('usa un mensaje por defecto si el servidor no manda ninguno', async () => {
+    global.fetch = mockFetch(500, { success: false });
+    await expect(logoutAll('jwt-abc')).rejects.toThrow('No se pudieron cerrar las sesiones');
+  });
+});
+
+describe('changePassword', () => {
+  const CREDENCIALES = {
+    user: { id: '1', username: 'juan', role: 'user' },
+    accessToken: 'jwt-recien-emitido',
+  };
+
+  it('devuelve credenciales NUEVAS, no un simple «hecho»', async () => {
+    // Es lo que distingue a esta llamada de las demás. El servidor revoca todas
+    // las sesiones al cambiar la contraseña, incluida la de este navegador, y
+    // abre una limpia a continuación. Si esta función devolviera un booleano y
+    // el que llama se quedara con el token viejo, el usuario se encontraría
+    // fuera en la siguiente petición pese a haber hecho todo bien.
+    global.fetch = mockFetch(200, sobre(CREDENCIALES));
+
+    const resultado = await changePassword('jwt-viejo', 'La-de-antes-2026!', 'La-de-ahora-2026!');
+
+    expect(resultado.accessToken).toBe('jwt-recien-emitido');
+    expect(resultado.user.username).toBe('juan');
+    expect(resultado.success).toBeUndefined();
+  });
+
+  it('manda la actual y la nueva en el cuerpo, y el token en la cabecera', async () => {
+    // El usuario sale del token, nunca del cuerpo: si el nombre viajara en el
+    // JSON, cualquiera con sesión podría cambiar la contraseña de otro.
+    global.fetch = mockFetch(200, sobre(CREDENCIALES));
+
+    await changePassword('jwt-viejo', 'La-de-antes-2026!', 'La-de-ahora-2026!');
+
+    const [url, options] = global.fetch.mock.calls[0];
+    expect(url).toBe('/api/auth/change-password');
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBe('Bearer jwt-viejo');
+    expect(JSON.parse(options.body)).toEqual({
+      actual: 'La-de-antes-2026!',
+      nueva: 'La-de-ahora-2026!',
+    });
+    expect(JSON.parse(options.body).username).toBeUndefined();
+  });
+
+  it('sin token no inventa una cabecera de autorización', async () => {
+    // Mejor un 401 del servidor que un `Bearer null` que ensucie los registros.
+    global.fetch = mockFetch(401, { success: false, error: 'Token de autenticación requerido' });
+
+    await expect(changePassword(null, 'a', 'b')).rejects.toThrow(
+      'Token de autenticación requerido',
+    );
+    expect(global.fetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
+  });
+
+  it('propaga el rechazo de la contraseña actual', async () => {
+    global.fetch = mockFetch(401, {
+      success: false,
+      error: 'La contraseña actual no es correcta',
+    });
+
+    await expect(
+      changePassword('jwt-viejo', 'la-que-no-era', 'La-de-ahora-2026!'),
+    ).rejects.toThrow('La contraseña actual no es correcta');
+  });
+
+  it('un 200 con success:false también es un fallo', async () => {
+    // El código de estado por sí solo no basta: la envoltura de la API puede
+    // traer `success: false` con un 200 si algo se tuerce en una capa
+    // intermedia. Dar eso por bueno dejaría al usuario creyendo que su
+    // contraseña ha cambiado cuando no.
+    global.fetch = mockFetch(200, { success: false, error: 'No se pudo cambiar la contraseña' });
+
+    await expect(changePassword('jwt-viejo', 'a', 'b')).rejects.toThrow(
+      'No se pudo cambiar la contraseña',
+    );
+  });
+
+  it('usa un mensaje por defecto cuando la respuesta no es ni JSON', async () => {
+    // Un 502 del proxy devuelve HTML. Sin el `.catch`, `res.json()` reventaría
+    // con un error de sintaxis y el formulario mostraría «Unexpected token <»
+    // en lugar de algo que se pueda leer.
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    });
+
+    await expect(changePassword('jwt-viejo', 'a', 'b')).rejects.toThrow(
+      'No se pudo cambiar la contraseña',
+    );
   });
 });

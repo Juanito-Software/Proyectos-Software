@@ -38,7 +38,9 @@ export type EventoSeguridad =
   | 'refresh.rechazado'
   | 'refresh.reutilizacion'
   | 'autorizacion.denegada'
-  | 'cuenta.borrada';
+  | 'cuenta.borrada'
+  | 'password.cambiada'
+  | 'password.cambio-rechazado';
 
 interface DatosEvento {
   /** Nombre de usuario, si se conoce. En un login fallido es lo que se intentó. */
@@ -49,6 +51,8 @@ interface DatosEvento {
   motivo?: string;
   /** Dirección de origen, para poder distinguir un ataque distribuido. */
   ip?: string;
+  /** Sesiones cerradas por un cambio de contraseña. Es un recuento, no un secreto. */
+  sesionesRevocadas?: number;
   /** Cualquier dato adicional NO sensible: recuentos, identificadores de familia. */
   [clave: string]: unknown;
 }

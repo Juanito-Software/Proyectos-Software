@@ -55,3 +55,30 @@ export const loginValidator: ValidatorFn = (req: Request): string[] | null => {
 
   return errors.length > 0 ? errors : null;
 };
+
+/**
+ * Cambio de contraseña estando dentro.
+ *
+ * Aquí solo se comprueba la **forma** del cuerpo: que vengan los dos campos y
+ * sean texto. La política de la contraseña nueva la aplica el servicio, no este
+ * validador, y es deliberado: el servicio necesita el nombre de usuario para
+ * comprobar que la contraseña no lo contiene, y ese nombre sale de la base de
+ * datos a partir del token — no del cuerpo, que el cliente controla.
+ *
+ * Validar aquí la política obligaría a fiarse de un `username` enviado por el
+ * cliente, que es exactamente lo que no queremos.
+ */
+export const changePasswordValidator: ValidatorFn = (req: Request): string[] | null => {
+  const errors: string[] = [];
+  const { actual, nueva } = req.body ?? {};
+
+  if (typeof actual !== 'string' || !actual) {
+    errors.push('La contraseña actual es obligatoria');
+  }
+
+  if (typeof nueva !== 'string' || !nueva) {
+    errors.push('La contraseña nueva es obligatoria');
+  }
+
+  return errors.length > 0 ? errors : null;
+};

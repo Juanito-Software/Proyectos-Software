@@ -145,6 +145,26 @@ export const usersRepository = {
     return rows[0].count;
   },
 
+  /**
+   * Sustituye el hash de la contraseña.
+   *
+   * Recibe la contraseña en claro y hashea aquí, igual que `create`, para que
+   * bcrypt viva en un solo sitio: si mañana se sube el coste o se cambia de
+   * algoritmo, se toca una línea y no tres.
+   *
+   * Devuelve si encontró la fila. Un `false` significa que el usuario ya no
+   * existe —lo borraron mientras cambiaba la contraseña—, y quien llama debe
+   * distinguirlo de un cambio correcto en lugar de dar por hecho que fue bien.
+   */
+  async updatePassword(id: string, password: string): Promise<boolean> {
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const rows = await query<{ id: string }>(
+      'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING id',
+      [passwordHash, id],
+    );
+    return rows.length > 0;
+  },
+
   /** Las tareas del usuario se van solas por el ON DELETE CASCADE. */
   async deleteById(id: string): Promise<boolean> {
     const rows = await query<{ id: string }>('DELETE FROM users WHERE id = $1 RETURNING id', [id]);

@@ -93,11 +93,47 @@ CREATE TABLE IF NOT EXISTS refresh_sessions (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at   TIMESTAMPTZ NOT NULL,
   revoked_at   TIMESTAMPTZ,
-  -- Por qué dejó de valer: 'rotated' es el ciclo normal; 'logout', 'logout-all'
-  -- y 'reuse-detected' son revocaciones. Distinguirlos importa: un token
-  -- 'rotated' que reaparece es sospechoso, uno 'logout' solo está caducado.
-  revoked_reason TEXT      CHECK (revoked_reason IN ('rotated', 'logout', 'logout-all', 'reuse-detected'))
+  -- Por qué dejó de valer: 'rotated' es el ciclo normal; 'logout',
+  -- 'logout-all', 'reuse-detected' y 'password-changed' son revocaciones.
+  -- Distinguirlos importa: un token 'rotated' que reaparece es sospechoso, uno
+  -- 'logout' solo está caducado, y una avalancha de 'password-changed' en poco
+  -- tiempo apunta a que varias cuentas se sienten comprometidas a la vez.
+  revoked_reason TEXT      CHECK (revoked_reason IN ('rotated', 'logout', 'logout-all', 'reuse-detected', 'password-changed'))
 );
+
+-- Para bases de datos creadas antes de que existiera el cambio de contraseña.
+--
+-- Un CREATE TABLE IF NOT EXISTS no toca una tabla que ya está, así que la
+-- restricción antigua sobreviviría con su lista corta de motivos y el primer
+-- cambio de contraseña fallaría en producción — mientras que en una base de
+-- datos recién creada, como la de los tests, pasaría sin enterarse. De ahí que
+-- se rehaga explícitamente.
+DO $$
+DECLARE
+  nombre TEXT;
+BEGIN
+  SELECT conname INTO nombre
+    FROM pg_constraint
+   WHERE conrelid = 'refresh_sessions'::regclass
+     AND contype = 'c'
+     AND pg_get_constraintdef(oid) LIKE '%revoked_reason%';
+
+  IF nombre IS NOT NULL
+     AND (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = nombre)
+         NOT LIKE '%password-changed%' THEN
+    EXECUTE format('ALTER TABLE refresh_sessions DROP CONSTRAINT %I', nombre);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'refresh_sessions'::regclass
+       AND contype = 'c'
+       AND pg_get_constraintdef(oid) LIKE '%revoked_reason%'
+  ) THEN
+    ALTER TABLE refresh_sessions ADD CONSTRAINT refresh_sessions_revoked_reason_check
+      CHECK (revoked_reason IN ('rotated', 'logout', 'logout-all', 'reuse-detected', 'password-changed'));
+  END IF;
+END $$;
 
 -- La búsqueda de cada refresco es por hash; el UNIQUE de la columna ya crea el
 -- índice, así que aquí solo hacen falta los dos accesos restantes: revocar una

@@ -4,6 +4,7 @@ import {
   register as registerApi,
   logout as logoutApi,
   refreshSession,
+  changePassword as changePasswordApi,
 } from '../services/authApi';
 import { setAuthToken, configurarAuth } from '../services/api';
 
@@ -130,6 +131,27 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  /**
+   * Cambia la contraseña y **se queda con las credenciales nuevas**.
+   *
+   * El servidor cierra todas las sesiones al cambiarla, así que el token que
+   * este navegador tenía guardado deja de valer en ese mismo instante. Si no
+   * se sustituyera por el que devuelve la llamada, el usuario se encontraría
+   * expulsado en la siguiente petición justo después de haber hecho lo
+   * correcto.
+   *
+   * Si algo falla no se toca el estado: la sesión anterior sigue siendo válida
+   * porque el servidor no llegó a revocar nada.
+   */
+  async function changePassword(actual, nueva) {
+    // `?? null` para coincidir con lo que el contexto expone como `token`: sin
+    // él saldría `undefined`, que significa lo mismo pero obliga a quien lea
+    // esto a comprobar dos formas distintas de «no hay token».
+    const { user, accessToken } = await changePasswordApi(auth?.token ?? null, actual, nueva);
+    setAuthToken(accessToken);
+    setAuth({ user, token: accessToken });
+  }
+
   const value = {
     user: auth?.user ?? null,
     token: auth?.token ?? null,
@@ -137,6 +159,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -35,7 +35,7 @@ contraseñas, y por último **cerrar la brecha entre «el código es correcto» 
 «algo vigila que siga siéndolo»**, que era el verdadero hallazgo de la auditoría
 integral.
 
-**Valoración global: 8,7 / 10.** El desglose, en la sección 9.
+**Valoración global: 8,9 / 10.** El desglose, en la sección 9.
 
 ### Lo que ha cambiado desde la primera auditoría
 
@@ -45,13 +45,15 @@ integral.
 | Contraseñas | Mínimo 6 caracteres | 15 caracteres, lista de bloqueo y composición |
 | Cabeceras HTTP | Ninguna | `helmet` con CSP a medida y HSTS |
 | CORS | Abierto a cualquier origen | Delegado de mismo origen |
-| Tests | 37 comprobaciones de API | **831** en cuatro capas |
-| Cobertura del servidor | No medida | **99,5 %** de la lógica pura, con umbral en el CI |
+| Tests | 37 comprobaciones de API | **937** en cuatro capas |
+| Cobertura del servidor | No medida | **99,6 %** de la lógica pura, con umbral en el CI |
 | Cobertura del cliente | No medida | **96,9 %**, con umbral |
 | Interfaz | Estilos por defecto, sin tokens | Sistema de tokens, modo oscuro y foco de teclado visible |
 | CI | No existía | 9 jobs con puerta `ci-ok` |
 | Vulnerabilidades | 1 alta (cliente) | **0** |
 | Eventos de seguridad | Ninguno | Registro estructurado en los puntos clave |
+| Cambio de contraseña | No existía | Con revocación global y sesión nueva para el dispositivo actual |
+| Límite de intentos | Solo por IP | Tres capas: IP, retrasos progresivos por cuenta y tope duro lejano |
 
 ---
 
@@ -115,6 +117,59 @@ sitio, la cookie está limitada a la ruta de autenticación, y ninguna ruta de
 datos la mira —todas exigen la cabecera `Authorization`, que una petición
 cross-site no puede fijar—.
 
+**Cambio de contraseña.** Cierra el hueco más raro que tenía el proyecto: se
+había construido rotación, detección de reutilización y revocación por familias,
+y un usuario que sospechara que le habían robado la contraseña no podía hacer
+absolutamente nada.
+
+Se pide la contraseña **actual** aunque ya haya sesión, y no es burocracia: sin
+ese requisito, un token de acceso robado permitiría quedarse con la cuenta para
+siempre. Con él, el robo dura quince minutos.
+
+Al cambiarla se revocan **todas** las sesiones —marcadas con el motivo
+`password-changed`, distinto de un cierre normal— y acto seguido se abre una
+nueva para el dispositivo actual. Revocar sin más habría expulsado al usuario
+justo después de hacer lo correcto, y una medida de seguridad incómoda es una
+medida que la gente evita. El orden importa y está fijado por un test: primero
+revocar, después crear; al revés se revocaría la sesión recién abierta.
+
+Un detalle del esquema que casi pasa desapercibido: la columna `revoked_reason`
+tenía una restricción `CHECK` con la lista cerrada de motivos anteriores. En una
+base de datos recién creada —como la de los tests— el motivo nuevo habría pasado
+sin problema; en una que ya existe, `CREATE TABLE IF NOT EXISTS` no toca la
+restricción vieja y el primer cambio de contraseña habría fallado **solo en
+producción**. Se añadió una migración explícita que la rehace, y se verificó
+contra PostgreSQL real.
+
+**Limitación de intentos: el rodeo que mereció la pena.** La primera versión fue
+un contador por cuenta con bloqueo duro a los veinte intentos. Resolvía el
+problema que tenía —el limitador por IP no frena a quien reparte el ataque entre
+mil direcciones, porque ninguna agota su cuota— e introducía otro: si bloquear
+es posible, cualquiera que sepa un nombre de usuario puede provocarlo aposta.
+
+Se documentó como compromiso asumido. Pero el compromiso no hacía falta: el
+problema no era el umbral sino el mecanismo. Un bloqueo es un binario, y
+cualquier binario que un atacante pueda forzar acaba siendo un arma; subir el
+número solo desplaza dónde está el borde.
+
+La versión definitiva **retrasa en lugar de denegar**, con la curva creciendo
+desde el cuarto fallo hasta un techo de treinta segundos. Quien conoce su
+contraseña no nota nada; quien prueba a ciegas pasa de miles de intentos por
+minuto a menos de ciento veinte por hora. Y nadie queda bloqueado, porque ya no
+existe el estado que provocar. El tope duro se conserva a doscientos como red de
+seguridad, tan lejos que alcanzarlo exige más de una hora de martilleo.
+
+La curva se fija con tests unitarios sobre la función pura que la calcula —que
+sea monótona, que respete el techo, que la fuerza bruta quede por debajo de
+cierto ritmo—. Medir esperas reales habría dado un test lento y frágil sin
+comprobar nada más.
+
+Un apunte de proceso: al extraer esa función, el umbral de cobertura **detectó
+que la lambda original quedaba sin probar** y puso el CI en rojo. Estaba escrita
+dentro de la configuración del middleware, donde solo la ejecuta la librería en
+tiempo de petición. Se extrajo con nombre y se cubrió. Es justo el trabajo para
+el que está puesto el trinquete.
+
 **Lo que esto cuesta.** El middleware de autenticación no consulta la base de
 datos: valida la firma y sigue. Eso hace que cada petición sea barata, a cambio
 de una ventana de hasta quince minutos entre que se revoca una cuenta y deja de
@@ -154,10 +209,10 @@ ese caso, no una revisión a ojo.
 | **A01 Broken Access Control** | ✅ | `user_id` en el `WHERE` de todas las consultas. El rol se lee de la base de datos en cada petición, nunca del JWT, para que retirar un permiso tenga efecto inmediato. Cubierto por comprobaciones cruzadas de escritura que verifican la fila en base de datos, no solo el código de estado |
 | **A02 Cryptographic Failures** | ✅ | bcrypt con 12 rondas. SHA-256 sin sal para el refresco, correcto por ser una credencial de alta entropía. HS256 declarado explícitamente al firmar **y al verificar**. Secreto de firma obligatorio y validado en producción |
 | **A03 Injection** | ✅ | Todo parametrizado. El único elemento dinámico del SQL es una lista blanca de nombres de columna, que es el patrón correcto cuando lo dinámico es estructural. Comodines de `LIKE` escapados con `ESCAPE` explícito. Cargas de inyección probadas en la suite de API |
-| **A04 Insecure Design** | ⚠️ | No hay cambio de contraseña, recuperación ni verificación de correo. Sin MFA. Son ausencias conocidas y acotadas, no defectos |
+| **A04 Insecure Design** | ⚠️ | Ya hay **cambio de contraseña** con revocación global. Siguen sin existir recuperación por correo ni verificación, porque el modelo de datos no guarda direcciones: es una ausencia conocida y acotada, no un defecto |
 | **A05 Security Misconfiguration** | ✅ | `helmet` con CSP a medida, HSTS en producción, `trust proxy` acotado, CORS de mismo origen, cuerpo limitado |
 | **A06 Vulnerable Components** | ✅ | **0 vulnerabilidades** en cliente y servidor |
-| **A07 Identification & Auth Failures** | ✅ | Rotación con detección de reutilización, revocación en servidor, política de contraseñas descrita arriba, limitación de intentos. Pendiente: contador por cuenta además del actual |
+| **A07 Identification & Auth Failures** | ✅ | Rotación con detección de reutilización, revocación en servidor, política de contraseñas descrita arriba, y **tres capas de limitación**: por IP, retrasos progresivos por cuenta y tope duro. Cierra el ataque repartido entre muchas direcciones sin abrir un bloqueo malicioso |
 | **A08 Software & Data Integrity** | ⚠️ | Las acciones del CI están fijadas a etiqueta mayor, no a SHA. Son acciones oficiales; el riesgo es bajo pero una etiqueta se puede mover |
 | **A09 Logging & Monitoring** | ⚠️ | Era el punto más flojo y ha mejorado mucho: hoy se registran los eventos de seguridad relevantes en formato estructurado, con redacción automática de cualquier campo que parezca una credencial. Falta la capa de agregación y alertas, que ya no es código de aplicación |
 | **A10 SSRF** | ✅ | No aplica: el servidor no hace peticiones salientes |
@@ -217,13 +272,13 @@ con las WCAG, y este documento no va a insinuar que lo sea.
 
 ## 7. Tests
 
-**831 comprobaciones** en cuatro capas que prueban cosas distintas:
+**937 comprobaciones** en cuatro capas que prueban cosas distintas:
 
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
-| Unitarios de servidor | 476 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
-| Unitarios de cliente | 195 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
-| API contra PostgreSQL | 130 | — | — | PostgreSQL |
+| Unitarios de servidor | 548 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
+| Unitarios de cliente | 212 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
+| API contra PostgreSQL | 147 | — | — | PostgreSQL |
 | Navegador (Playwright) | 30 | — | — | PostgreSQL y build |
 
 **Qué mide el 99,5 % y qué no.** Solo la lógica que corre sin base de datos. Los
@@ -314,17 +369,17 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 | Backend | 9/10 | Sólido y comentado explicando el porqué. Los defectos de la auditoría están cerrados |
 | Frontend | 9/10 | 96,9 % de cobertura, renovación transparente, actualización optimista con reversión, sistema de tokens con modo oscuro y foco de teclado visible |
 | Base de datos | 9/10 | Índices correctos, unicidad por índice, cascadas bien puestas, SQL parametrizado |
-| Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, CSRF cerrado por tres vías |
+| Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, cambio de contraseña con revocación global, CSRF cerrado por tres vías |
 | Autorización | 9/10 | El código era correcto desde el principio; ahora además está vigilado en escritura |
-| Seguridad | 8,5/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos. Falta la capa de alertas |
-| Testing | 9/10 | 818 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
+| Seguridad | 9/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos, y límite de intentos por IP y por cuenta. Falta la capa de alertas |
+| Testing | 9/10 | 937 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
 | E2E | 8,5/10 | 30 pruebas del ciclo completo, incluidas renovación y revocación |
 | CI/CD | 8,5/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`. Falta que el job espere a que Render termine, no solo a que acepte |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
 | Mantenibilidad | 9,5/10 | Los comentarios explican **por qué**, no qué. Las decisiones se entienden sin arqueología en el historial |
 | Documentación | 9/10 | README exhaustivo y este informe. Por encima de lo habitual |
 
-### **TaskHub: 8,7 / 10**
+### **TaskHub: 8,9 / 10**
 
 Media ponderada dando más peso a seguridad, testing y autorización.
 
@@ -360,7 +415,10 @@ principio.
 
 ### Medio
 
-3. Contador de intentos por cuenta, además del actual.
+3. **Recuperación de contraseña por correo.** El modelo de datos no guarda
+   direcciones, así que exige añadir el campo, decidir qué pasa con las cuentas
+   existentes y contratar un proveedor de envío con dominio verificado. Es más
+   infraestructura que código.
 4. Fijar las acciones del CI a SHA en lugar de a etiqueta mayor.
 5. Registrar el mensaje y el código del error en vez del objeto completo, que
    puede arrastrar identificadores internos al registro.
@@ -396,10 +454,10 @@ Comprobado en esta auditoría, no supuesto:
 | ESLint | ✅ 0 problemas |
 | TypeScript `--noEmit` | ✅ 0 errores |
 | Build | ✅ Playground y cliente |
-| Unitarios de servidor | ✅ 476/476 |
-| Cobertura de servidor | ✅ 99,54 / 98,95 / 98,73 / 99,51 |
-| Unitarios de cliente | ✅ 195/195 |
-| API contra PostgreSQL | ✅ 130/130 |
+| Unitarios de servidor | ✅ 548/548 |
+| Cobertura de servidor | ✅ 99,58 / 98,77 / 98,80 / 99,56 |
+| Unitarios de cliente | ✅ 212/212 |
+| API contra PostgreSQL | ✅ 147/147 |
 | Navegador (Playwright) | ✅ 30/30 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
 | Búsqueda de secretos en el repositorio | ✅ Sin hallazgos |
