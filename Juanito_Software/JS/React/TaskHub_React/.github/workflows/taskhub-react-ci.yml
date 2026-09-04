@@ -300,13 +300,62 @@ jobs:
       # avisos de dependencias transitivas de herramientas de desarrollo, y un
       # CI que siempre está rojo deja de mirarse. Las moderadas y bajas se
       # revisan por Dependabot sin cortar el trabajo.
-      - name: npm audit del servidor
-        run: npm audit --audit-level=high
-        working-directory: Juanito_Software/JS/React/TaskHub_React/server
+      #
+      # **Y se distingue «hay vulnerabilidades» de «no he podido preguntar».**
+      #
+      # `npm audit` devuelve el mismo código de salida en los dos casos, y eso
+      # tumbó este pipeline una vez: el registro de npm respondió 503 durante
+      # una caída suya, el job se puso rojo, `ci-ok` con él y el despliegue no
+      # llegó a lanzarse. No había ninguna vulnerabilidad; simplemente npm
+      # estaba caído.
+      #
+      # Un CI que se pone rojo por una avería ajena es un CI que se deja de
+      # mirar, y aquí además bloqueaba producción. Así que: se reintenta tres
+      # veces, y si el registro sigue sin responder se avisa en voz alta pero
+      # **no** se falla — no poder comprobar algo no es lo mismo que haber
+      # encontrado un problema. Si el audit sí responde y encuentra algo alto o
+      # crítico, se falla como siempre.
+      - name: npm audit de servidor y cliente
+        working-directory: Juanito_Software/JS/React/TaskHub_React
+        run: |
+          incompleto=0
 
-      - name: npm audit del cliente
-        run: npm audit --audit-level=high
-        working-directory: Juanito_Software/JS/React/TaskHub_React/client
+          auditar() {
+            ruta="$1"
+            for intento in 1 2 3; do
+              if salida=$(cd "$ruta" && npm audit --audit-level=high 2>&1); then
+                echo "[$ruta] sin vulnerabilidades altas ni críticas."
+                return 0
+              fi
+
+              if printf '%s' "$salida" | grep -qiE 'Service Unavailable|audit endpoint returned an error|ENOTFOUND|ETIMEDOUT|ECONNRESET|socket hang up|EAI_AGAIN'; then
+                echo "[$ruta] intento $intento: el registro de npm no responde."
+                if [ "$intento" -lt 3 ]; then
+                  sleep $((intento * 20))
+                fi
+                continue
+              fi
+
+              echo "[$ruta] vulnerabilidades encontradas:"
+              printf '%s\n' "$salida"
+              return 1
+            done
+
+            echo "::warning::[$ruta] No se pudo consultar el registro de npm tras 3 intentos. La auditoría NO se ha realizado."
+            return 2
+          }
+
+          for proyecto in server client; do
+            auditar "$proyecto" || case $? in
+              1) exit 1 ;;
+              2) incompleto=1 ;;
+            esac
+          done
+
+          if [ "$incompleto" = "1" ]; then
+            echo "Auditoría incompleta por una avería del registro de npm, no por hallazgos."
+            echo "Conviene relanzar este job cuando npm se recupere."
+          fi
 
   # ── Puerta final ────────────────────────────────────────────────────────
   #
