@@ -495,6 +495,36 @@ grupo de concurrencia **sin cancelación**: el resto del workflow sí cancela
 ejecuciones superadas, pero cortar un despliegue a la mitad deja el servicio en
 un estado que nadie ha decidido.
 
+#### Por qué el pipeline se ejecuta en todo el monorepo
+
+Tuvo filtros de ruta, para no gastar minutos cuando el commit tocaba otro
+proyecto. Se quitaron, y la razón merece contarse porque el primer intento fue
+peor que el problema.
+
+`ci-ok` es comprobación obligatoria en `main`. Una comprobación obligatoria que
+**no se ejecuta** no se interpreta como «no aplica» sino como «pendiente», y
+pendiente para siempre: con filtros de ruta, cualquier commit a otro proyecto
+del monorepo quedaba bloqueado sin remedio.
+
+El apaño habitual es un segundo workflow que reporte el mismo nombre de
+comprobación cuando el filtro no casa. Se probó y **se retiró**: en un commit
+que toca TaskHub *y además* otro proyecto se disparan los dos, aparecen dos
+comprobaciones llamadas igual y cuál manda es ambiguo. Un pipeline en rojo podía
+quedar tapado por el verde trivial del otro — es decir, el remedio abría un
+agujero justo en la puerta que se quería cerrar.
+
+Ejecutarlo siempre elimina esa clase de problema entera: hay **una** «CI en
+verde» y significa exactamente lo que dice. El coste son un par de minutos de
+runner en commits ajenos, y en un repositorio público esos minutos son gratuitos
+e ilimitados.
+
+El filtro no desaparece, se muda: el job de despliegue compara el commit con el
+anterior y solo llama al hook si el cambio toca de verdad este proyecto. Así se
+evita republicar lo mismo una y otra vez, que sí gasta tiempo de construcción en
+Render. Si no puede comparar —primer push de una rama, force-push—, despliega:
+desplegar de más es molesto, desplegar de menos deja producción desactualizada
+sin que nadie se entere.
+
 #### Configuración necesaria (una vez)
 
 Tres pasos fuera del repositorio. Sin los tres, el encadenado no está completo:

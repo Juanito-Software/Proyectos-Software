@@ -8,13 +8,7 @@ name: TaskHub_React CI
 on:
   push:
     branches: [main]
-    paths:
-      - 'Juanito_Software/JS/React/TaskHub_React/**'
-      - '.github/workflows/taskhub-react-ci.yml'
   pull_request:
-    paths:
-      - 'Juanito_Software/JS/React/TaskHub_React/**'
-      - '.github/workflows/taskhub-react-ci.yml'
   # Permite lanzarlo a mano desde la pestaña Actions.
   workflow_dispatch:
 
@@ -30,6 +24,23 @@ on:
 # CodeQL con «workflow does not contain permissions», una alerta por job.
 permissions:
   contents: read
+
+# Este pipeline se ejecuta en TODOS los commits del monorepo, no solo en los
+# que tocan TaskHub_React.
+#
+# Tuvo filtros de ruta y se quitaron a propósito. La razón: `ci-ok` es una
+# comprobación obligatoria en la rama principal, y una comprobación obligatoria
+# que NO se ejecuta se queda pendiente para siempre, bloqueando el push. El
+# apaño habitual —un segundo workflow que reporte el mismo nombre cuando el
+# filtro no casa— resultó peor que la enfermedad: en un commit que toque
+# TaskHub y además otro proyecto se disparan los dos, aparecen dos
+# comprobaciones con el mismo nombre y cuál manda es ambiguo. Un pipeline en
+# rojo podía quedar tapado por el verde trivial del otro.
+#
+# Ejecutarlo siempre elimina esa clase de problema entera: hay una única
+# comprobación «CI en verde» y significa exactamente lo que dice. El coste son
+# un par de minutos de runner en commits que no tocan este proyecto, y en un
+# repositorio público esos minutos son gratuitos e ilimitados.
 
 # Si se empuja dos veces seguidas, cancela la ejecución anterior: no tiene
 # sentido gastar minutos validando un commit que ya está superado.
@@ -364,12 +375,50 @@ jobs:
     environment: production
 
     steps:
+      # Con los filtros de ruta fuera, este job se ejecuta en cada commit a la
+      # rama principal — también en los que no tocan TaskHub. Republicar lo
+      # mismo una y otra vez no rompe nada, pero gasta tiempo de construcción
+      # en Render, que en el plan gratuito sí está limitado. Así que el filtro
+      # que se quitó del disparador reaparece aquí, que es donde importa.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Comprobar si el commit toca TaskHub_React
+        id: cambios
+        working-directory: .
+        run: |
+          anterior="${{ github.event.before }}"
+
+          # `before` viene a ceros en el primer push de una rama, y puede
+          # apuntar a un commit inexistente tras un force-push. Sin poder
+          # comparar, se despliega: equivocarse desplegando de más es molesto,
+          # equivocarse desplegando de menos deja producción desactualizada
+          # sin que nadie se entere.
+          if [ -z "$anterior" ] \
+             || [ "$anterior" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "${anterior}^{commit}" 2>/dev/null; then
+            echo "Sin punto de comparación fiable: se despliega por precaución."
+            echo "desplegar=si" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git diff --name-only "$anterior" "${{ github.sha }}" \
+               | grep -qE '^(Juanito_Software/JS/React/TaskHub_React/|\.github/workflows/taskhub-react-ci\.yml)'; then
+            echo "El commit toca TaskHub_React: se despliega."
+            echo "desplegar=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "El commit no toca TaskHub_React: no hay nada nuevo que publicar."
+            echo "desplegar=no" >> "$GITHUB_OUTPUT"
+          fi
+
       # El secreto no está disponible en el `if` del job —el contexto
       # `secrets` no se evalúa ahí—, así que la comprobación va aquí. Sin
       # esto, un secreto mal escrito haría un POST a una cadena vacía, curl
       # devolvería 000 y el job quedaría en verde sin haber desplegado nada:
       # el peor fallo posible, porque es silencioso.
       - name: Comprobar que el hook está configurado
+        if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
@@ -380,6 +429,7 @@ jobs:
           fi
 
       - name: Lanzar el despliegue
+        if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
         # El hook se pasa por `env` y no se interpola dentro del script.
         # Interpolarlo directamente en el `run` mete el valor en el fichero que
@@ -406,6 +456,7 @@ jobs:
       # de Render hasta que el despliegue termine, y eso pide una clave de API
       # además del hook. Queda anotado como pendiente.
       - name: Recordatorio de lo que queda fuera
+        if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
         run: |
           echo "Despliegue lanzado. El resultado final se ve en el panel de Render:"
