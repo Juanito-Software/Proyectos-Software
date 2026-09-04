@@ -319,3 +319,94 @@ jobs:
             exit 1
           fi
           echo "Todos los jobs en verde."
+
+  # ── Despliegue ──────────────────────────────────────────────────────────
+  #
+  # Aquí es donde el CI deja de ser decorativo.
+  #
+  # Antes de esto, Render tenía Auto-Deploy activado y publicaba por su cuenta
+  # en cuanto llegaba un commit a `main`. Los dos procesos corrían en paralelo
+  # sin mirarse: el pipeline podía terminar en rojo veinte minutos después de
+  # que la versión rota ya estuviera sirviendo tráfico. Ochocientos tests que
+  # no pueden impedir un despliegue son una red de seguridad decorativa.
+  #
+  # Ahora el único camino a producción pasa por `ci-ok`. Requiere haber
+  # **desactivado Auto-Deploy en Render**: si sigue encendido, este job añade
+  # un segundo despliegue en lugar de sustituir al primero, y el problema se
+  # queda igual. Está explicado en el README.
+  deploy:
+    name: Desplegar en Render
+    runs-on: ubuntu-latest
+    needs: [ci-ok]
+
+    # Tres condiciones, y las tres hacen falta:
+    #
+    # - `needs: [ci-ok]` es la puerta. `ci-ok` corre con `if: always()` y sale
+    #   con código 1 si algo falló, así que un pipeline en rojo lo deja en
+    #   estado `failure` y este job ni se lanza.
+    # - `github.ref` restringe a `main`: una rama de trabajo no despliega.
+    # - `event_name == 'push'` descarta los pull requests (que además vienen
+    #   sin secretos) y el disparo manual, para que nadie publique sin querer
+    #   desde la pestaña Actions.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # El workflow entero cancela ejecuciones superadas, y para compilar y
+    # probar está bien. Para desplegar no: cortar a la mitad deja el despliegue
+    # en un estado que nadie ha decidido. Este job usa su propio grupo y no se
+    # cancela; si llegan dos commits seguidos, el segundo espera.
+    concurrency:
+      group: taskhub-react-deploy
+      cancel-in-progress: false
+
+    # Declarar el entorno permite exigir aprobación manual desde los ajustes
+    # del repositorio sin tocar este fichero, y deja el historial de
+    # despliegues en la pestaña Environments.
+    environment: production
+
+    steps:
+      # El secreto no está disponible en el `if` del job —el contexto
+      # `secrets` no se evalúa ahí—, así que la comprobación va aquí. Sin
+      # esto, un secreto mal escrito haría un POST a una cadena vacía, curl
+      # devolvería 000 y el job quedaría en verde sin haber desplegado nada:
+      # el peor fallo posible, porque es silencioso.
+      - name: Comprobar que el hook está configurado
+        working-directory: .
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Falta el secreto RENDER_DEPLOY_HOOK en los ajustes del repositorio."
+            exit 1
+          fi
+
+      - name: Lanzar el despliegue
+        working-directory: .
+        # El hook se pasa por `env` y no se interpola dentro del script.
+        # Interpolarlo directamente en el `run` mete el valor en el fichero que
+        # ejecuta el runner, que es exactamente el patrón por el que un secreto
+        # acaba en un registro. Esa URL es una credencial: quien la tenga puede
+        # publicar en producción cuando quiera.
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          codigo=$(curl --silent --show-error --location \
+                        --output /dev/null --write-out '%{http_code}' \
+                        --request POST "$HOOK")
+
+          if [ "$codigo" != "200" ] && [ "$codigo" != "201" ]; then
+            echo "Render ha respondido $codigo al hook de despliegue."
+            exit 1
+          fi
+          echo "Despliegue lanzado (HTTP $codigo)."
+
+      # Lo que este job NO comprueba, dicho para que nadie lo dé por hecho: el
+      # hook devuelve 200 en cuanto Render acepta la petición, no cuando la
+      # versión nueva está sirviendo. Si la compilación falla dentro de Render,
+      # este job ya está en verde. Cerrar ese hueco requiere consultar la API
+      # de Render hasta que el despliegue termine, y eso pide una clave de API
+      # además del hook. Queda anotado como pendiente.
+      - name: Recordatorio de lo que queda fuera
+        working-directory: .
+        run: |
+          echo "Despliegue lanzado. El resultado final se ve en el panel de Render:"
+          echo "este job confirma que se ha pedido, no que haya terminado bien."

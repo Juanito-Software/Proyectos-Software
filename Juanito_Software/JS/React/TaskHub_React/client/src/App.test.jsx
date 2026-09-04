@@ -49,9 +49,18 @@ async function entrar(user, { registrando = false } = {}) {
 
 describe('qué pantalla se ve', () => {
   it('sin sesión, el formulario de acceso', () => {
+    // El discriminador es el botón de salir, no el encabezado «TaskHub».
+    //
+    // Antes se usaba el encabezado, que funcionaba solo porque la marca vivía
+    // únicamente en la pantalla con sesión. Eso era un accidente del diseño, no
+    // una regla: al poner marca también en la pantalla de acceso, el test se
+    // puso rojo sin que nada del comportamiento hubiera cambiado.
+    //
+    // «Salir» sí es imposible de ver sin sesión, que es lo que el test dice
+    // comprobar.
     render(<App />);
     expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'TaskHub' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Salir' })).not.toBeInTheDocument();
   });
 
   it('arranca en modo entrar, no en registro', () => {
@@ -67,7 +76,7 @@ describe('qué pantalla se ve', () => {
     render(<App />);
     await entrar(user);
 
-    expect(await screen.findByRole('heading', { name: 'TaskHub' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Salir' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Usuario')).not.toBeInTheDocument();
   });
 });

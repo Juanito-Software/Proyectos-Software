@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthForm from './components/AuthForm';
 import TaskList from './components/TaskList';
+import ThemeToggle from './components/ThemeToggle';
 import './App.css';
 
 function AppContent() {
@@ -44,7 +45,26 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <main className="app app--auth">
+        <ThemeToggle className="tema-flotante" />
+
         <div className="auth-container">
+          {/*
+            Marca y contexto antes del formulario.
+            Antes esta pantalla era una tarjeta con dos campos y nada más: quien
+            llegaba desde un enlace no sabía qué era esto ni por qué debería
+            crearse una cuenta. Pedir un registro para averiguarlo es pedir
+            demasiado.
+          */}
+          <div className="auth-brand">
+            <div className="auth-logo" aria-hidden="true">
+              T
+            </div>
+            <h1>TaskHub</h1>
+            <p className="auth-tagline">
+              Gestor de tareas multiusuario. Cada cuenta ve únicamente sus tareas.
+            </p>
+          </div>
+
           <AuthForm
             mode={authMode}
             onSubmit={handleAuth}
@@ -54,6 +74,20 @@ function AppContent() {
             }}
             error={authError}
           />
+
+          <p className="auth-footer">
+            <a href="/playground">Playground de la API</a>
+            <span className="sep" aria-hidden="true">
+              ·
+            </span>
+            <a
+              href="https://github.com/Juanito-Software/Proyectos-Software/tree/main/Juanito_Software/JS/React/TaskHub_React"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Código y documentación
+            </a>
+          </p>
         </div>
       </main>
     );

@@ -162,6 +162,63 @@ Si arrancas por separado, pulsa **Ctrl+C** en cada terminal para detenerlos.
 - **Marcar como completada**: checkbox, como atajo de un clic para el caso más habitual. El cambio se pinta al instante y se revierte si la petición falla, así que no hay espera visible.
 - **Filtros y búsqueda**: por estado, por prioridad y por texto en título o descripción. **Los resuelve la API**, no el navegador: viajan como parámetros de consulta y solo llegan las tareas que se piden. La búsqueda espera 300 ms desde la última tecla para no lanzar una petición por carácter.
 - **Notificaciones**: mensaje breve al crear o actualizar una tarea.
+- **Modo claro y oscuro**: sigue la preferencia del sistema mientras nadie diga lo contrario, y recuerda la elección si se usa el conmutador.
+
+## Interfaz y accesibilidad
+
+### Tokens de color en lugar de valores sueltos
+
+Todo el color sale de variables CSS declaradas una vez en `index.css`. Antes
+había unos cuarenta valores hexadecimales repartidos por la hoja de estilos y
+repetidos a mano, lo que funciona hasta que hay que cambiar uno —o añadir un
+modo oscuro— y toca perseguirlos con la garantía de que alguno se queda atrás.
+
+El modo oscuro es lo que obliga a que esto sea una variable y no un color
+literal: cada valor tiene que existir en dos versiones, y la única forma de que
+no se desincronicen es que el componente **no sepa cuál está usando**. No hay ni
+una regla duplicada entre los dos temas.
+
+El acento es un gris casi negro, no un azul de marca. Es deliberado: en un
+gestor de tareas el color tiene que quedar libre para decir algo —qué está
+pendiente, qué es urgente—, y si la interfaz ya viene coloreada de serie, esas
+señales dejan de destacar. El azul se reserva para el anillo de foco.
+
+### El tema respeta la preferencia del sistema
+
+El conmutador distingue tres estados, no dos: claro, oscuro y **«el usuario no
+ha elegido»**. Sin esa distinción, quien tiene el sistema en oscuro se comería
+un fogonazo blanco al abrir la página. Mientras no haya elección explícita manda
+`prefers-color-scheme`; en cuanto se pulsa el botón, gana la elección y se
+recuerda.
+
+El acceso a `localStorage` va envuelto en `try/catch`: lanza en navegación
+privada y con el almacenamiento de terceros bloqueado. Que no se pueda recordar
+el tema es un inconveniente; que la aplicación no arranque por eso, no.
+
+### Accesibilidad
+
+Era un punto ciego: ninguna de las auditorías anteriores la había mirado.
+
+- **Foco de teclado visible.** Este era un defecto real, no una cuestión de
+  gusto. Los botones llevan fondo propio, y sobre un fondo personalizado el
+  anillo por defecto del navegador se pierde: quien navega con teclado no sabía
+  dónde estaba. Se usa `:focus-visible` y no `:focus`, para que el anillo salga
+  al tabular pero no al hacer clic — que es cuando estorba y lleva a la gente a
+  quitarlo con `outline: none`, que es como empieza este problema.
+- **El estado nunca depende solo del color.** Los requisitos de la contraseña
+  llevan símbolo (✓ / ·) y un texto oculto para lectores de pantalla, además del
+  color.
+- **Los botones sin texto tienen nombre accesible**, y ese nombre describe la
+  acción y no el estado: «Activar modo oscuro» se entiende sin ver el icono,
+  mientras que «Modo oscuro» sería ambiguo.
+- **`prefers-reduced-motion` respetado.** Las transiciones son decorativas;
+  ninguna comunica nada que no se vea igual sin ellas.
+- **Diseño adaptable.** La cabecera se apila en pantallas estrechas y los
+  selectores pasan a una columna, en lugar de encogerse hasta lo ilegible.
+
+Lo que **no** está hecho: no se ha pasado un validador automático como axe, ni
+se ha probado con un lector de pantalla real. Lo de arriba es lo que se ha
+cuidado al escribir el código, no un certificado de conformidad.
 
 ## API REST (ejemplos)
 
@@ -273,11 +330,11 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**818 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**831 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 476 + 182 | Nada |
+| `npm test` | Unitarios de servidor y cliente | 476 + 195 | Nada |
 | `npm run verify` | End-to-end de la API | 130 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 30 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
@@ -380,8 +437,9 @@ borrarse a sí mismo.
 Cada push y cada pull request ejecuta ocho jobs en GitHub Actions: lint, tipos,
 unitarios del servidor, tests del cliente con cobertura, suite de la API contra
 un PostgreSQL real, end-to-end de navegador, build de producción y auditoría de
-dependencias. Todos cuelgan de un job final, `ci-ok`, del que puede colgarse la
-regla de protección de rama sin tener que enumerar los demás.
+dependencias. Todos cuelgan de un job final, `ci-ok`, del que cuelga a su vez la
+regla de protección de rama —y del que depende el despliegue— sin tener que
+enumerar los demás cada vez que se añade uno.
 
 El pipeline falla si falla cualquier test, si el build no produce servidor,
 playground y cliente, si el lint o los tipos protestan, si la cobertura baja de
@@ -418,21 +476,49 @@ mirarlos uno a uno en vez de silenciarlos en bloque:
 - **Ruta sin limitador.** La del playground acaba en una lectura de disco y no
   tenía límite de peticiones. Ahora pasa por el mismo `apiLimiter` que el resto.
 
-### CD — Render Auto-Deploy
+### CD — encadenado al CI
 
-Cada commit a `main` dispara también un despliegue automático en Render, que
-instala dependencias, compila cliente y servidor y publica la nueva versión.
+**El único camino a producción pasa por el pipeline.** El job `deploy` depende
+de `ci-ok`, así que un commit con los tests en rojo no llega a desplegarse.
 
-**El CI y el despliegue van en paralelo, no encadenados.** Render publica en
-cuanto llega el commit, sin esperar al resultado del pipeline, así que un
-despliegue puede llegar a producción con los tests en rojo — pasó, y por eso
-conviene decirlo.
+Antes no era así: Render tenía Auto-Deploy y publicaba por su cuenta en cuanto
+llegaba un commit a `main`, sin esperar al pipeline. Los dos procesos corrían en
+paralelo sin mirarse, y una versión rota podía estar sirviendo tráfico veinte
+minutos antes de que el CI terminara en rojo. Pasó. Ochocientos tests que no
+pueden impedir un despliegue son una red de seguridad decorativa, y esa era la
+situación real hasta este cambio.
 
-Es una decisión consciente mientras el proyecto está en desarrollo: poder
-desplegar un commit con tests fallando permite depurar en el entorno real.
-Encadenarlos es lo correcto cuando la aplicación se estabilice, y se hace
-desactivando el auto-deploy y llamando a un *Deploy Hook* de Render desde un
-job que dependa de `ci-ok`.
+El job se lanza solo si se cumplen tres condiciones: que `ci-ok` haya terminado
+en verde, que la rama sea `main` y que el evento sea un `push` —ni pull
+requests, ni disparo manual desde la pestaña Actions—. Usa además su propio
+grupo de concurrencia **sin cancelación**: el resto del workflow sí cancela
+ejecuciones superadas, pero cortar un despliegue a la mitad deja el servicio en
+un estado que nadie ha decidido.
+
+#### Configuración necesaria (una vez)
+
+Tres pasos fuera del repositorio. Sin los tres, el encadenado no está completo:
+
+1. **Desactivar Auto-Deploy en Render**, en los ajustes del servicio. Es el paso
+   que más fácil se olvida y el que invalida todo lo demás: si sigue encendido,
+   el job nuevo *añade* un segundo despliegue en vez de sustituir al primero, y
+   Render sigue publicando commits sin pasar por el CI.
+2. **Crear el Deploy Hook** en Render y guardarlo como secreto
+   `RENDER_DEPLOY_HOOK` en `Settings → Secrets and variables → Actions` del
+   repositorio. Esa URL **es una credencial**: quien la tenga puede publicar en
+   producción cuando quiera, así que no va al código ni a este README.
+3. **Proteger la rama `main`** exigiendo `ci-ok` como comprobación obligatoria.
+   Sin esto, `ci-ok` existe pero no bloquea nada: la puerta está puesta y la
+   pared no.
+
+#### Lo que este job todavía no comprueba
+
+El hook devuelve 200 en cuanto Render **acepta** la petición, no cuando la
+versión nueva está sirviendo. Si la compilación falla dentro de Render, el job
+ya está en verde y el CI no se entera. Cerrarlo del todo exige consultar la API
+de Render hasta que el despliegue termine, lo que pide una clave de API además
+del hook. Queda pendiente, y se dice aquí para que nadie lea «CD encadenado» y
+entienda más de lo que hay.
 
 ## Sesiones: token de acceso y token de refresco
 

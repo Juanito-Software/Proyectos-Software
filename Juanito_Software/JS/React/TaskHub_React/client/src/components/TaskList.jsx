@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getTasks, createTask } from '../services/api';
 import TaskItem from './TaskItem';
 import TaskForm from './TaskForm';
+import ThemeToggle from './ThemeToggle';
 import { STATUSES, PRIORITIES } from '../constants';
 
 export default function TaskList({ user, onLogout }) {
@@ -100,6 +101,7 @@ export default function TaskList({ user, onLogout }) {
             >
               API Playground
             </a>
+            <ThemeToggle />
             <span className="user-name">{user?.username}</span>
             <button type="button" className="btn-logout" onClick={onLogout}>
               Salir

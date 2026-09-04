@@ -35,7 +35,7 @@ contraseñas, y por último **cerrar la brecha entre «el código es correcto» 
 «algo vigila que siga siéndolo»**, que era el verdadero hallazgo de la auditoría
 integral.
 
-**Valoración global: 8,6 / 10.** El desglose, en la sección 8.
+**Valoración global: 8,7 / 10.** El desglose, en la sección 9.
 
 ### Lo que ha cambiado desde la primera auditoría
 
@@ -45,10 +45,11 @@ integral.
 | Contraseñas | Mínimo 6 caracteres | 15 caracteres, lista de bloqueo y composición |
 | Cabeceras HTTP | Ninguna | `helmet` con CSP a medida y HSTS |
 | CORS | Abierto a cualquier origen | Delegado de mismo origen |
-| Tests | 37 comprobaciones de API | **818** en cuatro capas |
+| Tests | 37 comprobaciones de API | **831** en cuatro capas |
 | Cobertura del servidor | No medida | **99,5 %** de la lógica pura, con umbral en el CI |
 | Cobertura del cliente | No medida | **96,9 %**, con umbral |
-| CI | No existía | 8 jobs con puerta `ci-ok` |
+| Interfaz | Estilos por defecto, sin tokens | Sistema de tokens, modo oscuro y foco de teclado visible |
+| CI | No existía | 9 jobs con puerta `ci-ok` |
 | Vulnerabilidades | 1 alta (cliente) | **0** |
 | Eventos de seguridad | Ninguno | Registro estructurado en los puntos clave |
 
@@ -64,7 +65,7 @@ integral.
 | Esquema | DDL idempotente en TypeScript | 3 tablas: `users`, `tasks`, `refresh_sessions` |
 | Sesión | JWT HS256 + cookie HttpOnly | Access 15 min, refresh 7 días rotativo |
 | Despliegue | Render + Neon | Proceso único: cliente, playground y API |
-| CI | GitHub Actions, 8 jobs | `ci-ok` como puerta final |
+| CI | GitHub Actions, 9 jobs | `ci-ok` como puerta final; el despliegue depende de ella |
 
 **Endpoints:** 5 de autenticación, 7 de tareas, 3 de administración, 2 públicos.
 
@@ -171,14 +172,57 @@ marcadores. Ningún secreto en el workflow de CI. Sin hallazgos.
 
 ---
 
-## 6. Tests
+## 6. Interfaz y accesibilidad
 
-**818 comprobaciones** en cuatro capas que prueban cosas distintas:
+Era el punto ciego del proyecto: ninguna de las cuatro auditorías anteriores
+había mirado ni la interfaz ni la accesibilidad, pese a ser una aplicación React
+llena de formularios. Y es lo primero que ve cualquiera que abra el enlace de la
+demo, antes de leer una línea de este documento.
+
+**El diagnóstico.** El CSS funcionaba y estaba escrito a mano, pero tenía unos
+cuarenta valores hexadecimales sueltos repetidos por la hoja, ni una media
+query, y ningún estilo de foco propio. La pantalla de acceso eran dos campos sin
+marca ni contexto: quien llegaba desde un enlace no sabía qué era esto ni por
+qué debería crearse una cuenta.
+
+**Lo que se hizo.**
+
+- **Tokens de color en `index.css`.** Todo el color sale de variables. El modo
+  oscuro es lo que obliga a ello: cada valor existe en dos versiones, y la única
+  forma de que no se desincronicen es que el componente no sepa cuál está
+  usando. No hay una sola regla duplicada entre temas.
+- **Acento gris, no azul de marca.** En un gestor de tareas el color tiene que
+  quedar disponible para decir algo —qué está pendiente, qué es urgente—. Una
+  interfaz ya coloreada de serie apaga esas señales. El azul se reserva para el
+  anillo de foco, donde sí hace falta que destaque.
+- **El tema distingue tres estados, no dos:** claro, oscuro y «no ha elegido».
+  Sin esa distinción, quien tiene el sistema en oscuro recibe un fogonazo blanco
+  al abrir. Mientras no haya elección explícita manda `prefers-color-scheme`.
+
+**Accesibilidad.** El foco de teclado era un **defecto real**, no una cuestión
+de gusto: los botones llevan fondo propio y sobre él se pierde el anillo por
+defecto del navegador, así que quien navega con teclado no sabía dónde estaba.
+Se resolvió con `:focus-visible` —que sale al tabular pero no al hacer clic, que
+es cuando estorba y lleva a quitarlo con `outline: none`—. Además: ningún estado
+depende solo del color, los botones sin texto tienen nombre accesible que
+describe la acción y no el estado, y se respeta `prefers-reduced-motion`.
+
+**Lo que NO se ha hecho, y conviene no dar por hecho.** No se ha pasado ningún
+validador automático de accesibilidad, ni se ha probado con un lector de
+pantalla real, ni se han medido los contrastes con una herramienta. Lo anterior
+es lo que se cuidó al escribir el código; no es un certificado de conformidad
+con las WCAG, y este documento no va a insinuar que lo sea.
+
+---
+
+## 7. Tests
+
+**831 comprobaciones** en cuatro capas que prueban cosas distintas:
 
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
 | Unitarios de servidor | 476 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
-| Unitarios de cliente | 182 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
+| Unitarios de cliente | 195 | **96,9 %** stmts · 95,9 % ramas | 95/94/93/96 | Nada |
 | API contra PostgreSQL | 130 | — | — | PostgreSQL |
 | Navegador (Playwright) | 30 | — | — | PostgreSQL y build |
 
@@ -235,7 +279,7 @@ mide nada.
 
 ---
 
-## 7. Defectos corregidos
+## 8. Defectos corregidos
 
 Los que encontró la auditoría integral, con lo que se hizo. Se describen por su
 efecto, no por su ubicación.
@@ -262,25 +306,25 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 
 ---
 
-## 8. Puntuación
+## 9. Puntuación
 
 | Área | Nota | Justificación |
 |---|---:|---|
 | Arquitectura | 8/10 | Capas limpias y coherentes. Penalizan la semántica de `PUT` y la falta de paginación |
 | Backend | 9/10 | Sólido y comentado explicando el porqué. Los defectos de la auditoría están cerrados |
-| Frontend | 8,5/10 | 96,9 % de cobertura, renovación transparente, actualización optimista con reversión |
+| Frontend | 9/10 | 96,9 % de cobertura, renovación transparente, actualización optimista con reversión, sistema de tokens con modo oscuro y foco de teclado visible |
 | Base de datos | 9/10 | Índices correctos, unicidad por índice, cascadas bien puestas, SQL parametrizado |
 | Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, CSRF cerrado por tres vías |
 | Autorización | 9/10 | El código era correcto desde el principio; ahora además está vigilado en escritura |
 | Seguridad | 8,5/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos. Falta la capa de alertas |
 | Testing | 9/10 | 818 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
 | E2E | 8,5/10 | 30 pruebas del ciclo completo, incluidas renovación y revocación |
-| CI/CD | 8/10 | Ocho jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites. Falta encadenar el despliegue y proteger la rama |
+| CI/CD | 8,5/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`. Falta que el job espere a que Render termine, no solo a que acepte |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
 | Mantenibilidad | 9,5/10 | Los comentarios explican **por qué**, no qué. Las decisiones se entienden sin arqueología en el historial |
 | Documentación | 9/10 | README exhaustivo y este informe. Por encima de lo habitual |
 
-### **TaskHub: 8,6 / 10**
+### **TaskHub: 8,7 / 10**
 
 Media ponderada dando más peso a seguridad, testing y autorización.
 
@@ -296,18 +340,23 @@ acompañar al código.
 
 ---
 
-## 9. Pendiente
+## 10. Pendiente
 
 Enunciado como trabajo por hacer. Sin detalle de explotación, por lo dicho al
 principio.
 
 ### Alto
 
-1. **Encadenar el despliegue al CI.** Hoy el despliegue y las pruebas corren en
-   paralelo, así que un commit puede llegar a producción con la suite en rojo.
-   Es el trabajo inmediatamente siguiente.
-2. **Protección de rama.** Sin ella, la puerta `ci-ok` no bloquea nada: existe
-   pero nadie está obligado a esperarla.
+1. **Confirmar el despliegue, no solo pedirlo.** El job de despliegue ya cuelga
+   de `ci-ok`, así que un commit en rojo no llega a producción. Lo que falta es
+   el otro extremo: el hook devuelve 200 cuando Render **acepta** la petición,
+   no cuando la versión nueva está sirviendo, así que una compilación que falle
+   dentro de Render deja el CI en verde. Cerrarlo pide consultar la API de
+   Render hasta que el despliegue termine.
+2. **Configuración fuera del repositorio.** El encadenado tiene tres pasos que
+   no viven en el código y sin los cuales queda a medias: desactivar
+   Auto-Deploy en Render, guardar el Deploy Hook como secreto del repositorio y
+   exigir `ci-ok` en la protección de rama. Están detallados en el README.
 
 ### Medio
 
@@ -327,6 +376,10 @@ principio.
 
 ### Mejoras
 
+9 bis. **Validar la accesibilidad con herramientas, no solo con criterio.**
+   Pasar axe o Lighthouse, medir contrastes y probar con un lector de pantalla.
+   Lo hecho hasta ahora se cuidó al escribir el código, que no es lo mismo que
+   estar verificado.
 10. Registro estructurado con identificador de correlación por petición.
 11. Métricas y alertas por encima del registro.
 12. Pruebas de resiliencia: caída de la base de datos, tiempos de espera.
@@ -334,7 +387,7 @@ principio.
 
 ---
 
-## 10. Evidencia de ejecución
+## 11. Evidencia de ejecución
 
 Comprobado en esta auditoría, no supuesto:
 
@@ -345,7 +398,7 @@ Comprobado en esta auditoría, no supuesto:
 | Build | ✅ Playground y cliente |
 | Unitarios de servidor | ✅ 476/476 |
 | Cobertura de servidor | ✅ 99,54 / 98,95 / 98,73 / 99,51 |
-| Unitarios de cliente | ✅ 182/182 |
+| Unitarios de cliente | ✅ 195/195 |
 | API contra PostgreSQL | ✅ 130/130 |
 | Navegador (Playwright) | ✅ 30/30 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
@@ -354,7 +407,7 @@ Comprobado en esta auditoría, no supuesto:
 
 ---
 
-## 11. Qué sería un 10
+## 12. Qué sería un 10
 
 No es «que pasen los tests».
 
