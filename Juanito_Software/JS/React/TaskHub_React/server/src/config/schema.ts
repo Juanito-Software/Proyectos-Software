@@ -108,19 +108,27 @@ CREATE TABLE IF NOT EXISTS refresh_sessions (
 -- cambio de contraseña fallaría en producción — mientras que en una base de
 -- datos recién creada, como la de los tests, pasaría sin enterarse. De ahí que
 -- se rehaga explícitamente.
+--
+-- El nombre y la definición se leen de una vez. Buscar después la definición
+-- por el nombre sería un error: los nombres de restricción son únicos por
+-- tabla, no por base de datos, así que en cuanto hay más de un esquema con una
+-- tabla refresh_sessions —que es lo normal aquí, porque la suite de API crea
+-- un esquema desechable por ejecución— esa consulta devuelve varias filas y
+-- revienta con «more than one row returned by a subquery». Y como esto corre
+-- al arrancar, lo que revienta es el servidor entero, no una consulta suelta.
 DO $$
 DECLARE
   nombre TEXT;
+  definicion TEXT;
 BEGIN
-  SELECT conname INTO nombre
+  SELECT conname, pg_get_constraintdef(oid)
+    INTO nombre, definicion
     FROM pg_constraint
    WHERE conrelid = 'refresh_sessions'::regclass
      AND contype = 'c'
      AND pg_get_constraintdef(oid) LIKE '%revoked_reason%';
 
-  IF nombre IS NOT NULL
-     AND (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = nombre)
-         NOT LIKE '%password-changed%' THEN
+  IF nombre IS NOT NULL AND definicion NOT LIKE '%password-changed%' THEN
     EXECUTE format('ALTER TABLE refresh_sessions DROP CONSTRAINT %I', nombre);
   END IF;
 
