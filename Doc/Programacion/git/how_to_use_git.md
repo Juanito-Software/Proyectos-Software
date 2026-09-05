@@ -310,23 +310,49 @@ git subir                        # ②
 
 ## Qué hace cada uno
 
-**①** te pone en `main`, la actualiza y te crea la rama. Empiezas siempre desde lo último.
+**①** te pone en `main`, la actualiza, borra las ramas locales que ya se
+integraron y te crea la nueva. Empiezas siempre desde lo último y con la casa
+recogida.
 
-Entre medias trabajas **igual que siempre**: `git add`, `git commit`, tantos commits como te apetezca. Haz commits pequeños y sucios si quieres, da igual — el `--squash` los va a aplastar en uno solo al integrar. El mensaje que cuenta es el del PR, que sale de tus commits.
+Entre medias trabajas **igual que siempre**: `git add`, `git commit`, tantos
+commits como te apetezca. Haz commits pequeños y sucios si quieres, da igual —
+por defecto se aplastan en uno solo al integrar.
 
-**②** sube la rama, abre el PR y programa la integración. A partir de ahí trabaja la máquina: arranca el CI, y cuando `CI en verde` pasa, se integra solo, se borra la rama remota y se dispara el despliegue.
+**②** sube la rama, abre el PR y programa la integración. A partir de ahí
+trabaja la máquina: arranca el CI, y cuando `CI en verde` pasa, se integra solo,
+se borra la rama remota y se dispara el despliegue.
+
+## `subir` acepta el método de integración
+
+```bash
+git subir            # squash (por defecto): tus commits se aplastan en uno
+git subir rebase     # tus commits llegan a main tal cual, uno a uno
+git subir merge      # commit de fusión
+```
+
+El squash es lo que quieres el 90 % de las veces: permite commitear sin pensar
+durante el trabajo y deja `main` con una línea por cambio.
+
+**Usa `rebase` cuando los commits cuenten una historia que merezca sobrevivir.**
+Por ejemplo, una corrección de un fallo y los tests que lo cubren son dos cosas
+distintas, y quien lea el historial dentro de un año agradecerá verlas
+separadas. Si los divides a propósito, no dejes que el squash los vuelva a
+juntar.
 
 ## Situaciones que te vas a encontrar
 
-**El CI falla.** El PR se queda abierto, no se integra nada. Arreglas, `git add`, `git commit`, y:
+**El CI falla.** El PR se queda abierto, no se integra nada. Arreglas,
+`git add`, `git commit`, y:
 
 ```bash
 git push
 ```
 
-A secas — el `-u` del primer push ya dejó la rama vinculada. El PR se actualiza, el CI vuelve a correr y **la integración automática sigue armada**. No tienes que repetir `git subir`.
+A secas — el `-u` del primer push ya dejó la rama vinculada. El PR se actualiza,
+el CI vuelve a correr y **la integración automática sigue armada**. No tienes
+que repetir `git subir`.
 
-**Quieres empezar otra cosa sin esperar.** Puedes:
+**Quieres empezar otra cosa sin esperar.**
 
 ```bash
 git nueva otra-cosa
@@ -348,16 +374,48 @@ gh pr merge --disable-auto    # desprograma la integración
 gh pr close                   # cierra el PR sin integrar
 ```
 
-## El único fleco
+## Por qué `nueva` limpia con `[gone]` y no con `--merged`
 
-`--delete-branch` borra la rama **remota**, pero la tuya local se queda. No molesta, pero se acumulan. De vez en cuando:
+Lo intuitivo sería borrar las ramas así:
 
 ```bash
-git checkout main && git pull
 git branch --merged main | grep -v main | xargs git branch -d
 ```
 
-La segunda línea borra las locales que ya están integradas. Es segura: `-d` en minúscula se niega a borrar nada que no esté integrado.
+**Y no funciona.** Con `--squash`, los commits de la rama no llegan a `main`:
+llega uno nuevo, con el mismo contenido pero otro identificador. Git no
+reconoce la fusión por ninguna parte, así que `--merged` no lista la rama y
+`-d` se niega a borrarla. El comando se ejecuta, no da error, y no borra nada —
+que es la peor forma de fallar.
+
+La señal fiable es otra. Como `subir` integra con `--delete-branch`, al
+fusionarse **desaparece la rama remota**. Después de podar, git marca la local
+como huérfana:
+
+```bash
+git fetch --prune
+git branch -vv | grep ': gone]' | awk '{print $1}'
+```
+
+Eso es lo que hace `nueva` antes de crear la rama nueva. Ojo con un detalle:
+también alcanza a las ramas de un PR que cerraras sin integrar. Se recuperan
+con `git reflog` durante unos noventa días.
+
+## Los alias, por si hay que reinstalar
+
+Van en `~/.gitconfig`, bajo `[alias]`. El valor **tiene que ir entre comillas
+dobles**: sin ellas git trata cada `;` como el inicio de un comentario y parte
+el alias por la mitad.
+
+```ini
+[alias]
+	nueva = "!f() { [ -z \"$1\" ] && { echo \"Uso: git nueva <nombre-de-rama>\"; return 1; }; git checkout main && git pull --ff-only --prune || return 1; git branch -vv | grep ': gone]' | awk '{print $1}' | xargs -r git branch -D; git checkout -b \"$1\"; }; f"
+	subir = "!f() { r=$(git rev-parse --abbrev-ref HEAD); [ \"$r\" = \"main\" ] && { echo \"Estas en main. Empieza con: git nueva <rama>\"; return 1; }; metodo=\"${1:-squash}\"; case \"$metodo\" in squash|rebase|merge) ;; *) echo \"Metodo no valido: usa squash, rebase o merge.\"; return 1;; esac; git push -u origin \"$r\" || return 1; gh pr create --fill 2>/dev/null || echo \"PR ya existente: se reutiliza.\"; gh pr merge --\"$metodo\" --delete-branch --auto; }; f"
+```
+
+En `nueva`, el `||` en vez de encadenar con `&&` hasta el final no es un
+descuido: si no hay ninguna rama huérfana, `grep` termina con error, y con `&&`
+no llegarías a crear la rama.
 
 ---
 
