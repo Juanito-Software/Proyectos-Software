@@ -571,6 +571,65 @@ test.describe('Playground', () => {
     await page.goto('/playground');
     await expect(page.getByText('Administración')).not.toBeVisible();
   });
+
+  /**
+   * Los tres tests de arriba pasarían con TODOS los botones muertos: ninguno
+   * pulsa nada. Y ese es justamente el modo de fallo de una CSP estricta —la
+   * página carga, se ve entera, y lo único que no ocurre es nada—. Los tres de
+   * abajo existen por eso.
+   */
+
+  test('los botones responden: abrir y cerrar el formulario de tarea', async ({ page }) => {
+    await registrarse(page);
+    await page.goto('/playground');
+
+    const modal = page.locator('#task-modal');
+    await expect(modal).not.toHaveClass(/active/);
+
+    await page.locator('[data-accion="abrir-crear"]').first().click();
+    await expect(modal).toHaveClass(/active/);
+
+    await page.locator('[data-accion="cerrar-modal"]').first().click();
+    await expect(modal).not.toHaveClass(/active/);
+  });
+
+  test('una tarjeta de endpoint responde aunque se pulse en un elemento hijo', async ({ page }) => {
+    // Con los atributos onclick, el clic en un hijo subía por burbujeo hasta el
+    // div que llevaba el manejador. Al pasar a un único oyente delegado, quien
+    // reproduce ese comportamiento es `closest`. Si se hubiera escrito
+    // comparando `event.target` en vez de subir por el árbol, pulsar en el
+    // texto de la tarjeta no haría nada y pulsar justo en el borde sí — un
+    // fallo desesperante de diagnosticar.
+    await registrarse(page);
+    await page.goto('/playground');
+
+    const terminal = page.locator('#terminal');
+    const inicial = await terminal.innerText();
+
+    const tarjeta = page.locator('[data-accion="simular"][data-url="/api/tasks"]');
+    await tarjeta.locator('span').first().click();
+
+    await expect(terminal).not.toHaveText(inicial, { timeout: 10_000 });
+  });
+
+  test('el navegador no rechaza nada por la política de seguridad', async ({ page }) => {
+    // La red de seguridad de verdad. Cualquier manejador en atributo o bloque
+    // en línea que se colara en el futuro haría que el navegador escribiera
+    // "Refused to execute…" en la consola, y ninguna comprobación del lado del
+    // servidor puede verlo.
+    const rechazos = [];
+    page.on('console', (msg) => {
+      const texto = msg.text();
+      if (/Content Security Policy|Refused to/i.test(texto)) rechazos.push(texto);
+    });
+
+    await registrarse(page);
+    await page.goto('/playground');
+    await page.locator('[data-accion="abrir-crear"]').first().click();
+    await page.locator('[data-accion="cerrar-modal"]').first().click();
+
+    expect(rechazos).toEqual([]);
+  });
 });
 
 test.describe('API', () => {

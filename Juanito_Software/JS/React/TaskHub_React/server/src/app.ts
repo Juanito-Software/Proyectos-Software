@@ -46,27 +46,41 @@ export function createApp() {
   // el navegador adivine el tipo de contenido, y oculta que el servidor es
   // Express.
   //
-  // La CSP se define a mano porque el playground es una página con estilos y
-  // scripts en línea: la política por defecto de helmet los bloquearía y
-  // dejaría el playground inservible. Se permite 'unsafe-inline' solo donde
-  // hace falta y se prohíbe cargar recursos de terceros.
+  // La CSP se define a mano por las tipografías de Google y por los estilos en
+  // línea del playground. Para los scripts NO se hace ninguna concesión.
+  //
+  // ── Qué se quitó y por qué importaba ──────────────────────────────────────
+  //
+  // Esta política llevaba 'unsafe-inline' en script-src y en script-src-attr.
+  // Con esas dos puestas, la CSP no defendía de la inyección de scripts, que es
+  // prácticamente lo único que se le pide: el navegador no puede distinguir el
+  // script que escribió el autor del que inyecta un atacante, así que permitir
+  // uno es permitir los dos. Las cabeceras estaban, se veían en las respuestas
+  // y daban la impresión de proteger algo.
+  //
+  // Retirarlas exigió dos cambios en el playground, porque cada directiva
+  // cubría un caso distinto:
+  //
+  //   script-src      ← el bloque <script> de 500 líneas, movido a public/app.js
+  //   script-src-attr ← los 23 atributos onclick, ahora addEventListener
+  //
+  // Hacer solo lo segundo, que era lo anotado como pendiente, no habría
+  // bastado: el bloque en línea habría seguido exigiendo la primera.
+  //
+  // script-src-attr no aparece abajo a propósito. Sin declararla, helmet aplica
+  // su valor por defecto, que es 'none': cualquier onclick que reapareciera en
+  // el marcado —o que alguien inyectara— no llegaría a ejecutarse.
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          // El playground engancha sus acciones con atributos onclick en el
-          // HTML. helmet pone por defecto script-src-attr 'none', que los
-          // bloquea todos: la página carga pero ningún botón responde.
-          //
-          // Es una concesión consciente y acotada: el playground es una
-          // herramienta de desarrollo de un solo fichero, y su contenido
-          // dinámico ya se inserta con textContent y escapeHTML, nunca
-          // interpretando HTML de terceros. La alternativa —reescribir los
-          // ~40 manejadores como addEventListener— es lo correcto a medio
-          // plazo y está anotado como pendiente.
-          scriptSrcAttr: ["'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          // En estilos sí se mantiene, y conviene decir por qué en vez de
+          // dejarlo caer: el playground usa atributos style en el marcado y un
+          // bloque <style> propio. Un estilo inyectado puede maquetar un
+          // engaño visual o filtrar datos por selectores, que no es poco, pero
+          // no ejecuta código. Quitarlo es el siguiente escalón, no este.
           styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
           imgSrc: ["'self'", 'data:'],

@@ -237,8 +237,30 @@ async function run(): Promise<void> {
     const playgroundHtml = await playground.text();
     check(
       'GET /playground sirve el playground HTML',
-      playground.status === 200 && playgroundHtml.includes('TaskHub') && playgroundHtml.includes('authFetch'),
+      playground.status === 200 && playgroundHtml.includes('TaskHub') && /<script[^>]+src=/.test(playgroundHtml),
       `${playgroundHtml.length} bytes`,
+    );
+
+    // La lógica ya no viaja dentro del HTML: vive en un fichero aparte, que es
+    // lo que permite que la CSP no tenga que admitir código en línea.
+    //
+    // La URL NO se escribe aquí a mano: se saca del propio marcado y se
+    // resuelve contra la dirección de la página igual que haría el navegador.
+    // Escribirla a mano fue justo el fallo que dejó el playground inerte: el
+    // src era relativo, la página se sirve en "/playground" sin barra final, y
+    // el navegador pedía "/app.js" mientras la comprobación pedía
+    // "/playground/app.js" y la daba por buena. Resolviéndola así, la
+    // comprobación solo puede pasar si el navegador encuentra el fichero.
+    const srcDelScript = /<script[^>]+src="([^"]+)"/.exec(playgroundHtml)?.[1];
+    const urlDelScript = new URL(srcDelScript ?? '', `${BASE}/playground`).href;
+    const playgroundJs = await fetch(urlDelScript);
+    const playgroundJsBody = await playgroundJs.text();
+    check(
+      'El navegador encuentra la lógica en la URL que resuelve el src',
+      playgroundJs.status === 200 &&
+        (playgroundJs.headers.get('content-type') ?? '').includes('javascript') &&
+        playgroundJsBody.includes('authFetch'),
+      `${urlDelScript} -> ${playgroundJs.status}, ${playgroundJs.headers.get('content-type')}`,
     );
 
     // Una ruta inventada del cliente devuelve el index.html para que sea el
@@ -1275,15 +1297,97 @@ async function run(): Promise<void> {
       csp ? 'presente' : 'AUSENTE',
     );
 
-    // El playground engancha sus botones con atributos onclick. Con
-    // script-src-attr 'none' —el valor por defecto de helmet— la página carga
-    // pero ningún botón responde, y no hay error visible salvo en la consola
-    // del navegador. Pasó, y ninguna de las otras comprobaciones lo detectó
-    // porque todas hablan con la API, no con la interfaz.
+    // Aquí se comprobaba antes justo lo contrario: que la CSP NO bloqueara los
+    // manejadores onclick, porque el playground dependía de ellos. Ya no queda
+    // ninguno, así que la comprobación se invierte y pasa a ser la que de
+    // verdad interesa.
     check(
-      'La CSP no bloquea los manejadores onclick del playground',
-      !/script-src-attr\s+'none'/.test(csp),
-      /script-src-attr\s+'none'/.test(csp) ? "script-src-attr 'none' los bloquea" : 'permitidos',
+      'script-src no admite código en línea',
+      !/script-src\s[^;]*'unsafe-inline'/.test(csp),
+      csp.match(/script-src\s[^;]*/)?.[0] ?? 'AUSENTE',
+    );
+
+    check(
+      'script-src-attr bloquea los manejadores en atributos',
+      /script-src-attr\s+'none'/.test(csp),
+      csp.match(/script-src-attr\s[^;]*/)?.[0] ?? 'AUSENTE',
+    );
+
+    // Las dos de arriba solo valen si la página no depende de lo que prohíben.
+    // Una política estricta sobre un documento que la incumple no protege:
+    // rompe. Y rompe en silencio, porque el HTML carga igual y lo único que
+    // deja de funcionar son los botones — que es exactamente lo que pasó la
+    // primera vez y lo que ninguna comprobación de API puede ver.
+    const htmlDelPlayground = await (await fetch(`${BASE}/playground`)).text();
+    const enLinea = htmlDelPlayground.match(/\son(click|change|submit|input|load|mouse\w+)=/g) ?? [];
+
+    check(
+      'El marcado del playground no trae ningún manejador en atributos',
+      enLinea.length === 0,
+      enLinea.length ? `${enLinea.length} encontrado(s)` : 'ninguno',
+    );
+
+    // Lo que importa aquí es que NO quede código en línea y que lo que haya
+    // sea un script externo. La ruta concreta no se comprueba con una cadena
+    // escrita a mano —eso ya obligó a tocar esta línea al cambiarla—: de que
+    // el navegador la encuentre se ocupa la comprobación que la resuelve.
+    const scriptExterno = /<script[^>]+src="[^"]+"[^>]*>\s*<\/script>/.exec(htmlDelPlayground)?.[0];
+    check(
+      'El playground carga su lógica desde un fichero, no desde un bloque en línea',
+      !!scriptExterno && scriptExterno.includes('defer') && !/<script>/.test(htmlDelPlayground),
+      scriptExterno ?? 'no hay ningún script externo',
+    );
+
+    // ── El cableado de eventos, entero ──────────────────────────────────
+    //
+    // Al quitar los onclick, cada botón pasó a depender de que su acción
+    // exista en la tabla ACCIONES. Si alguien añade un data-accion y olvida
+    // el manejador, el botón queda muerto: no hay error, no hay aviso en la
+    // consola, simplemente no pasa nada al pulsarlo. Es el mismo silencio que
+    // tuvo el playground entero mientras el script no se cargaba, y por eso
+    // se comprueba aquí en vez de fiarlo a que un e2e pulse ese botón
+    // concreto: los e2e prueban unos pocos, esto los cubre todos.
+    const srcAqui = /<script[^>]+src="([^"]+)"/.exec(htmlDelPlayground)?.[1];
+    const js = await (await fetch(new URL(srcAqui ?? '', `${BASE}/playground`).href)).text();
+
+    const declaradas = new Set(
+      [...(/const ACCIONES = \{([\s\S]*?)\n\};/.exec(js)?.[1] ?? '').matchAll(/^\s+'([a-z-]+)'/gm)].map((m) => m[1]),
+    );
+    const usadas = new Set(
+      [...htmlDelPlayground.matchAll(/data-accion="([a-z-]+)"/g), ...js.matchAll(/data-accion="([a-z-]+)"/g)].map(
+        (m) => m[1],
+      ),
+    );
+
+    const sinManejador = [...usadas].filter((a) => !declaradas.has(a));
+    const sinUsar = [...declaradas].filter((a) => !usadas.has(a));
+
+    check(
+      'Toda acción del marcado tiene manejador: ningún botón queda muerto',
+      sinManejador.length === 0,
+      sinManejador.length ? `sin manejador: ${sinManejador.join(', ')}` : `${usadas.size} acciones, todas cubiertas`,
+    );
+
+    check(
+      'No sobra ningún manejador: la tabla no arrastra acciones que ya no existen',
+      sinUsar.length === 0,
+      sinUsar.length ? `declaradas y sin usar: ${sinUsar.join(', ')}` : `${declaradas.size} manejadores, todos en uso`,
+    );
+
+    // Los cinco oyentes que no van por delegación se enganchan por id nada más
+    // cargar. Si un id desaparece del marcado, getElementById devuelve null y
+    // el TypeError corta el resto del arranque: los formularios dejan de
+    // enviarse y los filtros de buscar. Tampoco daría error visible en la
+    // página, solo una línea en la consola que nadie mira.
+    const idsEnganchados = [...js.matchAll(/document\.getElementById\('([a-z-]+)'\)\.addEventListener/g)].map(
+      (m) => m[1],
+    );
+    const idsQueFaltan = idsEnganchados.filter((id) => !htmlDelPlayground.includes(`id="${id}"`));
+
+    check(
+      'Los oyentes directos encuentran su elemento: el arranque no se corta',
+      idsEnganchados.length > 0 && idsQueFaltan.length === 0,
+      idsQueFaltan.length ? `no están en el marcado: ${idsQueFaltan.join(', ')}` : `${idsEnganchados.length} ids, todos presentes`,
     );
 
     check(

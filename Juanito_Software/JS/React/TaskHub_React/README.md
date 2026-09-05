@@ -77,14 +77,16 @@ TaskHub/
 │   │   │   └── security-log.test.ts               ← 21 tests
 │   │   ├── types/                # express.d.ts (userId en Request)
 │   │   ├── public/               # playground de la API (se sirve en /playground)
+│   │   │   ├── index.html        # marcado, sin nada de JavaScript dentro
+│   │   │   └── app.js            # su lógica, aparte para que la CSP no ceda
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 147 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 154 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
 │   └── package.json
-├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 33 tests
+├── e2e/taskhub.spec.js           # end-to-end de navegador          ← 36 tests
 ├── docs/AUDITORIA.md             # auditoría: seguridad, bugs, tests y cobertura
 ├── eslint.config.js              # lint del servidor (TS) y del cliente (React)
 ├── playwright.config.js          # arranca el servidor y espera a /api/health
@@ -284,6 +286,25 @@ mientras lo usas, vuelve a aparecer la pantalla de acceso sin perder la página.
 Desde el playground se sale con el botón de la esquina superior derecha, y hay
 un enlace **← Ir a la aplicación** para volver al cliente React.
 
+### Por qué su JavaScript vive en un fichero aparte
+
+El playground era un solo `index.html` con toda su lógica dentro de un
+`<script>` y sus manejadores en atributos `onclick`. Eso obligaba a que la CSP
+llevara `'unsafe-inline'` en `script-src`, y con esa concesión puesta la
+política deja de defender de lo único que se le pide: un atacante que
+consiguiera inyectar una etiqueta de script la vería ejecutarse igual.
+
+La lógica está ahora en `public/app.js`, los `onclick` son `addEventListener`, y
+los botones que se generan al pintar cada tarea van por delegación en
+`document`. A cambio, `script-src` es `'self'` y `script-src-attr` es `'none'`.
+Se pierde la propiedad de «una herramienta de un solo fichero»; a cambio su CSP
+sirve para algo.
+
+El `<script>` apunta a `/playground/app.js` con **ruta absoluta a propósito**.
+La página se sirve en `/playground`, sin barra final, así que un `src` relativo
+lo resuelve el navegador contra la raíz y acaba pidiendo `/app.js`, donde no hay
+nada. El playground se queda pintado pero inerte, sin ningún error a la vista.
+
 ### Probar los endpoints de administración
 
 Los tres endpoints de `/api/admin` no tienen interfaz propia: se prueban desde
@@ -331,13 +352,13 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**937 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**962 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
 | `npm test` | Unitarios de servidor y cliente | 548 + 224 | Nada |
-| `npm run verify` | End-to-end de la API | 147 | PostgreSQL |
-| `npm run test:e2e` | Navegador real (Playwright) | 33 | PostgreSQL y `npm run build` |
+| `npm run verify` | End-to-end de la API | 154 | PostgreSQL |
+| `npm run test:e2e` | Navegador real (Playwright) | 36 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
 Los **unitarios** cubren lógica pura —validadores, política de contraseñas,
@@ -405,7 +426,7 @@ DELETE FROM users WHERE username LIKE 'e2e-%';
 
 Las tareas asociadas se van solas por el borrado en cascada.
 
-### Qué cubren las 147 comprobaciones de la API
+### Qué cubren las 154 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
 filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,
