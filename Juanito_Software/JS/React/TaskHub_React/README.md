@@ -541,11 +541,32 @@ runner en commits ajenos, y en un repositorio público esos minutos son gratuito
 e ilimitados.
 
 El filtro no desaparece, se muda: el job de despliegue compara el commit con el
-anterior y solo llama al hook si el cambio toca de verdad este proyecto. Así se
+anterior y solo despliega si el cambio toca de verdad este proyecto. Así se
 evita republicar lo mismo una y otra vez, que sí gasta tiempo de construcción en
 Render. Si no puede comparar —primer push de una rama, force-push—, despliega:
 desplegar de más es molesto, desplegar de menos deja producción desactualizada
 sin que nadie se entere.
+
+#### Qué comprueba el job antes de darse por bueno
+
+Tres pasos, y el verde exige los tres:
+
+1. **Lanza el despliegue por la API de Render**, no por el deploy hook. El hook
+   contesta 200 sin decir qué despliegue ha creado, así que para esperarlo
+   habría que mirar el más reciente y confiar en que sea el nuestro; si alguien
+   redespliega a mano en ese momento, se esperaría al equivocado. La API
+   devuelve el despliegue con su identificador y esa ambigüedad desaparece.
+2. **Espera al estado final**, consultando ese despliegue concreto. Solo `live`
+   cuenta como éxito. `build_failed`, `update_failed`, `pre_deploy_failed`,
+   `canceled` y `deactivated` ponen el job en rojo, y un estado desconocido
+   también: si Render añade uno nuevo, es preferible enterarse por un fallo que
+   darlo por bueno. Hay quince minutos de margen y tolerancia a fallos
+   puntuales de red, para no cambiar un verde que miente por un rojo que miente.
+3. **Comprueba que la aplicación responde**, pidiendo `/api/health` a la URL
+   pública. Que Render diga `live` y que la aplicación conteste no son lo mismo:
+   el proceso puede arrancar y morir al primer tráfico. La URL se pregunta a la
+   API en lugar de escribirla en el workflow, para que no haya una dirección a
+   mano que se quede vieja sin que nadie lo note.
 
 #### Configuración necesaria (una vez)
 
@@ -553,24 +574,22 @@ Tres pasos fuera del repositorio. Sin los tres, el encadenado no está completo:
 
 1. **Desactivar Auto-Deploy en Render**, en los ajustes del servicio. Es el paso
    que más fácil se olvida y el que invalida todo lo demás: si sigue encendido,
-   el job nuevo *añade* un segundo despliegue en vez de sustituir al primero, y
-   Render sigue publicando commits sin pasar por el CI.
-2. **Crear el Deploy Hook** en Render y guardarlo como secreto
-   `RENDER_DEPLOY_HOOK` en `Settings → Secrets and variables → Actions` del
-   repositorio. Esa URL **es una credencial**: quien la tenga puede publicar en
-   producción cuando quiera, así que no va al código ni a este README.
+   el job *añade* un segundo despliegue en vez de sustituir al primero, y Render
+   sigue publicando commits sin pasar por el CI.
+2. **Crear una clave de API en Render** —*Account Settings → API Keys*— y
+   guardarla como secreto `RENDER_API_KEY`, junto con el identificador del
+   servicio (`srv-…`, visible en la URL del panel) como `RENDER_SERVICE_ID`.
+   Los dos en `Settings → Secrets and variables → Actions` del repositorio. La
+   clave **es una credencial**, así que no va al código ni a este README.
 3. **Proteger la rama `main`** exigiendo `ci-ok` como comprobación obligatoria.
    Sin esto, `ci-ok` existe pero no bloquea nada: la puerta está puesta y la
-   pared no.
+   pared no. Está configurado mediante un *ruleset* del repositorio, que es el
+   mecanismo actual de GitHub; conviene saberlo porque el endpoint de
+   protección de rama clásica responde «Branch not protected» aunque las reglas
+   existan.
 
-#### Lo que este job todavía no comprueba
-
-El hook devuelve 200 en cuanto Render **acepta** la petición, no cuando la
-versión nueva está sirviendo. Si la compilación falla dentro de Render, el job
-ya está en verde y el CI no se entera. Cerrarlo del todo exige consultar la API
-de Render hasta que el despliegue termine, lo que pide una clave de API además
-del hook. Queda pendiente, y se dice aquí para que nadie lea «CD encadenado» y
-entienda más de lo que hay.
+El secreto `RENDER_DEPLOY_HOOK` ya no se usa y puede retirarse de los ajustes
+del repositorio y de Render.
 
 ## Sesiones: token de acceso y token de refresco
 

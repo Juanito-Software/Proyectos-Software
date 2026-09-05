@@ -461,52 +461,197 @@ jobs:
             echo "desplegar=no" >> "$GITHUB_OUTPUT"
           fi
 
-      # El secreto no está disponible en el `if` del job —el contexto
+      # Los secretos no están disponibles en el `if` del job —el contexto
       # `secrets` no se evalúa ahí—, así que la comprobación va aquí. Sin
-      # esto, un secreto mal escrito haría un POST a una cadena vacía, curl
-      # devolvería 000 y el job quedaría en verde sin haber desplegado nada:
-      # el peor fallo posible, porque es silencioso.
-      - name: Comprobar que el hook está configurado
+      # esto, un secreto mal escrito produciría una petición sin credencial,
+      # curl devolvería 401 o 000 y habría que deducirlo del error: mejor
+      # decirlo por su nombre antes de intentar nada.
+      - name: Comprobar que las credenciales están configuradas
         if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
         env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
-          if [ -z "$HOOK" ]; then
-            echo "Falta el secreto RENDER_DEPLOY_HOOK en los ajustes del repositorio."
+          faltan=""
+          [ -z "$RENDER_API_KEY" ] && faltan="$faltan RENDER_API_KEY"
+          [ -z "$RENDER_SERVICE_ID" ] && faltan="$faltan RENDER_SERVICE_ID"
+
+          if [ -n "$faltan" ]; then
+            echo "Faltan secretos en los ajustes del repositorio:$faltan"
             exit 1
           fi
 
+      # Se dispara por la API y no por el deploy hook. El hook contesta 200 sin
+      # decir qué despliegue ha creado, así que para esperarlo habría que
+      # consultar el más reciente y confiar en que sea el nuestro; si alguien
+      # redespliega a mano en ese momento, esperaríamos al equivocado. La API
+      # devuelve el despliegue con su id y esa ambigüedad desaparece.
+      #
+      # Las credenciales van por `env` y no se interpolan dentro del script:
+      # interpolarlas en el `run` mete el valor en el fichero que ejecuta el
+      # runner, que es el patrón por el que un secreto acaba en un registro.
       - name: Lanzar el despliegue
+        id: lanzar
         if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
-        # El hook se pasa por `env` y no se interpola dentro del script.
-        # Interpolarlo directamente en el `run` mete el valor en el fichero que
-        # ejecuta el runner, que es exactamente el patrón por el que un secreto
-        # acaba en un registro. Esa URL es una credencial: quien la tenga puede
-        # publicar en producción cuando quiera.
         env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
-          codigo=$(curl --silent --show-error --location \
-                        --output /dev/null --write-out '%{http_code}' \
-                        --request POST "$HOOK")
+          set -euo pipefail
 
-          if [ "$codigo" != "200" ] && [ "$codigo" != "201" ]; then
-            echo "Render ha respondido $codigo al hook de despliegue."
+          # Se anota el instante previo por si hay que localizar el despliegue
+          # por fecha, cosa que solo pasa en el caso 202 de más abajo.
+          antes=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cuerpo=$(mktemp)
+
+          codigo=$(curl --silent --show-error --location \
+                        --request POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+                        --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                        --header "Content-Type: application/json" \
+                        --data '{"clearCache":"do_not_clear"}' \
+                        --output "$cuerpo" --write-out '%{http_code}')
+
+          if [ "$codigo" != "201" ] && [ "$codigo" != "202" ]; then
+            echo "Render ha respondido $codigo al lanzar el despliegue."
+            # El cuerpo de error de Render trae un `message` descriptivo y
+            # ningún dato sensible. La clave nunca viaja de vuelta.
+            jq -r '.message // "sin mensaje"' "$cuerpo" 2>/dev/null || cat "$cuerpo"
             exit 1
           fi
-          echo "Despliegue lanzado (HTTP $codigo)."
 
-      # Lo que este job NO comprueba, dicho para que nadie lo dé por hecho: el
-      # hook devuelve 200 en cuanto Render acepta la petición, no cuando la
-      # versión nueva está sirviendo. Si la compilación falla dentro de Render,
-      # este job ya está en verde. Cerrar ese hueco requiere consultar la API
-      # de Render hasta que el despliegue termine, y eso pide una clave de API
-      # además del hook. Queda anotado como pendiente.
-      - name: Recordatorio de lo que queda fuera
+          id=$(jq -r '.id // empty' "$cuerpo" 2>/dev/null || true)
+
+          # El 201 trae el despliegue completo. El 202 significa «encolado» y
+          # llega sin cuerpo, así que ahí sí toca buscarlo: se pide el más
+          # reciente creado a partir del instante anterior al POST, que acota
+          # la búsqueda a despliegues que no existían antes de pedirlo.
+          if [ -z "$id" ]; then
+            echo "Respuesta $codigo sin id; se localiza el despliegue por fecha."
+            id=$(curl --silent --show-error --location \
+                      --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                      "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys?limit=1&createdAfter=${antes}" \
+                 | jq -r '.[0].deploy.id // empty')
+          fi
+
+          if [ -z "$id" ]; then
+            echo "No se ha podido determinar qué despliegue se ha creado."
+            exit 1
+          fi
+
+          echo "Despliegue lanzado: $id (HTTP $codigo)."
+          echo "deploy_id=$id" >> "$GITHUB_OUTPUT"
+
+      # Aquí es donde este job deja de mentir.
+      #
+      # Antes terminaba en cuanto Render aceptaba la petición, así que una
+      # compilación que fallara dentro de Render dejaba el CI en verde y la web
+      # sirviendo la versión anterior. Un verde que no significaba lo que
+      # parecía. Ahora se espera al estado final y solo `live` cuenta como
+      # éxito.
+      - name: Esperar a que el despliegue termine
         if: steps.cambios.outputs.desplegar == 'si'
         working-directory: .
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          DEPLOY_ID: ${{ steps.lanzar.outputs.deploy_id }}
         run: |
-          echo "Despliegue lanzado. El resultado final se ve en el panel de Render:"
-          echo "este job confirma que se ha pedido, no que haya terminado bien."
+          set -uo pipefail
+
+          limite=$(( $(date +%s) + 15 * 60 ))
+          fallos_seguidos=0
+
+          while :; do
+            estado=$(curl --silent --show-error --location --max-time 30 \
+                          --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                          "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys/${DEPLOY_ID}" \
+                     | jq -r '.status // empty')
+
+            case "$estado" in
+              live)
+                echo "Despliegue terminado: live."
+                exit 0
+                ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "El despliegue ha terminado en estado '$estado'."
+                echo "Registro completo: https://dashboard.render.com/web/${RENDER_SERVICE_ID}/deploys/${DEPLOY_ID}"
+                exit 1
+                ;;
+              created|queued|build_in_progress|update_in_progress|pre_deploy_in_progress)
+                fallos_seguidos=0
+                echo "En curso ($estado)…"
+                ;;
+              "")
+                # Un fallo puntual de red o un 429 no deben tumbar el
+                # despliegue. Se toleran unos cuantos seguidos y se abandona
+                # solo si no hay manera, para no cambiar un verde que miente
+                # por un rojo que miente.
+                fallos_seguidos=$(( fallos_seguidos + 1 ))
+                echo "Sin respuesta de la API (intento $fallos_seguidos)."
+                if [ "$fallos_seguidos" -ge 5 ]; then
+                  echo "Cinco consultas seguidas sin respuesta: se abandona."
+                  exit 1
+                fi
+                ;;
+              *)
+                # Un estado que no conocemos no se interpreta como bueno: si
+                # Render añade uno nuevo, preferimos enterarnos por un rojo.
+                echo "Estado no reconocido: '$estado'."
+                exit 1
+                ;;
+            esac
+
+            if [ "$(date +%s)" -ge "$limite" ]; then
+              echo "Quince minutos sin alcanzar un estado final. Se abandona."
+              echo "Puede que el despliegue termine bien más tarde; compruébalo en el panel."
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+      # Y aquí es donde se comprueba lo que de verdad importa. Que Render diga
+      # `live` y que la aplicación conteste no son lo mismo: el proceso puede
+      # arrancar y morir al primer tráfico, o quedarse sin base de datos.
+      #
+      # La URL se pregunta a la API en vez de escribirla aquí, para que no haya
+      # una dirección a mano que se quede desactualizada sin que nadie lo note.
+      - name: Comprobar que la aplicación responde
+        if: steps.cambios.outputs.desplegar == 'si'
+        working-directory: .
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -uo pipefail
+
+          url=$(curl --silent --show-error --location \
+                     --header "Authorization: Bearer ${RENDER_API_KEY}" \
+                     "https://api.render.com/v1/services/${RENDER_SERVICE_ID}" \
+                | jq -r '.serviceDetails.url // empty')
+
+          if [ -z "$url" ]; then
+            echo "La API no ha devuelto la URL pública del servicio."
+            exit 1
+          fi
+
+          echo "Comprobando ${url}/api/health"
+
+          for intento in $(seq 1 10); do
+            codigo=$(curl --silent --location --max-time 30 \
+                          --output /dev/null --write-out '%{http_code}' \
+                          "${url}/api/health" || echo "000")
+
+            if [ "$codigo" = "200" ]; then
+              echo "La aplicación responde 200 (intento $intento)."
+              exit 0
+            fi
+
+            echo "Respuesta $codigo (intento $intento de 10)."
+            sleep 10
+          done
+
+          echo "La aplicación no ha respondido 200 tras el despliegue."
+          exit 1

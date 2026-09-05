@@ -404,7 +404,7 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 | Seguridad | 9/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos, y límite de intentos por IP y por cuenta. Falta la capa de alertas |
 | Testing | 9/10 | 962 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
 | E2E | 8,5/10 | 36 pruebas del ciclo completo, incluidas renovación y revocación |
-| CI/CD | 8,5/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`. Falta que el job espere a que Render termine, no solo a que acepte |
+| CI/CD | 9/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`, y el job espera al estado final del despliegue y comprueba que la aplicación responde. Falta fijar las acciones a SHA y exigir que las ramas estén al día antes de fusionar |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
 | Mantenibilidad | 9,5/10 | Los comentarios explican **por qué**, no qué. Las decisiones se entienden sin arqueología en el historial |
 | Documentación | 9/10 | README exhaustivo y este informe. Por encima de lo habitual |
@@ -432,53 +432,72 @@ principio.
 
 ### Alto
 
-1. **Confirmar el despliegue, no solo pedirlo.** El job de despliegue ya cuelga
-   de `ci-ok`, así que un commit en rojo no llega a producción. Lo que falta es
-   el otro extremo: el hook devuelve 200 cuando Render **acepta** la petición,
-   no cuando la versión nueva está sirviendo, así que una compilación que falle
-   dentro de Render deja el CI en verde. Cerrarlo pide consultar la API de
-   Render hasta que el despliegue termine.
-2. **Configuración fuera del repositorio.** El encadenado tiene tres pasos que
-   no viven en el código y sin los cuales queda a medias: desactivar
-   Auto-Deploy en Render, guardar el Deploy Hook como secreto del repositorio y
-   exigir `ci-ok` en la protección de rama. Están detallados en el README.
+1. ~~**Confirmar el despliegue, no solo pedirlo.**~~ Resuelto: el job lanza el
+   despliegue por la API de Render —que devuelve su identificador—, espera al
+   estado final aceptando solo `live`, y después comprueba que `/api/health`
+   responde en la URL pública. Un fallo de compilación dentro de Render deja
+   ahora el CI en rojo, cosa que antes no pasaba.
+2. **Configuración fuera del repositorio.** Queda comprobar dos de los tres
+   pasos, porque no viven en el código: que Auto-Deploy siga desactivado en
+   Render y que `RENDER_API_KEY` y `RENDER_SERVICE_ID` estén guardados como
+   secretos. El tercero —exigir `ci-ok` en la rama principal— **está hecho**,
+   mediante el *ruleset* 22286987 del repositorio. Conviene anotar que el
+   endpoint de protección de rama clásica responde «Branch not protected»
+   aunque las reglas existan, porque induce a pensar que falta.
+3. **Las ramas pueden fusionarse desactualizadas.** El ruleset tiene
+   `strict_required_status_checks_policy` en `false`, así que una PR puede
+   entrar en verde sin estar al día con `main`. Sus comprobaciones pasaron
+   contra un estado anterior, de modo que `main` puede romperse por un
+   conflicto semántico que nadie vio en rojo. Es la misma familia de problema
+   que el resto de esta lista: un verde que no significa lo que parece.
 
 ### Medio
 
-3. **Recuperación de contraseña por correo.** El modelo de datos no guarda
-   direcciones, así que exige añadir el campo, decidir qué pasa con las cuentas
-   existentes y contratar un proveedor de envío con dominio verificado. Es más
-   infraestructura que código.
-4. Fijar las acciones del CI a SHA en lugar de a etiqueta mayor.
-5. Registrar el mensaje y el código del error en vez del objeto completo, que
-   puede arrastrar identificadores internos al registro.
-6. Revisar qué se escribe del contenido de las peticiones en el registro de
-   acceso. Aquí no hay datos sensibles, pero es el patrón que en otras
-   aplicaciones acaba metiendo material privado en los logs.
+4. **Recuperación de contraseña por correo.** El modelo de datos no guarda
+   direcciones —las columnas de `users` son `id`, `username`, `password_hash`,
+   `role` y `created_at`—, así que exige añadir el campo, decidir qué pasa con
+   las cuentas existentes y contratar un proveedor de envío con dominio
+   verificado. Es más infraestructura que código.
+5. Fijar las acciones del CI a SHA en lugar de a etiqueta mayor. De paso,
+   conviven dos versiones distintas entre workflows —`actions/checkout@v4` y
+   `@v5`, `actions/setup-node@v4` y `@v5`—, que se pueden unificar al fijarlas.
+6. Registrar el mensaje y el código del error en vez del objeto completo.
+   Comprobado: `error.middleware.ts` hace `console.error('[unhandled]', err)`,
+   que vuelca el objeto entero.
+7. Revisar qué se escribe del contenido de las peticiones en el registro de
+   acceso. Comprobado, y más acotado de lo que decía esta lista: solo se
+   registran método, URL, código y duración. Lo que queda por decidir es que la
+   URL arrastra la cadena de consulta, así que los términos de búsqueda del
+   usuario acaban en el registro.
 
 ### Bajo
 
-7. `PUT` con semántica correcta —reemplazo completo— o retirarlo, con sus tests.
-8. Paginación en el listado de tareas.
-9. Cambio de contraseña, con revocación de todas las sesiones.
-10. **`taskhub: file:..` vuelve sola.** La retirada del paquete raíz como
-    dependencia de sus subpaquetes no se sostiene: cualquier `npm install`
-    dentro de `server/` o de `client/` la reintroduce en su `package.json`. Los
-    dos locks conservan un nodo `".."` marcado `extraneous`, pero podarlo no
-    bastó y el mecanismo no está identificado. Sin impacto de seguridad; ensucia
-    el árbol de dependencias y deshace en silencio una corrección anterior.
-    Detalle y pasos para retomarlo en `MAINTENANCE.md`.
+8. `PUT` con semántica correcta —reemplazo completo— o retirarlo, con sus tests.
+   Comprobado: `tasks.router.ts` enruta `put` y `patch` al mismo
+   `tasksController.update`.
+9. Paginación en el listado de tareas. Comprobado: no hay `LIMIT` ni `OFFSET`
+   en el repositorio de tareas.
+10. ~~**Cambio de contraseña, con revocación de todas las sesiones.**~~
+    Resuelto hace varias revisiones: está implementado, descrito en A04 y
+    cubierto por una docena de comprobaciones de `verify`. Seguía en esta lista
+    por inercia.
+11. ~~**`taskhub: file:..` reaparecía en el entorno de desarrollo.**~~ Resuelto:
+    la contaminación estaba en el `node_modules` local, no en lo commiteado.
+    Borrados los enlaces y reinstalado con `npm ci` —que no escribe en
+    `package.json` ni en el lock—, el árbol queda limpio. La causa de fondo, por
+    qué `npm install` lo declaraba en Windows, no llegó a identificarse.
+    Detalle en `MAINTENANCE.md`.
 
 ### Mejoras
 
-9 bis. **Validar la accesibilidad con herramientas, no solo con criterio.**
+12. **Validar la accesibilidad con herramientas, no solo con criterio.**
    Pasar axe o Lighthouse, medir contrastes y probar con un lector de pantalla.
    Lo hecho hasta ahora se cuidó al escribir el código, que no es lo mismo que
    estar verificado.
-10. Registro estructurado con identificador de correlación por petición.
-11. Métricas y alertas por encima del registro.
-12. Pruebas de resiliencia: caída de la base de datos, tiempos de espera.
-13. Panel de sesiones activas para el usuario.
+13. Registro estructurado con identificador de correlación por petición.
+14. Métricas y alertas por encima del registro.
+15. Pruebas de resiliencia: caída de la base de datos, tiempos de espera.
+16. Panel de sesiones activas para el usuario.
 
 ---
 
