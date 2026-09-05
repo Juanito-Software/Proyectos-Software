@@ -46,6 +46,70 @@ de los proyectos).
 
 ---
 
+## 2026-09-05 (tarde) — TaskHub_React: el despliegue deja de darse por bueno solo
+
+El job de despliegue terminaba cuando Render **aceptaba** la petición del deploy
+hook, no cuando la versión nueva estaba sirviendo. Una compilación que fallara
+dentro de Render dejaba el CI en verde y la web con la versión anterior. Estaba
+anotado como pendiente en la auditoría y documentado dentro del propio workflow,
+así que no era un descuido; era una limitación conocida y sin cerrar.
+
+**Lo que se hizo.** El disparo pasa del deploy hook a la API de Render. El
+motivo no es estético: el hook contesta 200 sin decir qué despliegue ha creado,
+de modo que para esperarlo habría que consultar el más reciente y confiar en que
+sea el nuestro; si alguien redespliega a mano en ese momento, se esperaría al
+equivocado. La API devuelve el despliegue con su identificador y esa ambigüedad
+desaparece. A cambio, `RENDER_DEPLOY_HOOK` se sustituye por `RENDER_API_KEY` y
+`RENDER_SERVICE_ID`.
+
+Sobre eso se añaden dos pasos. El primero espera al estado final consultando ese
+despliegue concreto: solo `live` cuenta como éxito, los cinco estados de fallo
+ponen el job en rojo, y un estado desconocido también —si Render añade uno
+nuevo, es preferible enterarse por un fallo que darlo por bueno—. Hay quince
+minutos de margen y se toleran hasta cinco consultas seguidas sin respuesta,
+para no sustituir un verde que miente por un rojo que miente. El segundo pide
+`/api/health` a la URL pública, que se pregunta a la API en vez de escribirla en
+el workflow: que Render diga `live` y que la aplicación conteste no son lo
+mismo, y una dirección a mano se queda vieja sin que nadie lo note.
+
+**Verificado en producción, no supuesto.** Primera ejecución tras la fusión:
+despliegue `dep-dae7sv1t0dsc7395so80` lanzado con HTTP 201, cinco consultas
+intermedias —tres `build_in_progress`, dos `update_in_progress`—, `live`, y
+`/api/health` respondiendo 200 al primer intento. Los 59 segundos totales
+parecían pocos para una compilación en el plan gratuito; se revisó el registro
+en lugar de darlo por bueno, y las consultas intermedias confirman que Render
+compiló de verdad.
+
+**La lista de Pendiente, repasada punto por punto contra el código.** Resultó
+tener bastante deriva, que es lo que le quita valor a una lista así:
+
+- El **cambio de contraseña con revocación global** seguía como pendiente y
+  llevaba varias revisiones implementado, descrito en A04 y cubierto por una
+  docena de comprobaciones de `verify`.
+- **Exigir `ci-ok` en la rama principal** figuraba como pendiente y estaba
+  hecho, mediante un *ruleset* del repositorio. El endpoint de protección de
+  rama clásica responde «Branch not protected» aunque las reglas existan, lo
+  que induce a pensar que falta. Conviene consultar
+  `repos/{owner}/{repo}/rules/branches/main`.
+- Apareció uno nuevo: `strict_required_status_checks_policy` estaba en `false`,
+  así que una PR podía fusionarse sin estar al día con `main` y su verde se
+  había calculado contra otro estado. Se activó, junto con exigir *pull
+  request* para tocar `main`.
+- Los demás se comprobaron en el código antes de dejarlos escritos: `PUT` y
+  `PATCH` comparten controlador, no hay `LIMIT` ni `OFFSET` en el repositorio de
+  tareas, `error.middleware.ts` vuelca el objeto de error entero, y el registro
+  de acceso solo escribe método, URL, código y duración —con la cadena de
+  consulta dentro de la URL, que es el detalle a decidir—.
+
+**Estado.** De la lista de Alto no queda nada abierto. Lo que sobrevive es
+higiene barata (los dos puntos de registro), funcionalidad que este proyecto no
+necesita (correo, paginación) y madurez de producción que sería decorativa sin
+usuarios reales (métricas, alertas, resiliencia). Nada de ello pertenece ya a la
+familia de «señales verdes que no significan lo que parecen», que es lo que se
+ha estado cerrando estos dos días.
+
+---
+
 ## 2026-09-05 — TaskHub_React: la CSP deja de tener `'unsafe-inline'`
 
 La cabecera `Content-Security-Policy` del proyecto llevaba `'unsafe-inline'` en

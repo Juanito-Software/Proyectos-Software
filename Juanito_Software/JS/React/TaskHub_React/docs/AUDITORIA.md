@@ -518,6 +518,8 @@ Comprobado en esta auditoría, no supuesto:
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
 | Búsqueda de secretos en el repositorio | ✅ Sin hallazgos |
 | Búsqueda de XSS | ✅ Sin hallazgos |
+| Despliegue confirmado en producción | ✅ `dep-dae7sv1t0dsc7395so80`: lanzado, seguido hasta `live` y `/api/health` respondiendo 200 |
+| CSP en producción | ✅ `script-src 'self'` sin `'unsafe-inline'`, y el playground cargando `/playground/app.js` |
 
 ---
 
