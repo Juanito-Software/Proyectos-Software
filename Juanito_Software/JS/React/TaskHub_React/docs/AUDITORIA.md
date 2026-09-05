@@ -45,7 +45,7 @@ integral.
 | Contraseñas | Mínimo 6 caracteres | 15 caracteres, lista de bloqueo y composición |
 | Cabeceras HTTP | Ninguna | `helmet` con CSP a medida y HSTS |
 | CORS | Abierto a cualquier origen | Delegado de mismo origen |
-| Tests | 37 comprobaciones de API | **937** en cuatro capas |
+| Tests | 37 comprobaciones de API | **962** en cuatro capas |
 | Cobertura del servidor | No medida | **99,6 %** de la lógica pura, con umbral en el CI |
 | Cobertura del cliente | No medida | **96,9 %**, con umbral |
 | Interfaz | Estilos por defecto, sin tokens | Sistema de tokens, modo oscuro y foco de teclado visible |
@@ -210,7 +210,7 @@ ese caso, no una revisión a ojo.
 | **A02 Cryptographic Failures** | ✅ | bcrypt con 12 rondas. SHA-256 sin sal para el refresco, correcto por ser una credencial de alta entropía. HS256 declarado explícitamente al firmar **y al verificar**. Secreto de firma obligatorio y validado en producción |
 | **A03 Injection** | ✅ | Todo parametrizado. El único elemento dinámico del SQL es una lista blanca de nombres de columna, que es el patrón correcto cuando lo dinámico es estructural. Comodines de `LIKE` escapados con `ESCAPE` explícito. Cargas de inyección probadas en la suite de API |
 | **A04 Insecure Design** | ⚠️ | Ya hay **cambio de contraseña** con revocación global. Siguen sin existir recuperación por correo ni verificación, porque el modelo de datos no guarda direcciones: es una ausencia conocida y acotada, no un defecto |
-| **A05 Security Misconfiguration** | ✅ | `helmet` con CSP a medida, HSTS en producción, `trust proxy` acotado, CORS de mismo origen, cuerpo limitado |
+| **A05 Security Misconfiguration** | ✅ | `helmet` con CSP a medida, HSTS en producción, `trust proxy` acotado, CORS de mismo origen, cuerpo limitado. `script-src` es `'self'` y `script-src-attr` es `'none'`: la política ya no admite código en línea, que es la concesión que la dejaba sin defender de la inyección de scripts |
 | **A06 Vulnerable Components** | ✅ | **0 vulnerabilidades** en cliente y servidor |
 | **A07 Identification & Auth Failures** | ✅ | Rotación con detección de reutilización, revocación en servidor, política de contraseñas descrita arriba, y **tres capas de limitación**: por IP, retrasos progresivos por cuenta y tope duro. Cierra el ataque repartido entre muchas direcciones sin abrir un bloqueo malicioso |
 | **A08 Software & Data Integrity** | ⚠️ | Las acciones del CI están fijadas a etiqueta mayor, no a SHA. Son acciones oficiales; el riesgo es bajo pero una etiqueta se puede mover |
@@ -272,14 +272,14 @@ con las WCAG, y este documento no va a insinuar que lo sea.
 
 ## 7. Tests
 
-**937 comprobaciones** en cuatro capas que prueban cosas distintas:
+**962 comprobaciones** en cuatro capas que prueban cosas distintas:
 
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
 | Unitarios de servidor | 548 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
 | Unitarios de cliente | 224 | **96,5 %** stmts · 96,6 % ramas | 95/94/93/96 | Nada |
-| API contra PostgreSQL | 147 | — | — | PostgreSQL |
-| Navegador (Playwright) | 33 | — | — | PostgreSQL y build |
+| API contra PostgreSQL | 154 | — | — | PostgreSQL |
+| Navegador (Playwright) | 36 | — | — | PostgreSQL y build |
 
 **Qué mide el 99,5 % y qué no.** Solo la lógica que corre sin base de datos. Los
 repositorios, los routers y el cableado de Express están excluidos a propósito
@@ -299,6 +299,35 @@ lo intente. Llegar al último punto obliga a escribir tests que existen para mov
 el contador y no para detectar fallos, y esos son peores que la línea sin cubrir
 que sustituyen. Lo que queda fuera son ramas defensivas que no se alcanzan sin
 retorcer los dobles hasta que el test deje de significar nada.
+
+### Lo que una cabecera correcta no demuestra
+
+El endurecimiento de la CSP dejó un aviso que merece quedar escrito, porque no
+se arregla con más tests sino con tests de otro tipo.
+
+Al retirar `'unsafe-inline'` se añadieron comprobaciones de la política: que
+`script-src` fuera `'self'`, que `script-src-attr` fuera `'none'`, que el
+marcado no llevara ningún atributo `on*`, que el HTML cargara su lógica de un
+fichero. Las cinco pasaron. Y las cinco pasaban sobre una página cuyo
+JavaScript el navegador **no llegaba a ejecutar**: el `<script>` tenía una ruta
+relativa, la página se sirve en `/playground` sin barra final, y el navegador
+pedía `/app.js`, donde no hay nada. El playground se pintaba entero y no
+respondía a un solo clic.
+
+Ninguna de esas cinco comprobaciones podía detectarlo, porque todas miran
+cabeceras y marcado —lo que el servidor dice— y ninguna mira comportamiento —lo
+que el navegador hace—. Lo detectaron los cinco tests de Playwright, que son los
+únicos que abren un navegador de verdad. Una comprobación que solo lee la
+respuesta del servidor confirma que la configuración es la que se escribió, no
+que la página funcione bajo ella.
+
+De ahí salieron tres comprobaciones más, que son las que cierran el hueco sin
+depender de que un e2e pulse el botón concreto que se rompa: la URL del script
+se **resuelve** contra la dirección de la página como haría el navegador en vez
+de escribirse a mano; toda acción del marcado tiene manejador en la tabla de
+delegación y ningún manejador sobra; y los cinco oyentes que se enganchan por
+`id` encuentran su elemento, porque si uno falta el `TypeError` corta el
+arranque en silencio.
 
 ### Tests que se revisaron uno a uno
 
@@ -344,6 +373,7 @@ efecto, no por su ubicación.
 | Identificadores sin validar | Un identificador mal formado acababa en error 500 en cinco rutas, en vez de en un 400 limpio. Ruido en métricas y alertas falsas | Validador de formato en el router, con sus tests |
 | Sesión incoherente al borrar una cuenta | Una operación posterior podía fallar por una violación de integridad en vez de responder 401 | Traducción del error a 401, y revocación explícita de sesiones al borrar |
 | Tabla de sesiones sin limpiar | La función de limpieza estaba escrita, documentada y probada… y no la llamaba nadie. Crecimiento indefinido | Tarea diaria al arrancar, con sus tests |
+| CSP con `'unsafe-inline'` en `script-src` | La política estaba puesta, se veía en las cabeceras y no defendía de la inyección de scripts, que es lo único que se le pide. La concesión existía porque el playground llevaba toda su lógica en un `<script>` y sus manejadores en atributos `onclick` | Lógica extraída a `public/app.js`, 21 manejadores convertidos en `addEventListener` y los 2 que se generan al pintar cada tarea resueltos por delegación. `script-src 'self'` y `script-src-attr 'none'` |
 | Sin límites de longitud | Descripción y búsqueda sin techo explícito. El de la búsqueda importaba más: va a una consulta que no puede usar índice | Límites explícitos en los validadores |
 | Comentario desactualizado | Describía la configuración anterior a la migración de sesión. El tipo de comentario que alguien lee y da por cierto | Corregido |
 | El hash de contraseña viajaba sin necesidad | No salía en la respuesta, pero llegaba desde la base de datos a memoria sin motivo | Se dejó de seleccionar en la consulta |
@@ -372,8 +402,8 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 | Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, cambio de contraseña con revocación global, CSRF cerrado por tres vías |
 | Autorización | 9/10 | El código era correcto desde el principio; ahora además está vigilado en escritura |
 | Seguridad | 9/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos, y límite de intentos por IP y por cuenta. Falta la capa de alertas |
-| Testing | 9/10 | 937 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
-| E2E | 8,5/10 | 30 pruebas del ciclo completo, incluidas renovación y revocación |
+| Testing | 9/10 | 962 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
+| E2E | 8,5/10 | 36 pruebas del ciclo completo, incluidas renovación y revocación |
 | CI/CD | 8,5/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`. Falta que el job espere a que Render termine, no solo a que acepte |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
 | Mantenibilidad | 9,5/10 | Los comentarios explican **por qué**, no qué. Las decisiones se entienden sin arqueología en el historial |
@@ -431,6 +461,13 @@ principio.
 7. `PUT` con semántica correcta —reemplazo completo— o retirarlo, con sus tests.
 8. Paginación en el listado de tareas.
 9. Cambio de contraseña, con revocación de todas las sesiones.
+10. **`taskhub: file:..` vuelve sola.** La retirada del paquete raíz como
+    dependencia de sus subpaquetes no se sostiene: cualquier `npm install`
+    dentro de `server/` o de `client/` la reintroduce en su `package.json`. Los
+    dos locks conservan un nodo `".."` marcado `extraneous`, pero podarlo no
+    bastó y el mecanismo no está identificado. Sin impacto de seguridad; ensucia
+    el árbol de dependencias y deshace en silencio una corrección anterior.
+    Detalle y pasos para retomarlo en `MAINTENANCE.md`.
 
 ### Mejoras
 
@@ -457,8 +494,8 @@ Comprobado en esta auditoría, no supuesto:
 | Unitarios de servidor | ✅ 548/548 |
 | Cobertura de servidor | ✅ 99,58 / 98,77 / 98,80 / 99,56 |
 | Unitarios de cliente | ✅ 224/224 |
-| API contra PostgreSQL | ✅ 147/147 |
-| Navegador (Playwright) | ✅ 33/33 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
+| API contra PostgreSQL | ✅ 154/154 |
+| Navegador (Playwright) | ✅ 36/36 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
 | Búsqueda de secretos en el repositorio | ✅ Sin hallazgos |
 | Búsqueda de XSS | ✅ Sin hallazgos |

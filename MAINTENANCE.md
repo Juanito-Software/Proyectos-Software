@@ -46,6 +46,89 @@ de los proyectos).
 
 ---
 
+## 2026-09-05 — TaskHub_React: la CSP deja de tener `'unsafe-inline'`
+
+La cabecera `Content-Security-Policy` del proyecto llevaba `'unsafe-inline'` en
+`script-src`. Con esa directiva la política deja de defender de la inyección de
+scripts, que es prácticamente lo único que se le pide: un atacante que
+consiguiera inyectar una etiqueta de script en la página la vería ejecutarse
+igual. Estaba puesta, se veía en las cabeceras, y no servía para nada.
+
+La concesión existía por el playground, que era un `index.html` con toda su
+lógica dentro de un `<script>` y sus manejadores en atributos `onclick`. La
+entrada del 29 de agosto lo describe como «`helmet` con CSP a medida,
+compatible con los estilos y scripts en línea del playground»: compatible era
+exactamente el problema.
+
+**Lo que se hizo.** La lógica sale a `server/src/public/app.js`. Los 21
+manejadores estáticos pasan a `addEventListener` —16 por delegación desde un
+`data-accion` y 5 enganchados por `id`—, y los 2 que se generan al pintar cada
+tarea se resuelven con un único oyente en `document` que sube por el árbol con
+`closest()`. Con eso `script-src` queda en `'self'` y `script-src-attr` en
+`'none'`. Se pierde la propiedad de «herramienta de un solo fichero» que tenía
+el playground; a cambio su CSP pasa a valer para algo.
+
+**El fallo que casi se cuela, que es lo que merece estar escrito aquí.** Se
+añadieron comprobaciones de la política nueva: `script-src 'self'`,
+`script-src-attr 'none'`, cero atributos `on*` en el marcado, el HTML cargando
+su lógica de un fichero. Las cinco en verde. Y las cinco pasaban sobre una
+página que el navegador no ejecutaba: el `<script>` tenía `src="app.js"`
+relativo, la página se sirve en `/playground` **sin barra final** —por el
+`redirect: false` que se puso a propósito para no encadenar un 301 en una URL
+que va en un currículum—, y el navegador resolvía contra la raíz y pedía
+`/app.js`. Ahí no hay nada: se llevaba el `index.html` del cliente React y, con
+`nosniff`, se negaba a ejecutarlo. El playground se pintaba entero y no
+respondía a un solo clic. Sin error en la página y sin nada en rojo.
+
+Lo detectaron los 5 tests de Playwright, únicos que abren un navegador. Las
+comprobaciones de cabeceras y marcado no podían: miran lo que el servidor dice,
+no lo que el navegador hace. La primera comprobación que se escribió para cubrir
+el hueco tenía el mismo defecto —pedía `/playground/app.js` a mano, una URL que
+el navegador nunca solicita— y también daba verde con la página muerta.
+
+La versión que quedó **resuelve** la URL sacándola del marcado y aplicándole
+`new URL(src, pageUrl)`, igual que haría el navegador, de modo que solo puede
+pasar si el fichero está donde se va a pedir. Con ella van dos más: que toda
+acción del marcado tenga manejador en la tabla de delegación y que ninguno
+sobre —un `data-accion` sin entrada deja un botón muerto en silencio, sin error
+ni aviso—, y que los cinco oyentes por `id` encuentren su elemento, porque si
+uno falta el `TypeError` corta el resto del arranque.
+
+### Abierto: `taskhub: file:..` vuelve sola con cualquier `npm install`
+
+La auditoría de agosto retiró el paquete raíz como dependencia de sus propios
+subpaquetes. **No se quedó retirada.** Un `npm install --prefix server` de esta
+noche la reintrodujo en `server/package.json`, y un `npm install --prefix
+client` hizo lo mismo con el del cliente. Es reproducible: basta instalar dentro
+de cualquiera de los dos subpaquetes.
+
+Lo comprobado:
+
+- HEAD **no** declara la dependencia en ninguno de los dos `package.json`.
+- Los dos `package-lock.json` de HEAD sí conservan un nodo `".."` con
+  `"name": "taskhub"` y `"extraneous": true`.
+- Existía un enlace `server/node_modules/taskhub` apuntando al directorio padre.
+
+Lo **no** explicado, y por eso esto queda abierto: se probó a podar el nodo
+`".."` de los dos locks y aun así `npm install --prefix client` volvió a añadir
+la dependencia al cliente, que además no tenía el enlace en su `node_modules`.
+Con el servidor el enlace explica el comportamiento; con el cliente no hay
+mecanismo identificado. Se revirtió todo a HEAD antes de commitear para no
+dejar a medias un cambio de dependencias cuya causa no se entiende.
+
+Para retomarlo: reproducir en limpio —clonar aparte, `npm install` en cada
+subpaquete y observar qué aparece—, revisar si hay algún `.npmrc` con
+`install-links` o similar, y no dar por buena ninguna poda del lock hasta que un
+`npm install` posterior la respete.
+
+**Estado.** 962 comprobaciones en las cuatro capas, todas en verde: 548
+unitarios de servidor, 224 de cliente, 154 de API contra PostgreSQL y 36 de
+navegador. La cifra del README del repositorio estaba en 831 y la de la
+auditoría en 937, ninguna de las dos actualizada desde hace dos revisiones;
+las tres quedan alineadas.
+
+---
+
 ## 2026-08-29 / 2026-08-30 — TaskHub_React: producción, auditoría y CI
 
 Primer proyecto del monorepo desplegado y accesible públicamente:
