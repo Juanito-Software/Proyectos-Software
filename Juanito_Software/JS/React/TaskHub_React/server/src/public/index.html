@@ -664,7 +664,7 @@
 
       <div class="auth-error" id="auth-error"></div>
 
-      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+      <form id="auth-form">
         <div class="form-group">
           <label for="auth-username">Usuario</label>
           <input type="text" id="auth-username" class="input-control" required autocomplete="username">
@@ -678,7 +678,7 @@
 
       <div class="auth-switch">
         <span id="auth-switch-text">¿No tienes cuenta?</span>
-        <button type="button" onclick="toggleAuthMode()" id="auth-switch-btn">Regístrate</button>
+        <button type="button" id="auth-switch-btn" data-accion="cambiar-modo-auth">Regístrate</button>
       </div>
     </div>
   </div>
@@ -711,7 +711,7 @@
       </div>
       <div class="stat-badge user-badge" id="user-badge" style="display:none">
         <span id="current-user" style="color:var(--primary); font-weight:700"></span>
-        <button class="icon-btn" onclick="logout()" title="Cerrar sesión">⏻</button>
+        <button class="icon-btn" data-accion="salir" title="Cerrar sesión">⏻</button>
       </div>
     </div>
   </header>
@@ -726,7 +726,7 @@
       <div class="panel">
         <div class="panel-title">API Endpoints</div>
         
-        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/tasks')">
+        <div class="endpoint-item" data-accion="simular" data-metodo="GET" data-url="/api/tasks">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/tasks</span>
@@ -734,7 +734,7 @@
           <span class="endpoint-desc">List all tasks</span>
         </div>
 
-        <div class="endpoint-item" id="btn-get-specific" onclick="simulateGetSpecific()">
+        <div class="endpoint-item" id="btn-get-specific" data-accion="get-especifico">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/tasks/:id</span>
@@ -742,7 +742,7 @@
           <span class="endpoint-desc">Fetch specific task</span>
         </div>
 
-        <div class="endpoint-item" onclick="openCreateModal()">
+        <div class="endpoint-item" data-accion="abrir-crear">
           <div class="endpoint-meta">
             <span class="method post">POST</span>
             <span class="path">/api/tasks</span>
@@ -750,7 +750,7 @@
           <span class="endpoint-desc">Crear tarea</span>
         </div>
 
-        <div class="endpoint-item" id="btn-put-specific" onclick="simulatePutSpecific()">
+        <div class="endpoint-item" id="btn-put-specific" data-accion="put-especifico">
           <div class="endpoint-meta">
             <span class="method put">PUT</span>
             <span class="path">/api/tasks/:id</span>
@@ -758,7 +758,7 @@
           <span class="endpoint-desc">Update task</span>
         </div>
 
-        <div class="endpoint-item" id="btn-delete-specific" onclick="simulateDeleteSpecific()">
+        <div class="endpoint-item" id="btn-delete-specific" data-accion="borrar-especifico">
           <div class="endpoint-meta">
             <span class="method delete">DELETE</span>
             <span class="path">/api/tasks/:id</span>
@@ -766,7 +766,7 @@
           <span class="endpoint-desc">Eliminar tarea</span>
         </div>
 
-        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/tasks/stats')">
+        <div class="endpoint-item" data-accion="simular" data-metodo="GET" data-url="/api/tasks/stats">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/tasks/stats</span>
@@ -774,7 +774,7 @@
           <span class="endpoint-desc">Resumen por estado</span>
         </div>
 
-        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/system/stats')">
+        <div class="endpoint-item" data-accion="simular" data-metodo="GET" data-url="/api/system/stats">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/system/stats</span>
@@ -790,7 +790,7 @@
       <div class="panel" id="admin-panel" style="display:none">
         <div class="panel-title">Administración</div>
 
-        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/admin/users')">
+        <div class="endpoint-item" data-accion="simular" data-metodo="GET" data-url="/api/admin/users">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/admin/users</span>
@@ -798,7 +798,7 @@
           <span class="endpoint-desc">Listar usuarios</span>
         </div>
 
-        <div class="endpoint-item" onclick="simulateAPI('GET', '/api/admin/stats')">
+        <div class="endpoint-item" data-accion="simular" data-metodo="GET" data-url="/api/admin/stats">
           <div class="endpoint-meta">
             <span class="method get">GET</span>
             <span class="path">/api/admin/stats</span>
@@ -806,7 +806,7 @@
           <span class="endpoint-desc">Resumen global</span>
         </div>
 
-        <div class="endpoint-item" onclick="deleteUserPrompt()">
+        <div class="endpoint-item" data-accion="borrar-usuario">
           <div class="endpoint-meta">
             <span class="method delete">DELETE</span>
             <span class="path">/api/admin/users/:id</span>
@@ -842,16 +842,16 @@
 
       <!-- Real-time filter form -->
       <div class="filter-bar">
-        <input type="text" id="search-input" class="input-control" placeholder="Buscar en título y descripción..." oninput="fetchTasks()">
+        <input type="text" id="search-input" class="input-control" placeholder="Buscar en título y descripción...">
         
-        <select id="status-filter" class="input-control" onchange="fetchTasks()">
+        <select id="status-filter" class="input-control">
           <option value="">Todos los estados</option>
           <option value="pending">Pending</option>
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
         </select>
 
-        <select id="priority-filter" class="input-control" onchange="fetchTasks()">
+        <select id="priority-filter" class="input-control">
           <option value="">Todas las prioridades</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
@@ -861,11 +861,11 @@
 
       <!-- Task Operations -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem">
-        <button class="btn btn-primary" onclick="openCreateModal()">
+        <button class="btn btn-primary" data-accion="abrir-crear">
           <svg style="width:16px; height:16px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
           Add New Task
         </button>
-        <button class="btn btn-secondary" onclick="fetchTasks(true)">
+        <button class="btn btn-secondary" data-accion="recargar">
           Refresh List
         </button>
       </div>
@@ -884,9 +884,9 @@
     <div class="modal">
       <div class="modal-header">
         <h3 class="modal-title" id="modal-title">Nueva tarea</h3>
-        <button class="icon-btn" onclick="closeModal()">✕</button>
+        <button class="icon-btn" data-accion="cerrar-modal">✕</button>
       </div>
-      <form id="task-form" onsubmit="handleFormSubmit(event)">
+      <form id="task-form">
         <input type="hidden" id="task-id">
         
         <div class="form-group">
@@ -920,7 +920,7 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button type="button" class="btn btn-secondary" data-accion="cerrar-modal">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="form-submit-btn">Crear tarea</button>
         </div>
       </form>
@@ -933,502 +933,13 @@
   </div>
 
   <!-- Main Dashboard Logic -->
-  <script>
-    let activeTasks = [];
-    let selectedTaskId = null;
-    let authMode = 'login';
-
-    // TaskHub1 es multiusuario: cada petición a /api/tasks necesita el JWT.
-    // Se guarda con la misma clave que usa el cliente React, así que si ya
-    // has iniciado sesión allí, el playground entra directamente.
-    const STORAGE_KEY = 'taskhub_auth';
-
-    function getAuth() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
-      } catch {
-        return null;
-      }
-    }
-
-    function setAuth(auth) {
-      if (auth) localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
-      else localStorage.removeItem(STORAGE_KEY);
-    }
-
-    /**
-     * Renovación en curso, para que dos peticiones que caduquen a la vez no
-     * disparen dos renovaciones con la misma cookie. El servidor tomaría la
-     * segunda por reutilización del token y cerraría la sesión entera.
-     */
-    let renovacionEnCurso = null;
-
-    /**
-     * Cambia la cookie de refresco por un token de acceso nuevo.
-     *
-     * El token de refresco no se ve desde aquí: va en una cookie HttpOnly que
-     * el navegador manda sola. Por eso esta función no recibe nada.
-     */
-    function renovarSesion() {
-      if (!renovacionEnCurso) {
-        renovacionEnCurso = fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        })
-          .then(async (res) => {
-            const payload = await res.json().catch(() => null);
-            if (!res.ok || !payload?.success) throw new Error('sesión no renovable');
-            setAuth({ user: payload.data.user, token: payload.data.accessToken });
-            return payload.data;
-          })
-          .finally(() => {
-            renovacionEnCurso = null;
-          });
-      }
-      return renovacionEnCurso;
-    }
-
-    /**
-     * fetch con el token puesto.
-     *
-     * El token de acceso dura quince minutos, así que caducar es lo normal, no
-     * la excepción: ante un 401 se renueva y se repite la petición una sola
-     * vez. Solo si la renovación también falla se vuelve al formulario.
-     */
-    async function authFetch(url, options = {}, reintentado = false) {
-      const auth = getAuth();
-      const headers = { ...(options.headers || {}) };
-      if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
-
-      const res = await fetch(url, { ...options, headers });
-
-      if (res.status === 401 && !reintentado) {
-        try {
-          await renovarSesion();
-          return authFetch(url, options, true);
-        } catch {
-          // Cae al bloque de abajo: la sesión está muerta de verdad.
-        }
-      }
-
-      if (res.status === 401) {
-        setAuth(null);
-        showAuthOverlay();
-        showToast('Sesión expirada, vuelve a entrar', true);
-      }
-      return res;
-    }
-
-    // ── Autenticación ────────────────────────────────────────────────────
-
-    function showAuthOverlay() {
-      document.getElementById('auth-overlay').classList.add('active');
-      document.getElementById('user-badge').style.display = 'none';
-      document.getElementById('admin-panel').style.display = 'none';
-    }
-
-    function hideAuthOverlay() {
-      document.getElementById('auth-overlay').classList.remove('active');
-      const auth = getAuth();
-      if (auth?.user) {
-        document.getElementById('current-user').innerText = auth.user.username;
-        document.getElementById('user-badge').style.display = 'flex';
-        // El panel de administración solo se enseña a quien tiene el rol. Es
-        // una comodidad visual: si alguien lo forzara desde la consola del
-        // navegador, el servidor seguiría respondiendo 403.
-        document.getElementById('admin-panel').style.display =
-          auth.user.role === 'admin' ? 'block' : 'none';
-      }
-    }
-
-    /**
-     * Borrado de un usuario. Pide el id en lugar de ofrecer una lista porque
-     * el flujo natural es mirar antes GET /api/admin/users, copiar el id de
-     * ahí y pegarlo: así se ve el efecto de las dos llamadas en la consola.
-     */
-    async function deleteUserPrompt() {
-      const id = prompt('Id del usuario a eliminar (lo ves en GET /api/admin/users):');
-      if (!id) return;
-
-      const confirmar = confirm(
-        `Se eliminará el usuario ${id} y TODAS sus tareas.\n\nEsta acción no se puede deshacer.`,
-      );
-      if (!confirmar) return;
-
-      await simulateAPI('DELETE', `/api/admin/users/${id.trim()}`);
-    }
-
-    function toggleAuthMode() {
-      authMode = authMode === 'login' ? 'register' : 'login';
-      const isLogin = authMode === 'login';
-      document.getElementById('auth-title').innerText = isLogin ? 'Iniciar sesión' : 'Crear cuenta';
-      document.getElementById('auth-sub').innerText = isLogin
-        ? 'Accede para gestionar tus tareas desde el playground.'
-        : 'Regístrate para empezar a crear tareas.';
-      document.getElementById('auth-submit').innerText = isLogin ? 'Entrar' : 'Registrarse';
-      document.getElementById('auth-switch-text').innerText = isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
-      document.getElementById('auth-switch-btn').innerText = isLogin ? 'Regístrate' : 'Inicia sesión';
-      document.getElementById('auth-error').classList.remove('active');
-    }
-
-    async function handleAuthSubmit(e) {
-      e.preventDefault();
-      const username = document.getElementById('auth-username').value;
-      const password = document.getElementById('auth-password').value;
-      const errorBox = document.getElementById('auth-error');
-      const url = `/api/auth/${authMode === 'login' ? 'login' : 'register'}`;
-
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
-        const payload = await res.json();
-        updateConsole('POST', url, `${res.status} ${res.statusText}`, payload, !res.ok);
-
-        if (res.ok && payload.success) {
-          // El token de refresco no viene en el cuerpo: el servidor lo pone en
-          // una cookie HttpOnly. Aquí solo se guarda el de acceso.
-          setAuth({ user: payload.data.user, token: payload.data.accessToken });
-          errorBox.classList.remove('active');
-          document.getElementById('auth-form').reset();
-          hideAuthOverlay();
-          showToast(`Bienvenido, ${payload.data.user.username}`);
-          fetchTasks();
-        } else {
-          errorBox.innerText = payload.error || 'No se pudo completar la operación';
-          errorBox.classList.add('active');
-        }
-      } catch (err) {
-        errorBox.innerText = 'Error de red: ' + err.message;
-        errorBox.classList.add('active');
-      }
-    }
-
-    /**
-     * Cierra la sesión también en el servidor.
-     *
-     * Vaciar el localStorage no bastaría: el token de refresco vive en una
-     * cookie y seguiría sirviendo para sacar tokens de acceso nuevos durante
-     * días. La llamada revoca la familia entera.
-     */
-    async function logout() {
-      const url = '/api/auth/logout';
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const payload = await res.json().catch(() => null);
-        updateConsole('POST', url, `${res.status} ${res.statusText}`, payload, !res.ok);
-      } catch (err) {
-        // Si la red falla se cierra igualmente en local: dejar al usuario
-        // dentro por un fallo de red sería peor.
-        updateConsole('POST', url, 'error de red', { error: err.message }, true);
-      }
-
-      setAuth(null);
-      activeTasks = [];
-      selectedTaskId = null;
-      renderTasksList([]);
-      showAuthOverlay();
-      showToast('Sesión cerrada');
-    }
-
-    // ── Arranque ─────────────────────────────────────────────────────────
-
-    window.addEventListener('DOMContentLoaded', () => {
-      if (getAuth()?.token) {
-        hideAuthOverlay();
-        fetchTasks();
-      } else {
-        showAuthOverlay();
-      }
-      fetchSystemStats();
-      setInterval(fetchSystemStats, 3000);
-    });
-
-    function showToast(message, isError = false) {
-      const toast = document.getElementById('toast');
-      const msgSpan = document.getElementById('toast-message');
-      toast.style.borderLeftColor = isError ? 'var(--danger)' : 'var(--primary)';
-      msgSpan.innerText = message;
-      toast.style.display = 'flex';
-      setTimeout(() => { toast.style.display = 'none'; }, 3000);
-    }
-
-    async function fetchSystemStats() {
-      try {
-        const res = await fetch('/api/system/stats');
-        const payload = await res.json();
-        if (payload.success) {
-          document.getElementById('req-count').innerText = payload.data.totalRequests;
-          document.getElementById('uptime-count').innerText = payload.data.uptimeFormatted;
-        }
-      } catch (e) {
-        // silencioso: no queremos ruido cada 3 segundos si el server se cae
-      }
-    }
-
-    // Se construye el DOM en lugar de asignar innerHTML.
-    //
-    // La url incluye los filtros que escribe el usuario y prettyJson viene de
-    // la respuesta del servidor: con innerHTML, cualquier etiqueta dentro de
-    // esos textos se interpretaría como HTML y podría ejecutar código.
-    // textContent inserta el texto tal cual, sin interpretarlo nunca.
-    function updateConsole(method, url, status, data, isError = false) {
-      const terminal = document.getElementById('terminal');
-      const statusSpan = document.getElementById('response-status');
-
-      statusSpan.innerText = `HTTP ${status}`;
-      statusSpan.className = isError ? 'console-error' : 'console-success';
-
-      const header = document.createElement('span');
-      header.className = 'console-info';
-      header.textContent = `>> ${method} ${url}\n`;
-
-      terminal.replaceChildren(header, document.createTextNode(JSON.stringify(data, null, 2)));
-      terminal.scrollTop = 0;
-    }
-
-    // ── Tareas ───────────────────────────────────────────────────────────
-
-    async function fetchTasks(manual = false) {
-      if (!getAuth()?.token) { showAuthOverlay(); return; }
-
-      const search = document.getElementById('search-input').value;
-      const status = document.getElementById('status-filter').value;
-      const priority = document.getElementById('priority-filter').value;
-
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (status) params.append('status', status);
-      if (priority) params.append('priority', priority);
-
-      const url = `/api/tasks?${params.toString()}`;
-      try {
-        const res = await authFetch(url);
-        const payload = await res.json();
-
-        if (res.ok && payload.success) {
-          activeTasks = payload.data;
-          renderTasksList(activeTasks);
-          if (manual) {
-            updateConsole('GET', url, `${res.status} ${res.statusText}`, payload);
-            showToast('Lista actualizada');
-          }
-        } else {
-          updateConsole('GET', url, `${res.status} ${res.statusText}`, payload, true);
-        }
-      } catch (err) {
-        updateConsole('GET', url, 'ERROR', { error: err.message }, true);
-      }
-    }
-
-    function renderTasksList(tasks) {
-      const container = document.getElementById('tasks-container');
-      document.getElementById('task-counter').innerText = tasks.length;
-
-      if (!tasks || tasks.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            <p>No hay tareas que coincidan con los filtros.</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = '';
-      tasks.forEach(task => {
-        const statusClass = `badge-${escapeHTML(task.status.replace('-', ''))}`;
-        const createdDate = new Date(task.updatedAt).toLocaleString();
-
-        const card = document.createElement('div');
-        card.className = 'task-card';
-        card.id = `card-${encodeURIComponent(task.id)}`;
-        card.innerHTML = `
-          <div class="task-content">
-            <div class="task-header">
-              <span class="task-title">${escapeHTML(task.title)}</span>
-              <span class="badge ${statusClass}">${escapeHTML(task.status)}</span>
-              <span class="badge badge-${escapeHTML(task.priority)}">${escapeHTML(task.priority)}</span>
-            </div>
-            <p class="task-desc">${escapeHTML(task.description || '—')}</p>
-            <div class="task-footer">
-              <span>ID: <strong>${escapeHTML(task.id.substring(0, 8))}…</strong></span>
-              <span>•</span>
-              <span>Actualizada: ${createdDate}</span>
-            </div>
-          </div>
-          <div class="task-actions">
-            <button class="icon-btn" onclick="openEditModal('${encodeURIComponent(task.id)}')" title="Editar">
-              <svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
-            </button>
-            <button class="icon-btn delete" onclick="deleteTask('${task.id}')" title="Eliminar">
-              <svg style="width:14px; height:14px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"></path></svg>
-            </button>
-          </div>
-        `;
-
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.task-actions') || e.target.closest('.icon-btn')) return;
-          selectTask(task.id);
-        });
-
-        container.appendChild(card);
-      });
-
-      if (selectedTaskId && !tasks.some(t => t.id === selectedTaskId)) {
-        selectedTaskId = null;
-      }
-      updateSelectedLabels();
-    }
-
-    function selectTask(id) {
-      selectedTaskId = id;
-      document.querySelectorAll('.task-card').forEach(c => c.style.borderColor = 'var(--card-border)');
-      const selectedCard = document.getElementById(`card-${id}`);
-      if (selectedCard) selectedCard.style.borderColor = 'var(--primary)';
-      updateSelectedLabels();
-      showToast(`Tarea seleccionada: ${id.substring(0, 8)}…`);
-    }
-
-    function updateSelectedLabels() {
-      const suffix = selectedTaskId || ':id';
-      ['btn-get-specific', 'btn-put-specific', 'btn-delete-specific'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.querySelector('.path').innerText = `/api/tasks/${suffix}`;
-      });
-    }
-
-    // ── Modal ────────────────────────────────────────────────────────────
-
-    function openCreateModal() {
-      if (!getAuth()?.token) { showAuthOverlay(); return; }
-      document.getElementById('modal-title').innerText = 'Nueva tarea';
-      document.getElementById('task-id').value = '';
-      document.getElementById('task-form').reset();
-      document.getElementById('form-submit-btn').innerText = 'Crear tarea';
-      document.getElementById('task-modal').classList.add('active');
-    }
-
-    function openEditModal(id) {
-      const task = activeTasks.find(t => t.id === id);
-      if (!task) return;
-      document.getElementById('modal-title').innerText = 'Editar tarea';
-      document.getElementById('task-id').value = task.id;
-      document.getElementById('form-title').value = task.title;
-      document.getElementById('form-desc').value = task.description;
-      document.getElementById('form-status').value = task.status;
-      document.getElementById('form-priority').value = task.priority;
-      document.getElementById('form-submit-btn').innerText = 'Guardar cambios';
-      document.getElementById('task-modal').classList.add('active');
-    }
-
-    function closeModal() {
-      document.getElementById('task-modal').classList.remove('active');
-    }
-
-    async function handleFormSubmit(e) {
-      e.preventDefault();
-
-      const id = document.getElementById('task-id').value;
-      const body = {
-        title: document.getElementById('form-title').value,
-        description: document.getElementById('form-desc').value,
-        status: document.getElementById('form-status').value,
-        priority: document.getElementById('form-priority').value,
-      };
-
-      const isEdit = !!id;
-      const url = isEdit ? `/api/tasks/${id}` : '/api/tasks';
-      const method = isEdit ? 'PUT' : 'POST';
-
-      try {
-        const res = await authFetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const payload = await res.json();
-        updateConsole(method, url, `${res.status} ${res.statusText}`, payload, !res.ok);
-
-        if (res.ok && payload.success) {
-          closeModal();
-          showToast(isEdit ? 'Tarea actualizada' : 'Tarea creada');
-          fetchTasks();
-        } else {
-          showToast(payload.error || 'La operación ha fallado', true);
-        }
-      } catch (err) {
-        updateConsole(method, url, 'ERROR', { error: err.message }, true);
-        showToast('Error de red', true);
-      }
-    }
-
-    async function deleteTask(id) {
-      if (!confirm('¿Eliminar esta tarea?')) return;
-
-      const url = `/api/tasks/${id}`;
-      try {
-        const res = await authFetch(url, { method: 'DELETE' });
-        const payload = await res.json();
-        updateConsole('DELETE', url, `${res.status} ${res.statusText}`, payload, !res.ok);
-
-        if (res.ok && payload.success) {
-          showToast('Tarea eliminada');
-          fetchTasks();
-        } else {
-          showToast(payload.error || 'No se pudo eliminar', true);
-        }
-      } catch (err) {
-        updateConsole('DELETE', url, 'ERROR', { error: err.message }, true);
-        showToast('Error de red', true);
-      }
-    }
-
-    // ── Botones del panel lateral ────────────────────────────────────────
-
-    async function simulateAPI(method, url) {
-      try {
-        const res = await authFetch(url, { method });
-        const payload = await res.json();
-        updateConsole(method, url, `${res.status} ${res.statusText}`, payload, !res.ok);
-        showToast(`Petición enviada a ${url}`);
-      } catch (err) {
-        updateConsole(method, url, 'ERROR', { error: err.message }, true);
-      }
-    }
-
-    function requireSelection() {
-      if (!selectedTaskId) {
-        showToast('Selecciona antes una tarea de la lista', true);
-        return false;
-      }
-      return true;
-    }
-
-    function simulateGetSpecific() {
-      if (requireSelection()) simulateAPI('GET', `/api/tasks/${selectedTaskId}`);
-    }
-
-    function simulateDeleteSpecific() {
-      if (requireSelection()) deleteTask(selectedTaskId);
-    }
-
-    function simulatePutSpecific() {
-      if (requireSelection()) openEditModal(selectedTaskId);
-    }
-
-    function escapeHTML(str) {
-      return String(str).replace(/[&<>'"]/g, tag => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
-      }[tag] || tag));
-    }
-  </script>
+  <!--
+    La ruta va absoluta a propósito. La página se sirve en "/playground", sin
+    barra final, así que un src relativo como "app.js" lo resuelve el navegador
+    contra la raíz y acaba pidiendo "/app.js", donde no hay nada: se lleva el
+    index.html del cliente React y, con nosniff puesto, se niega a ejecutarlo.
+    El playground se queda pintado pero inerte, sin ningún error visible.
+  -->
+  <script src="/playground/app.js" defer></script>
 </body>
 </html>
