@@ -78,6 +78,24 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!--
+			H2 en memoria, solo para tests.
+
+			El unico test que habia, contextLoads, no podia ejecutarse en
+			ninguna parte salvo con un MySQL levantado en localhost:3306: eso
+			lo dejaba fuera del CI y lo convertia en un test que solo pasaba
+			en la maquina de quien lo escribio. Con H2 el contexto arranca sin
+			nada instalado, que es lo que permite que el CI lo ejecute.
+
+			Alcance test: no entra en el artefacto final ni sustituye a MySQL,
+			que sigue siendo la base de datos de la aplicacion.
+		-->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
