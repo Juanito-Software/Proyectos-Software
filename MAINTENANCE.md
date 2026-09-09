@@ -46,6 +46,87 @@ de los proyectos).
 
 ---
 
+## 2026-09-09 — BatchProcessor: el CI deja de saltarse los tests
+
+El job de Java del `ci.yml` general compilaba con `mvn -q -B -DskipTests
+compile`. La bandera estaba puesta a propósito y documentada, pero el efecto
+era que la comprobación «Java · compilar» salía en verde sin ejecutar un solo
+test en ningún proyecto.
+
+**Lo que había realmente.** Al mirarlo, BatchProcessor tenía una única clase de
+test: la que genera Spring Initializr, con un `contextLoads()` de cuerpo vacío.
+Los otros cuatro proyectos Maven no tenían ninguna. Así que no existía la
+«victoria rápida» de quitar la bandera: no había suite que encender.
+
+Peor: ese `contextLoads` **tampoco habría pasado**. `@SpringBootTest` levanta el
+contexto completo y `application.properties` apunta a un MySQL en
+`localhost:3306` con `ddl-auto=create`. Sin base de datos delante el contexto no
+arranca, así que el test solo pasaba en la máquina de quien tuviera el servidor
+levantado.
+
+**Lo que se hizo.** H2 en memoria con alcance `test` y un perfil
+`application-test.properties` activado con `@ActiveProfiles("test")`. Se eligió
+perfil y no un `application.properties` de test porque este último *sustituye*
+al principal en vez de fusionarse: `DatabaseConfig` construye el `DataSource` a
+mano leyendo `spring.datasource.hikari.*`, y esos campos son primitivos sin
+valor por defecto, así que al perder el fichero principal HikariCP arrancaría
+con `maximumPoolSize=0` y fallaría.
+
+Sobre esa base, cinco tests de lo que hace genérico al lector y que no necesitan
+base de datos: la resolución de la entidad por reflexión —parámetro ausente,
+clase inexistente— y la validación de cabeceras del CSV contra los campos
+declarados de la entidad —coincidencia, cabecera desconocida, fichero sin
+cabeceras—.
+
+Y uno más que vale por todos los demás: **el recorrido completo**. Lanza el job
+igual que lo lanza el endpoint `/batch/run` —lector de CSV, procesador
+genérico, escritor a base de datos— y comprueba que las diez filas del
+`input.csv` de ejemplo acaban guardadas. Sale `COMPLETED`. Es la primera prueba
+de que la aplicación hace lo que dice hacer, y no solo de que arranca.
+
+Total: **7 tests**, verificados en local.
+
+Merece anotarse cómo salió: antes de escribirlo se dieron por defectuosas dos
+cosas leyendo el código. Una era falsa —`DatabaseItemWriter` resuelve el
+repositorio por nombre construido, `getSimpleName() + "Repository"`, y parecía
+que ese bean no existía; existe, y el job escribe—. La otra sigue abierta. En
+ambos casos la lectura del código llevó a una conclusión equivocada y la
+ejecución la corrigió en segundos.
+
+**El CI.** Job nuevo `Java · tests` para BatchProcessor, y el de compilación se
+queda con los cuatro proyectos sin tests, con su nombre intacto para que no
+sugiera cobertura que no existe. El job de tests **exige que el número de tests
+ejecutados sea mayor que cero**: un `mvn test` sobre un proyecto sin tests
+termina en verde sin probar nada, y ese tick verde sería exactamente el tipo de
+señal vacía que este repositorio lleva dos semanas quitándose de encima. La
+cuenta se saca de los informes de surefire y se comprobó contra informes reales
+antes de escribirla.
+
+**Anotado de paso, sin arreglar:** `application.properties` versiona
+`spring.datasource.password=1234` con usuario `root`. Son credenciales de
+desarrollo local y el riesgo real es nulo, pero es lo primero que se ve al abrir
+el repositorio.
+
+**Abierto: la configuración por defecto no es coherente consigo misma.**
+`application.properties` trae `entityClass=...model.Persona` y
+`csv.file.path=input.csv`. Pero `input.csv` tiene cabeceras `id,data`, que son
+los campos de `GenericEntity`; `Persona` declara `personaId`, `nombreCompleto` y
+`empleo`. Con los valores de fábrica, el lector de CSV rechaza el propio fichero
+de ejemplo del repositorio.
+
+El test de recorrido completo **no cubre esto**: fija `entityClass=GenericEntity`
+en el perfil de test para que el par entidad/fichero encaje. O sea, se esquivó
+el problema en vez de resolverlo, y conviene que quede dicho para que nadie lea
+ese test como prueba de que la configuración por defecto funciona.
+
+Las salidas son dos: cambiar el valor por defecto a `GenericEntity`, y entonces
+quien clone el repositorio puede lanzar el ejemplo sin tocar nada; o dejarlo y
+documentar en el README que hay que ajustar `entityClass` según el fichero. La
+primera parece mejor, pero exige comprobar antes para qué se usa `Persona` en el
+resto de la aplicación.
+
+---
+
 ## 2026-09-05 (tarde) — TaskHub_React: el despliegue deja de darse por bueno solo
 
 El job de despliegue terminaba cuando Render **aceptaba** la petición del deploy
