@@ -122,6 +122,48 @@ Tipos de software incluidos:
 Si tienes dudas sobre el uso permitido de un proyecto concreto, consulta su
 documentación o contáctame.
 
+## ✅ Integración continua
+
+Dos workflows corren en cada *pull request* y en cada push a `main`:
+
+| Workflow | Qué cubre |
+| --- | --- |
+| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los cuatro proyectos que sí los tienen** |
+| `taskhub-react-ci.yml` | TaskHub_React entero: lint, tipos, unitarios, integración con PostgreSQL, *end-to-end* con Playwright, auditoría y despliegue |
+
+Tests que se ejecutan hoy en cada push:
+
+| Proyecto | Tests | Sobre qué |
+| --- | --- | --- |
+| BatchProcessor | 20 | H2 en memoria |
+| TaskHub_Angular (backend) | 71 | Vitest, sin base de datos |
+| TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
+| gym-app | 41 | PHPUnit sobre SQLite en memoria |
+| TaskHub_React | 962 | Cuatro capas, incluido navegador real |
+
+### Dos comprobaciones obligatorias, y por qué
+
+`main` exige **`CI en verde`** y **`Monorepo en verde`**. Cada una es un job que
+depende de todos los demás de su workflow y falla si alguno falló.
+
+Podrían marcarse los jobs uno a uno, y sería peor por dos razones. La primera es
+que habría que acordarse de actualizar la lista cada vez que se añade uno.
+La segunda es más sutil: el nombre de un check de matriz **incluye sus
+parámetros** —`PHP · tests (…/gym-app, 41)`—, así que cambia cada vez que se
+sube el mínimo de tests. Exigir ese nombre haría que al pasar de 41 a 45 la
+comprobación obligatoria dejara de existir y se quedara pendiente para siempre,
+bloqueando cualquier fusión.
+
+### Los jobs de tests declaran cuántos tests esperan
+
+No basta con que la suite pase. Cada job compara los tests ejecutados con un
+**mínimo declarado** en el propio workflow y falla si el número baja.
+
+El motivo: comprobar solo que los tests pasan no detecta que la suite haya
+*encogido*. Si alguien borra una clase o la renombra a algo que el ejecutor ya
+no reconoce, los que quedan siguen pasando y el tick sale verde igual. Con un
+suelo, quitar cobertura obliga a bajarlo a mano y queda escrito en el diff.
+
 ## 🔒 Mantenimiento y seguridad
 
 Las dependencias y las alertas de seguridad **se mantienen de forma activa**. El

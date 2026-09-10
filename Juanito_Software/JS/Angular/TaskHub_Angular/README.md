@@ -170,6 +170,9 @@ pasa no detecta que la suite haya **encogido** — si alguien borra un fichero o
 lo renombra a algo que Vitest ya no reconoce, los que quedan siguen pasando y el
 tick sale verde igual.
 
+Si el job falla, `Monorepo en verde` —la comprobación obligatoria de `main`— cae
+con él y la *pull request* no se puede fusionar.
+
 ### Frontend: pendiente
 
 El backend está cubierto; el frontend Angular tiene **2 tests**, y uno de ellos
