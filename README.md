@@ -52,7 +52,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 
 | Proyecto | Descripción |
 |---|---|
-| `PHP/Laravel/gym-app` | Aplicación de gestión de gimnasio (Laravel + Vite + Tailwind). Documentación de entrega y dumps SQL en `docs/` |
+| `PHP/Laravel/gym-app` | Aplicación de gestión de gimnasio (Laravel + Vite + Tailwind). Autorización por rol con middleware propio sobre tres grupos de rutas — admin, coach y cliente —, cubierta por 41 tests en CI. Documentación de entrega y dumps SQL en `docs/` |
 
 ### 🟨 JS — JavaScript / TypeScript
 
@@ -60,7 +60,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
-| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma) |
+| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 71 tests de backend con Vitest, en CI; el frontend está sin cubrir |
 | `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 962 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde |
 
 ### 🐍 Python
@@ -85,7 +85,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `SpotifyDownloader` | Descarga de audio |
 | `SpringlessEasyBatcher` | Versión gratuita en Python del motor de batching (no comercial) |
 | `StreamTools/` | Utilidades para streamers: `BackCount`, `ClipsGeneration`, `VODsGeneration` |
-| `FastApi/TaskHub` | Gestor de tareas estilo Kanban (backend FastAPI con JWT + frontend React) |
+| `FastApi/TaskHub` | Gestor de tareas estilo Kanban (backend FastAPI con JWT + frontend React). 55 tests con pytest sobre SQLite en memoria, en CI |
 | `ToDoList` | Lista de tareas de escritorio |
 | `VocoderSynth` | Vocoder en tiempo real |
 | `YoutubeToMp3` / `YoutubeToMp4` | Descarga y conversión de vídeo/audio |

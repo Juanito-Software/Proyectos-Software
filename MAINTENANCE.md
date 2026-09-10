@@ -46,6 +46,155 @@ de los proyectos).
 
 ---
 
+## 2026-09-10 (tarde) — Tests que existían y no se ejecutaban en ninguna parte
+
+Cerrada la tanda de BatchProcessor, el plan era «añadir tests a los demás
+proyectos del portfolio». Lo primero fue medir, y la medición cambió el plan:
+**en tres de los cuatro proyectos abordados no faltaban tests, faltaba que
+alguien los ejecutara.**
+
+### El inventario, y por qué no bastaba contar ficheros
+
+| Proyecto | Tests propios | ¿Se ejecutaban? | ¿En CI? |
+|---|---|---|---|
+| TaskHub React | 962 | `npm run verify` | Sí, workflow propio |
+| TaskHub Angular (backend) | 71 | `vitest run` declarado | **No** |
+| TaskHub Angular (frontend) | 2 | `ng test` | **No** |
+| TaskHub FastAPI | 55 | pytest + conftest | **No** |
+| gym-app | 25 | — sin script en `composer.json` | **No** |
+| RadioStack | 2 | — | Solo compila |
+| OmniForge | 0 | — | No |
+| GPTDevTeam | 0 propios | — | No |
+
+Dos correcciones que hizo falta hacerse a uno mismo mientras se levantaba esa
+tabla:
+
+**Contar ficheros no es contar tests, y contar `it(` tampoco.** El primer
+recuento dio 6 ficheros en Angular y 2 en FastAPI, y sonaba a cobertura
+simbólica. Al ejecutarlos salieron **71 y 55**. La diferencia son los `it.each`
+y los métodos dentro de clases, que expanden a varios casos. La cifra buena sale
+de ejecutar, no de leer el código fuente.
+
+**Los 249 ficheros de test de GPTDevTeam eran todos de MetaGPT vendorizado.** El
+código propio son dos ficheros y 2.629 líneas, con cero tests. Es el ejemplo más
+claro de por qué un número sin procedencia no vale nada.
+
+### Lo que faltaba en cada caso
+
+**TaskHub FastAPI: 55 tests que solo podían pasar en una máquina.** Ni `pytest`
+ni `httpx` estaban declarados como dependencia en ninguna parte. Comprobado en
+un entorno limpio, en dos pasos: con solo `requirements.txt`, «No module named
+pytest»; añadiendo pytest pero no httpx, `ImportError` al cargar `conftest.py`,
+porque `TestClient` de Starlette usa httpx por debajo. No es un test en rojo, es
+que la suite no arranca. Se resolvió con un `requirements-dev.txt` aparte, para
+no arrastrar herramientas de test a producción.
+
+Y un segundo fallo, este introducido al montarlo: el job se escribió con `pytest`
+a secas y se había verificado en local con `python -m pytest`. **No es lo
+mismo** — el `-m` mete el directorio actual en `sys.path` y el ejecutable no—,
+así que el CI falló con «No module named 'app'». Se comprobó con un control en
+el mismo venv:
+
+| Comando | Sin `pytest.ini` | Con `pytest.ini` |
+|---|---|---|
+| `pytest -q` | ModuleNotFoundError | 55 pasan |
+| `python -m pytest -q` | 55 pasan | 55 pasan |
+
+Se arregló con `pythonpath = .` en un `pytest.ini` en vez de cambiando el
+comando del CI, para que funcione con cualquiera de las dos invocaciones y con
+la del IDE. La causa de fondo: pytest añade al `sys.path` el primer directorio
+**ancestro** del fichero de test que no sea un paquete, y como `tests/` no tiene
+`__init__.py`, ese directorio es `tests/` y no `backend/`.
+
+**TaskHub Angular: 71 tests con el script ya declarado y nadie llamándolo.** Sin
+sorpresas: `npm ci && npm test` sobre una copia limpia y los 71 en verde en 1,4
+segundos. No necesitan base de datos ni `prisma generate` porque sustituyen
+`config/prisma` y `@prisma/client` por dobles.
+
+**gym-app: 25 tests que eran de Laravel Breeze.** Aquí la sorpresa fue de otro
+tipo. Los 25 existían, pero al abrirlos resultaron ser exactamente los que
+genera Breeze al instalarse —registro, login, verificación de correo, perfil—
+más dos `ExampleTest` del andamiaje. Cero tests de la aplicación.
+
+Y lo que estaba sin cubrir era justo lo que el CV destaca del proyecto: la
+autorización por rol. Se añadieron 16 tests en dos ficheros que prueban cosas
+deliberadamente distintas, porque son fallos independientes:
+
+- `RoleMiddlewareTest` — que el middleware **decide** bien. Define sus propias
+  rutas de usar y tirar en vez de atacar las reales, para que un fallo signifique
+  «la autorización está rota» y no «al controlador le faltaban datos». Fija que
+  un visitante sin autenticar se redirige a `/login` y **no** recibe un 403 —un
+  403 le confirmaría que el recurso existe— y, sobre todo, que **un `admin` entra
+  en rutas que no lo mencionan**: esa regla vive en un `if` dentro del middleware
+  y no se ve en `routes/web.php`.
+- `RutasPorRolTest` — que el middleware está **aplicado** donde debe. Un
+  middleware impecable que nadie ha puesto en la ruta deja la sección abierta
+  igual. Inspecciona la tabla de rutas, sin base de datos ni controladores, e
+  incluye un barrido de todas las rutas bajo `/admin`, `/coach` y `/clients`
+  exigiendo `auth` y algún `role:`.
+
+De 25 tests y 61 aserciones a 41 y 196.
+
+**TaskHub React: nada que hacer.** Se verificó por dos vías independientes —548
+tests de servidor y 224 de cliente en verde en local; y su workflow, que no tiene
+filtros de ruta y por tanto se había ejecutado entero, con Postgres y Playwright,
+en cada una de las PR de esa madrugada—.
+
+### Tres jobs nuevos, y tres formas distintas de contar lo mismo
+
+`Node · tests`, `PHP · tests` —el primero de PHP del repositorio— y
+`Python · tests`. Los tres con la misma forma que el de Java: un **mínimo de
+tests declarado** en la matriz, no un «mayor que cero».
+
+Lo interesante apareció al copiar el contador de un job a otro. Cada herramienta
+escribe el informe JUnit de una forma y **cada una necesita una regla distinta**:
+
+| Herramienta | Forma del XML | Cómo se cuenta |
+|---|---|---|
+| Surefire (Java) | un fichero por clase, plano | sumar `tests=` |
+| vitest | `tests="71"` en `<testsuites>` **y además** en cada `<testsuite>` | sumar solo `<testsuite>` |
+| PHPUnit | `<testsuite>` **anidados**: suite → clase | contar `<testcase>` |
+
+En vitest se comprobó en el informe real: un `grep` habría dado **142** en vez de
+71, y el mínimo no habría saltado nunca. PHPUnit tiene el problema simétrico
+—anida en vez de duplicar— y por eso ahí se cuentan elementos `<testcase>`, que
+es inmune a la forma del árbol.
+
+Es la misma tarea tres veces con tres respuestas distintas, y el número
+equivocado sigue pareciendo un número. Merece estar escrito porque el error se
+comete copiando el job anterior, que es exactamente lo que se hizo.
+
+### Documentación
+
+Los tres READMEs de proyecto no mencionaban los tests en absoluto. Al escribir
+las secciones aparecieron dos datos falsos que no tenían que ver con tests:
+
+- El README de FastAPI anunciaba **python-jose** en su tabla de stack. Se
+  sustituyó por PyJWT en julio, y precisamente porque python-jose estuvo cuatro
+  años sin publicar versión arrastrando una confusión de algoritmos. El README
+  seguía recomendando la librería retirada por insegura.
+- El README de gym-app trae un fragmento de Tinker para crear los usuarios de
+  prueba con roles `'entrenador'` y `'usuario'`. La columna es
+  `enum('client','coach','admin')`: MySQL en modo estricto rechaza la inserción y
+  en modo permisivo guarda cadena vacía, dejando un usuario que no encaja en
+  ningún grupo de rutas.
+
+En el CV se corrigió además «middleware propio aplicado a **seis** grupos de
+rutas», que son **tres**. Los seis salían de contar los `Route::resource` dentro
+del grupo de admin.
+
+### Estado
+
+De 4 proyectos con tests ejecutándose en CI a 5, y **187 tests** que antes no
+corría nadie ahora corren en cada push (71 + 55 + 41, más los 20 de
+BatchProcessor de la tanda anterior).
+
+Pendiente de la lista: frontend de Angular (2 tests, uno del andamiaje del CLI),
+RadioStack (2), OmniForge y GPTDevTeam (0 propios; acordado que sus tests pueden
+correr solo en local, porque dependen de un LLM).
+
+---
+
 ## 2026-09-10 — BatchProcessor: las nueve rutas, y tres que estaban rotas
 
 La entrada anterior dejó el proyecto con 7 tests y una ruta cubierta de nueve.

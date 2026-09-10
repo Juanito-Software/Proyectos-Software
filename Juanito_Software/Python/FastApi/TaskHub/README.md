@@ -14,8 +14,9 @@ API REST de gestión de tareas construida con **FastAPI** (backend) y **React** 
 6. [Endpoints](#endpoints)
 7. [Arquitectura backend](#arquitectura-backend)
 8. [Arquitectura frontend](#arquitectura-frontend)
-9. [Conceptos clave](#conceptos-clave)
-10. [Diferencias respecto a Flask](#diferencias-respecto-a-flask)
+9. [Tests](#tests)
+10. [Conceptos clave](#conceptos-clave)
+11. [Diferencias respecto a Flask](#diferencias-respecto-a-flask)
 
 ---
 
@@ -36,10 +37,17 @@ Proyecto de aprendizaje para cubrir en la práctica las piezas fundamentales de 
 | Capa | Tecnología |
 |---|---|
 | Backend | FastAPI + SQLAlchemy + Pydantic v2 |
-| Autenticación | python-jose (JWT) + bcrypt |
+| Autenticación | PyJWT + bcrypt |
 | Base de datos | SQLite (dev) |
 | Frontend | React 18 + Vite |
 | Estilos | CSS custom properties (sin frameworks) |
+| Tests | pytest — 55, sobre SQLite en memoria |
+
+> Esta tabla decía **python-jose** y llevaba meses sin ser cierto. La librería
+> se sustituyó por PyJWT: estuvo cuatro años sin publicar versión (3.3.0 en
+> 2021, 3.4.0 en 2025) y en ese hueco arrastró una confusión de algoritmos sin
+> corregir, hasta el punto de que la documentación oficial de FastAPI dejó de
+> recomendarla. El motivo completo está en `backend/requirements.txt`.
 
 ---
 
@@ -199,6 +207,56 @@ Respuesta serializada con el schema Pydantic de salida (response_model)
 ### CORS
 
 `CORSMiddleware` configurado con `allow_origins=["http://localhost:5173"]`. En producción actualizar al dominio real.
+
+---
+
+## Tests
+
+**55 tests con pytest.** No necesitan base de datos ni red: `conftest.py` levanta
+una SQLite en memoria por test.
+
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+| Fichero | Qué cubre |
+|---|---|
+| `tests/test_auth.py` | Hashing bcrypt, emisión y validación de JWT, registro y login |
+| `tests/test_tasks.py` | CRUD de tareas, filtros y aislamiento de datos entre cuentas |
+
+Tres detalles del montaje que explican por qué son rápidos y no dejan rastro:
+
+- **Una base por test, no una compartida.** La fixture `db_session` crea el
+  esquema, cede la sesión y lo destruye al terminar. No hay estado que arrastrar
+  ni nada que limpiar entre tests.
+- **`StaticPool` no es opcional.** Sin él, cada sesión abriría una SQLite en
+  memoria *distinta* y las tablas creadas en la fixture no se verían desde el
+  endpoint.
+- **`get_db` se sustituye vía `dependency_overrides`**, que es el mecanismo que
+  FastAPI ofrece justo para esto: el código de la aplicación no se entera de que
+  está en un test.
+
+### Las dependencias de test van aparte
+
+`requirements-dev.txt` existe porque `pytest` y `httpx` no hacen falta para
+servir la aplicación. Y son **imprescindibles** para ejecutarla en un entorno
+limpio: hasta hace poco no estaban declaradas en ningún sitio, y los 55 tests
+pasaban solo en la máquina de quien los escribió. En un entorno recién creado,
+sin `pytest` el comando no existe y sin `httpx` falla al cargar `conftest.py`,
+porque `TestClient` de Starlette lo usa por debajo.
+
+`httpx` no lo importa ni una línea del código de la aplicación. Es fácil
+retirarlo por «no usado»; no lo hagas.
+
+### En CI
+
+El job **`Python · tests`** de `.github/workflows/ci.yml` los ejecuta en cada
+push. Además de comprobar que pasan, exige un mínimo de tests ejecutados: si el
+número baja, el CI falla y hay que ajustar el mínimo a mano. Un `pytest` sobre
+un proyecto sin tests termina en verde sin haber probado nada, y ese tick verde
+no significaría nada.
 
 ---
 
