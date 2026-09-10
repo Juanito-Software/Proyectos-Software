@@ -255,6 +255,90 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
+  # Node: tests de los proyectos que sí los tienen.
+  #
+  # El backend de TaskHub_Angular tenía 71 tests con `vitest run` ya declarado
+  # en package.json y ninguna ejecución automática: escritos, en verde y sin
+  # ejecutarse en ningún sitio salvo a mano.
+  #
+  # No hace falta base de datos ni `prisma generate`: los tests sustituyen
+  # `config/prisma` y `@prisma/client` por dobles, y `src/tests/setup.ts`
+  # inyecta las variables de entorno mínimas para que `config/env.ts` no lance
+  # al importarse. Se comprobó clonando el proyecto limpio y lanzando
+  # `npm ci && npm test`, que es exactamente lo que hace este job.
+  #
+  # TaskHub_React NO está aquí: tiene su propio workflow, con Postgres y e2e.
+  # ---------------------------------------------------------------------------
+  node-test:
+    name: Node · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 71
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.proyecto }}/package-lock.json
+
+      # `npm ci` y no `npm install`: instala exactamente lo del lock y falla si
+      # el lock no concuerda con el package.json, en vez de arreglarlo por su
+      # cuenta y dejar el CI probando un árbol de dependencias distinto del que
+      # tiene el proyecto.
+      - name: npm ci
+        working-directory: ${{ matrix.proyecto }}
+        run: npm ci
+
+      # Los dos reporters son a propósito: el de por defecto para poder leer el
+      # log, y el JUnit para contar. Sin el primero, un fallo obliga a abrir el
+      # XML para saber qué se rompió.
+      - name: npm test
+        working-directory: ${{ matrix.proyecto }}
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
+
+      # Mismo suelo declarado que en los otros dos jobs.
+      #
+      # Aquí el parser XML no es una preferencia de estilo, es obligatorio: el
+      # informe de vitest pone tests="71" en <testsuites> Y ademas en cada
+      # <testsuite>, que suman otros 71. Un grep daría 142 y el mínimo nunca
+      # saltaría. iter('testsuite') no coincide con <testsuites>, así que cuenta
+      # bien.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f vitest-report.xml ]; then
+            echo "::error::vitest no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('vitest-report.xml').getroot()
+          print(sum(int(s.get('tests', 0)) for s in raiz.iter('testsuite')))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
   # Python: tests de los proyectos que sí los tienen.
   #
   # TaskHub (FastAPI) tenía 55 tests bien escritos que no se ejecutaban en
