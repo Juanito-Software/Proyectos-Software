@@ -253,3 +253,90 @@ jobs:
           if [ "$total" -gt "$MINIMO" ]; then
             echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
           fi
+
+  # ---------------------------------------------------------------------------
+  # Python: tests de los proyectos que sí los tienen.
+  #
+  # TaskHub (FastAPI) tenía 55 tests bien escritos que no se ejecutaban en
+  # ninguna parte. Pasaban en la máquina de quien los escribió y en ningún sitio
+  # más, porque ni `pytest` ni `httpx` estaban declarados como dependencia: en
+  # un entorno limpio pytest ni arranca. Se resolvió con un
+  # requirements-dev.txt, y este job es lo que garantiza que siga resuelto —un
+  # entorno limpio en cada push es la única forma de detectar que falta una
+  # dependencia—.
+  #
+  # No hace falta base de datos: conftest.py monta una SQLite en memoria por
+  # test, con StaticPool para que todas las sesiones vean la misma.
+  # ---------------------------------------------------------------------------
+  python-test:
+    name: Python · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/Python/FastApi/TaskHub/backend
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ matrix.proyecto }}/requirements*.txt
+
+      # Se instalan los dos ficheros por separado y a propósito. Si algún día
+      # una dependencia de ejecución se cuela solo en requirements-dev.txt, la
+      # aplicación se desplegaría sin ella y aquí no se notaría; teniéndolos
+      # separados, al menos la distinción está escrita en alguna parte.
+      - name: Instalar dependencias
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      # El informe JUnit no es decorativo: es de donde sale la cuenta del paso
+      # siguiente. Sin él habría que fiarse de la línea final de pytest, que es
+      # texto pensado para leerse, no para parsearse.
+      - name: pytest
+        working-directory: ${{ matrix.proyecto }}
+        run: pytest -q --junitxml=pytest-report.xml
+
+      # Mismo razonamiento que en el job de Java: un suelo, no un "mayor que
+      # cero". Que el total baje de 55 a 20 dejaría el job en verde y la
+      # cobertura perdida sin un solo aviso.
+      #
+      # Aquí la cuenta se saca con el parser XML de Python en vez de con grep:
+      # el informe de pytest tiene un <testsuites> que envuelve a <testsuite>, y
+      # según la versión ambos pueden llevar el atributo tests=. Un grep los
+      # sumaría los dos y daría el doble.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f pytest-report.xml ]; then
+            echo "::error::pytest no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('pytest-report.xml').getroot()
+          suites = raiz.iter('testsuite')
+          print(sum(int(s.get('tests', 0)) for s in suites))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
