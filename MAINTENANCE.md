@@ -46,6 +46,129 @@ de los proyectos).
 
 ---
 
+## 2026-09-10 — BatchProcessor: las nueve rutas, y tres que estaban rotas
+
+La entrada anterior dejó el proyecto con 7 tests y una ruta cubierta de nueve.
+Esta cierra las nueve. Lo que importa no es el número, sino lo que apareció al
+escribirlas: **tres rutas llevaban rotas meses y ninguna lo decía**.
+
+### Las tres averías
+
+**Lectura desde base de datos (dos rutas), por un renombrado.**
+`DatabaseItemReader` llevaba `@Component` y además se declaraba como `@Bean` con
+ese mismo nombre. En una colisión así **gana el escaneado**, que es una fábrica y
+no implementa `ItemReader`, de modo que el controlador reventaba con
+`ClassCastException` al componer el paso.
+
+Lo interesante es por qué no siempre fue así. La clase se llamaba antes
+`DatabaseReader`, así que el bean escaneado era `databaseReader` y convivía sin
+problema con el explícito. **El renombrado creó la colisión**, y
+`spring.main.allow-bean-definition-overriding=true` impidió que Spring
+protestara al arrancar. Un cambio de nombre aparentemente inocuo rompió dos
+rutas sin un solo mensaje de error.
+
+Se corrigió una afirmación por el camino: se dijo aquí que estas rutas «nunca
+habían funcionado». Es falso —funcionaban en las prácticas—, y el propio fichero
+de instrucciones del autor lo demostraba.
+
+**Escritura en API (tres rutas), por un bucle de más.** `ApiItemWriter` iteraba
+sobre cada elemento del bloque y en cada vuelta enviaba la lista completa: diez
+registros generaban diez peticiones de diez registros, cien envíos en total. El
+job terminaba en `COMPLETED` porque las cien respondían 200. El test se escribió
+primero, se vio fallar con «No further requests expected... 1 request(s)
+executed», y solo entonces se arregló.
+
+### Cambios de funcionalidad
+
+- `databaseItemWriter` pasa a ser un `JpaItemWriter`. El anterior era un
+  `ManualItemWriter<T extends GenericEntity>`, y esa firma era el motivo de que
+  `Persona` pudiera leerse y escribirse a CSV o a la API pero no guardarse en
+  base de datos. La clase se conserva sin uso, documentada como tal.
+- `ApiItemReader` construye el tipo con la clase que resuelve `Class.forName` en
+  vez de con `ParameterizedTypeReference<List<T>>`, cuyo `T` borra el
+  compilador. Jackson deserializa ya en la entidad y no en `LinkedHashMap`, así
+  que `genericProcessor` vale para todas las rutas y `PersonaItemProcessor`
+  —que existía solo para compensar ese borrado de tipos— se retira.
+- Ruta nueva de base de datos a base de datos: `SecondDatabaseConfig` aporta un
+  segundo `DataSource`, `EntityManagerFactory` y `TransactionManager`, y
+  `/batch/run` acepta un cuarto parámetro opcional, `transactionManager`.
+  `JpaItemWriter` persiste con el `EntityManager` del gestor que gobierna el
+  paso, así que escritor y gestor tienen que apuntar a la misma base.
+
+### Higiene, con un intento fallido que merece quedar escrito
+
+Fuera `springfox-swagger2` y `springfox-swagger-ui`: no se importaban en ninguna
+clase —la documentación la sirve springdoc— y además están compilados contra
+`javax.servlet`, que Spring Boot 3 ya no usa. Funcionaban porque nadie las
+tocaba.
+
+**`allow-bean-definition-overriding` se intentó quitar y no se pudo.** La
+hipótesis era que estaba ahí solo por la colisión de `databaseItemReader`, ya
+resuelta. Se escribió como hecho —incluso en la sección «Resuelto» del README—
+sin comprobarlo. Al quitarla, la aplicación dejó de arrancar por una colisión
+distinta: `BatchAutoConfiguration` registra `jobRepository` y `jobLauncher` **sin
+condición de «solo si no existen»**, y `BatchConfig` declara los dos a propósito.
+La propiedad tiene, además de la razón que tapaba, una razón legítima.
+
+La salida buena queda anotada y sin hacer: dejar de declarar esos dos beans y
+quedarse con los de la autoconfiguración. Eso quitaría de paso el
+`setDatabaseType("MYSQL")` fijo del `JobRepository`, que es justo lo que impide
+fiarse del test de base de datos a base de datos contra un MySQL real.
+
+### CI
+
+El guardián exigía «más de cero tests». Eso solo detecta el caso extremo; el
+realista es que alguien borre o renombre mal una clase y el total baje de 20 a
+14, siga siendo mayor que cero y el tick verde no diga nada. Ahora se declara un
+**mínimo esperado** en la matriz del workflow: si baja, el CI falla y hay que
+bajar el suelo a mano, de modo que quitar cobertura sea una decisión escrita en
+el diff. Los tests no se enumeran —`mvn test` los recoge solos—, porque una
+segunda lista que mantener se desfasa en silencio.
+
+### Cómo se trabajó, porque el método es la mitad del resultado
+
+Cada test asserta el **efecto** —filas en la tabla, líneas en el fichero,
+peticiones enviadas—, no el estado del job. Es lo único que habría cazado un
+`COMPLETED` con cien envíos duplicados.
+
+La lectura del código se equivocó al menos cinco veces y la ejecución corrigió
+todas. Dos ejemplos: se predijo que el CSV de salida tendría cabecera `data,id`
+por un bloque que invierte las columnas, y sale `id,data` —el bloque no hace
+nada, y así está documentado en vez de aceptado en silencio—; y se borraron
+`PersonaItemProcessor` y `Persona` por muertos, lo que rompió dos rutas
+documentadas y hubo que restaurar.
+
+También hubo dos intentos seguidos de arreglar la misma consulta SQL del test de
+API a base de datos filtrando por una columna en camelCase. H2 pasa a mayúsculas
+los identificadores sin comillas, así que `WHERE nombreCompleto` busca
+`NOMBRECOMPLETO`; el segundo intento eligió `personaId`, que tiene el mismo
+problema. La versión final no nombra ninguna columna. De ahí salió el consejo del
+README de nombrar los campos en minúsculas.
+
+### Estado y lo que queda abierto
+
+**20 tests**, las nueve rutas de punta a punta, sin MySQL ni red. README del
+proyecto escrito desde cero con las nueve peticiones literales y los pasos para
+mover cualquier entidad en cualquier dirección.
+
+- **La ruta base de datos → base de datos solo está probada contra H2.** El
+  `JobRepository` fija `setDatabaseType("MYSQL")` y las dos bases del test son
+  H2 en memoria. Falta probarla a mano contra dos esquemas MySQL reales.
+- **Dos rutas sin recorrido propio hasta el final.** API → CSV y API → base de
+  datos estuvieron un tiempo marcadas como cubiertas porque había test del
+  lector por un lado y de los escritores por otro. Deducir no es probar; ahora
+  tienen el suyo.
+- **Credenciales versionadas**, igual que en la entrada anterior.
+- **Código muerto**: `BatchScheduler` es un `@Component` con el cuerpo entero
+  comentado y `BatchJobProperties` lee un `batch.job.cron` que ya no existe.
+
+**Cerrado de la entrada anterior:** la configuración por defecto ya es coherente
+consigo misma —`entityClass` apunta a `GenericEntity`, que es lo que encaja con
+`input.csv`—, así que el perfil de test dejó de fijarla y los tests ejecutan la
+configuración real del repositorio.
+
+---
+
 ## 2026-09-09 — BatchProcessor: el CI deja de saltarse los tests
 
 El job de Java del `ci.yml` general compilaba con `mvn -q -B -DskipTests
@@ -124,6 +247,12 @@ quien clone el repositorio puede lanzar el ejemplo sin tocar nada; o dejarlo y
 documentar en el README que hay que ajustar `entityClass` según el fichero. La
 primera parece mejor, pero exige comprobar antes para qué se usa `Persona` en el
 resto de la aplicación.
+
+> **Actualización (2026-09-10).** Resuelto por la primera vía: el valor por
+> defecto es `GenericEntity` y el perfil de test dejó de fijarlo, así que los
+> tests ejecutan la configuración real del repositorio. También queda superado lo
+> que dice el párrafo del CI de más arriba: el umbral de «mayor que cero» se
+> sustituyó por un mínimo declarado. Ver la entrada del 10 de septiembre.
 
 ---
 

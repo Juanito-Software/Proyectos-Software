@@ -41,7 +41,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 
 | Proyecto | Descripción |
 |---|---|
-| `BatchProcessor` | Procesamiento por lotes con Spring Boot / Spring Batch |
+| `BatchProcessor` | Motor de integración de datos sobre Spring Batch: mueve registros entre CSV, API REST y base de datos en las 9 combinaciones, con la entidad resuelta en tiempo de ejecución. 20 tests que ejecutan las nueve rutas de punta a punta sobre H2 en memoria, en CI |
 | `HashTools` | Utilidades de hashing y criptografía (validación de contraseñas, AES) |
 | `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast |
 | `Spring/` | Ejercicios y pruebas con Spring Boot y Spring Batch |
