@@ -36,6 +36,11 @@ __pycache__/
 .ipynb_checkpoints/
 requirements-lock.txt
 
+# Artefactos de pytest. El informe JUnit lo genera el job de CI para contar los
+# tests ejecutados, y tambien aparece al lanzar pytest a mano en local.
+.pytest_cache/
+pytest-report.xml
+
 # ============================================
 # Java / Maven / Gradle
 # ============================================

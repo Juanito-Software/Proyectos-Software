@@ -1,0 +1,21 @@
+# Dependencias necesarias para ejecutar los tests, y solo para eso.
+#
+# Van en un fichero aparte y no en requirements.txt porque no hacen falta para
+# servir la aplicacion: meterlas ahi las arrastraria a produccion sin motivo.
+#
+# Se instalan con:
+#   pip install -r requirements.txt -r requirements-dev.txt
+#
+# Hasta ahora ninguna de las dos estaba declarada en ninguna parte. Los tests
+# pasaban porque quien los escribio las tenia instaladas en su maquina; en un
+# entorno limpio, pytest ni siquiera arranca. Es la misma clase de dependencia
+# implicita que hacia que el unico test de BatchProcessor solo funcionara con un
+# MySQL levantado en localhost.
+
+pytest==9.1.1
+
+# httpx no lo usa el codigo de la aplicacion: lo exige TestClient de Starlette,
+# que lo usa por debajo para hablar con la app sin levantar un servidor. Sin el,
+# el fallo no es un test en rojo sino un error al cargar conftest.py:
+# "The starlette.testclient module requires the httpx package to be installed".
+httpx==0.28.1
