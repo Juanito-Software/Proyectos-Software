@@ -137,17 +137,59 @@ Relaciones principales:
 - `npm run build`: construir la aplicación.
 - `npm run test`: ejecutar pruebas.
 
-## 10. Consideraciones de Desarrollo
+## 10. Tests
+
+**71 tests con Vitest en el backend.** No necesitan base de datos ni
+`prisma generate`: sustituyen `config/prisma` y `@prisma/client` por dobles, y
+`src/tests/setup.ts` inyecta las variables de entorno mínimas para que
+`config/env.ts` no lance al importarse.
+
+```bash
+cd backend
+npm ci
+npm test
+```
+
+| Fichero | Tests | Qué cubre |
+|---|---|---|
+| `src/tests/token.service.test.ts` | 22 | Emisión y rotación de *refresh tokens*, conversión de caducidades |
+| `src/tests/task.service.test.ts` | 15 | Lógica de tareas |
+| `src/tests/project.service.test.ts` | 14 | Lógica de proyectos |
+| `src/tests/auth.service.test.ts` | 10 | Registro, login y hashing |
+| `src/tests/apiError.test.ts` | 10 | Errores de API y sus códigos |
+
+### En CI
+
+El job **`Node · tests`** de `.github/workflows/ci.yml` los ejecuta en cada push
+con `npm ci && npm test`. Antes de eso estaban escritos, en verde y sin
+ejecutarse en ningún sitio salvo a mano: el script `test` llevaba tiempo
+declarado en `package.json` y nada lo llamaba.
+
+El job exige además un mínimo de tests ejecutados. Comprobar solo que la suite
+pasa no detecta que la suite haya **encogido** — si alguien borra un fichero o
+lo renombra a algo que Vitest ya no reconoce, los que quedan siguen pasando y el
+tick sale verde igual.
+
+### Frontend: pendiente
+
+El backend está cubierto; el frontend Angular tiene **2 tests**, y uno de ellos
+es el `app.component.spec.ts` que genera el CLI al crear el proyecto. Es el
+hueco real de cobertura y está sin tapar. Conviene no leer «71 tests» como si
+fueran de toda la aplicación.
+
+---
+
+## 11. Consideraciones de Desarrollo
 
 - Se recomienda mantener el backend y frontend en carpetas separadas.
 - Las variables sensibles deben almacenarse en archivos `.env` y no subirse al control de versiones.
 - Prisma debe mantenerse sincronizado con el esquema de base de datos.
 - Se recomienda revisar periódicamente la documentación de Angular y Prisma para mantener compatibilidad.
 
-## 11. Estado del Proyecto
+## 12. Estado del Proyecto
 
 Este proyecto se encuentra en desarrollo y su estructura base ya está definida para soportar autenticación, gestión de proyectos y tareas. El tablero Kanban y la vista de detalle/edición de tareas con comentarios ya están operativos; quedan pendientes la gestión avanzada de miembros (invitaciones), notificaciones e historial de actividad.
 
-## 12. Nota Final
+## 13. Nota Final
 
 TaskHub es una base sólida para un sistema de gestión de tareas colaborativo con arquitectura modular, separación entre backend y frontend, y uso de tecnologías modernas.

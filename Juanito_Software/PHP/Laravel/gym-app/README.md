@@ -110,8 +110,8 @@ php artisan tinker
 
 ```php
 foreach ([['admin@example.test','admin'],
-          ['entrenador@example.test','entrenador'],
-          ['usuario@example.test','usuario']] as [$correo, $rol]) {
+          ['entrenador@example.test','coach'],
+          ['usuario@example.test','client']] as [$correo, $rol]) {
     \App\Models\User::create([
         'name'     => $rol,
         'email'    => $correo,
@@ -121,6 +121,73 @@ foreach ([['admin@example.test','admin'],
 }
 ```
 
+> **Los valores de `role` son `admin`, `coach` y `client`**, en inglés. Este
+> fragmento decía `entrenador` y `usuario`, que es como se llaman los roles en
+> la interfaz, pero la columna es un `enum('client','coach','admin')` y esos dos
+> valores no entran. MySQL en modo estricto rechaza la inserción; en modo
+> permisivo guarda una cadena vacía, y entonces el usuario existe pero no encaja
+> con ningún grupo de rutas.
+
 > Usa una contraseña de usar y tirar, no una de las tuyas. Y si en algún momento
 > este proyecto se despliega, que estas cuentas no viajen con él.
+
+---
+
+## Tests
+
+**41 tests con PHPUnit.** No necesitan MySQL: `phpunit.xml` fija SQLite en
+memoria, y eso no es solo comodidad — los tests usan `RefreshDatabase`, que
+lanza `migrate:fresh`. Sin esas dos líneas arrasarían la base de desarrollo
+declarada en `.env`.
+
+```bash
+php artisan test
+```
+
+| Fichero | Tests | Qué cubre |
+|---|---|---|
+| `tests/Feature/RoleMiddlewareTest.php` | 7 | Que `RoleMiddleware` **decide** bien |
+| `tests/Feature/RutasPorRolTest.php` | 9 | Que está **aplicado** en las rutas que toca |
+| `tests/Feature/Auth/*` | 18 | Registro, login, verificación de correo, contraseñas |
+| `tests/Feature/ProfileTest.php` | 5 | Perfil de usuario |
+| `tests/Feature/ExampleTest.php` · `tests/Unit/ExampleTest.php` | 2 | Andamiaje de Laravel |
+
+### Por qué dos ficheros para el control de acceso
+
+Son dos fallos distintos y el primero no detecta el segundo. Un middleware
+impecable que nadie ha puesto en la ruta deja la sección abierta igual.
+
+`RoleMiddlewareTest` define sus **propias rutas** de usar y tirar en vez de
+atacar las reales. Así, cuando falla, significa que la autorización está rota —y
+no que a un controlador le faltaban datos sembrados—. Fija cuatro reglas:
+
+- Un visitante sin autenticar es **redirigido a `/login`**, no recibe un 403. La
+  diferencia importa: un 403 le confirmaría que el recurso existe.
+- El rol exigido pasa; cualquiera de los listados pasa.
+- Un rol que no está en la lista recibe 403.
+- **Un `admin` entra en rutas que no lo mencionan.** Esta es la que más falta
+  hacía tener escrita: en `routes/web.php`, `/coach/classes` dice `role:coach` y
+  nada más, así que nadie deduce leyendo esa línea que un administrador también
+  pasa. La regla vive en un `if` dentro del middleware.
+
+`RutasPorRolTest` inspecciona la tabla de rutas en vez de pedir las URL: sin base
+de datos, sin ejecutar controladores, en milisegundos. Incluye un barrido de
+**todas** las rutas bajo `/admin`, `/coach` y `/clients` exigiendo `auth` y algún
+`role:`. Ese es el que cazaría un `Route::resource` añadido por descuido fuera
+del grupo, o un `withoutMiddleware()` puesto para depurar y olvidado.
+
+> **Los otros 25 tests son de Laravel Breeze.** Los genera al instalarse y
+> prueban su propio flujo de autenticación, no la lógica del gimnasio. Valen
+> —comprueban que ese flujo funciona con tus migraciones y tu modelo `User`—
+> pero no son cobertura de gym-app.
+
+### En CI
+
+El job **`PHP · tests`** de `.github/workflows/ci.yml` los ejecuta en cada push.
+Genera una `APP_KEY` de usar y tirar a partir de `.env.example`, porque en un
+*runner* no hay `.env` y Laravel no arranca sin ella.
+
+Exige además un mínimo de tests ejecutados. Si el número baja, el CI falla y hay
+que ajustar el mínimo a mano: quitar cobertura pasa a ser una decisión escrita en
+el diff en lugar de un efecto colateral que nadie ve.
 
