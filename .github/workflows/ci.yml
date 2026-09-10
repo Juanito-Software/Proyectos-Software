@@ -339,6 +339,100 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
+  # PHP: tests de los proyectos que sí los tienen.
+  #
+  # Primer job de PHP del repositorio: hasta ahora no había ninguno, ni de
+  # tests ni de sintaxis. gym-app tenía 25 tests que no se ejecutaban en ningún
+  # sitio —ni siquiera había un script en composer.json— y que además eran
+  # todos los que genera Laravel Breeze al instalarse: registro, login,
+  # verificación de correo, perfil. Nada propio de la aplicación.
+  #
+  # No hace falta base de datos: phpunit.xml fija sqlite en memoria, con un
+  # comentario que explica por qué es imprescindible (los tests usan
+  # RefreshDatabase, que lanza migrate:fresh y arrasaría la base de desarrollo).
+  # ---------------------------------------------------------------------------
+  php-test:
+    name: PHP · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/PHP/Laravel/gym-app
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 41
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          # sqlite3 y pdo_sqlite son los que hacen falta para los tests;
+          # el resto los pide Laravel para arrancar.
+          extensions: mbstring, xml, sqlite3, pdo_sqlite, bcmath, curl, zip
+          coverage: none
+
+      - name: composer install
+        working-directory: ${{ matrix.proyecto }}
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Laravel no arranca sin APP_KEY. En local existe porque hay un .env; en
+      # un runner no hay ninguno, así que se genera uno de usar y tirar a partir
+      # del ejemplo. Es la diferencia entre "pasa en mi máquina" y "pasa".
+      - name: Preparar entorno
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Se usa vendor/bin/phpunit y no `php artisan test`, que es lo que se
+      # lanza a mano. Los dos ejecutan lo mismo y leen el mismo phpunit.xml,
+      # pero artisan test envuelve la salida con Collision y el informe JUnit
+      # sale más limpio yendo directo a la herramienta.
+      - name: phpunit
+        working-directory: ${{ matrix.proyecto }}
+        run: vendor/bin/phpunit --log-junit=phpunit-report.xml
+
+      # Mismo suelo declarado que en los otros jobs, pero la cuenta se saca de
+      # otra manera, y conviene saber por qué.
+      #
+      # PHPUnit **anida** los <testsuite>: uno por suite declarada, dentro otro
+      # por clase, y a veces otro más. Sumar el atributo tests= de cada uno
+      # contaría los mismos tests dos y tres veces, justo al revés del problema
+      # de vitest —que los duplica— pero con el mismo resultado: un número
+      # inventado.
+      #
+      # Contar elementos <testcase> es inmune a la forma del árbol: hay uno por
+      # test ejecutado, ni más ni menos.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f phpunit-report.xml ]; then
+            echo "::error::PHPUnit no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('phpunit-report.xml').getroot()
+          print(len(list(raiz.iter('testcase'))))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
   # Python: tests de los proyectos que sí los tienen.
   #
   # TaskHub (FastAPI) tenía 55 tests bien escritos que no se ejecutaban en
