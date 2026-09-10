@@ -1,10 +1,18 @@
 package com.example.BatchProcessor.config;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateProperties;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateSettings;
+import org.springframework.boot.autoconfigure.orm.jpa.JpaProperties;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 
 import javax.sql.DataSource;
+import java.util.Map;
 
 
 /**
@@ -23,6 +31,50 @@ public class DatabaseConfig {
         this.dataSourceConfigProperties = dataSourceConfigProperties;
     }
 
+    /**
+     * EntityManagerFactory principal, declarada a mano y marcada como primaria.
+     *
+     * <p>Hasta ahora la creaba la autoconfiguración de Spring Boot y no existía
+     * como bean escrito en el código. Eso funciona perfectamente **mientras haya
+     * una sola**: en cuanto se declara cualquier otro
+     * {@code LocalContainerEntityManagerFactoryBean}, la autoconfiguración se
+     * retira —es {@code @ConditionalOnMissingBean}— y la aplicación se queda sin
+     * la principal.
+     *
+     * <p>Se declara aquí, con el nombre {@code entityManagerFactory} que esperan
+     * {@code @EnableJpaRepositories} y las inyecciones existentes, y con
+     * {@code @Primary} para que todo lo que la pida por tipo siga recibiendo
+     * esta. Es un cambio sin efecto visible hoy y la condición previa para poder
+     * añadir una segunda base de datos sin romper la primera.
+     */
+    @Primary
+    @Bean(name = "entityManagerFactory")
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(
+            EntityManagerFactoryBuilder builder,
+            @Qualifier("dataSource") DataSource dataSource,
+            JpaProperties jpaProperties,
+            HibernateProperties hibernateProperties) {
+
+        // Las propiedades de Hibernate hay que calcularlas y pasarlas a mano.
+        //
+        // spring.jpa.hibernate.ddl-auto no lo aplica el builder por si solo: lo
+        // resuelve determineHibernateProperties(), que solo se ejecuta dentro de
+        // la autoconfiguracion que este bean desactiva. Sin esta linea el
+        // esquema no se crea, y en los tests eso se manifiesta como "Tabla
+        // GENERICENTITY no encontrada" — que fue exactamente lo que paso al
+        // escribir esto.
+        Map<String, Object> propiedades = hibernateProperties.determineHibernateProperties(
+                jpaProperties.getProperties(), new HibernateSettings());
+
+        return builder
+                .dataSource(dataSource)
+                .packages("com.example.BatchProcessor.model")
+                .persistenceUnit("default")
+                .properties(propiedades)
+                .build();
+    }
+
+    @Primary
     @Bean(name = "dataSource")
     public DataSource dataSource() {
         // Usar la configuración proporcionada por DataSourceConfig

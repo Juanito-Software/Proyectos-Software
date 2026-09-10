@@ -1,6 +1,5 @@
 package com.example.BatchProcessor.writer;
 
-import com.example.BatchProcessor.model.Persona;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.springframework.batch.core.configuration.annotation.StepScope;

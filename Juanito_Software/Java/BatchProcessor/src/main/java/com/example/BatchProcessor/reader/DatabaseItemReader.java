@@ -1,16 +1,24 @@
 package com.example.BatchProcessor.reader;
 
 import jakarta.persistence.EntityManagerFactory;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-@Component
-@StepScope
+/**
+ * Fabrica del lector JPA. NO es un bean.
+ *
+ * <p>Llevaba @Component y @StepScope, lo que registraba un bean llamado
+ * 'databaseItemReader' —el nombre de la clase en minuscula inicial— que
+ * colisionaba con el @Bean del mismo nombre declarado en BatchConfig. Ganaba
+ * este, el componente escaneado, y como esta clase NO implementa ItemReader, el
+ * controlador reventaba con un ClassCastException al pedir el bean para
+ * componer el paso. La ruta de lectura desde base de datos no funcionaba.
+ *
+ * <p>Sin anotaciones, el unico bean con ese nombre es el de BatchConfig, que si
+ * devuelve un JpaPagingItemReader.
+ */
 public class DatabaseItemReader {
-    // podemos tomar entityClass antes de ejecutar el job gracias a la anotacion @StepScope
 
     public <T> JpaPagingItemReader<T> databaseReader(EntityManagerFactory entityManagerFactory,
                                                      @Value("#{jobParameters['entityClass']}") String entityClassName) throws ClassNotFoundException {

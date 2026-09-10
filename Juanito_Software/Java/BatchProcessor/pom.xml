@@ -126,17 +126,25 @@
 			<version>2.15.2</version> <!-- Usa la versión compatible con tu proyecto -->
 		</dependency>
 
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger2</artifactId>
-			<version>3.0.0</version> <!-- Puedes cambiar la versión si es necesario -->
-		</dependency>
+		<!--
+			Aqui estaban springfox-swagger2 y springfox-swagger-ui 3.0.0. Se han
+			retirado y conviene saber por que, para que no vuelvan.
 
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger-ui</artifactId>
-			<version>3.0.0</version> <!-- También puede cambiar la versión -->
-		</dependency>
+			Springfox y springdoc son dos implementaciones alternativas de lo
+			mismo: exponer la documentacion OpenAPI de la API. El proyecto usa
+			springdoc -SwaggerConfig construye un GroupedOpenApi y un OpenAPI,
+			que son clases suyas- y no habia una sola importacion de io.springfox
+			en todo el codigo.
+
+			Ademas no podian funcionar aunque se quisiera: springfox 3.0.0 es de
+			2020 y esta compilado contra javax.servlet. Spring Boot 3 migro a
+			jakarta.servlet, asi que sus clases revientan con NoClassDefFoundError
+			en cuanto se tocan. El proyecto arrancaba porque nadie las tocaba.
+
+			Lo que dejaban a cambio: dos arboles de dependencias transitivas en
+			el classpath -y en el jar final- que nadie audita, porque nadie sabe
+			que estan ahi.
+		-->
 
 	</dependencies>
 

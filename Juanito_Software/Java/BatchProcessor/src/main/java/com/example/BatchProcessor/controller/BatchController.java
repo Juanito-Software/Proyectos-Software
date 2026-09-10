@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -68,9 +69,28 @@ public class BatchController {
             ItemProcessor<?, ?> processor = (ItemProcessor<?, ?>) context.getBean(processorBean);
             ItemWriter<?> writer = (ItemWriter<?>) context.getBean(writerBean);
 
+            // Gestor de transacciones del paso.
+            //
+            // Por defecto el de la base de datos principal, que es lo que
+            // necesitan ocho de las nueve rutas. La excepcion es escribir en la
+            // segunda base de datos: JpaItemWriter persiste con el
+            // EntityManager asociado al gestor que gobierna el paso, asi que
+            // escritor y gestor tienen que apuntar a la misma base. Si no
+            // coinciden, la escritura falla con "No EntityManager with actual
+            // transaction available".
+            //
+            // Se pide por nombre de bean, igual que los otros tres, en lugar de
+            // deducirlo del escritor: una regla implicita en el controlador
+            // seria una cosa mas que recordar cada vez que se añada un escritor.
+            String transactionManagerBean = params.get("transactionManager");
+            PlatformTransactionManager transactionManager =
+                    (transactionManagerBean == null || transactionManagerBean.isBlank())
+                            ? jpaTransactionManager
+                            : context.getBean(transactionManagerBean, PlatformTransactionManager.class);
+
             // Crear el Step dinámicamente
             Step dynamicStep = new StepBuilder("dynamicStep", jobRepository)
-                    .<Object, Object>chunk(10, jpaTransactionManager)  // Tamaño del chunk, puedes ajustarlo
+                    .<Object, Object>chunk(10, transactionManager)  // Tamaño del chunk, puedes ajustarlo
                     .reader(reader)
                     .processor((ItemProcessor<? super Object, ?>) processor)
                     .writer((ItemWriter<? super Object>) writer)

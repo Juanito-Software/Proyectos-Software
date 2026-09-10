@@ -1,6 +1,6 @@
 package com.example.BatchProcessor.reader;
 
-import com.example.BatchProcessor.model.Persona;
+import com.example.BatchProcessor.model.GenericEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.JobParameters;
@@ -30,8 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CsvItemReaderTest {
 
     /** Construye el lector con la ruta de CSV que necesite cada caso. */
-    private CsvItemReader<Persona> lectorCon(String rutaCsv) {
-        CsvItemReader<Persona> lector = new CsvItemReader<>();
+    private CsvItemReader<GenericEntity> lectorCon(String rutaCsv) {
+        CsvItemReader<GenericEntity> lector = new CsvItemReader<>();
         ReflectionTestUtils.setField(lector, "filePath", rutaCsv);
         return lector;
     }
@@ -47,7 +47,7 @@ class CsvItemReaderTest {
     @Test
     @DisplayName("Sin el parametro entityClass no se puede resolver la entidad y se rechaza")
     void sinParametroEntityClass() {
-        CsvItemReader<Persona> lector = lectorCon("persona-cabeceras-validas.csv");
+        CsvItemReader<GenericEntity> lector = lectorCon("entidad-cabeceras-validas.csv");
         StepExecution paso = MetaDataInstanceFactory.createStepExecution(new JobParameters());
 
         IllegalArgumentException error =
@@ -60,7 +60,7 @@ class CsvItemReaderTest {
     @Test
     @DisplayName("Una clase inexistente falla al arrancar el paso, no al leer la primera fila")
     void claseInexistente() {
-        CsvItemReader<Persona> lector = lectorCon("persona-cabeceras-validas.csv");
+        CsvItemReader<GenericEntity> lector = lectorCon("entidad-cabeceras-validas.csv");
         StepExecution paso = pasoCon("com.example.BatchProcessor.model.NoExiste");
 
         IllegalArgumentException error =
@@ -75,20 +75,39 @@ class CsvItemReaderTest {
     @Test
     @DisplayName("Con una entidad valida y cabeceras que coinciden, el paso arranca")
     void cabecerasQueCoinciden() {
-        CsvItemReader<Persona> lector = lectorCon("persona-cabeceras-validas.csv");
-        StepExecution paso = pasoCon(Persona.class.getName());
+        CsvItemReader<GenericEntity> lector = lectorCon("entidad-cabeceras-validas.csv");
+        StepExecution paso = pasoCon(GenericEntity.class.getName());
 
         assertDoesNotThrow(() -> lector.beforeStep(paso));
     }
 
     @Test
+    @DisplayName("El input.csv que trae el repositorio es valido para la entidad configurada")
+    void elCsvDeEjemploEsCoherenteConLaConfiguracionPorDefecto() {
+        // Este test vigila una incoherencia que existio: application.properties
+        // traia entityClass=...model.Persona mientras input.csv tiene cabeceras
+        // 'id,data', que son los campos de GenericEntity. Quien clonaba el
+        // repositorio y lanzaba el ejemplo se comia un "Unknown header in CSV
+        // file: id".
+        //
+        // Persona se retiro y el valor por defecto pasa a GenericEntity. Esto
+        // comprueba que el fichero de ejemplo y la entidad por defecto siguen
+        // encajando, para que no vuelva a separarse en silencio.
+        CsvItemReader<GenericEntity> lector = lectorCon("input.csv");
+        StepExecution paso = pasoCon(GenericEntity.class.getName());
+
+        assertDoesNotThrow(() -> lector.beforeStep(paso),
+                "El input.csv del repositorio debe poder leerse con la entidad configurada por defecto");
+    }
+
+    @Test
     @DisplayName("Una cabecera que no es campo de la entidad se rechaza antes de leer datos")
     void cabeceraDesconocida() {
-        // La entidad Persona no tiene ningun campo 'telefono'. Sin esta
-        // comprobacion el fallo aparecería mas tarde y peor: al mapear filas,
-        // con un mensaje sobre propiedades de un bean en vez de sobre el CSV.
-        CsvItemReader<Persona> lector = lectorCon("persona-cabecera-desconocida.csv");
-        StepExecution paso = pasoCon(Persona.class.getName());
+        // GenericEntity no tiene ningun campo 'telefono'. Sin esta comprobacion
+        // el fallo aparecería mas tarde y peor: al mapear filas, con un mensaje
+        // sobre propiedades de un bean en vez de sobre el CSV.
+        CsvItemReader<GenericEntity> lector = lectorCon("entidad-cabecera-desconocida.csv");
+        StepExecution paso = pasoCon(GenericEntity.class.getName());
 
         IllegalArgumentException error =
                 assertThrows(IllegalArgumentException.class, () -> lector.beforeStep(paso));
@@ -102,8 +121,8 @@ class CsvItemReaderTest {
     @Test
     @DisplayName("Un CSV sin cabeceras se rechaza con un mensaje propio")
     void csvSinCabeceras() {
-        CsvItemReader<Persona> lector = lectorCon("csv-sin-cabeceras.csv");
-        StepExecution paso = pasoCon(Persona.class.getName());
+        CsvItemReader<GenericEntity> lector = lectorCon("csv-sin-cabeceras.csv");
+        StepExecution paso = pasoCon(GenericEntity.class.getName());
 
         IllegalArgumentException error =
                 assertThrows(IllegalArgumentException.class, () -> lector.beforeStep(paso));

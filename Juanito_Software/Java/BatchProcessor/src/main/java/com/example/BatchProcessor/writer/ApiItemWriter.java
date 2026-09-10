@@ -28,25 +28,38 @@ public class ApiItemWriter<T> implements ItemWriter<T> {
         this.apiUrl = apiUrl;
     }
 
+    /**
+     * Envía el bloque completo en una sola petición.
+     *
+     * <p>Aquí había un bucle {@code for (T item : chunk)} que, en cada vuelta,
+     * hacía un POST con la lista **entera**. Un bloque de diez registros
+     * generaba diez peticiones de diez registros cada una: la API receptora
+     * recibía cien. Y el job terminaba en COMPLETED, porque las diez respuestas
+     * eran 200.
+     *
+     * <p>Lo destapó {@code JobCsvAApiTest} al contar peticiones en lugar de
+     * mirar solo el estado final del job.
+     */
     @Override
     public void write(Chunk<? extends T> chunk) throws Exception {
-        for (T item : chunk) {
-            try {
+        List<? extends T> items = chunk.getItems();
 
-                // Convertir el Chunk a una lista de objetos Persona
-                List<T> items = (List<T>) chunk.getItems();
+        if (items.isEmpty()) {
+            return;
+        }
 
-                // Realiza una solicitud POST a la API para cada elemento
-                ResponseEntity<Void> response = restTemplate.postForEntity(apiUrl, items, Void.class);
+        try {
+            ResponseEntity<Void> response = restTemplate.postForEntity(apiUrl, items, Void.class);
 
-                // Manejo de errores o validación de respuesta
-                if (!response.getStatusCode().is2xxSuccessful()) {
-                    throw new RuntimeException("Error al enviar datos a la API: " + response.getStatusCode());
-                }
-            } catch (Exception e) {
-                // Manejo de excepciones
-                throw new RuntimeException("Error al enviar el item a la API: " + item, e);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("Error al enviar datos a la API: " + response.getStatusCode());
             }
+        } catch (Exception e) {
+            // El detalle va al log de Spring Batch, no al mensaje: la version
+            // anterior concatenaba el item en la excepcion, que es como los
+            // datos de negocio acaban en un registro de errores.
+            throw new RuntimeException(
+                    "Error al enviar a la API el bloque de " + items.size() + " registros", e);
         }
     }
 }
