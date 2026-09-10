@@ -44,6 +44,9 @@ pytest-report.xml
 # Informe JUnit de vitest, generado por el job de Node para contar los tests.
 vitest-report.xml
 
+# Informe JUnit de PHPUnit, generado por el job de PHP para contar los tests.
+phpunit-report.xml
+
 # ============================================
 # Java / Maven / Gradle
 # ============================================
