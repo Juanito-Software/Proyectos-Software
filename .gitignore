@@ -41,6 +41,9 @@ requirements-lock.txt
 .pytest_cache/
 pytest-report.xml
 
+# Informe JUnit de vitest, generado por el job de Node para contar los tests.
+vitest-report.xml
+
 # ============================================
 # Java / Maven / Gradle
 # ============================================
