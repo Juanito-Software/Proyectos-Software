@@ -2,48 +2,38 @@ package com.example.BatchProcessor.writer;
 
 import com.example.BatchProcessor.model.GenericEntity;
 import com.example.BatchProcessor.repository.GenericRepository;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import java.util.List;
 
-@Component
+/**
+ * Contenedor de {@link ManualItemWriter}. <b>Ningun bean lo usa.</b>
+ *
+ * <p>Hasta hace poco {@code BatchConfig} construia el bean
+ * {@code databaseItemWriter} a partir de {@code ManualItemWriter}, inyectandole
+ * el repositorio. Ya no: ese bean es ahora un {@code JpaItemWriter} de Spring
+ * Batch. El motivo esta explicado en {@code BatchConfig}, y en corto es la
+ * firma de esta clase — {@code <T extends GenericEntity>} —, que ataba el
+ * escritor a las entidades que heredaran de {@code GenericEntity} y dejaba
+ * fuera a {@code Persona}.
+ *
+ * <p>Se conserva porque escribir con un repositorio de Spring Data sigue siendo
+ * util si alguna vez hace falta logica propia en el guardado —comprobar
+ * duplicados, actualizar en vez de insertar, registrar lo escrito—, cosas que
+ * {@code JpaItemWriter} no hace. Para usarla habria que declarar el {@code @Bean}
+ * en {@code BatchConfig} y aceptar de nuevo la restriccion de la herencia.
+ *
+ * <p>Aqui vivian tambien un metodo {@code databaseWriter(...)} anotado con
+ * {@code @StepScope} pero sin {@code @Bean} —asi que Spring no lo llamaba
+ * nunca— y un {@code resolveGenericRepository(...)} que buscaba el repositorio
+ * por un nombre construido como {@code getSimpleName() + "Repository"}. Ese
+ * bean no existe con ese nombre, de modo que el metodo habria fallado de
+ * haberse llegado a ejecutar. Se han retirado: eran inalcanzables y hacian
+ * creer, a quien leyera la clase, que la resolucion del repositorio funcionaba
+ * de una forma en la que no funciona.
+ */
 public class DatabaseItemWriter {
-
-
-    private ApplicationContext applicationContext; // Inyectar el contexto de la aplicación
-
-
-    public DatabaseItemWriter(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
-
-    @StepScope
-    public <T extends GenericEntity> ManualItemWriter<T> databaseWriter(
-            @Value("#{jobParameters['entityClass']}") Class<T> clazz) {
-        // Asegúrate de que la clase de la entidad no sea nula
-        Assert.notNull(clazz, "Entity class cannot be null");
-
-        // Resolver el repositorio adecuado basado en el tipo de la clase
-        GenericRepository<T, Long> genericRepository = resolveGenericRepository(clazz);
-
-        // Crear y devolver ManualItemWriter
-        return new ManualItemWriter<>(genericRepository);
-    }
-
-    /**
-     * Metodo auxiliar para resolver el repositorio genérico según la clase de la entidad.
-     */
-    private <T extends GenericEntity> GenericRepository<T, Long> resolveGenericRepository(Class<T> clazz) {
-        String beanName = clazz.getSimpleName() + "Repository"; // Se asume que el nombre del repositorio sigue este formato
-        return (GenericRepository<T, Long>) applicationContext.getBean(beanName, GenericRepository.class);
-    }
 
     // Implementación personalizada de ItemWriter
     public static class ManualItemWriter<T extends GenericEntity> implements ItemWriter<T> {

@@ -185,6 +185,12 @@ jobs:
   # contra un MySQL en localhost, que en un runner no existe. Se resolvió con
   # un perfil de test sobre H2 en memoria, así que ya no hace falta ninguna
   # base de datos aquí.
+  #
+  # Los tests NO se enumeran aquí. `mvn test` recoge todo lo que haya en
+  # src/test/java, asi que una clase nueva entra en el CI sola. Enumerarlos
+  # crearia una segunda lista que mantener y que se quedaria desfasada en
+  # silencio, que es justo la clase de fallo que este proyecto lleva toda la
+  # semana persiguiendo. Lo que sí se declara abajo es cuántos hay.
   # ---------------------------------------------------------------------------
   maven-test:
     name: Java · tests
@@ -192,8 +198,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        proyecto:
-          - Juanito_Software/Java/BatchProcessor
+        include:
+          - proyecto: Juanito_Software/Java/BatchProcessor
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -206,18 +214,28 @@ jobs:
         working-directory: ${{ matrix.proyecto }}
         run: mvn -B test
 
+      # Por qué no basta con que `mvn test` salga en verde.
+      #
       # Un `mvn test` sobre un proyecto sin tests termina en verde sin haber
-      # probado nada. Eso convertiría este job en un adorno el día que alguien
-      # borre o renombre mal una clase de test, y nadie se enteraría porque
-      # seguiría saliendo el tick verde. Aquí se exige que el número de tests
-      # ejecutados sea mayor que cero.
-      - name: Comprobar que se ha ejecutado algún test
+      # probado nada. La primera versión de este paso exigía que el total fuera
+      # mayor que cero, y eso tapa el caso realista: no que desaparezcan todos
+      # los tests, sino que desaparezcan algunos. Si alguien borra una clase, o
+      # la renombra a algo que Surefire ya no reconoce como test, el total baja
+      # de 20 a 14 y el job sigue verde. Cobertura perdida sin un solo aviso.
+      #
+      # Por eso se declara un suelo. Si el número baja, el CI falla y hay que
+      # bajar el suelo a mano: quitar cobertura pasa a ser una decisión escrita
+      # en el diff en vez de un efecto colateral que nadie ve. Al añadir tests,
+      # el job avisa de que conviene subirlo, pero no falla.
+      - name: Comprobar que se han ejecutado los tests esperados
         working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
         run: |
           set -euo pipefail
 
           if ! ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
-            echo "Surefire no ha dejado ningún informe: no se ha ejecutado ni un test."
+            echo "::error::Surefire no ha dejado ningún informe: no se ha ejecutado ni un test."
             exit 1
           fi
 
@@ -225,9 +243,13 @@ jobs:
                   | grep -o '[0-9]\+' \
                   | awk '{s+=$1} END {print s+0}')
 
-          echo "Tests ejecutados: $total"
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
 
-          if [ "$total" -le 0 ]; then
-            echo "Los informes existen pero suman cero tests."
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
             exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
           fi
