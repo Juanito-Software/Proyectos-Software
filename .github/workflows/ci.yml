@@ -541,3 +541,57 @@ jobs:
           if [ "$total" -gt "$MINIMO" ]; then
             echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
           fi
+
+  # ---------------------------------------------------------------------------
+  # Puerta final: un único nombre del que colgar la regla de la rama principal.
+  #
+  # Hasta ahora la única comprobación obligatoria de `main` era «CI en verde»,
+  # que sale del workflow de TaskHub_React. Los jobs de este fichero no lo eran,
+  # así que no bloqueaban nada: la PR #80 se fusionó sola con «PHP · tests» en
+  # rojo —siete tests fallando— porque el auto-merge ni los esperaba. Los suelos
+  # de tests que declaran los jobs de arriba eran, mientras tanto, decorativos:
+  # detectaban la pérdida de cobertura y no impedían fusionarla.
+  #
+  # Se replica el patrón `ci-ok` de taskhub-react-ci.yml, por el mismo motivo
+  # que allí: marcar los jobs uno a uno obliga a acordarse de actualizar la
+  # lista del ruleset cada vez que se añade otro, y nadie se acuerda.
+  #
+  # Aquí hay además una razón que allí no existía. El nombre de un check de
+  # matriz incluye sus parámetros —«PHP · tests (…/gym-app, 41)»—, así que
+  # cambia cada vez que se sube un mínimo. Exigir ese nombre haría que, al pasar
+  # de 41 a 45, la comprobación obligatoria dejara de existir y se quedara
+  # pendiente para siempre, bloqueando cualquier fusión. Es el mismo fallo que
+  # ya está documentado en el otro workflow a cuenta de los filtros de ruta.
+  # Este job se llama igual pase lo que pase.
+  #
+  # ORDEN AL ACTIVARLO: primero que este job exista y se haya ejecutado al menos
+  # una vez; después añadir «Monorepo en verde» al ruleset. Al revés se exige una
+  # comprobación que ningún workflow reporta, y eso bloquea todas las PR.
+  # ---------------------------------------------------------------------------
+  monorepo-ok:
+    name: Monorepo en verde
+    runs-on: ubuntu-latest
+    needs:
+      - python-syntax
+      - js-syntax
+      - config-lint
+      - regression-guard
+      - maven-compile
+      - maven-test
+      - node-test
+      - php-test
+      - python-test
+    # `if: always()` es imprescindible: sin él, este job se salta cuando alguno
+    # de los anteriores falla, y un job saltado NO cuenta como fallo para la
+    # protección de rama. La puerta quedaría en gris y la PR podría fusionarse
+    # igual, que es exactamente lo que se viene a arreglar.
+    if: always()
+    steps:
+      - name: Comprobar que ningún job ha fallado
+        # Este job no clona el repositorio: solo mira el resultado de los demás.
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::Algún job del monorepo ha fallado o se ha cancelado. Revisa cuál arriba."
+            exit 1
+          fi
+          echo "Todos los jobs en verde."
