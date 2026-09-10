@@ -371,6 +371,12 @@ jobs:
           extensions: mbstring, xml, sqlite3, pdo_sqlite, bcmath, curl, zip
           coverage: none
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.proyecto }}/package-lock.json
+
       - name: composer install
         working-directory: ${{ matrix.proyecto }}
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -383,6 +389,23 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+
+      # Compilar los assets NO es opcional, aunque suene a cosa de front.
+      #
+      # Los layouts Blade llaman a @vite(...), que en tiempo de render busca
+      # public/build/manifest.json. Si no está, la vista lanza
+      # ViteManifestNotFoundException y la respuesta es un 500: siete de los
+      # tests -los que renderizan una pantalla- fallaban con "Expected 200 but
+      # received 500", que no dice nada de Vite hasta que se lee la traza.
+      #
+      # En local no se nota porque public/build/ existe de haber lanzado
+      # `npm run build` alguna vez, y está en .gitignore. Otro caso de "pasa en
+      # mi máquina" por un artefacto que no viaja con el repositorio.
+      - name: Compilar assets
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          npm ci
+          npm run build
 
       # Se usa vendor/bin/phpunit y no `php artisan test`, que es lo que se
       # lanza a mano. Los dos ejecutan lo mismo y leen el mismo phpunit.xml,

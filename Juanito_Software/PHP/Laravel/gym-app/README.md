@@ -141,8 +141,19 @@ lanza `migrate:fresh`. Sin esas dos líneas arrasarían la base de desarrollo
 declarada en `.env`.
 
 ```bash
+npm run build     # solo la primera vez, o tras tocar los assets
 php artisan test
 ```
+
+> **Sí, hace falta compilar los assets.** Los layouts Blade llaman a
+> `@vite(...)`, que busca `public/build/manifest.json` al renderizar. Si no
+> está, la vista lanza `ViteManifestNotFoundException` y los siete tests que
+> renderizan una pantalla fallan con «Expected 200 but received 500» — un
+> mensaje que no menciona Vite por ninguna parte.
+>
+> En local no suele notarse porque `public/build/` ya existe de alguna
+> compilación anterior, pero está en `.gitignore` y no viaja con el
+> repositorio. En un clon limpio hay que compilar antes.
 
 | Fichero | Tests | Qué cubre |
 |---|---|---|
