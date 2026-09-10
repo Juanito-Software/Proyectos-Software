@@ -480,12 +480,12 @@ servicio que debes tener levantado si vas a usarlas.
 mvn test
 ```
 
-Dieciocho tests que **no necesitan MySQL ni red**: corren sobre H2 en memoria
-mediante el perfil `test`, y la API se simula con `MockRestServiceServer`.
-Cubren el arranque del contexto, la resolución de la entidad por reflexión, la
-validación de cabeceras del CSV, la deserialización de la respuesta de la API en
-entidades, el reinicio del estado del lector entre pasos y **las nueve rutas de
-punta a punta**.
+**20 tests** que no necesitan MySQL ni red: corren sobre H2 en memoria mediante
+el perfil `test`, y la API se simula con `MockRestServiceServer`. Cubren el
+arranque del contexto, la resolución de la entidad por reflexión, la validación
+de cabeceras del CSV, la deserialización de la respuesta de la API en entidades,
+el reinicio del estado del lector entre pasos y **las nueve rutas de punta a
+punta**.
 
 Dos detalles que hacen que valgan algo:
 
@@ -497,6 +497,17 @@ Dos detalles que hacen que valgan algo:
   leería y escribiría en el mismo sitio y el test pasaría sin demostrar nada.
   Comprueba además que las filas **siguen** en el origen: un job que moviera en
   vez de copiar también las dejaría en el destino.
+
+#### En CI
+
+El job **`Java · tests`** de `.github/workflows/ci.yml` los ejecuta en cada push
+y exige un mínimo de tests ejecutados: si el número baja, el CI falla y hay que
+ajustar el mínimo a mano. Un `mvn test` sobre un proyecto sin tests termina en
+verde sin haber probado nada — que es justo lo que hacía este proyecto antes de
+tener suite.
+
+Si el job falla, `Monorepo en verde` —la comprobación obligatoria de `main`— cae
+con él y la *pull request* no se puede fusionar.
 
 ---
 

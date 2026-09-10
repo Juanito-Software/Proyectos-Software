@@ -46,6 +46,97 @@ de los proyectos).
 
 ---
 
+## 2026-09-10 (noche) — El guardián que no guardaba la puerta
+
+Cerrada la tanda anterior, quedaban tres jobs de tests nuevos con sus mínimos
+declarados y la sensación de haber terminado. Dos cosas de esa misma noche
+demostraron que no.
+
+### Un tercer «pasa en mi máquina», y la conclusión que sacar de los tres
+
+El job de PHP se puso en rojo con **siete tests fallando** y un mensaje que no
+decía nada: «Expected response status code [200] but received 500». Setenta
+líneas de traza más abajo estaba la causa real:
+`ViteManifestNotFoundException`. Los *layouts* Blade llaman a `@vite(...)`, que
+al renderizar busca `public/build/manifest.json`; sin él, cualquier ruta con
+vista devuelve 500. Los siete que fallaban eran exactamente los que renderizan
+una pantalla; los otros 34 no tocan vistas y pasaban.
+
+En local no se nota porque `public/build/` existe de haber lanzado
+`npm run build` alguna vez, y está en `.gitignore`. Se resolvió añadiendo
+`npm ci && npm run build` al job — compilar assets dentro de un pipeline de PHP
+parece fuera de sitio y no lo es: son una dependencia de ejecución tanto como el
+`vendor/`.
+
+**Van tres en una noche, y el patrón es el mismo:**
+
+| Caso | Qué faltaba en un entorno limpio |
+|---|---|
+| TaskHub FastAPI | `pytest` y `httpx`, no declarados en ninguna parte |
+| TaskHub FastAPI | El directorio en `sys.path`, que solo añadía `python -m pytest` |
+| gym-app | Los assets compilados de Vite |
+
+Los tres eran **invisibles por definición** en la máquina de quien escribió los
+tests. Ninguna revisión de código los habría encontrado; los tres aparecieron al
+primer intento de ejecutarlos en otro sitio. Es el argumento entero a favor de
+un *runner* limpio, y conviene tenerlo escrito porque el reflejo natural ante un
+fallo así es pensar que el CI está mal configurado.
+
+### Lo que se descubrió al mirar por qué se había fusionado igual
+
+La PR con esos siete tests en rojo **se fusionó sola**. No fue un descuido: la
+única comprobación obligatoria de `main` era `CI en verde`, que sale del
+workflow de TaskHub_React. Los jobs de `ci.yml` —incluidos los cuatro de tests—
+no eran obligatorios, así que el *auto-merge* ni los esperaba.
+
+Dicho de otro modo: **los mínimos de tests que se acababan de poner detectaban
+la pérdida de cobertura y no impedían fusionarla.** Un guardián que avisa y no
+bloquea.
+
+Se añadió `Monorepo en verde`, mismo patrón que el `ci-ok` que ya existía en el
+otro workflow: un job que depende de los nueve y falla si alguno falló. Dos
+detalles que no son de adorno:
+
+- **`if: always()` es imprescindible.** Sin él, el job se *salta* cuando falla
+  alguno de los anteriores, y un job saltado no cuenta como fallo para la
+  protección de rama: la puerta quedaría en gris y la PR se fusionaría igual,
+  que es justo lo que se venía a arreglar.
+- **Un único nombre estable, no los nueve jobs.** El nombre de un check de
+  matriz incluye sus parámetros —`PHP · tests (…/gym-app, 41)`—, así que cambia
+  al subir un mínimo. Exigir ese nombre haría que al pasar de 41 a 45 la
+  comprobación obligatoria dejara de existir y se quedara pendiente para
+  siempre. Es el mismo fallo ya documentado en el otro workflow a cuenta de los
+  filtros de ruta, reaparecido por otra puerta.
+
+El ruleset exige ahora `CI en verde` y `Monorepo en verde`, verificado por API y
+no por captura de pantalla.
+
+### Un tercer «anotado como hecho sin estarlo»
+
+Al abrir el ruleset se vio que **«Require a pull request before merging» está
+desmarcado**, cuando la entrada del 5 de septiembre de este mismo fichero dice
+que se activó. El riesgo real es bajo —los *status checks* se aplican también a
+los push directos— pero el historial afirma algo que no es cierto.
+
+Es el tercer caso de la misma especie en esta lista. Los dos anteriores
+aparecieron en el repaso del 5 de septiembre. La conclusión no es que el
+historial esté mal escrito, sino que **una lista de estado no se verifica sola**:
+hay que ir a mirar, y mirar cuesta un comando.
+
+### Pendiente, y es el más interesante
+
+**Nadie ha comprobado que la puerta sepa fallar.** Mientras todo esté en verde,
+la condición `contains(needs.*.result, 'failure')` no se evalúa nunca: el job
+pasa porque no hay nada que lo tumbe, no porque sepamos que reacciona. Falta
+provocarlo —una rama de usar y tirar con un `.json` mal formado debería tumbar
+`Config · JSON y YAML` y arrastrar la puerta— y hasta entonces es una
+afirmación, no una garantía.
+
+Es exactamente la misma duda que llevó a escribir tests que comprueban filas y
+peticiones en vez de estados `COMPLETED`.
+
+---
+
 ## 2026-09-10 (tarde) — Tests que existían y no se ejecutaban en ninguna parte
 
 Cerrada la tanda de BatchProcessor, el plan era «añadir tests a los demás

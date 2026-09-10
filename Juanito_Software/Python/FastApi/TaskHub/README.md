@@ -258,6 +258,9 @@ número baja, el CI falla y hay que ajustar el mínimo a mano. Un `pytest` sobre
 un proyecto sin tests termina en verde sin haber probado nada, y ese tick verde
 no significaría nada.
 
+Si el job falla, `Monorepo en verde` —la comprobación obligatoria de `main`— cae
+con él y la *pull request* no se puede fusionar.
+
 ---
 
 ## Conceptos clave

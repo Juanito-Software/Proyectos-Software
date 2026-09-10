@@ -6,10 +6,15 @@ Aplicacion web para gestion de gimnasio, desarrollada con Laravel y Vite.
 
 - Windows 10/11
 - Laragon
-- PHP 8.1 o superior
+- **PHP 8.2 o superior** — `composer.json` declara `"php": "^8.2"`, así que con
+  8.1 `composer install` se niega a instalar. El CI ejecuta los tests sobre 8.2
+  a propósito, para comprobar el mínimo que se anuncia y no una versión más
+  cómoda.
 - Composer
-- Node.js y npm
-- MySQL (incluido en Laragon)
+- Node.js y npm — hacen falta también para lanzar los tests, no solo para el
+  frontend (ver la sección de Tests)
+- MySQL (incluido en Laragon) — solo para desarrollo; los tests usan SQLite en
+  memoria
 
 ## Instalacion
 
@@ -195,8 +200,17 @@ del grupo, o un `withoutMiddleware()` puesto para depurar y olvidado.
 ### En CI
 
 El job **`PHP · tests`** de `.github/workflows/ci.yml` los ejecuta en cada push.
-Genera una `APP_KEY` de usar y tirar a partir de `.env.example`, porque en un
-*runner* no hay `.env` y Laravel no arranca sin ella.
+Antes de lanzarlos hace dos cosas que en local ya están hechas y por eso se
+olvidan:
+
+- **Genera una `APP_KEY`** a partir de `.env.example`. En un *runner* no hay
+  `.env` y Laravel no arranca sin ella.
+- **Compila los assets** con `npm ci && npm run build`. Sin `manifest.json`, los
+  siete tests que renderizan una pantalla fallan con un 500 que no menciona Vite
+  por ninguna parte.
+
+Si el job falla, `Monorepo en verde` —la comprobación obligatoria de `main`— cae
+con él y la *pull request* no se puede fusionar.
 
 Exige además un mínimo de tests ejecutados. Si el número baja, el CI falla y hay
 que ajustar el mínimo a mano: quitar cobertura pasa a ser una decisión escrita en
