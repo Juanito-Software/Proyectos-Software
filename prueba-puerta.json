@@ -1,0 +1,6 @@
+{
+  "proposito": "Fichero de usar y tirar para comprobar que la puerta del CI falla",
+  "esperado": "El job 'Config · JSON y YAML' debe ponerse en rojo y arrastrar consigo a 'Monorepo en verde', bloqueando la fusion",
+  "este_json_esta_roto_a_proposito": ,
+  "borrar": "Esta rama y esta PR se cierran sin fusionar"
+}
