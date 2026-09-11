@@ -9,7 +9,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/services/**', 'src/utils/**'],
+      // Todo src/, no solo services/ y utils/. Con el filtro anterior el
+      // informe daba un 81 % mientras middlewares, controladores y rutas estaban
+      // al 0 %: la cifra medía la parte cubierta y callaba el resto.
+      include: ['src/**'],
+      exclude: ['src/tests/**', 'src/server.ts'],
     },
   },
 });

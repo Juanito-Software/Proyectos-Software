@@ -121,6 +121,57 @@ describe('projectService.assertOwner', () => {
   });
 });
 
+describe('projectService.assertProjectRole — la puerta de las tareas', () => {
+  // Proyecto con un miembro de cada rol. El propietario NO tiene fila de
+  // miembro a proposito: ver el ultimo test.
+  const conRoles = {
+    ...project,
+    members: [
+      { userId: 'editor-1', role: 'EDITOR', user: member },
+      { userId: 'viewer-1', role: 'VIEWER', user: member },
+    ],
+  };
+  const LECTURA = ['OWNER', 'EDITOR', 'VIEWER'] as const;
+  const ESCRITURA = ['OWNER', 'EDITOR'] as const;
+
+  it('404 si el proyecto no existe', async () => {
+    repo.findById.mockResolvedValue(null as never);
+    await expect(projectService.assertProjectRole('nope', 'editor-1', LECTURA)).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('403 a quien no es miembro, aunque solo quiera leer', async () => {
+    repo.findById.mockResolvedValue(conRoles as never);
+    await expect(projectService.assertProjectRole('proj-1', 'intruso', LECTURA)).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'No tienes acceso a este proyecto',
+    });
+  });
+
+  it('403 a un VIEWER cuando se exige escritura, con un mensaje distinto', async () => {
+    // Mensaje distinto a proposito: «no tienes acceso» a alguien que SI ve el
+    // proyecto seria confuso.
+    repo.findById.mockResolvedValue(conRoles as never);
+    await expect(projectService.assertProjectRole('proj-1', 'viewer-1', ESCRITURA)).rejects.toMatchObject({
+      statusCode: 403,
+      message: 'Tu rol en este proyecto no permite esta acción',
+    });
+  });
+
+  it('devuelve el rol cuando esta admitido', async () => {
+    repo.findById.mockResolvedValue(conRoles as never);
+    expect(await projectService.assertProjectRole('proj-1', 'viewer-1', LECTURA)).toBe('VIEWER');
+    expect(await projectService.assertProjectRole('proj-1', 'editor-1', ESCRITURA)).toBe('EDITOR');
+  });
+
+  it('el propietario es OWNER aunque le falte la fila de miembro', async () => {
+    // `create` añade esa fila, pero un proyecto anterior a esa regla, o uno
+    // tocado a mano, podria no tenerla. La autoridad es `ownerId`, igual que
+    // en getById: sin esto el dueño se quedaria fuera de sus propias tareas.
+    repo.findById.mockResolvedValue(conRoles as never);
+    expect(await projectService.assertProjectRole('proj-1', 'owner-1', ESCRITURA)).toBe('OWNER');
+  });
+});
+
 describe('operaciones restringidas al propietario', () => {
   it('update: un miembro no propietario no puede modificar', async () => {
     repo.findById.mockResolvedValue(project as never);

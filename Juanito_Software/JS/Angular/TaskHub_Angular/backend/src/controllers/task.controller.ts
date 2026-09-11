@@ -20,10 +20,12 @@ export const taskController = {
   }),
 
   list: asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user) throw ApiError.unauthorized();
     const { projectId, status, assigneeId } = req.query as Record<string, string | undefined>;
     const page = Number(req.query.page ?? 1);
     const limit = Number(req.query.limit ?? 20);
     const tasks = await taskService.list(
+      req.user.id,
       { projectId, status: status as TaskStatus | undefined, assigneeId },
       page,
       limit,
@@ -32,17 +34,20 @@ export const taskController = {
   }),
 
   getById: asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskService.getById(getTaskId(req));
+    if (!req.user) throw ApiError.unauthorized();
+    const task = await taskService.getById(getTaskId(req), req.user.id);
     res.json(task);
   }),
 
   update: asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskService.update(getTaskId(req), req.body);
+    if (!req.user) throw ApiError.unauthorized();
+    const task = await taskService.update(getTaskId(req), req.user.id, req.body);
     res.json(task);
   }),
 
   remove: asyncHandler(async (req: Request, res: Response) => {
-    await taskService.remove(getTaskId(req));
+    if (!req.user) throw ApiError.unauthorized();
+    await taskService.remove(getTaskId(req), req.user.id);
     res.status(204).send();
   }),
 
