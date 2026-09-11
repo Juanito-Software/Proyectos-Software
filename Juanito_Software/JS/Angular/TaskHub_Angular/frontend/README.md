@@ -38,11 +38,13 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## Running unit tests
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Unit tests run with [Vitest](https://vitest.dev) through Angular's `@angular/build:unit-test` builder (not Karma):
 
 ```bash
-ng test
+ng test --no-watch
 ```
+
+See section 10 of the project README for what they cover.
 
 ## Running end-to-end tests
 
