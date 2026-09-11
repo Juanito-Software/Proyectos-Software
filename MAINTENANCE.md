@@ -123,7 +123,11 @@ aparecieron en el repaso del 5 de septiembre. La conclusión no es que el
 historial esté mal escrito, sino que **una lista de estado no se verifica sola**:
 hay que ir a mirar, y mirar cuesta un comando.
 
-Activado al día siguiente, y corregida la entrada del 5 de septiembre.
+**Activado y verificado por API el 11 de septiembre.** El episodio tuvo dos
+recaídas en el mismo error que el párrafo describe, y las dos las cazó el mismo
+comando: se estuvo a punto de anotar aquí como «activado» a partir de una
+confirmación verbal, sin consultar; y la primera consulta devolvió vacío porque
+el cambio se había marcado en la interfaz sin pulsar «Save changes».
 
 ### La puerta sabe fallar: comprobado
 
@@ -563,15 +567,23 @@ tener bastante deriva, que es lo que le quita valor a una lista así:
 
   > **Corrección (2026-09-11).** Lo primero era cierto; lo segundo no. Al abrir
   > el *ruleset* cinco días después, «Require a pull request before merging»
-  > estaba **desmarcado**. O nunca llegó a guardarse, o se desactivó después.
-  > Ya está activado y comprobado.
+  > estaba **desmarcado**. Ya está activado y verificado:
+  >
+  > ```
+  > $ gh api repos/{owner}/{repo}/rules/branches/main --jq '.[].type'
+  > ...
+  > pull_request
+  > ```
   >
   > Es el tercer punto de esta misma lista que figuraba como hecho sin estarlo,
   > y los otros dos aparecieron en este mismo repaso. La conclusión no es que el
   > historial esté mal escrito, sino que **repasar una lista contra lo que uno
   > recuerda no sirve**: hay que ir a mirar el estado real, y mirar cuesta un
-  > comando. Aquí bastaba
-  > `gh api repos/{owner}/{repo}/rules/branches/main`.
+  > comando. El de arriba.
+  >
+  > De hecho hizo falta dos veces: la primera consulta devolvió vacío porque el
+  > cambio se había marcado en la interfaz sin pulsar «Save changes», que está
+  > al final de una página larga. Marcar no es guardar.
 - Los demás se comprobaron en el código antes de dejarlos escritos: `PUT` y
   `PATCH` comparten controlador, no hay `LIMIT` ni `OFFSET` en el repositorio de
   tareas, `error.middleware.ts` vuelca el objeto de error entero, y el registro
