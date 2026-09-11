@@ -283,7 +283,7 @@ jobs:
         include:
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
             # Suelo de tests esperados. Ver el paso de comprobación.
-            minimo: 145
+            minimo: 148
             comando: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
 
           # El comando del frontend se averiguó a base de probarlo, porque el

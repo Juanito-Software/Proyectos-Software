@@ -158,7 +158,7 @@ Relaciones principales:
 
 ## 10. Tests
 
-**145 tests con Vitest en el backend.** No necesitan base de datos ni
+**148 tests con Vitest en el backend.** No necesitan base de datos ni
 `prisma generate`: sustituyen `config/prisma` y `@prisma/client` por dobles, y
 `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
 `config/env.ts` no lance al importarse.
@@ -189,11 +189,12 @@ Hay dos clases de test, y prueban cosas distintas:
 | `src/tests/apiError.test.ts` | 10 | Errores de API y sus códigos |
 | `src/tests/users.http.test.ts` | 8 | El hash nunca sale; cambio de contraseña; un `role` colado en el perfil no llega a la base de datos |
 | `src/tests/errors.http.test.ts` | 5 | Validación por campo, JSON mal formado, errores internos sin detalle |
+| `src/tests/logging.http.test.ts` | 3 | El log de peticiones no guarda tokens ni cookies, y sigue siendo útil |
 | `src/tests/rateLimit.http.test.ts` | 3 | Límite de intentos de login |
 | `src/tests/task.repository.test.ts` | 2 | Que el filtro de pertenencia llega al `where` de Prisma |
 
 Cada comportamiento de los tests HTTP se ha comprobado rompiéndolo a propósito
-en el código: los 28 cambios probados ponen algún test en rojo.
+en el código: los 34 cambios probados ponen algún test en rojo.
 
 Cobertura de líneas de `src/` (sin `server.ts`): **85 %**, antes 30 %. Lo que queda fuera son
 sobre todo los repositorios, que solo se pueden probar contra una base de datos
