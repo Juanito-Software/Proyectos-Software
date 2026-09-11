@@ -13,7 +13,14 @@ export const taskRepository = {
     });
   },
 
+  /**
+   * `visibleTo` es obligatorio a proposito: no hay forma de listar tareas sin
+   * decir para quien. Los demas filtros pueden venir `undefined`, y Prisma
+   * ignora las claves `undefined` del `where`; sin esta condicion, una peticion
+   * sin filtros devolvia las tareas de todos los proyectos de la base de datos.
+   */
   findMany(params: {
+    visibleTo: string;
     projectId?: string;
     status?: TaskStatus;
     assigneeId?: string;
@@ -25,6 +32,9 @@ export const taskRepository = {
         projectId: params.projectId,
         status: params.status,
         assigneeId: params.assigneeId,
+        project: {
+          OR: [{ ownerId: params.visibleTo }, { members: { some: { userId: params.visibleTo } } }],
+        },
       },
       include: { assignee: true, creator: true },
       skip: params.skip,

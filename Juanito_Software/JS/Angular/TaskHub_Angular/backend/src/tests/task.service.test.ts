@@ -21,8 +21,17 @@ vi.mock('../repositories/task.repository', () => ({
   },
 }));
 
+// Desde que las tareas comprueban el rol en su proyecto, cada operacion pasa
+// antes por projectRepository.findById. Aqui el usuario de los tests es el
+// propietario, para que estos tests sigan probando lo que probaban. Quien NO
+// puede hacer cada cosa se prueba por HTTP en tasks.http.test.ts.
+vi.mock('../repositories/project.repository', () => ({
+  projectRepository: { findById: vi.fn() },
+}));
+
 import { taskService } from '../services/task.service';
 import { taskRepository } from '../repositories/task.repository';
+import { projectRepository } from '../repositories/project.repository';
 
 const repo = vi.mocked(taskRepository);
 
@@ -51,7 +60,14 @@ const rawTask = {
   comments: [],
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(projectRepository.findById).mockImplementation((async (id: string) => ({
+    id,
+    ownerId: 'user-1',
+    members: [{ userId: 'user-1', role: 'OWNER' }],
+  })) as never);
+});
 
 describe('taskService.create', () => {
   it('conecta proyecto y creador, y omite assignee si no se envía', async () => {
@@ -95,7 +111,7 @@ describe('taskService.list', () => {
   it('traduce página y límite a skip/take (paginación 1-indexada)', async () => {
     repo.findMany.mockResolvedValue([] as never);
 
-    await taskService.list({ projectId: 'proj-1' }, 3, 20);
+    await taskService.list('user-1', { projectId: 'proj-1' }, 3, 20);
 
     expect(repo.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ projectId: 'proj-1', skip: 40, take: 20 }),
@@ -104,7 +120,7 @@ describe('taskService.list', () => {
 
   it('la primera página empieza en skip 0', async () => {
     repo.findMany.mockResolvedValue([] as never);
-    await taskService.list({}, 1, 10);
+    await taskService.list('user-1', {}, 1, 10);
     expect(repo.findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 0 }));
   });
 });
@@ -112,7 +128,7 @@ describe('taskService.list', () => {
 describe('taskService.getById', () => {
   it('lanza 404 si la tarea no existe', async () => {
     repo.findById.mockResolvedValue(null as never);
-    await expect(taskService.getById('nope')).rejects.toMatchObject({
+    await expect(taskService.getById('nope', 'user-1')).rejects.toMatchObject({
       statusCode: 404,
       message: 'Tarea no encontrada',
     });
@@ -120,7 +136,7 @@ describe('taskService.getById', () => {
 
   it('devuelve el DTO cuando existe', async () => {
     repo.findById.mockResolvedValue(rawTask as never);
-    const dto = await taskService.getById('task-1');
+    const dto = await taskService.getById('task-1', 'user-1');
     expect(dto.id).toBe('task-1');
     expect(dto.title).toBe('Escribir tests');
   });
@@ -129,7 +145,7 @@ describe('taskService.getById', () => {
 describe('taskService.update', () => {
   it('lanza 404 sin llamar a update si la tarea no existe', async () => {
     repo.findById.mockResolvedValue(null as never);
-    await expect(taskService.update('nope', {} as never)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(taskService.update('nope', 'user-1', {} as never)).rejects.toMatchObject({ statusCode: 404 });
     expect(repo.update).not.toHaveBeenCalled();
   });
 
@@ -137,7 +153,7 @@ describe('taskService.update', () => {
     repo.findById.mockResolvedValue(rawTask as never);
     repo.update.mockResolvedValue(rawTask as never);
 
-    await taskService.update('task-1', { assigneeId: null } as never);
+    await taskService.update('task-1', 'user-1', { assigneeId: null } as never);
     expect((repo.update.mock.calls[0][1] as Record<string, unknown>).assignee).toEqual({
       disconnect: true,
     });
@@ -146,7 +162,7 @@ describe('taskService.update', () => {
     repo.findById.mockResolvedValue(rawTask as never);
     repo.update.mockResolvedValue(rawTask as never);
 
-    await taskService.update('task-1', { title: 'nuevo' } as never);
+    await taskService.update('task-1', 'user-1', { title: 'nuevo' } as never);
     expect((repo.update.mock.calls[0][1] as Record<string, unknown>).assignee).toBeUndefined();
   });
 
@@ -154,7 +170,7 @@ describe('taskService.update', () => {
     repo.findById.mockResolvedValue(rawTask as never);
     repo.update.mockResolvedValue(rawTask as never);
 
-    await taskService.update('task-1', { deadline: null } as never);
+    await taskService.update('task-1', 'user-1', { deadline: null } as never);
     expect((repo.update.mock.calls[0][1] as Record<string, unknown>).deadline).toBeNull();
   });
 });
@@ -162,13 +178,13 @@ describe('taskService.update', () => {
 describe('taskService.remove', () => {
   it('no borra si la tarea no existe', async () => {
     repo.findById.mockResolvedValue(null as never);
-    await expect(taskService.remove('nope')).rejects.toMatchObject({ statusCode: 404 });
+    await expect(taskService.remove('nope', 'user-1')).rejects.toMatchObject({ statusCode: 404 });
     expect(repo.delete).not.toHaveBeenCalled();
   });
 
   it('borra cuando existe', async () => {
     repo.findById.mockResolvedValue(rawTask as never);
-    await taskService.remove('task-1');
+    await taskService.remove('task-1', 'user-1');
     expect(repo.delete).toHaveBeenCalledWith('task-1');
   });
 });

@@ -51,6 +51,25 @@ El proyecto está organizado en dos módulos principales:
 - Prioridades: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
 - Comentarios en tareas.
 - Autenticación basada en JWT y refresh tokens.
+- Permisos por rol dentro de cada proyecto (ver abajo).
+
+### Quién puede hacer qué con las tareas
+
+| Rol en el proyecto | Ver tareas | Crear, editar, borrar y comentar |
+|---|---|---|
+| `OWNER` | Sí | Sí |
+| `EDITOR` | Sí | Sí |
+| `VIEWER` | Sí | No — `403` |
+| Ajeno al proyecto | No — `403` | No — `403` |
+
+El propietario del proyecto cuenta como `OWNER` aunque le falte la fila de
+miembro. Un proyecto o una tarea que no existen responden `404`.
+
+Hasta septiembre de 2026 las rutas de `/api/tasks` solo exigían estar
+autenticado: cualquier cuenta —y el registro es libre— podía listar, leer,
+editar y borrar las tareas de cualquier proyecto. Los proyectos sí comprobaban
+la pertenencia; las tareas no. Lo destaparon los primeros tests que atacaban la
+API por HTTP.
 
 ## 5. Modelos de Datos
 
@@ -139,7 +158,7 @@ Relaciones principales:
 
 ## 10. Tests
 
-**71 tests con Vitest en el backend.** No necesitan base de datos ni
+**145 tests con Vitest en el backend.** No necesitan base de datos ni
 `prisma generate`: sustituyen `config/prisma` y `@prisma/client` por dobles, y
 `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
 `config/env.ts` no lance al importarse.
@@ -150,13 +169,35 @@ npm ci
 npm test
 ```
 
+Hay dos clases de test, y prueban cosas distintas:
+
+- **De servicio** (`*.service.test.ts`): llaman a la lógica directamente.
+- **HTTP** (`*.http.test.ts`): levantan la aplicación real con `createApp()`
+  en un puerto libre y le hacen peticiones con el `fetch` de Node. Solo se
+  sustituyen los repositorios, así que rutas, middlewares, validación,
+  controladores y manejador de errores son los de producción. Sin supertest:
+  `fetch` viene con Node 22 y no añade dependencias.
+
 | Fichero | Tests | Qué cubre |
 |---|---|---|
+| `src/tests/tasks.http.test.ts` | 33 | Permisos de tareas por rol: estado HTTP **y** si la escritura llegó al repositorio |
 | `src/tests/token.service.test.ts` | 22 | Emisión y rotación de *refresh tokens*, conversión de caducidades |
+| `src/tests/project.service.test.ts` | 19 | Lógica y control de acceso de proyectos, incluida la comprobación de rol |
+| `src/tests/auth.http.test.ts` | 18 | Tokens rechazados (caducado, otra firma, `alg: none`, manipulado), `authorize(ADMIN)`, atributos de la cookie del *refresh token* |
 | `src/tests/task.service.test.ts` | 15 | Lógica de tareas |
-| `src/tests/project.service.test.ts` | 14 | Lógica de proyectos |
 | `src/tests/auth.service.test.ts` | 10 | Registro, login y hashing |
 | `src/tests/apiError.test.ts` | 10 | Errores de API y sus códigos |
+| `src/tests/users.http.test.ts` | 8 | El hash nunca sale; cambio de contraseña; un `role` colado en el perfil no llega a la base de datos |
+| `src/tests/errors.http.test.ts` | 5 | Validación por campo, JSON mal formado, errores internos sin detalle |
+| `src/tests/rateLimit.http.test.ts` | 3 | Límite de intentos de login |
+| `src/tests/task.repository.test.ts` | 2 | Que el filtro de pertenencia llega al `where` de Prisma |
+
+Cada comportamiento de los tests HTTP se ha comprobado rompiéndolo a propósito
+en el código: los 28 cambios probados ponen algún test en rojo.
+
+Cobertura de líneas de `src/` (sin `server.ts`): **85 %**, antes 30 %. Lo que queda fuera son
+sobre todo los repositorios, que solo se pueden probar contra una base de datos
+de verdad.
 
 ### En CI
 

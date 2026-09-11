@@ -3,6 +3,7 @@ import { taskRepository } from '../repositories/task.repository';
 import { ApiError } from '../utils/ApiError';
 import { CommentDto, CreateCommentInput, CreateTaskInput, TaskDto, UpdateTaskInput } from '../dto/task.dto';
 import { toPublicDto } from './user.service';
+import { projectService, READ_ROLES, WRITE_ROLES, ProjectRoleName } from './project.service';
 
 type RawUser = Parameters<typeof toPublicDto>[0];
 
@@ -23,8 +24,23 @@ function toTaskDto(task: {
   };
 }
 
+/**
+ * Carga la tarea y exige al usuario uno de los roles admitidos en SU proyecto.
+ *
+ * El proyecto se toma de la tarea guardada, nunca de la peticion: si viniera
+ * del cuerpo, bastaria con mandar el id de un proyecto propio para tocar una
+ * tarea ajena.
+ */
+async function findTaskWithRole(id: string, userId: string, allowed: readonly ProjectRoleName[]) {
+  const task = await taskRepository.findById(id);
+  if (!task) throw ApiError.notFound('Tarea no encontrada');
+  await projectService.assertProjectRole(task.projectId, userId, allowed);
+  return task;
+}
+
 export const taskService = {
   async create(creatorId: string, input: CreateTaskInput) {
+    await projectService.assertProjectRole(input.projectId, creatorId, WRITE_ROLES);
     const task = await taskRepository.create({
       title: input.title,
       description: input.description,
@@ -37,24 +53,36 @@ export const taskService = {
     return toTaskDto(task);
   },
 
-  async list(filters: { projectId?: string; status?: TaskStatus; assigneeId?: string }, page: number, limit: number) {
+  /**
+   * Sin `projectId`, la consulta se limita a los proyectos del usuario en el
+   * repositorio (`visibleTo`). Con `projectId`, ademas se comprueba el acceso
+   * antes, para responder 403 en vez de una lista vacia que no dice por que.
+   */
+  async list(
+    userId: string,
+    filters: { projectId?: string; status?: TaskStatus; assigneeId?: string },
+    page: number,
+    limit: number,
+  ) {
+    if (filters.projectId) {
+      await projectService.assertProjectRole(filters.projectId, userId, READ_ROLES);
+    }
     const tasks = await taskRepository.findMany({
       ...filters,
+      visibleTo: userId,
       skip: (page - 1) * limit,
       take: limit,
     });
     return tasks.map(toTaskDto);
   },
 
-  async getById(id: string) {
-    const task = await taskRepository.findById(id);
-    if (!task) throw ApiError.notFound('Tarea no encontrada');
+  async getById(id: string, userId: string) {
+    const task = await findTaskWithRole(id, userId, READ_ROLES);
     return toTaskDto(task);
   },
 
-  async update(id: string, input: UpdateTaskInput) {
-    const exists = await taskRepository.findById(id);
-    if (!exists) throw ApiError.notFound('Tarea no encontrada');
+  async update(id: string, userId: string, input: UpdateTaskInput) {
+    await findTaskWithRole(id, userId, WRITE_ROLES);
     const task = await taskRepository.update(id, {
       title: input.title,
       description: input.description,
@@ -71,13 +99,13 @@ export const taskService = {
     return toTaskDto(task);
   },
 
-  async remove(id: string) {
-    await this.getById(id);
+  async remove(id: string, userId: string) {
+    await findTaskWithRole(id, userId, WRITE_ROLES);
     await taskRepository.delete(id);
   },
 
   async addComment(taskId: string, authorId: string, input: CreateCommentInput) {
-    await this.getById(taskId);
+    await findTaskWithRole(taskId, authorId, WRITE_ROLES);
     const comment = await taskRepository.addComment(taskId, authorId, input.text);
     return toCommentDto(comment);
   },
