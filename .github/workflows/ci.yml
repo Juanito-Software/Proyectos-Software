@@ -149,10 +149,16 @@ jobs:
   # Habría cazado el pom de ApiService que no se podía leer o el target 23
   # imposible de XlsxToCsvConverter.
   #
-  # El nombre dice «compilar» y no «tests» a propósito: estos cuatro proyectos
-  # no tienen ni una clase de test, y un job llamado de otra forma haría creer
-  # que están cubiertos. BatchProcessor ya no está en esta lista porque su job
-  # de tests lo compila igualmente; tenerlo en los dos duplicaría el trabajo.
+  # El nombre dice «compilar» y no «tests» a propósito: estos tres proyectos no
+  # tienen ni una clase de test, y un job llamado de otra forma haría creer que
+  # están cubiertos. BatchProcessor y RadioStack ya no están en esta lista porque
+  # su job de tests los compila igualmente; tenerlos en los dos duplicaría el
+  # trabajo.
+  #
+  # Antes este comentario decía «cuatro proyectos … no tienen ni una clase de
+  # test» con RadioStack dentro, y RadioStack sí tenía una: LocutorTest, con 2
+  # tests que no se ejecutaban en ninguna parte porque aquí se compila con
+  # -DskipTests.
   # ---------------------------------------------------------------------------
   maven-compile:
     name: Java · compilar
@@ -162,7 +168,6 @@ jobs:
       matrix:
         proyecto:
           - Juanito_Software/Java/HashTools
-          - Juanito_Software/Java/RadioStack
           - Juanito_Software/Java/others/XlsxToCsvConverter
           - Juanito_Software/Python/Flask/LeaderBoard_Unity/API_webapp_puntuaciones/informes/JasperReportExecutor
     steps:
@@ -202,6 +207,18 @@ jobs:
           - proyecto: Juanito_Software/Java/BatchProcessor
             # Suelo de tests esperados. Ver el paso de comprobación.
             minimo: 20
+
+          # RadioStack es MULTIMÓDULO, y eso cambia dónde aparecen los informes:
+          # cada módulo deja los suyos en su propio target/, no en la raíz del
+          # proyecto. Por eso el paso de abajo busca con `find` en vez de mirar
+          # solo `target/surefire-reports`, que con este proyecto no encontraría
+          # nada y daría el error de «no se ha ejecutado ni un test».
+          #
+          # Sus tests no necesitan PostgreSQL ni la variable
+          # RADIOSTACK_JWT_SECRET: no levantan el contexto de Spring. Cada uno
+          # construye la clase que prueba con dobles de sus dependencias.
+          - proyecto: Juanito_Software/Java/RadioStack
+            minimo: 95
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -234,12 +251,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! ls target/surefire-reports/TEST-*.xml >/dev/null 2>&1; then
+          # `find` y no `ls target/surefire-reports/...`: en un proyecto
+          # multimódulo como RadioStack los informes están en */target/, y la
+          # versión anterior no habría encontrado ninguno.
+          informes=$(find . -path '*/target/surefire-reports/TEST-*.xml' | wc -l)
+
+          if [ "$informes" -eq 0 ]; then
             echo "::error::Surefire no ha dejado ningún informe: no se ha ejecutado ni un test."
             exit 1
           fi
 
-          total=$(grep -ho 'tests="[0-9]\+"' target/surefire-reports/TEST-*.xml \
+          total=$(find . -path '*/target/surefire-reports/TEST-*.xml' \
+                    -exec grep -ho 'tests="[0-9]\+"' {} + \
                   | grep -o '[0-9]\+' \
                   | awk '{s+=$1} END {print s+0}')
 

@@ -70,6 +70,23 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
+
+        <!--
+            Tests. La version la fija el BOM de Spring Boot del pom padre.
+
+            starter-test trae JUnit 5, Mockito (con mockito-junit-jupiter, de donde
+            sale MockitoExtension) y spring-test, que es lo que aporta los dobles de
+            servlet (MockHttpServletRequest y MockFilterChain) con los que se prueba
+            el filtro JWT sin levantar un servidor.
+
+            Ninguno de estos tests arranca el contexto de Spring, asi que no hacen
+            falta PostgreSQL, Flyway ni la variable RADIOSTACK_JWT_SECRET.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

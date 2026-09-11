@@ -92,10 +92,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         var claims = jwtService.verificar(token)
                 .orElseThrow(() -> new IllegalArgumentException("Token invalido o caducado."));
 
-        UsuarioAutenticado usuario = new UsuarioAutenticado(
-                Long.parseLong(claims.getSubject()),
-                claims.get("email", String.class),
-                claims.get("rol", String.class));
+        // Mismo criterio que el filtro HTTP, y la misma funcion: un token firmado
+        // pero sin email o sin rol no sirve para escribir en el chat, porque el
+        // alias de los mensajes sale del email. El mensaje de error es el mismo a
+        // proposito: al cliente no le interesa que parte del token falla.
+        UsuarioAutenticado usuario = UsuarioAutenticado.desde(claims)
+                .orElseThrow(() -> new IllegalArgumentException("Token invalido o caducado."));
 
         accessor.setUser(new UsernamePasswordAuthenticationToken(
                 usuario,
