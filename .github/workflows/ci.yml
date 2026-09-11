@@ -257,15 +257,20 @@ jobs:
   # ---------------------------------------------------------------------------
   # Node: tests de los proyectos que sí los tienen.
   #
-  # El backend de TaskHub_Angular tenía 71 tests con `vitest run` ya declarado
-  # en package.json y ninguna ejecución automática: escritos, en verde y sin
-  # ejecutarse en ningún sitio salvo a mano.
+  # Dos entradas, y no son intercambiables aunque las dos usen Vitest:
   #
-  # No hace falta base de datos ni `prisma generate`: los tests sustituyen
-  # `config/prisma` y `@prisma/client` por dobles, y `src/tests/setup.ts`
-  # inyecta las variables de entorno mínimas para que `config/env.ts` no lance
-  # al importarse. Se comprobó clonando el proyecto limpio y lanzando
-  # `npm ci && npm test`, que es exactamente lo que hace este job.
+  # - El **backend** lo lanza `vitest` directamente, via el script `test` del
+  #   package.json. No hace falta base de datos ni `prisma generate`: los tests
+  #   sustituyen `config/prisma` y `@prisma/client` por dobles, y
+  #   `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
+  #   `config/env.ts` no lance al importarse.
+  #
+  # - El **frontend** lo lanza el constructor `@angular/build:unit-test`, que
+  #   envuelve a Vitest y NO le reenvía sus opciones. De ahí que el comando sea
+  #   distinto y las banderas se llamen de otra forma (ver abajo).
+  #
+  # Ambos tenían tests sin ejecutar en ninguna parte: 71 el backend, y el
+  # frontend 2 —uno de ellos el que genera el CLI al crear el proyecto—.
   #
   # TaskHub_React NO está aquí: tiene su propio workflow, con Postgres y e2e.
   # ---------------------------------------------------------------------------
@@ -279,6 +284,27 @@ jobs:
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
             # Suelo de tests esperados. Ver el paso de comprobación.
             minimo: 71
+            comando: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
+
+          # El comando del frontend se averiguó a base de probarlo, porque el
+          # constructor de Angular filtra lo que le llega:
+          #
+          #   --reporter / --outputFile  -> «Unknown arguments». Son las de
+          #                                 Vitest y el constructor no las pasa.
+          #   --reporters                -> aceptada (plural, del esquema del
+          #                                 constructor).
+          #   --outputFile               -> rechazada; el CLI convierte el
+          #                                 camelCase a guiones: --output-file.
+          #
+          # Y el ORDEN de los reporters importa: --output-file se aplica «solo
+          # al primer reporter», así que `junit` va delante. Al revés, el XML se
+          # llenaría con la salida de consola y el contador leería basura.
+          #
+          # `default` va detrás para que el log muestre qué test ha fallado; con
+          # `junit` a secas la consola no imprime ni un resumen.
+          - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/frontend
+            minimo: 30
+            comando: npx ng test --no-watch --reporters=junit --reporters=default --output-file=vitest-report.xml
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -295,20 +321,22 @@ jobs:
         working-directory: ${{ matrix.proyecto }}
         run: npm ci
 
-      # Los dos reporters son a propósito: el de por defecto para poder leer el
-      # log, y el JUnit para contar. Sin el primero, un fallo obliga a abrir el
-      # XML para saber qué se rompió.
-      - name: npm test
+      - name: Tests
         working-directory: ${{ matrix.proyecto }}
-        run: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
+        run: ${{ matrix.comando }}
 
-      # Mismo suelo declarado que en los otros dos jobs.
+      # Mismo suelo declarado que en los otros jobs, pero contando de otra
+      # manera, y esto no es estilo.
       #
-      # Aquí el parser XML no es una preferencia de estilo, es obligatorio: el
-      # informe de vitest pone tests="71" en <testsuites> Y ademas en cada
-      # <testsuite>, que suman otros 71. Un grep daría 142 y el mínimo nunca
-      # saltaría. iter('testsuite') no coincide con <testsuites>, así que cuenta
-      # bien.
+      # El informe de vitest pone tests="71" en <testsuites> Y ademas en cada
+      # <testsuite>, que suman otros 71: un grep daría 142 y el mínimo no
+      # saltaría nunca. La versión anterior sumaba el atributo de los
+      # <testsuite>, lo cual funcionaba, pero depende de cómo anide el XML cada
+      # herramienta —PHPUnit, por ejemplo, anida y ahí ese mismo cálculo contaría
+      # doble—.
+      #
+      # Contar elementos <testcase> es inmune a la forma del árbol: hay uno por
+      # test ejecutado, ni más ni menos. Es lo mismo que hace el job de PHP.
       - name: Comprobar que se han ejecutado los tests esperados
         working-directory: ${{ matrix.proyecto }}
         env:
@@ -324,7 +352,7 @@ jobs:
           total=$(python3 -c "
           import xml.etree.ElementTree as ET
           raiz = ET.parse('vitest-report.xml').getroot()
-          print(sum(int(s.get('tests', 0)) for s in raiz.iter('testsuite')))
+          print(len(list(raiz.iter('testcase'))))
           ")
 
           echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
