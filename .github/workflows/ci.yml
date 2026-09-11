@@ -283,7 +283,7 @@ jobs:
         include:
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
             # Suelo de tests esperados. Ver el paso de comprobación.
-            minimo: 148
+            minimo: 162
             comando: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
 
           # El comando del frontend se averiguó a base de probarlo, porque el
@@ -303,7 +303,7 @@ jobs:
           # `default` va detrás para que el log muestre qué test ha fallado; con
           # `junit` a secas la consola no imprime ni un resumen.
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/frontend
-            minimo: 84
+            minimo: 99
             comando: npx ng test --no-watch --reporters=junit --reporters=default --output-file=vitest-report.xml
     steps:
       - uses: actions/checkout@v4

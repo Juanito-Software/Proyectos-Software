@@ -36,7 +36,7 @@ export const projectRepository = {
   },
 
   addMember(projectId: string, userId: string, role: 'OWNER' | 'EDITOR' | 'VIEWER' = 'VIEWER') {
-    return prisma.projectMember.create({ data: { projectId, userId, role } });
+    return prisma.projectMember.create({ data: { projectId, userId, role }, include: { user: true } });
   },
 
   findMembership(projectId: string, userId: string) {

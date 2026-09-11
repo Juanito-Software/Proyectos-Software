@@ -44,7 +44,7 @@ El proyecto está organizado en dos módulos principales:
 
 - Registro e inicio de sesión de usuarios.
 - Gestión de proyectos.
-- Gestión de miembros por proyecto.
+- Gestión de miembros por proyecto: el propietario añade gente por email desde el botón «Miembros» del tablero, como Editor o Lector.
 - Creación, edición, asignación y seguimiento de tareas mediante tablero Kanban con arrastrar y soltar.
 - Vista de detalle de tarea: edición de estado, prioridad, responsable y fecha límite, con hilo de comentarios.
 - Estados de tarea: `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`.
@@ -64,6 +64,17 @@ El proyecto está organizado en dos módulos principales:
 
 El propietario del proyecto cuenta como `OWNER` aunque le falte la fila de
 miembro. Un proyecto o una tarea que no existen responden `404`.
+
+### Añadir miembros
+
+`POST /api/projects/:id/members` con `{ email, role }`. Solo el propietario
+(`403` para cualquier otro). `role` es `EDITOR` o `VIEWER`, y `VIEWER` si no se
+indica: `OWNER` no se asigna, porque el propietario es uno solo (`ownerId`).
+Un email no registrado responde `404` y alguien que ya es miembro, `409`.
+
+Responder «no existe ningún usuario con ese email» revela qué emails están
+registrados. Se aceptó a sabiendas: solo lo ve el propietario de un proyecto, y
+la alternativa —un desplegable con todos los usuarios— enseñaría más.
 
 Hasta septiembre de 2026 las rutas de `/api/tasks` solo exigían estar
 autenticado: cualquier cuenta —y el registro es libre— podía listar, leer,
@@ -158,7 +169,7 @@ Relaciones principales:
 
 ## 10. Tests
 
-**148 tests con Vitest en el backend.** No necesitan base de datos ni
+**162 tests con Vitest en el backend.** No necesitan base de datos ni
 `prisma generate`: sustituyen `config/prisma` y `@prisma/client` por dobles, y
 `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
 `config/env.ts` no lance al importarse.
@@ -180,6 +191,7 @@ Hay dos clases de test, y prueban cosas distintas:
 
 | Fichero | Tests | Qué cubre |
 |---|---|---|
+| `src/tests/members.http.test.ts` | 14 | Añadir miembros: solo el propietario, por email, 404/409 en vez de 500, sin rol `OWNER` |
 | `src/tests/tasks.http.test.ts` | 33 | Permisos de tareas por rol: estado HTTP **y** si la escritura llegó al repositorio |
 | `src/tests/token.service.test.ts` | 22 | Emisión y rotación de *refresh tokens*, conversión de caducidades |
 | `src/tests/project.service.test.ts` | 19 | Lógica y control de acceso de proyectos, incluida la comprobación de rol |
@@ -194,7 +206,7 @@ Hay dos clases de test, y prueban cosas distintas:
 | `src/tests/task.repository.test.ts` | 2 | Que el filtro de pertenencia llega al `where` de Prisma |
 
 Cada comportamiento de los tests HTTP se ha comprobado rompiéndolo a propósito
-en el código: los 34 cambios probados ponen algún test en rojo.
+en el código: los 43 cambios probados ponen algún test en rojo.
 
 Cobertura de líneas de `src/` (sin `server.ts`): **85 %**, antes 30 %. Lo que queda fuera son
 sobre todo los repositorios, que solo se pueden probar contra una base de datos
@@ -217,7 +229,7 @@ con él y la *pull request* no se puede fusionar.
 
 ### Frontend
 
-**84 tests con Vitest**, lanzados por el constructor `@angular/build:unit-test`
+**99 tests con Vitest**, lanzados por el constructor `@angular/build:unit-test`
 de Angular sobre jsdom. Tampoco necesitan backend: las peticiones se interceptan
 con `HttpTestingController`.
 
@@ -229,16 +241,19 @@ npx ng test --no-watch
 
 | Carpeta | Tests | Qué cubre |
 |---|---|---|
-| `src/app/core/` | 28 | Sesión y SSR, renovación de token con dos 401 simultáneos, guardia de rutas, contrato HTTP de los servicios |
+| `src/app/core/` | 29 | Sesión y SSR, renovación de token con dos 401 simultáneos, guardia de rutas, contrato HTTP de los servicios |
 | `src/app/features/auth/` | 11 | A dónde va el usuario tras login y registro; el aviso de credenciales no revela si el email existe |
 | `src/app/features/dashboard/` | 15 | Crear y borrar proyectos: qué petición sale, cuál no sale al cancelar, y que «Eliminar» no navega al proyecto |
-| `src/app/features/projects/` | 28 | Tablero: mover tarjetas guarda solo el estado y se revierte si el servidor falla; edición de tareas, fechas y comentarios |
+| `src/app/features/projects/` | 42 | Tablero: mover tarjetas guarda solo el estado y se revierte si el servidor falla; edición de tareas, fechas y comentarios; diálogo de miembros |
 | `src/app/app.component.spec.ts` | 2 | El del andamiaje del CLI |
 
 Los componentes se prueban por su **efecto** —la petición que sale, o la que no
 sale— y no por su estado interno. Cada comportamiento de `features/dashboard` y
 `features/projects` se ha comprobado rompiéndolo a propósito en el código del
-componente: los 21 cambios probados ponen algún test en rojo.
+componente: de 33 cambios probados, 32 ponen algún test en rojo. El que no,
+quitar el `disabled` del botón «Añadir» del diálogo de miembros, no deja pasar
+nada: `add()` comprueba el email por su cuenta, así que ese botón no es la
+única barrera.
 
 Un detalle que no se ve leyendo los tests: el de ida y vuelta de la fecha límite
 fuerza la zona horaria a `America/Los_Angeles`. Los runners de CI están en UTC,
