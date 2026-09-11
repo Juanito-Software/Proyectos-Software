@@ -46,6 +46,121 @@ de los proyectos).
 
 ---
 
+## 2026-09-11 — El frontend de Angular, de 2 tests a 41
+
+El backend de TaskHub_Angular llevaba 71 tests en CI desde el día anterior. El
+frontend tenía **2**, y uno era el `app.component.spec.ts` que genera el CLI al
+crear el proyecto. La cifra conjunta tapaba un hueco entero.
+
+### Qué se cubrió
+
+Cinco ficheros en `src/app/core/` y dos en `src/app/features/auth/`. Los que de
+verdad importan:
+
+- **Regresión del fallo de SSR** (`auth.service.spec.ts`). Durante el
+  renderizado en servidor no existe `localStorage`, y cada acceso está protegido
+  con `isPlatformBrowser`. Los tests no comprueban que «no explote» —en jsdom
+  `localStorage` existe y no explotaría— sino el **comportamiento** que impone
+  la protección: con `PLATFORM_ID` a `'server'` no se lee ni se escribe, aunque
+  haya datos delante. Si alguien quita esos guardas por parecer redundantes, se
+  ponen en rojo.
+
+- **Dos 401 simultáneos disparan una sola renovación**
+  (`auth.interceptor.spec.ts`). Sin el candado `isRefreshing`, cada 401 lanzaría
+  su propio *refresh*; con rotación de tokens el segundo llega con uno que el
+  primero acaba de invalidar, el servidor lo toma por reutilización y revoca la
+  sesión. El usuario se ve expulsado por tener dos pestañas abiertas.
+
+- **Un 401 del propio login no intenta renovar.** El bucle clásico:
+  credenciales malas → 401 → renovar → el *refresh* también falla → 401.
+
+- **El aviso de credenciales inválidas no menciona el email**
+  (`login.component.spec.ts`). Distinguir «ese usuario no existe» de «la
+  contraseña es incorrecta» convierte el login en un comprobador de cuentas
+  registradas.
+
+Los componentes se prueban llamando a sus métodos, sin renderizar. Lo que tienen
+es una decisión —a dónde va el usuario según lo que responda el servidor— y eso
+no necesita DOM: si mañana cambia la plantilla, estos tests deben seguir pasando.
+
+### El comando del CI, averiguado a base de probarlo
+
+El frontend no se lanza como el backend. El constructor
+`@angular/build:unit-test` envuelve a Vitest y **no le reenvía sus opciones**:
+
+| Se intentó | Resultado |
+|---|---|
+| `--reporter` / `--outputFile` | «Unknown arguments». Son de Vitest |
+| `--reporters` | Aceptada — plural, del esquema del constructor |
+| `--outputFile` | Rechazada; el CLI convierte camelCase a guiones |
+| `--output-file` | Aceptada |
+
+Y el **orden importa**: `--output-file` se aplica «solo al primer reporter», así
+que `junit` va delante y `default` detrás. Al revés, el XML se llenaría con la
+salida de consola y el contador leería basura. Con `junit` a secas la consola no
+imprime ni un resumen, y un fallo obligaría a abrir el XML para saber qué se
+rompió.
+
+El esquema del constructor está en
+`node_modules/@angular/build/src/builders/unit-test/schema.json`, y leerlo
+ahorró la mitad de los intentos.
+
+### Cuatro vueltas en rojo por el montaje, no por los tests
+
+Los dos ficheros de componentes fallaron cuatro veces seguidas, cada una por una
+causa distinta y ninguna en lo que el test afirma:
+
+1. **Sin `provideRouter`** → «No provider found for `ActivatedRoute`». La
+   plantilla lleva un `routerLink` y la directiva `RouterLink` inyecta
+   `ActivatedRoute`. No se ve leyendo el componente; solo la plantilla lo delata.
+2. **Con `provideRouter` y un doble de `Router`** → «Cannot read properties of
+   undefined (reading `root`)». La fábrica de `ActivatedRoute` lee
+   `routerState.root` **del `Router` inyectado**, y un doble con solo `navigate`
+   lo deja en `undefined`.
+3. **Con un doble de `MatSnackBar`** → el espía a cero. El componente importa
+   `MatSnackBarModule`, que aporta su propio proveedor, y ese gana.
+4. **Espiando `TestBed.inject(MatSnackBar)`** → también a cero. Eso resuelve
+   desde el inyector raíz y el componente resuelve desde el suyo: son objetos
+   distintos.
+
+Lo que funcionó: espiar el **campo del propio componente**, que es la instancia
+que recibe la llamada por definición. Es meter mano en un privado desde un test,
+y aquí fue la opción honesta — la alternativa era seguir suponiendo de qué
+inyector sale cada cosa.
+
+**La regla, para no repetir las cuatro vueltas en cada componente nuevo:** con
+componentes *standalone* que importan módulos de Angular Material, sustituir un
+servicio por un objeto propio no funciona, y algunos servicios de Angular se
+leen entre ellos, así que un doble incompleto rompe a un tercero. Servicio real
+más espía.
+
+### Un patrón de git que ya no es casualidad
+
+Cinco incidencias en tres días del mismo tipo: una rama cuya PR ya se fusionó en
+modo *squash*, con commits nuevos encima. El *squash* reescribe el commit como
+uno nuevo en `main`, git deja de poder emparejarlos, y aparece un conflicto en el
+fichero que ambos tocan.
+
+Lo que lo hace invisible es que `git subir` termina con
+`gh pr merge --squash --delete-branch --auto`: la fusión ocurre **sola** minutos
+después, mientras uno sigue trabajando en esa misma rama. El momento en que la
+rama muere no se ve.
+
+Se resuelve siempre igual —`git rebase origin/main`, que descarta el duplicado
+con un «skipped previously applied commit», y `push --force-with-lease`— y se
+evita sacando rama nueva después de cada `git subir`. El alias `git nueva` ya
+limpia las ramas locales cuyo remoto desapareció.
+
+### Nota de contexto
+
+Toda esta tanda se hizo **sin terminal**: una actualización de Windows del 8 de
+septiembre impidió que el entorno de trabajo montara los ficheros, así que los
+tests los escribía uno y los ejecutaba el otro, pegando la salida. Funciona, y
+tiene un coste medible: las cuatro vueltas del montaje habrían sido una sola con
+capacidad de ejecutar.
+
+---
+
 ## 2026-09-10 (noche) — El guardián que no guardaba la puerta
 
 Cerrada la tanda anterior, quedaban tres jobs de tests nuevos con sus mínimos
