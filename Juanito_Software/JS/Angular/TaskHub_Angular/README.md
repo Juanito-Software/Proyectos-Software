@@ -173,12 +173,35 @@ tick sale verde igual.
 Si el job falla, `Monorepo en verde` —la comprobación obligatoria de `main`— cae
 con él y la *pull request* no se puede fusionar.
 
-### Frontend: pendiente
+### Frontend
 
-El backend está cubierto; el frontend Angular tiene **2 tests**, y uno de ellos
-es el `app.component.spec.ts` que genera el CLI al crear el proyecto. Es el
-hueco real de cobertura y está sin tapar. Conviene no leer «71 tests» como si
-fueran de toda la aplicación.
+**84 tests con Vitest**, lanzados por el constructor `@angular/build:unit-test`
+de Angular sobre jsdom. Tampoco necesitan backend: las peticiones se interceptan
+con `HttpTestingController`.
+
+```bash
+cd frontend
+npm ci
+npx ng test --no-watch
+```
+
+| Carpeta | Tests | Qué cubre |
+|---|---|---|
+| `src/app/core/` | 28 | Sesión y SSR, renovación de token con dos 401 simultáneos, guardia de rutas, contrato HTTP de los servicios |
+| `src/app/features/auth/` | 11 | A dónde va el usuario tras login y registro; el aviso de credenciales no revela si el email existe |
+| `src/app/features/dashboard/` | 15 | Crear y borrar proyectos: qué petición sale, cuál no sale al cancelar, y que «Eliminar» no navega al proyecto |
+| `src/app/features/projects/` | 28 | Tablero: mover tarjetas guarda solo el estado y se revierte si el servidor falla; edición de tareas, fechas y comentarios |
+| `src/app/app.component.spec.ts` | 2 | El del andamiaje del CLI |
+
+Los componentes se prueban por su **efecto** —la petición que sale, o la que no
+sale— y no por su estado interno. Cada comportamiento de `features/dashboard` y
+`features/projects` se ha comprobado rompiéndolo a propósito en el código del
+componente: los 21 cambios probados ponen algún test en rojo.
+
+Un detalle que no se ve leyendo los tests: el de ida y vuelta de la fecha límite
+fuerza la zona horaria a `America/Los_Angeles`. Los runners de CI están en UTC,
+donde convertir en hora local en vez de en UTC da el mismo resultado y el error
+pasaría sin ruido.
 
 ---
 
