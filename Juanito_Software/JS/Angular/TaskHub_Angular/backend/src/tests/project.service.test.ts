@@ -192,7 +192,7 @@ describe('operaciones restringidas al propietario', () => {
   it('addMember: un miembro no propietario no puede añadir gente', async () => {
     repo.findById.mockResolvedValue(project as never);
     await expect(
-      projectService.addMember('proj-1', 'member-1', { userId: 'x', role: 'MEMBER' } as never),
+      projectService.addMember('proj-1', 'member-1', { email: 'x@test.com', role: 'VIEWER' }),
     ).rejects.toMatchObject({ statusCode: 403 });
     expect(repo.addMember).not.toHaveBeenCalled();
   });

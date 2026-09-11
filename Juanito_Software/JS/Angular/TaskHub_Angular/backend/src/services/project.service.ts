@@ -1,4 +1,5 @@
 import { projectRepository } from '../repositories/project.repository';
+import { userRepository } from '../repositories/user.repository';
 import { ApiError } from '../utils/ApiError';
 import { AddMemberInput, CreateProjectInput, UpdateProjectInput } from '../dto/project.dto';
 import { toPublicDto } from './user.service';
@@ -60,9 +61,37 @@ export const projectService = {
     await projectRepository.delete(id);
   },
 
-  async addMember(id: string, userId: string, input: AddMemberInput) {
-    await this.assertOwner(id, userId);
-    return projectRepository.addMember(id, input.userId, input.role);
+  /**
+   * Añade a un usuario, buscado por email, con rol EDITOR o VIEWER.
+   *
+   * Los dos casos que antes llegaban como 500 —ya es miembro, o el usuario no
+   * existe— se resuelven aqui con 409 y 404. La comprobacion previa no cubre dos
+   * altas simultaneas: la segunda llega a insertar y la base de datos la rechaza
+   * por la clave unica (P2002), que tambien se traduce a 409.
+   *
+   * Responder «no existe ningun usuario con ese email» dice que emails estan
+   * registrados. Se acepta a sabiendas: solo lo ve el propietario de un proyecto,
+   * y la alternativa —listar a todos los usuarios— enseñaria mas.
+   */
+  async addMember(id: string, ownerId: string, input: AddMemberInput) {
+    const project = await this.assertOwner(id, ownerId);
+
+    const user = await userRepository.findByEmail(input.email);
+    if (!user) throw ApiError.notFound('No existe ningún usuario con ese email');
+
+    const alreadyMember =
+      project.ownerId === user.id || project.members.some((m: { userId: string }) => m.userId === user.id);
+    if (alreadyMember) throw ApiError.conflict('Ese usuario ya es miembro del proyecto');
+
+    try {
+      const member = await projectRepository.addMember(id, user.id, input.role ?? 'VIEWER');
+      return { ...member, user: toPublicDto(member.user) };
+    } catch (err) {
+      if ((err as { code?: unknown }).code === 'P2002') {
+        throw ApiError.conflict('Ese usuario ya es miembro del proyecto');
+      }
+      throw err;
+    }
   },
 
   /**

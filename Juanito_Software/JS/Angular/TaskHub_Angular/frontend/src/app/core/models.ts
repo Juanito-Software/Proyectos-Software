@@ -45,6 +45,14 @@ export interface Project {
   members?: ProjectMember[];
 }
 
+/** Solo EDITOR y VIEWER: OWNER es quien creo el proyecto y no se asigna. */
+export type AssignableProjectRole = 'EDITOR' | 'VIEWER';
+
+export interface AddMemberRequest {
+  email: string;
+  role: AssignableProjectRole;
+}
+
 export interface CreateProjectRequest {
   name: string;
   description?: string;

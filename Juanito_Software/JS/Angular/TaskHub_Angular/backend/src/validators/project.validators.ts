@@ -16,7 +16,13 @@ export const updateProjectSchema = z.object({
 
 export const addMemberSchema = z.object({
   body: z.object({
-    userId: z.string().uuid(),
-    role: z.enum(['OWNER', 'EDITOR', 'VIEWER']).optional(),
+    // Por email y no por id: la pantalla no lista a los usuarios registrados,
+    // el propietario escribe el email de quien quiere añadir. Se recorta pero no
+    // se pasa a minusculas, igual que en el registro y el login: si no, un email
+    // guardado con mayusculas dejaria de encontrarse.
+    email: z.string().trim().email('Email inválido'),
+    // OWNER no es asignable: el propietario es uno solo (`ownerId`), y un
+    // segundo «OWNER» tendria los permisos de un EDITOR con otro nombre.
+    role: z.enum(['EDITOR', 'VIEWER']).optional(),
   }),
 });

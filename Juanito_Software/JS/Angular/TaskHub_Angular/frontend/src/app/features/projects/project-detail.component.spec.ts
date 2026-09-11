@@ -268,6 +268,53 @@ describe('ProjectDetailComponent', () => {
     });
   });
 
+  /**
+   * El boton «Miembros» y lo que pasa al cerrar su dialogo.
+   *
+   * Quien esta conectado lo decide AuthService, que lo lee de localStorage al
+   * crearse; por eso la sesion se escribe ahi ANTES de montar. El PROYECTO de
+   * este fichero pertenece a 'u1'.
+   */
+  describe('miembros', () => {
+    const conSesionDe = (id: string) => localStorage.setItem('taskhub:user', JSON.stringify({ id, name: id, email: `${id}@test.com`, role: 'MEMBER', avatarUrl: null }));
+    const botonMiembros = (m: Awaited<ReturnType<typeof montar>>) =>
+      Array.from((m.harness.routeNativeElement as HTMLElement).querySelectorAll('button')).find((b) => b.textContent?.includes('Miembros'));
+
+    afterEach(() => localStorage.removeItem('taskhub:user'));
+
+    it('el propietario ve el boton «Miembros»', async () => {
+      conSesionDe('u1');
+      const m = await montar();
+      control = m.control;
+
+      expect(botonMiembros(m)).toBeDefined();
+    });
+
+    it('alguien que no es el propietario no lo ve', async () => {
+      conSesionDe('u2');
+      const m = await montar();
+      control = m.control;
+
+      expect(botonMiembros(m)).toBeUndefined();
+    });
+
+    it('al cerrar el dialogo se recarga el proyecto, para que el miembro nuevo salga en «Responsable»', async () => {
+      conSesionDe('u1');
+      const m = await montar();
+      control = m.control;
+      const abrir = m.alCerrarDialogo(undefined);
+
+      m.componente.openMembersDialog();
+
+      expect((abrir.mock.calls[0][1] as { data: { project: Project } }).data.project.id).toBe('p1');
+      // Cerrar con Esc o pulsando fuera devuelve `undefined`; tambien recarga.
+      const nuevoMiembro = { id: 'm2', userId: 'u3', role: 'EDITOR' as const, user: { id: 'u3', name: 'Luis', email: 'luis@test.com' } };
+      m.control.expectOne(`${PROYECTOS}/p1`).flush({ ...PROYECTO, members: [...PROYECTO.members!, nuevoMiembro] });
+
+      expect(m.componente.project?.members?.map((x) => x.userId)).toEqual(['u2', 'u3']);
+    });
+  });
+
   describe('editar tarea', () => {
     it('abre el detalle con los miembros del proyecto, para poder asignarla', async () => {
       const m = await montar([tarea('t1', 'TODO')]);

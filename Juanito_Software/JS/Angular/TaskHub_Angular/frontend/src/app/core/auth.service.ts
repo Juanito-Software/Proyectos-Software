@@ -39,6 +39,11 @@ export class AuthService {
     );
   }
 
+  /** El usuario de la sesion, o null. Lectura sincrona para decidir que se pinta. */
+  get currentUser(): AuthResponse['user'] | null {
+    return this.currentUserSubject.value;
+  }
+
   isAuthenticated(): boolean {
     return !!this.currentUserSubject.value;
   }

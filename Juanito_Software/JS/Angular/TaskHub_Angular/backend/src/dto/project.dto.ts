@@ -9,6 +9,6 @@ export interface UpdateProjectInput {
 }
 
 export interface AddMemberInput {
-  userId: string;
-  role?: 'OWNER' | 'EDITOR' | 'VIEWER';
+  email: string;
+  role?: 'EDITOR' | 'VIEWER';
 }

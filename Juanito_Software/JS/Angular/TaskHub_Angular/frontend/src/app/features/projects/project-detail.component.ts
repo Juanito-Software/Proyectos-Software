@@ -13,6 +13,8 @@ import { Project, Task, TaskStatus } from '../../core/models';
 import { CreateTaskDialogComponent } from './create-task-dialog.component';
 import { TaskDetailDialogComponent } from './task-detail-dialog.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog.component';
+import { MembersDialogComponent } from './members-dialog.component';
+import { AuthService } from '../../core/auth.service';
 
 interface Column {
   status: TaskStatus;
@@ -42,6 +44,7 @@ interface Column {
           <h2>{{ project?.name }}</h2>
           <p *ngIf="project?.description">{{ project?.description }}</p>
         </div>
+        <button mat-stroked-button *ngIf="isOwner" (click)="openMembersDialog()">Miembros</button>
         <button mat-flat-button color="primary" (click)="openCreateTaskDialog()">Nueva tarea</button>
       </div>
 
@@ -111,6 +114,7 @@ export class ProjectDetailComponent implements OnInit {
   private taskService = inject(TaskService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private auth = inject(AuthService);
 
   project: Project | null = null;
   projectId = '';
@@ -122,17 +126,42 @@ export class ProjectDetailComponent implements OnInit {
     { status: 'DONE', label: 'Hecho', tasks: [] },
   ];
 
+  /**
+   * Solo el propietario ve el boton «Miembros». Es una ayuda visual, no la
+   * seguridad: el backend rechaza con 403 a cualquier otro que lo intente.
+   */
+  get isOwner(): boolean {
+    return !!this.project && this.project.ownerId === this.auth.currentUser?.id;
+  }
+
   get connectedLists(): string[] {
     return this.columns.map((c) => c.status);
   }
 
   ngOnInit(): void {
     this.projectId = this.route.snapshot.paramMap.get('id') ?? '';
+    this.loadProject();
+    this.loadTasks();
+  }
+
+  loadProject(): void {
     this.projectService.getProject(this.projectId).subscribe({
       next: (project) => (this.project = project),
       error: () => this.snackBar.open('No se pudo cargar el proyecto', 'Cerrar', { duration: 3000 }),
     });
-    this.loadTasks();
+  }
+
+  /**
+   * Al cerrar, se recarga el proyecto SIEMPRE, se haya añadido a alguien o no.
+   * El dialogo tambien se cierra con Esc o pulsando fuera, y en ese caso no
+   * devuelve nada: fiarse de su resultado dejaria sin recargar justo cuando el
+   * usuario cierra de la forma mas comoda. Sin la recarga, el miembro nuevo no
+   * saldria en «Responsable» al editar una tarea.
+   */
+  openMembersDialog(): void {
+    if (!this.project) return;
+    const dialogRef = this.dialog.open(MembersDialogComponent, { data: { project: this.project } });
+    dialogRef.afterClosed().subscribe(() => this.loadProject());
   }
 
   loadTasks(): void {

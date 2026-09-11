@@ -87,6 +87,15 @@ describe('ProjectService', () => {
     peticion.flush({ id: 'p1' } as unknown as Project);
   });
 
+  it('añade un miembro con POST a /:id/members, con email y rol', () => {
+    servicio.addMember('p1', { email: 'bob@test.com', role: 'EDITOR' }).subscribe();
+
+    const peticion = control.expectOne(`${URL}/p1/members`);
+    expect(peticion.request.method).toBe('POST');
+    expect(peticion.request.body).toEqual({ email: 'bob@test.com', role: 'EDITOR' });
+    peticion.flush({});
+  });
+
   it('borra con DELETE sobre el id', () => {
     servicio.deleteProject('p1').subscribe();
 

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CreateProjectRequest, Project } from './models';
+import { AddMemberRequest, CreateProjectRequest, Project, ProjectMember } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
@@ -27,5 +27,9 @@ export class ProjectService {
 
   deleteProject(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  addMember(projectId: string, payload: AddMemberRequest): Observable<ProjectMember> {
+    return this.http.post<ProjectMember>(`${this.apiUrl}/${projectId}/members`, payload);
   }
 }
