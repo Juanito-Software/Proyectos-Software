@@ -113,27 +113,42 @@ no por captura de pantalla.
 
 ### Un tercer «anotado como hecho sin estarlo»
 
-Al abrir el ruleset se vio que **«Require a pull request before merging» está
+Al abrir el ruleset se vio que **«Require a pull request before merging» estaba
 desmarcado**, cuando la entrada del 5 de septiembre de este mismo fichero dice
-que se activó. El riesgo real es bajo —los *status checks* se aplican también a
-los push directos— pero el historial afirma algo que no es cierto.
+que se activó. El riesgo real era bajo —los *status checks* se aplican también a
+los push directos— pero el historial afirmaba algo que no era cierto.
 
 Es el tercer caso de la misma especie en esta lista. Los dos anteriores
 aparecieron en el repaso del 5 de septiembre. La conclusión no es que el
 historial esté mal escrito, sino que **una lista de estado no se verifica sola**:
 hay que ir a mirar, y mirar cuesta un comando.
 
-### Pendiente, y es el más interesante
+Activado al día siguiente, y corregida la entrada del 5 de septiembre.
 
-**Nadie ha comprobado que la puerta sepa fallar.** Mientras todo esté en verde,
-la condición `contains(needs.*.result, 'failure')` no se evalúa nunca: el job
-pasa porque no hay nada que lo tumbe, no porque sepamos que reacciona. Falta
-provocarlo —una rama de usar y tirar con un `.json` mal formado debería tumbar
-`Config · JSON y YAML` y arrastrar la puerta— y hasta entonces es una
-afirmación, no una garantía.
+### La puerta sabe fallar: comprobado
 
-Es exactamente la misma duda que llevó a escribir tests que comprueban filas y
-peticiones en vez de estados `COMPLETED`.
+Quedó pendiente una noche, y era lo más importante que quedaba. Mientras todo
+está en verde, la condición `contains(needs.*.result, 'failure')` **no se evalúa
+nunca**: el job pasa porque no hay nada que lo tumbe, no porque se sepa que
+reacciona. Un guardián sin provocar es una afirmación, no una garantía — la
+misma duda que llevó a escribir tests que comprueban filas y peticiones en vez
+de estados `COMPLETED`.
+
+Se provocó: rama de usar y tirar con un `.json` mal formado a propósito, PR
+abierta y cerrada sin fusionar. Resultado:
+
+```
+✗ CI / Config - JSON y YAML     Failing after 7s
+✗ CI / Monorepo en verde        Failing after 4s
+```
+
+**Rojo, no gris**, que era el punto entero. Un job que se salta no cuenta como
+fallo para la protección de rama: si el `if: always()` faltara, ahí habría
+aparecido un check en gris y la PR se habría podido fusionar igual. El fallo que
+la puerta viene a evitar, escondido dentro de la propia puerta.
+
+Cuatro segundos. La puerta no repite trabajo, solo lee resultados, así que
+tenerla no cuesta nada.
 
 ---
 
@@ -545,6 +560,18 @@ tener bastante deriva, que es lo que le quita valor a una lista así:
   así que una PR podía fusionarse sin estar al día con `main` y su verde se
   había calculado contra otro estado. Se activó, junto con exigir *pull
   request* para tocar `main`.
+
+  > **Corrección (2026-09-11).** Lo primero era cierto; lo segundo no. Al abrir
+  > el *ruleset* cinco días después, «Require a pull request before merging»
+  > estaba **desmarcado**. O nunca llegó a guardarse, o se desactivó después.
+  > Ya está activado y comprobado.
+  >
+  > Es el tercer punto de esta misma lista que figuraba como hecho sin estarlo,
+  > y los otros dos aparecieron en este mismo repaso. La conclusión no es que el
+  > historial esté mal escrito, sino que **repasar una lista contra lo que uno
+  > recuerda no sirve**: hay que ir a mirar el estado real, y mirar cuesta un
+  > comando. Aquí bastaba
+  > `gh api repos/{owner}/{repo}/rules/branches/main`.
 - Los demás se comprobaron en el código antes de dejarlos escritos: `PUT` y
   `PATCH` comparten controlador, no hay `LIMIT` ni `OFFSET` en el repositorio de
   tareas, `error.middleware.ts` vuelca el objeto de error entero, y el registro
