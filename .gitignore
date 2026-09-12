@@ -187,6 +187,29 @@ _siguiente-sesion.md
 _limpieza-historia/
 
 # ============================================
+# Carpeta donde la aplicación de escritorio de Claude deja los ficheros
+# que se descargan del chat.
+#
+# Está en la raíz del repositorio —es la carpeta conectada a la sesión—,
+# así que `git add -A` la recoge entera. Ya ha pasado dos veces: la PR
+# #94 se llevó dentro un borrador de entrada de MAINTENANCE y la #97 un
+# PDF, ninguno de los dos destinado a versionarse. En la rama de
+# TaskHub_Angular estuvo a punto de colarse una tercera vez, con cuatro
+# copias de ficheros que ya estaban entregados en su ruta correcta.
+#
+# Lo que cae ahí es siempre una copia: el original vive en la ruta que
+# le toca dentro del proyecto, o directamente fuera del repositorio.
+#
+# Ojo al nombre: lleva espacio y mayúscula inicial. `claude_outputs/` o
+# `claude outputs/` no coinciden.
+#
+# Esto NO desversiona lo que ya estaba dentro: para eso hace falta
+# `git rm --cached`, que es lo que hace el commit que introduce esta
+# línea.
+# ============================================
+Claude outputs/
+
+# ============================================
 # Salidas de build de PyInstaller con nombre <Proyecto>Build/
 # ============================================
 *Build/
