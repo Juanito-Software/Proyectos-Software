@@ -214,17 +214,49 @@ jobs:
           # solo `target/surefire-reports`, que con este proyecto no encontraría
           # nada y daría el error de «no se ha ejecutado ni un test».
           #
-          # Sus tests no necesitan PostgreSQL ni la variable
-          # RADIOSTACK_JWT_SECRET. Casi todos construyen con `new` la clase que
-          # prueban, con dobles de sus dependencias. SecurityConfigTest es la
-          # excepcion y usa @WebMvcTest, pero esa rodaja levanta solo la capa
-          # web —sin JPA ni DataSource— y fija la clave de firma por propiedad.
+          # Casi todos sus tests construyen con `new` la clase que prueban, con
+          # dobles de sus dependencias, y no necesitan nada montado.
+          #
+          # Hay dos excepciones, las dos deliberadas. SecurityConfigTest usa
+          # @WebMvcTest, que levanta solo la capa web —sin JPA ni DataSource— y
+          # fija la clave de firma por propiedad. Y EsquemaYMigracionesTest sí
+          # necesita PostgreSQL y RADIOSTACK_JWT_SECRET: es el único que arranca
+          # la aplicación entera para que Flyway aplique las migraciones de
+          # verdad y Hibernate valide el esquema resultante contra las entidades.
           #
           # El total reparte por modulos: 2 en core, 34 en persistence —el
-          # mapeador entre entidades y dominio, y los seis adaptadores— y 119 en
-          # api. Hasta ahora persistence tenia 19 ficheros y cero tests.
+          # mapeador entre entidades y dominio, y los seis adaptadores— y 126 en
+          # api, de los cuales 7 son los de esquema y migraciones.
           - proyecto: Juanito_Software/Java/RadioStack
-            minimo: 155
+            minimo: 162
+    # PostgreSQL para EsquemaYMigracionesTest.
+    #
+    # Las credenciales son las que documenta el application.yml de RadioStack a
+    # proposito: asi el test se ejecuta contra la MISMA configuracion que usa un
+    # desarrollador en local, sin propiedades de prueba que la sustituyan. Si
+    # alguien cambia el nombre de la base de datos en application.yml y no aqui,
+    # el CI lo dice.
+    #
+    # El servicio se levanta para toda la matriz, tambien para BatchProcessor,
+    # que no lo usa. Cuesta unos segundos y evita duplicar el job entero —y con
+    # el, el paso que cuenta los tests— solo para un proyecto.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: radiostack
+          POSTGRES_PASSWORD: radiostack
+          POSTGRES_DB: radiostack
+        ports:
+          - 5432:5432
+        # Sin esto, los tests arrancarian antes de que la base acepte conexiones
+        # y fallarian de forma intermitente.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -235,6 +267,16 @@ jobs:
 
       - name: mvn test
         working-directory: ${{ matrix.proyecto }}
+        env:
+          # La marca que habilita los tests que necesitan base de datos. En un
+          # portatil no esta definida y esos tests se saltan; aqui si, y el paso
+          # de abajo NO cuenta los saltados, de modo que si esta variable dejara
+          # de llegar el recuento bajaria de 162 a 155 y el job fallaria. No
+          # pueden dejar de ejecutarse en silencio.
+          RADIOSTACK_DB_TESTS: "true"
+          # Clave solo para el CI. La aplicacion se niega a arrancar sin ella, y
+          # no tiene valor por defecto a proposito.
+          RADIOSTACK_JWT_SECRET: Y2xhdmUtZGUtQ0ktcGFyYS1maXJtYXItdG9rZW5zLWRlLXBydWViYS0hIQ==
         run: mvn -B test
 
       # Por qué no basta con que `mvn test` salga en verde.
@@ -282,8 +324,19 @@ jobs:
           while IFS= read -r informe; do
             # grep -c devuelve 1 cuando no hay coincidencias, y con `set -e` eso
             # abortaría el paso al llegar al informe de una clase contenedora.
-            n=$(grep -c '<testcase' "$informe" || true)
-            echo "  $n  $informe"
+            casos=$(grep -c '<testcase' "$informe" || true)
+            # Y se DESCUENTAN los saltados. Surefire escribe un <testcase> para
+            # ellos igual que para los ejecutados, con un <skipped/> dentro, asi
+            # que sin esta resta un @Disabled sobre una clase entera dejaria el
+            # recuento intacto: el suelo que existe para detectar cobertura que
+            # desaparece no veria la forma mas facil de hacerla desaparecer.
+            saltados=$(grep -c '<skipped' "$informe" || true)
+            n=$((casos - saltados))
+            if [ "$saltados" -gt 0 ]; then
+              echo "  $n  $informe  ($saltados saltados, no cuentan)"
+            else
+              echo "  $n  $informe"
+            fi
             total=$((total + n))
           done <<< "$informes"
 
