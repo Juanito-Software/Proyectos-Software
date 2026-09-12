@@ -219,8 +219,12 @@ jobs:
           # prueban, con dobles de sus dependencias. SecurityConfigTest es la
           # excepcion y usa @WebMvcTest, pero esa rodaja levanta solo la capa
           # web —sin JPA ni DataSource— y fija la clave de firma por propiedad.
+          #
+          # El total reparte por modulos: 2 en core, 34 en persistence —el
+          # mapeador entre entidades y dominio, y los seis adaptadores— y 119 en
+          # api. Hasta ahora persistence tenia 19 ficheros y cero tests.
           - proyecto: Juanito_Software/Java/RadioStack
-            minimo: 121
+            minimo: 155
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

@@ -31,6 +31,25 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>
+
+        <!--
+            Tests. La version la fija el BOM de Spring Boot del pom padre.
+
+            Este modulo no tenia ni una clase de test: 19 ficheros de codigo y
+            cero cobertura, con el mapeador entre entidades JPA y dominio dentro.
+            Ese mapeador es el sitio clasico donde alguien anade un campo a la
+            entidad, se olvida de una de las dos direcciones, y el dato se pierde
+            en silencio camino de la base de datos.
+
+            Ningun test de aqui levanta Spring ni toca PostgreSQL: el mapeador son
+            funciones puras y los adaptadores se prueban con dobles de sus
+            repositorios JPA.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>
