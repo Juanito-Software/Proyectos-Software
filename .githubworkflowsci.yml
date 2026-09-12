@@ -1,0 +1,722 @@
+name: CI
+
+# Integración continua "ligera y universal" para el monorepo.
+#
+# Este repositorio reúne ~50 proyectos heterogéneos de distintos ecosistemas,
+# muchos experimentales o de aprendizaje. Un CI que intentara compilar y testear
+# todos estaría en rojo permanente (la mitad no construyen limpios, y los que sí
+# necesitan bases de datos y secretos para arrancar). En vez de eso, este
+# pipeline hace comprobaciones baratas que cazan la clase de fallo que de verdad
+# se ha colado aquí: sintaxis rota, imports que no cargan, JSON mal formado y
+# patrones peligrosos concretos. Es lo que un CI habría detectado el primer día
+# en los ~14 casos de "declarado pero nunca ejercitado" que aparecieron a mano.
+#
+# No arranca servicios ni ejecuta tests con base de datos: eso queda para jobs
+# específicos por proyecto, que se añadirán aparte cuando haga falta.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permisos del token que GitHub inyecta en cada job. Solo se lee código y se
+# descargan dependencias: nada de escritura. Por defecto ese token puede
+# escribir en el repositorio, y cualquier acción de terceros que corra aquí lo
+# hereda. Declarado a nivel de workflow, lo heredan todos los jobs.
+permissions:
+  contents: read
+
+# Cancela ejecuciones anteriores del mismo ref si llega un push nuevo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Python: comprobación de sintaxis de todos los .py del repositorio.
+  #
+  # py_compile no ejecuta el código ni resuelve dependencias: solo verifica que
+  # cada fichero es Python válido. Es barato y no necesita instalar nada. Caza
+  # errores de sintaxis y, con -m compileall, ficheros que ni siquiera parsean.
+  # ---------------------------------------------------------------------------
+  python-syntax:
+    name: Python · sintaxis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compilar sintaxis de todos los .py
+        run: |
+          # Se excluyen entornos virtuales, artefactos y código de terceros
+          # vendorizado, que no forman parte del código propio.
+          mapfile -t files < <(git ls-files '*.py' \
+            | grep -vE '/venv/|/iaenv/|/dist/|/build/|/MetaGPT/|/ClipsAI/')
+          echo "Comprobando ${#files[@]} ficheros .py"
+          python -m py_compile "${files[@]}"
+
+  # ---------------------------------------------------------------------------
+  # JavaScript: comprobación de sintaxis con `node --check`.
+  #
+  # Equivalente a py_compile para JS: parsea cada fichero sin ejecutarlo. Habría
+  # cazado, por ejemplo, el import roto que tumbaba unified-chat-widget.
+  # ---------------------------------------------------------------------------
+  js-syntax:
+    name: JavaScript · sintaxis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: node --check en todos los .js
+        run: |
+          mapfile -t files < <(git ls-files '*.js' \
+            | grep -vE 'node_modules|/dist/|/build/|/libs/')
+          echo "Comprobando ${#files[@]} ficheros .js"
+          for f in "${files[@]}"; do node --check "$f"; done
+
+  # ---------------------------------------------------------------------------
+  # Ficheros de configuración: JSON y YAML bien formados.
+  #
+  # OJO: los tsconfig*.json de Angular son JSONC (admiten comentarios), así que
+  # NO son JSON estricto y se excluyen a propósito; validarlos daría un falso
+  # positivo. Se comprueban los package.json, composer.json y el resto de JSON
+  # estricto, más los YAML de workflows y dependabot.
+  # ---------------------------------------------------------------------------
+  config-lint:
+    name: Config · JSON y YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validar JSON (excluye tsconfig JSONC y node_modules)
+        run: |
+          mapfile -t files < <(git ls-files '*.json' \
+            | grep -v node_modules \
+            | grep -vE '/tsconfig[^/]*\.json$')
+          echo "Validando ${#files[@]} ficheros JSON"
+          for f in "${files[@]}"; do
+            python -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$f" \
+              || { echo "JSON inválido: $f"; exit 1; }
+          done
+      - name: Validar YAML (workflows y dependabot)
+        run: |
+          python -m pip install --quiet pyyaml
+          mapfile -t files < <(git ls-files '*.yml' '*.yaml' | grep -v node_modules)
+          echo "Validando ${#files[@]} ficheros YAML"
+          for f in "${files[@]}"; do
+            python -c "import yaml,sys; yaml.safe_load(open(sys.argv[1], encoding='utf-8'))" "$f" \
+              || { echo "YAML inválido: $f"; exit 1; }
+          done
+
+  # ---------------------------------------------------------------------------
+  # Guardián de regresiones: patrones que ya se corrigieron y no deben volver.
+  #
+  # Cada patrón corresponde a un fallo real arreglado durante la revisión de
+  # seguridad. Si alguno reaparece, el CI falla y señala dónde. Hoy todos están
+  # a cero, así que este job nace en verde.
+  # ---------------------------------------------------------------------------
+  regression-guard:
+    name: Guardián de patrones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sin str(e) en respuestas HTTP (fuga de información)
+        run: |
+          if git grep -nE "jsonify.*str\(e\)|['\"]error['\"].*str\(e\)" -- '*.py' \
+             | grep -v '/venv/'; then
+            echo "::error::Detalle de excepción devuelto al cliente. Usa un mensaje genérico y registra el detalle en el log."
+            exit 1
+          fi
+      - name: Sin console.log de variables de entorno (fuga de secretos)
+        run: |
+          if git grep -nE "console\.log\([^)]*process\.env" -- '*.js' \
+             | grep -v node_modules; then
+            echo "::error::Variable de entorno impresa por consola. Informa de si está definida, nunca de su valor."
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Java: compilación de los proyectos Maven que no tienen tests.
+  #
+  # Solo compila, así que no necesita base de datos ni secretos. JDK 21 cubre
+  # todos: los que fijan target 17 compilan sin problema con un JDK más nuevo.
+  # Habría cazado el pom de ApiService que no se podía leer o el target 23
+  # imposible de XlsxToCsvConverter.
+  #
+  # El nombre dice «compilar» y no «tests» a propósito: estos tres proyectos no
+  # tienen ni una clase de test, y un job llamado de otra forma haría creer que
+  # están cubiertos. BatchProcessor y RadioStack ya no están en esta lista porque
+  # su job de tests los compila igualmente; tenerlos en los dos duplicaría el
+  # trabajo.
+  #
+  # Antes este comentario decía «cuatro proyectos … no tienen ni una clase de
+  # test» con RadioStack dentro, y RadioStack sí tenía una: LocutorTest, con 2
+  # tests que no se ejecutaban en ninguna parte porque aquí se compila con
+  # -DskipTests.
+  # ---------------------------------------------------------------------------
+  maven-compile:
+    name: Java · compilar
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        proyecto:
+          - Juanito_Software/Java/HashTools
+          - Juanito_Software/Java/others/XlsxToCsvConverter
+          - Juanito_Software/Python/Flask/LeaderBoard_Unity/API_webapp_puntuaciones/informes/JasperReportExecutor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: mvn compile
+        working-directory: ${{ matrix.proyecto }}
+        run: mvn -q -B -DskipTests compile
+
+  # ---------------------------------------------------------------------------
+  # Java: tests de los proyectos que sí los tienen.
+  #
+  # Hasta ahora el único job de Java compilaba con `-DskipTests`, de modo que
+  # los tests de BatchProcessor no se ejecutaban en ninguna parte. Tampoco
+  # habrían pasado: el único que había levanta el contexto completo de Spring
+  # contra un MySQL en localhost, que en un runner no existe. Se resolvió con
+  # un perfil de test sobre H2 en memoria, así que ya no hace falta ninguna
+  # base de datos aquí.
+  #
+  # Los tests NO se enumeran aquí. `mvn test` recoge todo lo que haya en
+  # src/test/java, asi que una clase nueva entra en el CI sola. Enumerarlos
+  # crearia una segunda lista que mantener y que se quedaria desfasada en
+  # silencio, que es justo la clase de fallo que este proyecto lleva toda la
+  # semana persiguiendo. Lo que sí se declara abajo es cuántos hay.
+  # ---------------------------------------------------------------------------
+  maven-test:
+    name: Java · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/Java/BatchProcessor
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 20
+
+          # RadioStack es MULTIMÓDULO, y eso cambia dónde aparecen los informes:
+          # cada módulo deja los suyos en su propio target/, no en la raíz del
+          # proyecto. Por eso el paso de abajo busca con `find` en vez de mirar
+          # solo `target/surefire-reports`, que con este proyecto no encontraría
+          # nada y daría el error de «no se ha ejecutado ni un test».
+          #
+          # Casi todos sus tests construyen con `new` la clase que prueban, con
+          # dobles de sus dependencias, y no necesitan nada montado.
+          #
+          # Hay dos excepciones, las dos deliberadas. SecurityConfigTest usa
+          # @WebMvcTest, que levanta solo la capa web —sin JPA ni DataSource— y
+          # fija la clave de firma por propiedad. Y EsquemaYMigracionesTest sí
+          # necesita PostgreSQL y RADIOSTACK_JWT_SECRET: es el único que arranca
+          # la aplicación entera para que Flyway aplique las migraciones de
+          # verdad y Hibernate valide el esquema resultante contra las entidades.
+          #
+          # El total reparte por modulos: 2 en core, 34 en persistence —el
+          # mapeador entre entidades y dominio, y los seis adaptadores— y 126 en
+          # api, de los cuales 7 son los de esquema y migraciones.
+          - proyecto: Juanito_Software/Java/RadioStack
+            minimo: 162
+    # PostgreSQL para EsquemaYMigracionesTest.
+    #
+    # Las credenciales son las que documenta el application.yml de RadioStack a
+    # proposito: asi el test se ejecuta contra la MISMA configuracion que usa un
+    # desarrollador en local, sin propiedades de prueba que la sustituyan. Si
+    # alguien cambia el nombre de la base de datos en application.yml y no aqui,
+    # el CI lo dice.
+    #
+    # El servicio se levanta para toda la matriz, tambien para BatchProcessor,
+    # que no lo usa. Cuesta unos segundos y evita duplicar el job entero —y con
+    # el, el paso que cuenta los tests— solo para un proyecto.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: radiostack
+          POSTGRES_PASSWORD: radiostack
+          POSTGRES_DB: radiostack
+        ports:
+          - 5432:5432
+        # Sin esto, los tests arrancarian antes de que la base acepte conexiones
+        # y fallarian de forma intermitente.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: mvn test
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          # La marca que habilita los tests que necesitan base de datos. En un
+          # portatil no esta definida y esos tests se saltan; aqui si, y el paso
+          # de abajo NO cuenta los saltados, de modo que si esta variable dejara
+          # de llegar el recuento bajaria de 162 a 155 y el job fallaria. No
+          # pueden dejar de ejecutarse en silencio.
+          RADIOSTACK_DB_TESTS: "true"
+          # Clave solo para el CI. La aplicacion se niega a arrancar sin ella, y
+          # no tiene valor por defecto a proposito.
+          RADIOSTACK_JWT_SECRET: Y2xhdmUtZGUtQ0ktcGFyYS1maXJtYXItdG9rZW5zLWRlLXBydWViYS0hIQ==
+        run: mvn -B test
+
+      # Por qué no basta con que `mvn test` salga en verde.
+      #
+      # Un `mvn test` sobre un proyecto sin tests termina en verde sin haber
+      # probado nada. La primera versión de este paso exigía que el total fuera
+      # mayor que cero, y eso tapa el caso realista: no que desaparezcan todos
+      # los tests, sino que desaparezcan algunos. Si alguien borra una clase, o
+      # la renombra a algo que Surefire ya no reconoce como test, el total baja
+      # de 20 a 14 y el job sigue verde. Cobertura perdida sin un solo aviso.
+      #
+      # Por eso se declara un suelo. Si el número baja, el CI falla y hay que
+      # bajar el suelo a mano: quitar cobertura pasa a ser una decisión escrita
+      # en el diff en vez de un efecto colateral que nadie ve. Al añadir tests,
+      # el job avisa de que conviene subirlo, pero no falla.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          # `find` y no `ls target/surefire-reports/...`: en un proyecto
+          # multimódulo como RadioStack los informes están en */target/, y la
+          # versión anterior no habría encontrado ninguno.
+          informes=$(find . -path '*/target/surefire-reports/TEST-*.xml' | sort)
+
+          if [ -z "$informes" ]; then
+            echo "::error::Surefire no ha dejado ningún informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          # Se cuentan elementos <testcase>, no el atributo tests= de <testsuite>,
+          # por la misma razón que en los jobs de Node y PHP: hay uno por test
+          # ejecutado, sea cual sea la forma del árbol. Con las clases anidadas de
+          # JUnit 5 (@Nested) esto importa, porque Surefire escribe un informe por
+          # clase anidada y otro para la externa con tests="0".
+          #
+          # Y se imprime el desglose por fichero a propósito: cuando el total no
+          # cuadre, el log dirá qué informe falta o cuál cuenta de menos, en vez
+          # de dejar solo una cifra que no se puede depurar sin volver a ejecutar
+          # a ciegas.
+          echo "Informes de Surefire encontrados:"
+          total=0
+          while IFS= read -r informe; do
+            # grep -c devuelve 1 cuando no hay coincidencias, y con `set -e` eso
+            # abortaría el paso al llegar al informe de una clase contenedora.
+            casos=$(grep -c '<testcase' "$informe" || true)
+            # Y se DESCUENTAN los saltados. Surefire escribe un <testcase> para
+            # ellos igual que para los ejecutados, con un <skipped/> dentro, asi
+            # que sin esta resta un @Disabled sobre una clase entera dejaria el
+            # recuento intacto: el suelo que existe para detectar cobertura que
+            # desaparece no veria la forma mas facil de hacerla desaparecer.
+            saltados=$(grep -c '<skipped' "$informe" || true)
+            n=$((casos - saltados))
+            if [ "$saltados" -gt 0 ]; then
+              echo "  $n  $informe  ($saltados saltados, no cuentan)"
+            else
+              echo "  $n  $informe"
+            fi
+            total=$((total + n))
+          done <<< "$informes"
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Node: tests de los proyectos que sí los tienen.
+  #
+  # Dos entradas, y no son intercambiables aunque las dos usen Vitest:
+  #
+  # - El **backend** lo lanza `vitest` directamente, via el script `test` del
+  #   package.json. No hace falta base de datos ni `prisma generate`: los tests
+  #   sustituyen `config/prisma` y `@prisma/client` por dobles, y
+  #   `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
+  #   `config/env.ts` no lance al importarse.
+  #
+  # - El **frontend** lo lanza el constructor `@angular/build:unit-test`, que
+  #   envuelve a Vitest y NO le reenvía sus opciones. De ahí que el comando sea
+  #   distinto y las banderas se llamen de otra forma (ver abajo).
+  #
+  # Ambos tenían tests sin ejecutar en ninguna parte: 71 el backend, y el
+  # frontend 2 —uno de ellos el que genera el CLI al crear el proyecto—.
+  #
+  # TaskHub_React NO está aquí: tiene su propio workflow, con Postgres y e2e.
+  # ---------------------------------------------------------------------------
+  node-test:
+    name: Node · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 162
+            comando: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
+
+          # El comando del frontend se averiguó a base de probarlo, porque el
+          # constructor de Angular filtra lo que le llega:
+          #
+          #   --reporter / --outputFile  -> «Unknown arguments». Son las de
+          #                                 Vitest y el constructor no las pasa.
+          #   --reporters                -> aceptada (plural, del esquema del
+          #                                 constructor).
+          #   --outputFile               -> rechazada; el CLI convierte el
+          #                                 camelCase a guiones: --output-file.
+          #
+          # Y el ORDEN de los reporters importa: --output-file se aplica «solo
+          # al primer reporter», así que `junit` va delante. Al revés, el XML se
+          # llenaría con la salida de consola y el contador leería basura.
+          #
+          # `default` va detrás para que el log muestre qué test ha fallado; con
+          # `junit` a secas la consola no imprime ni un resumen.
+          - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/frontend
+            minimo: 99
+            comando: npx ng test --no-watch --reporters=junit --reporters=default --output-file=vitest-report.xml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.proyecto }}/package-lock.json
+
+      # `npm ci` y no `npm install`: instala exactamente lo del lock y falla si
+      # el lock no concuerda con el package.json, en vez de arreglarlo por su
+      # cuenta y dejar el CI probando un árbol de dependencias distinto del que
+      # tiene el proyecto.
+      - name: npm ci
+        working-directory: ${{ matrix.proyecto }}
+        run: npm ci
+
+      - name: Tests
+        working-directory: ${{ matrix.proyecto }}
+        run: ${{ matrix.comando }}
+
+      # Mismo suelo declarado que en los otros jobs, pero contando de otra
+      # manera, y esto no es estilo.
+      #
+      # El informe de vitest pone tests="71" en <testsuites> Y ademas en cada
+      # <testsuite>, que suman otros 71: un grep daría 142 y el mínimo no
+      # saltaría nunca. La versión anterior sumaba el atributo de los
+      # <testsuite>, lo cual funcionaba, pero depende de cómo anide el XML cada
+      # herramienta —PHPUnit, por ejemplo, anida y ahí ese mismo cálculo contaría
+      # doble—.
+      #
+      # Contar elementos <testcase> es inmune a la forma del árbol: hay uno por
+      # test ejecutado, ni más ni menos. Es lo mismo que hace el job de PHP.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f vitest-report.xml ]; then
+            echo "::error::vitest no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('vitest-report.xml').getroot()
+          print(len(list(raiz.iter('testcase'))))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # PHP: tests de los proyectos que sí los tienen.
+  #
+  # Primer job de PHP del repositorio: hasta ahora no había ninguno, ni de
+  # tests ni de sintaxis. gym-app tenía 25 tests que no se ejecutaban en ningún
+  # sitio —ni siquiera había un script en composer.json— y que además eran
+  # todos los que genera Laravel Breeze al instalarse: registro, login,
+  # verificación de correo, perfil. Nada propio de la aplicación.
+  #
+  # No hace falta base de datos: phpunit.xml fija sqlite en memoria, con un
+  # comentario que explica por qué es imprescindible (los tests usan
+  # RefreshDatabase, que lanza migrate:fresh y arrasaría la base de desarrollo).
+  # ---------------------------------------------------------------------------
+  php-test:
+    name: PHP · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/PHP/Laravel/gym-app
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 41
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          # sqlite3 y pdo_sqlite son los que hacen falta para los tests;
+          # el resto los pide Laravel para arrancar.
+          extensions: mbstring, xml, sqlite3, pdo_sqlite, bcmath, curl, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ matrix.proyecto }}/package-lock.json
+
+      - name: composer install
+        working-directory: ${{ matrix.proyecto }}
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Laravel no arranca sin APP_KEY. En local existe porque hay un .env; en
+      # un runner no hay ninguno, así que se genera uno de usar y tirar a partir
+      # del ejemplo. Es la diferencia entre "pasa en mi máquina" y "pasa".
+      - name: Preparar entorno
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Compilar los assets NO es opcional, aunque suene a cosa de front.
+      #
+      # Los layouts Blade llaman a @vite(...), que en tiempo de render busca
+      # public/build/manifest.json. Si no está, la vista lanza
+      # ViteManifestNotFoundException y la respuesta es un 500: siete de los
+      # tests -los que renderizan una pantalla- fallaban con "Expected 200 but
+      # received 500", que no dice nada de Vite hasta que se lee la traza.
+      #
+      # En local no se nota porque public/build/ existe de haber lanzado
+      # `npm run build` alguna vez, y está en .gitignore. Otro caso de "pasa en
+      # mi máquina" por un artefacto que no viaja con el repositorio.
+      - name: Compilar assets
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          npm ci
+          npm run build
+
+      # Se usa vendor/bin/phpunit y no `php artisan test`, que es lo que se
+      # lanza a mano. Los dos ejecutan lo mismo y leen el mismo phpunit.xml,
+      # pero artisan test envuelve la salida con Collision y el informe JUnit
+      # sale más limpio yendo directo a la herramienta.
+      - name: phpunit
+        working-directory: ${{ matrix.proyecto }}
+        run: vendor/bin/phpunit --log-junit=phpunit-report.xml
+
+      # Mismo suelo declarado que en los otros jobs, pero la cuenta se saca de
+      # otra manera, y conviene saber por qué.
+      #
+      # PHPUnit **anida** los <testsuite>: uno por suite declarada, dentro otro
+      # por clase, y a veces otro más. Sumar el atributo tests= de cada uno
+      # contaría los mismos tests dos y tres veces, justo al revés del problema
+      # de vitest —que los duplica— pero con el mismo resultado: un número
+      # inventado.
+      #
+      # Contar elementos <testcase> es inmune a la forma del árbol: hay uno por
+      # test ejecutado, ni más ni menos.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f phpunit-report.xml ]; then
+            echo "::error::PHPUnit no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('phpunit-report.xml').getroot()
+          print(len(list(raiz.iter('testcase'))))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Python: tests de los proyectos que sí los tienen.
+  #
+  # TaskHub (FastAPI) tenía 55 tests bien escritos que no se ejecutaban en
+  # ninguna parte. Pasaban en la máquina de quien los escribió y en ningún sitio
+  # más, porque ni `pytest` ni `httpx` estaban declarados como dependencia: en
+  # un entorno limpio pytest ni arranca. Se resolvió con un
+  # requirements-dev.txt, y este job es lo que garantiza que siga resuelto —un
+  # entorno limpio en cada push es la única forma de detectar que falta una
+  # dependencia—.
+  #
+  # No hace falta base de datos: conftest.py monta una SQLite en memoria por
+  # test, con StaticPool para que todas las sesiones vean la misma.
+  # ---------------------------------------------------------------------------
+  python-test:
+    name: Python · tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/Python/FastApi/TaskHub/backend
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ matrix.proyecto }}/requirements*.txt
+
+      # Se instalan los dos ficheros por separado y a propósito. Si algún día
+      # una dependencia de ejecución se cuela solo en requirements-dev.txt, la
+      # aplicación se desplegaría sin ella y aquí no se notaría; teniéndolos
+      # separados, al menos la distinción está escrita en alguna parte.
+      - name: Instalar dependencias
+        working-directory: ${{ matrix.proyecto }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      # El informe JUnit no es decorativo: es de donde sale la cuenta del paso
+      # siguiente. Sin él habría que fiarse de la línea final de pytest, que es
+      # texto pensado para leerse, no para parsearse.
+      - name: pytest
+        working-directory: ${{ matrix.proyecto }}
+        run: pytest -q --junitxml=pytest-report.xml
+
+      # Mismo razonamiento que en el job de Java: un suelo, no un "mayor que
+      # cero". Que el total baje de 55 a 20 dejaría el job en verde y la
+      # cobertura perdida sin un solo aviso.
+      #
+      # Aquí la cuenta se saca con el parser XML de Python en vez de con grep:
+      # el informe de pytest tiene un <testsuites> que envuelve a <testsuite>, y
+      # según la versión ambos pueden llevar el atributo tests=. Un grep los
+      # sumaría los dos y daría el doble.
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          MINIMO: ${{ matrix.minimo }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f pytest-report.xml ]; then
+            echo "::error::pytest no ha dejado informe: no se ha ejecutado ni un test."
+            exit 1
+          fi
+
+          total=$(python -c "
+          import xml.etree.ElementTree as ET
+          raiz = ET.parse('pytest-report.xml').getroot()
+          suites = raiz.iter('testsuite')
+          print(sum(int(s.get('tests', 0)) for s in suites))
+          ")
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han ejecutado $total. Si la bajada es intencionada, ajusta 'minimo' en la matriz de este workflow."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' en la matriz de este workflow para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Puerta final: un único nombre del que colgar la regla de la rama principal.
+  #
+  # Hasta ahora la única comprobación obligatoria de `main` era «CI en verde»,
+  # que sale del workflow de TaskHub_React. Los jobs de este fichero no lo eran,
+  # así que no bloqueaban nada: la PR #80 se fusionó sola con «PHP · tests» en
+  # rojo —siete tests fallando— porque el auto-merge ni los esperaba. Los suelos
+  # de tests que declaran los jobs de arriba eran, mientras tanto, decorativos:
+  # detectaban la pérdida de cobertura y no impedían fusionarla.
+  #
+  # Se replica el patrón `ci-ok` de taskhub-react-ci.yml, por el mismo motivo
+  # que allí: marcar los jobs uno a uno obliga a acordarse de actualizar la
+  # lista del ruleset cada vez que se añade otro, y nadie se acuerda.
+  #
+  # Aquí hay además una razón que allí no existía. El nombre de un check de
+  # matriz incluye sus parámetros —«PHP · tests (…/gym-app, 41)»—, así que
+  # cambia cada vez que se sube un mínimo. Exigir ese nombre haría que, al pasar
+  # de 41 a 45, la comprobación obligatoria dejara de existir y se quedara
+  # pendiente para siempre, bloqueando cualquier fusión. Es el mismo fallo que
+  # ya está documentado en el otro workflow a cuenta de los filtros de ruta.
+  # Este job se llama igual pase lo que pase.
+  #
+  # ORDEN AL ACTIVARLO: primero que este job exista y se haya ejecutado al menos
+  # una vez; después añadir «Monorepo en verde» al ruleset. Al revés se exige una
+  # comprobación que ningún workflow reporta, y eso bloquea todas las PR.
+  # ---------------------------------------------------------------------------
+  monorepo-ok:
+    name: Monorepo en verde
+    runs-on: ubuntu-latest
+    needs:
+      - python-syntax
+      - js-syntax
+      - config-lint
+      - regression-guard
+      - maven-compile
+      - maven-test
+      - node-test
+      - php-test
+      - python-test
+    # `if: always()` es imprescindible: sin él, este job se salta cuando alguno
+    # de los anteriores falla, y un job saltado NO cuenta como fallo para la
+    # protección de rama. La puerta quedaría en gris y la PR podría fusionarse
+    # igual, que es exactamente lo que se viene a arreglar.
+    if: always()
+    steps:
+      - name: Comprobar que ningún job ha fallado
+        # Este job no clona el repositorio: solo mira el resultado de los demás.
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::Algún job del monorepo ha fallado o se ha cancelado. Revisa cuál arriba."
+            exit 1
+          fi
+          echo "Todos los jobs en verde."
