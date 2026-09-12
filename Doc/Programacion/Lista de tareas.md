@@ -5,14 +5,6 @@ añadir documentación a OmniForge y modificar requeriments.txt añadir openhand
 
 Preparar programas 1 a 1 añadiendo build.bat
 
-empezar a usar poetry para la gestion de dependencias
-
-refactorizar GPTDEVTEAM y mirar a ver si podemos ampliarlo a programar en mas lenguajes de programacion
-
-Simulacion mundo 2D
-
-hunyuanvideo usando confyAI, tambien alguna voz de trascripcion de voz a texto
-
 Lenguaje + SO de 0
 
 mejoras en servidores FTP y WEB en python y rust
@@ -25,17 +17,13 @@ Terminar la version de Python y de Java de SpringlessEasyBatcher
 
 Cumplir ley de proteccion de datos en el programa Java de SpringlessEasyBatcher
 
-bots redes sociales y preparar herramientas edicion clips y videos, automatizar subir videos con nuestro sistema de agentes estilo openclaw
-
-crear todos los buildeos de python, esta vez con nuikta
+crear un programa en python usando el gestor de dependencias poetry y buildear con nuikta
 
 crear apk con wsl de el programa de Radio y el reproductor
 
-crear juegos unity
-
 aprender Godot
 
-Mejorar reproductor mp3 con QT designer
+probar qt designer
 
 Extraer info del sistema en sistema Pro Extreme
 
