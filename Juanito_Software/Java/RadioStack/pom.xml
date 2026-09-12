@@ -80,6 +80,33 @@
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
+                        <!--
+                            Conserva en el .class el nombre de los parametros de
+                            cada metodo. Sin esto, javac los borra y quedan como
+                            arg0, arg1..., y Spring MVC no puede resolver un
+                            @PathVariable o un @RequestParam que no diga su
+                            nombre: al llegar la peticion lanza
+
+                              Name for argument of type [java.lang.Long] not
+                              specified, and parameter name information not
+                              available via reflection
+
+                            que el cliente ve como un 500. Afectaba a 11 metodos
+                            de 5 controladores: todo /api/v1/emisiones/{id}/...,
+                            los comentarios, los programas y el activar y
+                            desactivar de locutores.
+
+                            No estaba porque este proyecto NO hereda de
+                            spring-boot-starter-parent —solo importa su BOM de
+                            versiones—, y esta bandera es una de las cosas que
+                            ese padre configura por defecto. Al montar el pom a
+                            mano se quedo fuera, y como ningun test levantaba la
+                            capa web, nada lo delataba.
+
+                            Lo encontro SecurityConfigTest, el primer test que
+                            atraviesa el DispatcherServlet de verdad.
+                        -->
+                        <parameters>true</parameters>
                     </configuration>
                 </plugin>
                 <plugin>

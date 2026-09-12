@@ -215,10 +215,12 @@ jobs:
           # nada y daría el error de «no se ha ejecutado ni un test».
           #
           # Sus tests no necesitan PostgreSQL ni la variable
-          # RADIOSTACK_JWT_SECRET: no levantan el contexto de Spring. Cada uno
-          # construye la clase que prueba con dobles de sus dependencias.
+          # RADIOSTACK_JWT_SECRET. Casi todos construyen con `new` la clase que
+          # prueban, con dobles de sus dependencias. SecurityConfigTest es la
+          # excepcion y usa @WebMvcTest, pero esa rodaja levanta solo la capa
+          # web —sin JPA ni DataSource— y fija la clave de firma por propiedad.
           - proyecto: Juanito_Software/Java/RadioStack
-            minimo: 98
+            minimo: 121
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

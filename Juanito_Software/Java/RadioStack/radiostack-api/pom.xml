@@ -77,10 +77,18 @@
             starter-test trae JUnit 5, Mockito (con mockito-junit-jupiter, de donde
             sale MockitoExtension) y spring-test, que es lo que aporta los dobles de
             servlet (MockHttpServletRequest y MockFilterChain) con los que se prueba
-            el filtro JWT sin levantar un servidor.
+            el filtro JWT sin levantar un servidor, y tambien MockMvc.
 
-            Ninguno de estos tests arranca el contexto de Spring, asi que no hacen
-            falta PostgreSQL, Flyway ni la variable RADIOSTACK_JWT_SECRET.
+            Casi todos estos tests construyen con `new` la clase que prueban y no
+            arrancan nada. La excepcion es SecurityConfigTest, que usa @WebMvcTest:
+            las reglas de acceso no son un metodo al que llamar, son el
+            comportamiento de la cadena de filtros, y solo se pueden comprobar
+            atravesandola.
+
+            Aun asi, ningun test necesita PostgreSQL ni Flyway: @WebMvcTest levanta
+            solo la capa web, sin JPA ni DataSource. Y la variable de entorno
+            RADIOSTACK_JWT_SECRET tampoco hace falta, porque la clave de firma de
+            los tests se fija por propiedad dentro de la propia clase.
         -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
