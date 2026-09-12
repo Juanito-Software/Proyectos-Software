@@ -43,7 +43,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `BatchProcessor` | Motor de integración de datos sobre Spring Batch: mueve registros entre CSV, API REST y base de datos en las 9 combinaciones, con la entidad resuelta en tiempo de ejecución. 20 tests que ejecutan las nueve rutas de punta a punta sobre H2 en memoria, en CI |
 | `HashTools` | Utilidades de hashing y criptografía (validación de contraseñas, AES) |
-| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast. Autenticación JWT compartida por HTTP y por el CONNECT de STOMP, y chat en directo sobre WebSocket. 121 tests en CI, incluida la cadena de filtros de seguridad atravesada de verdad con MockMvc |
+| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast. Autenticación JWT compartida por HTTP y por el CONNECT de STOMP, y chat en directo sobre WebSocket. 162 tests en CI: la cadena de filtros de seguridad atravesada de verdad con MockMvc, y las migraciones de Flyway aplicadas sobre un PostgreSQL real que el runner levanta como servicio |
 | `Spring/` | Ejercicios y pruebas con Spring Boot y Spring Batch |
 | `SpringlessEasyBatcher` | Motor de batching sin Spring — software propietario, código no incluido (ver su README) |
 | `others/` | Utilidades varias: `EscribirNombresArchivos`, `ServidorJuegos`, `XlsxToCsvConverter` |
@@ -60,7 +60,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
-| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 261 tests con Vitest en CI: 162 del backend y 99 del frontend |
+| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 274 tests con Vitest en CI: 175 del backend —13 de ellos contra un PostgreSQL real, con las migraciones de Prisma aplicadas— y 99 del frontend |
 | `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 962 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde |
 
 ### 🐍 Python
@@ -136,14 +136,14 @@ Tests que se ejecutan hoy en cada push:
 | Proyecto | Tests | Sobre qué |
 | --- | --- | --- |
 | BatchProcessor | 20 | H2 en memoria |
-| RadioStack | 121 | JUnit 5 y Mockito, sin base de datos; la cadena de filtros con MockMvc |
-| TaskHub_Angular (backend) | 162 | Vitest, sin base de datos |
+| RadioStack | 162 | JUnit 5 y Mockito; la cadena de filtros con MockMvc, y 7 sobre PostgreSQL real que ejecutan las migraciones de Flyway y validan el esquema contra las entidades |
+| TaskHub_Angular (backend) | 175 | Vitest; 13 sobre PostgreSQL real que aplican la migración de Prisma y comprueban restricciones, cascadas y el filtro de visibilidad |
 | TaskHub_Angular (frontend) | 99 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | TaskHub_React | 962 | Cuatro capas, incluido navegador real |
 
-Suman **1.460 tests** que se ejecutan en cada push, 498 de ellos en `ci.yml`.
+Suman **1.514 tests** que se ejecutan en cada push, 552 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 

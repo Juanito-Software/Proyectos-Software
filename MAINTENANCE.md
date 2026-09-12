@@ -53,6 +53,180 @@ de los proyectos).
 
 ---
 
+## 2026-09-12 (tarde) — Un fichero que nunca existió, y dos agujeros que se taparon entre ellos
+
+Esta sesión empezó cerrando los huecos de cobertura que había dejado la anterior
+y terminó descubriendo que la PR que los cerraba **nunca llegó a aplicarse**. El
+episodio es el más instructivo del historial reciente, porque no falló ningún
+paso: ni el `mv`, ni el `git add`, ni el CI. Todo salió en verde y nada de lo que
+decía que se había comprobado se comprobó.
+
+### El fichero que nunca existió
+
+La PR #99 tenía que modificar `.github/workflows/ci.yml`. Lo que hizo fue crear
+un fichero nuevo en la raíz del repositorio llamado `.githubworkflowsci.yml`, de
+33.772 bytes, idéntico byte a byte al contenido que debía ir al workflow.
+
+La causa está en el comando que se ejecutó:
+
+```
+mv ci-nuevo.yml .github\workflows\ci.yml
+```
+
+Con barras invertidas, en Git Bash. La barra invertida es allí un carácter de
+escape: `\.` es `.` y `\w` es `w`. Bash no vio una ruta con directorios, vio **un
+único nombre de fichero** con los separadores comidos, y `mv` hizo exactamente lo
+que se le pidió. El error no fue de quien lo tecleó, fue de quien redactó el
+comando: una ruta de Windows en una orden destinada a un intérprete POSIX.
+
+### Los dos agujeros que se taparon mutuamente
+
+La consecuencia no fue cosmética, y merece leerse despacio porque es un patrón
+que se repetirá.
+
+`EsquemaYMigracionesTest` está anotado con
+`@EnabledIfEnvironmentVariable(named = "RADIOSTACK_DB_TESTS")`. Esa variable la
+define el bloque `env:` del workflow, que se quedó en el fichero fantasma. Sus 7
+tests, por tanto, **se saltaron en el CI** igual que se saltan en un portátil sin
+base de datos.
+
+Y el contador de tests del job de Java —el suelo que existe precisamente para
+detectar cobertura que desaparece— **los contó igual**, porque Surefire escribe
+un elemento `<testcase>` para un test saltado exactamente igual que para uno
+ejecutado, con un `<skipped/>` dentro. El recuento dio 155 + 7 = 162 frente a un
+mínimo declarado de 155: por encima del suelo, aviso en lugar de fallo.
+
+Los dos defectos se anulaban el uno al otro. El descuento de saltados habría
+delatado que faltaba la variable; la variable habría hecho irrelevante el
+descuento. Al perderse los dos a la vez, el CI informó de un éxito que no
+existía: **una PR verde en la que Flyway no aplicó una sola migración.**
+
+La lección, escrita sin adornos: *un suelo de tests que cuenta lo que no se
+ejecuta no es un suelo, es una decoración*. Y un umbral que solo puede
+sobrepasarse nunca avisa de nada.
+
+### Los tres contadores que tenían el mismo agujero
+
+Arreglado el de Java, quedaba comprobar si los otros compartían el defecto. En
+lugar de suponerlo, se midió: se escribió un fichero de prueba con un
+`describe.skipIf` y se miró el XML que produce vitest.
+
+```xml
+<testcase name="grupo entero saltado &gt; uno" time="0">
+    <skipped/>
+</testcase>
+```
+
+Idéntico a Surefire. Pasado ese XML por el contador que había —3 casos, 2
+saltados— devolvía **3**; por el contador nuevo, **1**.
+
+Los tres contadores (Node, PHP y Python) pasan a descontar los saltados, con la
+misma regla que ya usaba el de Java: contar elementos `<testcase>` y restar los
+que llevan un `<skipped>` dentro. El de Python cambia además de método: sumaba el
+atributo `tests=` de cada `<testsuite>`, que incluye los saltados y además
+depende de cómo anide el XML cada herramienta.
+
+Esto no era higiene. El diseño de los tests nuevos de TaskHub_Angular **depende**
+de ello: si `TASKHUB_DB_TESTS` dejara de llegar al job, sus 13 tests se
+saltarían, el contador viejo los sumaría y el CI volvería a dar por buena una
+comprobación que no se hizo. Con el descuento, el total baja de 175 a 162 y el
+job falla.
+
+### Lo que un doble no puede comprobar, por definición
+
+El hueco era el mismo en los dos proyectos: **ningún test tocaba nunca una base
+de datos real ni ejecutaba una migración.**
+
+En TaskHub_Angular, los 162 tests del backend doblan `config/prisma`, así que
+ninguno lanzaba una sola consulta. Comprobaban que el código llama a Prisma con
+los argumentos correctos; nunca que esos argumentos produzcan el resultado
+correcto. Son dos preguntas distintas y la segunda solo la contesta una base de
+datos. La migración `20260704180530_init` no se ejecutaba en ninguna parte del
+CI: una migración rota habría pasado entera.
+
+`db.repositories.test.ts` añade 13 tests que cubren lo que un doble no puede
+cubrir **por definición**, porque un doble no tiene restricciones:
+
+- que las seis tablas existan, comprobadas **por nombre**: una migración futura
+  que se dejara una sin crear se aplicaría sin error y el fallo saldría en la
+  primera petición que la usara;
+- que los valores por defecto los ponga la base y no el código;
+- que el email único y el par (proyecto, usuario) único estén **en el esquema** y
+  no solo en la comprobación previa del servicio —esa comprobación no cubre dos
+  altas simultáneas; la única defensa real es el índice—;
+- que las cascadas las ejecute PostgreSQL. Importa por seguridad y no solo por
+  limpieza: un *refresh token* que sobreviviera a su usuario sería una credencial
+  huérfana con siete días de vida por delante;
+- y que el filtro `visibleTo` de `taskRepository.findMany` se traduzca a un SQL
+  correcto. Ese filtro es el que cerró el IDOR de `/api/tasks`, y hasta ahora
+  solo estaba comprobado sobre la *forma* de un objeto `where`, que es justo lo
+  que ya se sabía. Ejecutado contra PostgreSQL, el log lo confirma: el filtro de
+  proyecto se combina con `AND`, no sustituye al de visibilidad.
+
+En el lado del CI, el job de Node levanta `postgres:17-alpine`, aplica las
+migraciones con `prisma migrate deploy` y comprueba la deriva con
+`prisma migrate diff --exit-code`. Esto último es el equivalente exacto del
+`ddl-auto: validate` de Hibernate que usa RadioStack: compara lo que describe
+`schema.prisma` con lo que las migraciones han dejado en la base. Existe porque
+los dos pueden separarse sin que nadie se entere —se añade un campo al modelo, se
+olvida `prisma migrate dev`, y el cliente generado pide una columna que no
+existe—, y con dobles eso no se ve nunca.
+
+### Un seguro que no estaba previsto
+
+Los tests vacían las seis tablas antes de cada test. Leyendo el `.env.example`
+apareció que la base de desarrollo del proyecto se llama `taskmanager`: bastaba
+con exportar `TASKHUB_DB_TESTS=true` teniendo el `.env` cargado para vaciarla sin
+aviso y sin vuelta atrás.
+
+El fichero lleva por eso un `beforeAll` que se niega a arrancar si la base no se
+llama `taskhub_ci` o `taskhub_test`, y aborta antes de tocar una fila. Es un
+accidente de un solo comando y de efecto irreversible; seis líneas para
+descartarlo salen baratas.
+
+### `Claude outputs/`, o cómo se cuelan las cosas
+
+Al preparar el `.gitignore` de esa carpeta apareció que **ya tenía dos ficheros
+versionados**: un borrador de entrada de este mismo fichero (PR #94) y un PDF
+(PR #97). Ninguno de los dos estaba destinado a versionarse.
+
+El mecanismo es mundano: la aplicación de escritorio guarda ahí lo que se
+descarga del chat, y la carpeta cae dentro de la carpeta conectada a la sesión,
+que en este caso es la raíz del repositorio. A partir de ahí, `git add -A` hace
+el resto.
+
+Dos consecuencias prácticas. La primera es que `.gitignore` **no hace nada sobre
+ficheros ya versionados**: hay que desindexarlos explícitamente con
+`git rm --cached`. La segunda, más incómoda: `git rm --cached` tampoco los quita
+del historial, y en un repositorio público eso significa que siguen siendo
+descargables por su hash mientras el historial no se reescriba.
+
+### Lo que cambia en el método de verificación
+
+Tres reglas, las tres nacidas de un error concreto de esta sesión.
+
+1. **Nunca una ruta con barra invertida en un comando destinado a bash.** Solo
+   barras normales, que funcionan en `cmd`, en PowerShell y en bash por igual.
+
+2. **El punto de control verifica el estado final, no la operación.** Pedir un
+   `git diff --stat` después de mover un fichero no demuestra que el fichero
+   correcto haya cambiado. Lo que se hace ahora es comprobar una cadena que solo
+   existe en el contenido nuevo, en la ruta donde debe estar, y para ficheros
+   completos una huella `sha256` que no admite interpretación.
+
+3. **Antes de cada commit se lee el `git status --short` entero**, y se nombra
+   cualquier línea que cuelgue de la raíz del repositorio en vez de mirar solo si
+   están los ficheros esperados.
+
+Y una cuarta que no es de método sino de honestidad: de esta sesión, lo único que
+no pudo ejecutarse en ningún entorno intermedio fue `prisma migrate diff`, porque
+el host de los motores de Prisma está bloqueado por la política de salida. Se
+entregó marcado como no verificado y se ejecutó en local antes de commitear
+—`No difference detected`, código 0—. Lo que no se ha ejecutado se dice, no se
+supone.
+
+---
+
 ## 2026-09-12 — RadioStack: de 2 tests a 121, y un 500 en todos los endpoints con id
 
 RadioStack empezó la sesión con dos tests y la terminó con 121. Por el camino
