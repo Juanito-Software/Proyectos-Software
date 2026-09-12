@@ -380,8 +380,18 @@ jobs:
         include:
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/backend
             # Suelo de tests esperados. Ver el paso de comprobación.
-            minimo: 162
+            #
+            # 162 con dobles de Prisma, más los 13 de db.repositories.test.ts,
+            # que hablan con PostgreSQL de verdad. Esos 13 se saltan donde no
+            # hay base de datos, y el contador de abajo NO cuenta los saltados:
+            # si TASKHUB_DB_TESTS dejara de llegar a este job, el total bajaría
+            # a 162 y el paso fallaría, en vez de dar por buena una
+            # comprobación que no se ha hecho.
+            minimo: 175
             comando: npm test -- --reporter=default --reporter=junit --outputFile.junit=vitest-report.xml
+            # Enciende los pasos de Prisma y las variables de base de datos del
+            # paso de tests. El frontend no la lleva.
+            base-de-datos: "si"
 
           # El comando del frontend se averiguó a base de probarlo, porque el
           # constructor de Angular filtra lo que le llega:
@@ -402,6 +412,34 @@ jobs:
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/frontend
             minimo: 99
             comando: npx ng test --no-watch --reporters=junit --reporters=default --output-file=vitest-report.xml
+    # PostgreSQL para db.repositories.test.ts.
+    #
+    # Hasta ahora la migración 20260704180530_init no se ejecutaba en ninguna
+    # parte del CI: los 162 tests del backend doblan `config/prisma`, así que
+    # ninguno lanzaba una sola consulta. Se comprobaba que el código llama a
+    # Prisma con los argumentos correctos, nunca que esos argumentos produzcan
+    # el resultado correcto, y una migración rota habría pasado entera.
+    #
+    # El servicio se levanta para toda la matriz, también para el frontend, que
+    # no lo usa. Cuesta unos segundos y evita duplicar el job entero —y con él
+    # el paso que cuenta los tests— por un solo proyecto. Mismo criterio que en
+    # el job de Maven.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: taskhub
+          POSTGRES_PASSWORD: taskhub
+          POSTGRES_DB: taskhub_ci
+        ports:
+          - 5432:5432
+        # Sin esto los tests arrancarían antes de que la base acepte conexiones
+        # y fallarían de forma intermitente.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -418,8 +456,55 @@ jobs:
         working-directory: ${{ matrix.proyecto }}
         run: npm ci
 
+      # `migrate deploy` y no `migrate dev`: aplica las migraciones que ya
+      # existen y no genera ninguna nueva. Si una migración estuviera rota o
+      # incompleta, este paso falla aquí, antes de los tests, y el error dice
+      # qué sentencia SQL ha reventado en vez de salir disfrazado de test rojo.
+      - name: Aplicar las migraciones de Prisma
+        if: matrix.base-de-datos == 'si'
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          DATABASE_URL: postgresql://taskhub:taskhub@localhost:5432/taskhub_ci
+        run: npx prisma migrate deploy
+
+      # El equivalente del `ddl-auto: validate` de Hibernate, que es lo que usa
+      # RadioStack para lo mismo: comparar el esquema que describe schema.prisma
+      # con el que las migraciones han dejado realmente en la base.
+      #
+      # Existe porque los dos pueden separarse sin que nadie se entere: se
+      # añade un campo al modelo, se olvida `prisma migrate dev`, y el cliente
+      # generado pide una columna que no existe. Con dobles eso no se ve —el
+      # doble devuelve lo que se le diga—, y en producción es un error en la
+      # primera consulta.
+      #
+      # `--exit-code` hace que el proceso termine en 2 si hay diferencias, así
+      # que la deriva rompe el CI en vez de quedarse en un aviso por el log.
+      - name: Comprobar que el esquema no se ha desviado de las migraciones
+        if: matrix.base-de-datos == 'si'
+        working-directory: ${{ matrix.proyecto }}
+        env:
+          DATABASE_URL: postgresql://taskhub:taskhub@localhost:5432/taskhub_ci
+        run: |
+          npx prisma migrate diff \
+            --from-schema-datamodel prisma/schema.prisma \
+            --to-schema-datasource prisma/schema.prisma \
+            --exit-code
+
       - name: Tests
         working-directory: ${{ matrix.proyecto }}
+        env:
+          # Solo se usan en el backend. En el frontend sobran y no molestan.
+          #
+          # DATABASE_URL la lee `config/prisma`. El setup.ts de los tests la
+          # define con `??=`, no con `=`, para no pisarla justamente aquí: con
+          # `=` los tests se conectarían siempre a la base falsa del setup y
+          # este servicio no serviría de nada.
+          DATABASE_URL: postgresql://taskhub:taskhub@localhost:5432/taskhub_ci
+          # La marca que habilita los tests que necesitan base de datos. En un
+          # portátil no está definida y esos 13 se saltan; aquí sí. El paso de
+          # abajo no cuenta los saltados, así que no pueden desaparecer en
+          # silencio.
+          TASKHUB_DB_TESTS: "true"
         run: ${{ matrix.comando }}
 
       # Mismo suelo declarado que en los otros jobs, pero contando de otra
@@ -449,7 +534,14 @@ jobs:
           total=$(python3 -c "
           import xml.etree.ElementTree as ET
           raiz = ET.parse('vitest-report.xml').getroot()
-          print(len(list(raiz.iter('testcase'))))
+          casos = list(raiz.iter('testcase'))
+          # Y se DESCUENTAN los saltados. Vitest, PHPUnit y pytest escriben un
+          # <testcase> tambien para ellos, con un <skipped/> dentro, igual que
+          # Surefire. Sin esta resta, marcar un fichero entero como saltado
+          # dejaria el recuento intacto: el suelo que existe para detectar
+          # cobertura que desaparece no veria la forma mas facil de hacerla
+          # desaparecer.
+          print(sum(1 for c in casos if c.find('skipped') is None))
           ")
 
           echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
@@ -566,7 +658,14 @@ jobs:
           total=$(python3 -c "
           import xml.etree.ElementTree as ET
           raiz = ET.parse('phpunit-report.xml').getroot()
-          print(len(list(raiz.iter('testcase'))))
+          casos = list(raiz.iter('testcase'))
+          # Y se DESCUENTAN los saltados. Vitest, PHPUnit y pytest escriben un
+          # <testcase> tambien para ellos, con un <skipped/> dentro, igual que
+          # Surefire. Sin esta resta, marcar un fichero entero como saltado
+          # dejaria el recuento intacto: el suelo que existe para detectar
+          # cobertura que desaparece no veria la forma mas facil de hacerla
+          # desaparecer.
+          print(sum(1 for c in casos if c.find('skipped') is None))
           ")
 
           echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
@@ -652,8 +751,14 @@ jobs:
           total=$(python -c "
           import xml.etree.ElementTree as ET
           raiz = ET.parse('pytest-report.xml').getroot()
-          suites = raiz.iter('testsuite')
-          print(sum(int(s.get('tests', 0)) for s in suites))
+          casos = list(raiz.iter('testcase'))
+          # Y se DESCUENTAN los saltados. Vitest, PHPUnit y pytest escriben un
+          # <testcase> tambien para ellos, con un <skipped/> dentro, igual que
+          # Surefire. Sin esta resta, marcar un fichero entero como saltado
+          # dejaria el recuento intacto: el suelo que existe para detectar
+          # cobertura que desaparece no veria la forma mas facil de hacerla
+          # desaparecer.
+          print(sum(1 for c in casos if c.find('skipped') is None))
           ")
 
           echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
