@@ -43,7 +43,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `BatchProcessor` | Motor de integración de datos sobre Spring Batch: mueve registros entre CSV, API REST y base de datos en las 9 combinaciones, con la entidad resuelta en tiempo de ejecución. 20 tests que ejecutan las nueve rutas de punta a punta sobre H2 en memoria, en CI |
 | `HashTools` | Utilidades de hashing y criptografía (validación de contraseñas, AES) |
-| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast |
+| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast. Autenticación JWT compartida por HTTP y por el CONNECT de STOMP, y chat en directo sobre WebSocket. 121 tests en CI, incluida la cadena de filtros de seguridad atravesada de verdad con MockMvc |
 | `Spring/` | Ejercicios y pruebas con Spring Boot y Spring Batch |
 | `SpringlessEasyBatcher` | Motor de batching sin Spring — software propietario, código no incluido (ver su README) |
 | `others/` | Utilidades varias: `EscribirNombresArchivos`, `ServidorJuegos`, `XlsxToCsvConverter` |
@@ -128,7 +128,7 @@ Dos workflows corren en cada *pull request* y en cada push a `main`:
 
 | Workflow | Qué cubre |
 | --- | --- |
-| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los cuatro proyectos que sí los tienen** |
+| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los cinco proyectos que sí los tienen** |
 | `taskhub-react-ci.yml` | TaskHub_React entero: lint, tipos, unitarios, integración con PostgreSQL, *end-to-end* con Playwright, auditoría y despliegue |
 
 Tests que se ejecutan hoy en cada push:
@@ -136,10 +136,14 @@ Tests que se ejecutan hoy en cada push:
 | Proyecto | Tests | Sobre qué |
 | --- | --- | --- |
 | BatchProcessor | 20 | H2 en memoria |
-| TaskHub_Angular (backend) | 71 | Vitest, sin base de datos |
+| RadioStack | 121 | JUnit 5 y Mockito, sin base de datos; la cadena de filtros con MockMvc |
+| TaskHub_Angular (backend) | 162 | Vitest, sin base de datos |
+| TaskHub_Angular (frontend) | 99 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | TaskHub_React | 962 | Cuatro capas, incluido navegador real |
+
+Suman **1.460 tests** que se ejecutan en cada push, 498 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 

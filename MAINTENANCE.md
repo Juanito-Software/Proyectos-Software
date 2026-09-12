@@ -53,6 +53,226 @@ de los proyectos).
 
 ---
 
+## 2026-09-12 — RadioStack: de 2 tests a 121, y un 500 en todos los endpoints con id
+
+RadioStack empezó la sesión con dos tests y la terminó con 121. Por el camino
+aparecieron tres defectos que ninguno de los tests que ya existían podía haber
+encontrado, y dos lecciones sobre el propio CI que costaron más tiempo que el
+código.
+
+La última es la que más dice: **todos los endpoints de la API con un
+identificador en la URL devolvían 500**, y llevaban así desde que se montó el
+proyecto. Lo encontró el primer test que atraviesa el `DispatcherServlet` de
+verdad, en su primera ejecución válida.
+
+### El punto de partida
+
+El día anterior RadioStack pasó del job «Java · compilar» —que ejecuta
+`mvn -DskipTests compile` y por tanto no ejecutaba nada— al job de tests, con su
+`LocutorTest` de 2 tests. Esa era toda la cobertura de un proyecto multimódulo
+con autenticación JWT, WebSocket con STOMP, chat en directo y cinco
+controladores REST.
+
+El encargo fue: autenticación y WebSocket del chat primero, y una cobertura
+decente después.
+
+### Tanda 1: 96 tests, y un token que autenticaba a medias
+
+Diez clases nuevas en `radiostack-api`: `JwtService`, `JwtAuthenticationFilter`,
+`StompAuthChannelInterceptor`, `AuthController`, `ChatWebSocketController`, los
+cuatro servicios y el mapeador de DTO.
+
+El primer defecto salió del test `un_token_bien_firmado_sin_email_ni_rol_se_descarta`.
+`UsuarioAutenticado` se construía así:
+
+```java
+try {
+    return new UsuarioAutenticado(Long.parseLong(claims.getSubject()), email, rol);
+} catch (NullPointerException ex) {
+    return null;
+}
+```
+
+Ese `catch` no se ejecutaba nunca. `claims.get("email", String.class)` devuelve
+`null` en vez de lanzar, y un `record` acepta nulos sin protestar. Un token
+firmado pero sin claims autenticaba con email y rol a `null`, y con la autoridad
+literal **`ROLE_null`**: una identidad a medias que ninguna regla por rol
+reconocería, y que en el chat habría firmado los mensajes como «null».
+
+No era explotable desde fuera, porque solo el servidor puede firmar. Era algo
+peor de otra manera: una defensa escrita que no defendía, y que cualquiera que
+leyera el código habría dado por buena.
+
+Se sustituyó por una factoría que valida de verdad —`sub` numérico, email y rol
+no vacíos— y que usan **las dos puertas**, el filtro HTTP y el interceptor de
+STOMP, para que acepten exactamente los mismos tokens.
+
+### El contador de Surefire: tres ejecuciones en rojo por 13 tests
+
+El job de Java declara un mínimo de tests y falla si el número baja. Con los 96
+nuevos el total era 98, y el CI insistía en que se habían ejecutado **85**.
+
+`mvn test` terminaba en `BUILD SUCCESS`. El log demostraba que los tests
+anidados se ejecutaban. Los informes locales estaban bien formados. Y repitiendo
+la tubería exacta del CI sobre esos informes reales, el recuento salía correcto.
+Tres intentos de reproducirlo fallaron.
+
+Lo que lo cerró fue cambiar el paso para que **imprimiera el desglose por
+fichero**, en vez de una sola cifra que no se puede depurar:
+
+```
+  13  ./radiostack-api/target/surefire-reports/TEST-…CatalogoServiciosTest.xml
+```
+
+Un solo informe, con 13 elementos `<testcase>` dentro. No existían los ficheros
+`…CatalogoServiciosTest$Programas.xml` que sí estaban en local. Surefire escribe
+**un informe por clase de primer nivel**, y en la cabecera `<testsuite tests="N">`
+pone solo los tests *propios* de esa clase. Con `@Nested`, la clase externa no
+tiene ninguno: el atributo dice `0` mientras los 13 `<testcase>` de las clases
+anidadas están dentro del mismo fichero.
+
+**La lección: el atributo `tests=` de Surefire no cuenta lo que parece.** Hay que
+contar elementos `<testcase>`, que es uno por test ejecutado, sea cual sea la
+forma del árbol. Es el mismo criterio que ya usaban los jobs de Node y PHP; el de
+Java era el único que sumaba el atributo.
+
+La segunda mitad de la lección es de método: cuando algo no se reproduce, el
+siguiente paso no es otra hipótesis, es **hacer que el sistema diga lo que ve**.
+El desglose por fichero resolvió en una ejecución lo que tres conjeturas no
+habían resuelto.
+
+### Un commit a medias, y un `git diff --stat` que nadie miró
+
+Entre medias se perdió media hora por una tontería evitable. El arreglo del
+contador se entregó como parche para `git apply`, porque `.github/workflows/` no
+se puede escribir desde la herramienta. El commit resultante llevaba el mensaje
+largo y correcto… y **una sola línea cambiada**: la del mínimo. El trozo del
+contador nunca entró.
+
+La receta incluía un `git diff --stat` precisamente para cazar eso, y no sirvió
+de nada porque nadie miró el número. Desde entonces los cambios sobre el
+workflow se entregan como **fichero completo** —`mv fichero .github/workflows/ci.yml`—
+en vez de como parche, y con un alto explícito antes de commitear.
+
+### Tanda 2: la segunda puerta del chat
+
+`ChatWebSocketController` ya tomaba el alias del token verificado en el CONNECT
+de STOMP; esa suplantación se había cerrado en su día. Pero el chat tiene dos
+puertas, y la otra seguía así:
+
+```java
+String alias = body.getOrDefault("alias", "Anónimo");
+```
+
+`POST /api/v1/emisiones/{id}/chat` leía el alias del cuerpo de la petición.
+Cualquier usuario con cuenta válida podía enviar
+`{"alias": "locutor@…", "contenido": "…"}` y el mensaje quedaba firmado con el
+email de otro. Se guardaba en el mismo `ChatService`, sobre la misma emisión, y
+se difundía por el mismo `/topic`: los oyentes no podían distinguirlo de uno
+legítimo. Y era la puerta más cómoda de las dos, porque un POST no necesita
+cliente de WebSocket.
+
+**Cuando un recurso tiene dos entradas, la política de identidad se arregla en
+las dos a la vez o no se arregla.** Tapar una y dejar la otra abierta no reduce
+el riesgo: lo esconde.
+
+### El primer test que levanta Spring, y lo que encontró a la primera
+
+Hasta aquí, todos los tests de RadioStack construían con `new` la clase que
+probaban. Las reglas de `SecurityConfig` no se pueden probar así: no son un
+método al que llamar, son el comportamiento de la cadena de filtros. Así que
+`SecurityConfigTest` usa `@WebMvcTest` y atraviesa el `DispatcherServlet` real.
+
+Costó dos intentos, y los dos fallos fueron informativos.
+
+**Primero: `@EnableJpaRepositories` no es autoconfiguración.**
+`RadiostackApiApplication` lleva `@EntityScan` y `@EnableJpaRepositories` como
+anotaciones directas. `@WebMvcTest` apaga la autoconfiguración, pero no puede
+apagar esas: se ejecutan igual, Spring Data registra los 6 repositorios y todos
+piden un `entityManagerFactory` que en una rodaja web no existe. El contexto ni
+arrancaba. Se resolvió dándole al test su propia clase raíz
+`@SpringBootConfiguration` sin escaneo de componentes, con las clases de
+producción traídas una a una por `@Import`.
+
+**Y después, el hallazgo de la noche.** Con el contexto ya en pie, cuatro tests
+—justo los que llegaban a ejecutar un método de `ChatController`— fallaron con:
+
+```
+Name for argument of type [java.lang.Long] not specified,
+and parameter name information not available via reflection.
+Ensure that the compiler uses the '-parameters' flag.
+```
+
+`@PathVariable Long emisionId` no dice su nombre entre paréntesis. Spring lo
+resuelve por reflexión, y ese nombre solo está en el `.class` si javac compiló
+con `-parameters`. Sin la bandera, en el bytecode el parámetro se llama `arg0` y
+Spring no puede casarlo con `{emisionId}` de la ruta: excepción al despachar,
+que el cliente ve como un **500**.
+
+No es solo el chat. Son **11 métodos en 5 controladores**: el chat, los
+comentarios, los programas, el activar y desactivar de locutores y el obtener
+una emisión. Es decir, **todo endpoint de RadioStack con un identificador en la
+URL**. Solo funcionaban los que no llevan variable de ruta.
+
+Estaba así desde el principio, y el motivo es de manual: el proyecto **no hereda
+de `spring-boot-starter-parent`**, solo importa su BOM de versiones, y define el
+`maven-compiler-plugin` a mano con `source` y `target` y nada más. `-parameters`
+es una de las cosas que ese padre configura por defecto. Al montar el `pom` a
+mano se quedó fuera, y como ningún test levantaba la capa web, nada lo delató
+durante meses.
+
+El arreglo es una línea en el `pom` padre:
+
+```xml
+<parameters>true</parameters>
+```
+
+La alternativa —escribir `@PathVariable("emisionId")` en los 11 sitios—
+funcionaría igual, y deja la trampa puesta para el método número 12.
+
+**La lección, y es la más cara de la sesión:** 98 tests que llaman a los métodos
+directamente no prueban que la aplicación funcione. Prueban que las clases
+funcionan. Todo lo que hay *entre* la petición HTTP y el método —resolver
+argumentos, aplicar filtros, decidir el código de estado— se quedaba sin probar,
+y ahí es exactamente donde estaba el fallo. Un solo test que atraviesa la cadena
+real vale, para esto, más que cien que la rodean.
+
+### Lo que queda anotado y sin hacer
+
+- **Los GET públicos bajo `/api/v1`.** La regla está pensada para la parrilla y los
+  programas, que son información pública. Pero alcanza a *todos* los GET de la
+  API, incluido `/api/v1/auth/me`. Hoy no se escapa nada porque `AuthController`
+  comprueba el principal y se defiende solo. El riesgo es el GET que alguien
+  añada mañana bajo `/api/v1` dando por hecho que está protegido. Queda
+  **documentado con un test** que falla si se decide restringir la regla, en vez
+  de cambiada por iniciativa propia: qué es público en esta API es una decisión
+  de producto.
+- **`@EntityScan` y `@EnableJpaRepositories`** deberían vivir en una
+  configuración del módulo de persistencia, no en la clase de arranque de la API.
+  Resolvería de raíz el problema de las rodajas y de paso quitaría a la API el
+  conocimiento de los paquetes internos de otro módulo. Es cambio de producción
+  y merece su propio PR.
+- **Un test STOMP de punta a punta** con `@SpringBootTest` sigue pendiente.
+  Necesita una historia de base de datos, porque las migraciones de Flyway son
+  específicas de PostgreSQL.
+
+### Cifras
+
+| | Antes | Después |
+| --- | --- | --- |
+| Tests de RadioStack | 2 | **121** |
+| Clases de test | 1 | 13 |
+| Defectos de producción corregidos | — | 3 |
+| Endpoints que devolvían 500 | 11 | 0 |
+
+Los tres defectos —`ROLE_null`, la suplantación por REST y el `-parameters`—
+tienen algo en común: **ninguno lo había señalado CodeQL, Dependabot ni el
+escaneo de secretos**. Los tres aparecieron escribiendo tests que comprueban el
+efecto y no el estado, y el más grave de los tres solo era visible atravesando la
+aplicación de verdad.
+
+---
+
 ## 2026-09-11 (noche) — TaskHub_Angular: de cubrir pantallas a tres fallos de seguridad
 
 La tarde terminó con el frontend de Angular en 41 tests. La noche empezó con la
