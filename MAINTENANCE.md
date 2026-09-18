@@ -53,6 +53,73 @@ de los proyectos).
 
 ---
 
+## 2026-09-18 — TaskHub_Angular: los cuatro comportamientos pendientes de la #90
+
+La sesión anterior terminó con el frontend de Angular en 261 tests y cuatro
+comportamientos anotados como «encontrado y no arreglado»: los límites
+silenciosos de 20 tareas y 10 proyectos, el error de carga mudo del dashboard y
+la longitud mínima de 2 caracteres que los botones de creación ignoraban. Esta
+sesión los cierra, todos comprobados con tests escritos de antemano.
+
+### La decisión sobre los límites
+
+Las dos pantallas afectadas son panorámicas: un tablero kanban y un panel de
+proyectos, ninguna con paginación ni contador. Pedir menos de lo que hay
+esconde el resto sin avisar. La decisión fue explícita y la mínima posible:
+
+- `TaskService.listByProject` manda ahora `limit: 100`, el máximo que acepta el
+  validador del backend (`listTasksSchema`, `.max(100)`). El tablero deja de
+  recortarse a 20 por defecto.
+- El dashboard pide `listProjects(1, 100)`. El *default* del servicio sigue
+  siendo 10 (los tests lo fijan desde la #93); solo cambia la llamada del panel.
+  El endpoint de proyectos no valida el `query`, así que 100 llega igual; se usa
+  el mismo tope para no inventar una cifra nueva por pantalla.
+- No se toca el contrato de la API: el backend sigue devolviendo `Task[]` /
+  `Project[]` planos. Cambiarlo a `{ data, total, … }` habría resuelto el aviso
+  de truncamiento, pero ampliaba el alcance a backend, prueba y los 261 tests
+  por el camino; con 100 de tope, el corte cae en un caso que un kanban
+  personal no alcanza.
+
+### Qué se cambió, y cómo se comprobó
+
+Cada comportamiento nuevo se escribió como test antes del código. Ese primer
+paso dejó el build en rojo por una razón distinta de la esperada —el spec usa
+`loadError`, que el componente aún no tiene—, lo que confirmó de paso que el
+comportamiento no existía: el compilador no deja mentir sobre si un campo está.
+
+| Comportamiento de #90 | Cambio | Test |
+|---|---|---|
+| Tablero cortado a 20 tareas | `listByProject` manda `limit: 100` | `task.service.spec` fija `limit=100` |
+| Dashboard cortado a 10 proyectos | `listProjects(1, 100)` en `loadProjects` | `dashboard.component.spec` fija `page=1&limit=100` |
+| Error de carga mudo | campo `loadError`; «No se pudieron cargar los proyectos» distinto de «No tienes proyectos aún» | nuevo: flush 500 → dice el error y no el vacío |
+| Botones habilitados con 1 carácter | `[disabled]="name.trim().length < 2"` y lo mismo para el título | nuevo: «Crear» no cierra con 1 carácter y sí con 2 |
+| «No se pudo crear» genérico | el aviso muestra el `{ message }` del validador (con respaldo al texto genérico) | `dashboard.spec` espera «nombre corto»; nuevo en `project-detail.spec` espera el motivo del 400 |
+
+De paso, `error: () => (this.projects = [])` se sustituye por marcar el error
+sin vaciar la lista: una recarga fallida ya no borra lo que había en pantalla.
+
+### Lo que costó
+
+- 99 → **103 tests** en el frontend (4 nuevos, todos en rojo antes del código).
+- `node_modules` ya estaba instalado; los tests corrieron en local con
+  `ng test`, sin el rodeo del clon en la nube.
+- El mínimo de CI del frontend sube de 99 a **103**, como pide el propio
+  workflow (`::notice::` cuando el mínimo se queda atrás).
+
+### Pendiente
+
+- **CV:** las dos variantes dicen **71 tests** para TaskHub_Angular; el mínimo
+  de CI ahora es **162 + 103 = 265**. Además dicen **Angular 19**, y el
+  `package.json` declara `@angular/core` `^21.2.19`.
+- **Vulnerabilidades:** las 44 notificadas por GitHub al hacer push siguen sin
+  verificar por la API (el estado de la cabecera dice 2 de Dependabot).
+- **RadioStack:** el pendiente de la entrada del 12 de septiembre. El entorno de
+  la nube no ejecuta Java (Maven Central y `binaries.prisma.sh` bloqueados), así
+  que el runner será el CI sobre una PR borrador.
+- **OmniForge y GPTDevTeam**, sin empezar.
+
+---
+
 ## 2026-09-12 (tarde) — Un fichero que nunca existió, y dos agujeros que se taparon entre ellos
 
 Esta sesión empezó cerrando los huecos de cobertura que había dejado la anterior

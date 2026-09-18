@@ -9,7 +9,9 @@ export class TaskService {
   private readonly apiUrl = 'http://localhost:3000/api/tasks';
 
   listByProject(projectId: string): Observable<Task[]> {
-    return this.http.get<Task[]>(this.apiUrl, { params: { projectId } });
+    // Sin limit, el backend recorta a 20 y el tablero enseña media plantilla sin
+    // avisar. 100 es el maximo que acepta su validador; el kanban no pagina.
+    return this.http.get<Task[]>(this.apiUrl, { params: { projectId, limit: 100 } });
   }
 
   getTask(id: string): Observable<Task> {

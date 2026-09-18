@@ -410,7 +410,7 @@ jobs:
           # `default` va detrás para que el log muestre qué test ha fallado; con
           # `junit` a secas la consola no imprime ni un resumen.
           - proyecto: Juanito_Software/JS/Angular/TaskHub_Angular/frontend
-            minimo: 99
+            minimo: 103
             comando: npx ng test --no-watch --reporters=junit --reporters=default --output-file=vitest-report.xml
     # PostgreSQL para db.repositories.test.ts.
     #

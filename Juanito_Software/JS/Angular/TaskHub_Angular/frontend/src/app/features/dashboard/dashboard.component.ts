@@ -31,7 +31,10 @@ import { ConfirmDialogComponent } from '../../shared/confirm-dialog.component';
             <div matListItemLine>{{ project.description || 'Sin descripción' }}</div>
             <button mat-button color="warn" matListItemMeta (click)="deleteProject($event, project)">Eliminar</button>
           </mat-list-item>
-          <mat-list-item *ngIf="!projects.length">
+          <mat-list-item *ngIf="loadError">
+            <div matListItemTitle>No se pudieron cargar los proyectos</div>
+          </mat-list-item>
+          <mat-list-item *ngIf="!loadError && !projects.length">
             <div matListItemTitle>No tienes proyectos aún</div>
           </mat-list-item>
         </mat-list>
@@ -50,15 +53,19 @@ export class DashboardComponent implements OnInit {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   projects: Project[] = [];
+  loadError = false;
 
   ngOnInit(): void {
     this.loadProjects();
   }
 
   loadProjects(): void {
-    this.projectService.listProjects().subscribe({
+    this.loadError = false;
+    // Sin esto el panel padaria el limite de 10 del servicio y el resto de
+    // proyectos quedaria oculto sin avisar.
+    this.projectService.listProjects(1, 100).subscribe({
       next: (projects) => (this.projects = projects),
-      error: () => (this.projects = []),
+      error: () => (this.loadError = true),
     });
   }
 
@@ -71,8 +78,10 @@ export class DashboardComponent implements OnInit {
           this.snackBar.open('Proyecto creado', 'Cerrar', { duration: 3000 });
           this.loadProjects();
         },
-        error: () => {
-          this.snackBar.open('No se pudo crear el proyecto', 'Cerrar', { duration: 3000 });
+        error: (e) => {
+          // El motivo lo dice el validador del backend; un «No se pudo crear»
+          // generico esconderia por que se rechazo.
+          this.snackBar.open(this.textoDelFallo(e, 'No se pudo crear el proyecto'), 'Cerrar', { duration: 3000 });
         },
       });
     });
@@ -101,5 +110,11 @@ export class DashboardComponent implements OnInit {
         },
       });
     });
+  }
+
+  /** El backend falla con { message } en el cuerpo; si no viene, texto de relleno. */
+  private textoDelFallo(e: unknown, porDefecto: string): string {
+    const cuerpo = e as { error?: { message?: string } } | null;
+    return cuerpo?.error?.message || porDefecto;
   }
 }

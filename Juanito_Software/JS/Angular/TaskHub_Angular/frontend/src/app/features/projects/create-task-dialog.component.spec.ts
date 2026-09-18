@@ -51,6 +51,24 @@ describe('CreateTaskDialogComponent', () => {
     expect(m.close.mock.calls[1][0]).toEqual({ title: 'T1', priority: 'MEDIUM', description: 'con detalle' });
   });
 
+  it('con un solo caracter en el titulo, «Crear» no cierra el dialogo', () => {
+    // La validacion del backend pide min(2); un boton que solo mirara si hay
+    // texto dejaria pasar titulos que el servidor rechaza.
+    m.componente.title = 'a';
+    m.fixture.detectChanges();
+
+    const crear = Array.from((m.fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Crear'),
+    )!;
+    crear.click();
+    expect(m.close).not.toHaveBeenCalled();
+
+    m.componente.title = 'ab';
+    m.fixture.detectChanges();
+    crear.click();
+    expect(m.close).toHaveBeenCalledTimes(1);
+  });
+
   it('con el titulo en blanco, pulsar «Crear» no cierra el dialogo', () => {
     m.componente.title = '   ';
     m.fixture.detectChanges();

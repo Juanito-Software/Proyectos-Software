@@ -37,6 +37,9 @@ describe('TaskService', () => {
     const peticion = control.expectOne((r) => r.url === URL);
     expect(peticion.request.method).toBe('GET');
     expect(peticion.request.params.get('projectId')).toBe('p1');
+    // El backend recortaria a 20 en silencio; el tablero pide el maximo que
+    // acepta (100) y lo enseña entero.
+    expect(peticion.request.params.get('limit')).toBe('100');
     peticion.flush([]);
   });
 
