@@ -34,9 +34,6 @@ Convención de estados:
   `radiostack-persistence` resolvería de raíz las rodajas y quitaría a la API el
   conocimiento de los paquetes internos de otro módulo. Es cambio de producción,
   merece PR propio. _Fuente: 2026-09-12, «Lo que queda anotado y sin hacer»._
-- [ ] **Test STOMP de punta a punta con `@SpringBootTest`.** Necesita una
-  historia de base de datos (las migraciones Flyway son de PostgreSQL). Precedente:
-  `EsquemaYMigracionesTest` ya levanta un `@SpringBootTest`. _Fuente: 2026-09-12._
 - [ ] **GET públicos bajo `/api/v1`.** Regla pensada para la parrilla/programas,
   alcanza a todos los GET (incluido `/api/v1/auth/me`). Decisión de producto:
   queda **documentado con un test**, no se cambia por iniciativa propia. _Fuente:
@@ -53,6 +50,14 @@ Convención de estados:
   `spring-boot-starter-test`. _Fuente: 2026-09-11 (noche) → resuelto 2026-09-12._
 - [x] **500 en todo endpoint con id de ruta (`-parameters`).** Resuelto en el
   `pom` padre; 11 endpoints, 0 con 500. _Fuente: 2026-09-12._
+- [x] **Test STOMP de punta a punta con `@SpringBootTest`.**
+  `ChatStompEndToEndTest` recorre el chat completo contra un servidor real:
+  CONNECT con token, suscripción al tópico de una emisión, SEND autenticado que
+  se guarda y se difunde con el alias del token, lectura anónima permitida y
+  envío sin token rechazado sin guardar nada. Comparte el gate
+  `RADIOSTACK_DB_TESTS` con `EsquemaYMigracionesTest`; api pasa de 126 a 129 y
+  el mínimo de CI de 162 a 165. _Fuente: 2026-09-12 → resuelto 2026-09-19 (rama
+  `Fix_Stomp_EndToEnd`)._
 
 ## CV
 
