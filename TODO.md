@@ -59,6 +59,16 @@ Convención de estados:
   el mínimo de CI de 162 a 165. _Fuente: 2026-09-12 → resuelto 2026-09-19 (rama
   `Fix_Stomp_EndToEnd`)._
 
+## Repositorio — flujo de trabajo
+
+- [x] **Perdurabilidad del flujo de trabajo: `AGENTS.md`.** Se crea la guía del
+  agente en la raíz (flujo git con los aliases `git nueva`/`git subir`, fuentes
+  de verdad, mínimos de CI y comandos de test por ecosistema), y queda la regla
+  de cerrar toda sesión con un commit final de documentación en `README.md`,
+  `MAINTENANCE.md`, `TODO.md` y `AGENTS.md`. Supera al borrador de la rama
+  `docs_agents`, que tenía cifras atrasadas y no estaba en `main`. _Fuente:
+  2026-09-19 (tarde)._
+
 ## CV
 
 - [ ] **Cifras desactualizadas: «71 tests» y «Angular 19».** El mínimo de CI de

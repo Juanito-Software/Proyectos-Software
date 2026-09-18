@@ -53,6 +53,47 @@ de los proyectos).
 
 ---
 
+## 2026-09-19 (tarde) — AGENTS.md: la guía del agente, y el borrador que no estaba donde parecía
+
+La sesión del chat STOMP (entrada inmediatamente inferior, PR #108) se cerró
+siguiendo un flujo que **no estaba escrito en ninguna parte del repositorio**:
+los aliases `git nueva`/`git subir`, el mínimo por proyecto en el CI, qué doc
+mandaba sobre qué. Vivía en el config de git y en la memoria de quien lo había
+montado. Esta tarde se formaliza en `AGENTS.md`, en la raíz del monorepo.
+
+### El avatar del fichero fantasma
+
+Al preguntar por la guía, el usuario no la veía «en el repositorio». Verificado:
+**no estaba**, ni trackeada ni ignorada. Pero existía un borrador de 112 líneas
+en la rama `docs_agents` (commit `fa9dfb9`, sin PR), con cifras del día anterior
+—162 tests, «`EsquemaYMigracionesTest` (7 tests, el único `@SpringBootTest`)»—.
+Otra repetición de la lección del fichero fantasma, con un matiz nuevo: no solo
+hay que verificar que algo exista (`Test-Path`/`git ls-files`), también hay que
+mirar **en qué rama** existe. Un `git add` ciego desde otra rama habría
+duplicado o ignorado el borrador a partes iguales.
+
+El borrador era sólido en lo estructural; lo obsoleto era el contenido de la
+sesión anterior. Se reescribió reconciliado con el código actual: mínimo 165,
+los **10** tests `@SpringBootTest` (7 de esquema + 3 de STOMP) detrás de
+`RADIOSTACK_DB_TESTS`, `JpaConfig` en `radiostack-persistence`, la lección del
+test STOMP apuntando a su entrada, el `git commit -m` que el borrador omitía.
+
+### La regla de cierre de sesión
+
+A partir de ahora, **toda sesión con varios commits termina con un commit final
+de documentación** que actualiza `MAINTENANCE.md` (entrada fechada de la sesión),
+`TODO.md` (marcar `[x]` con la referencia) y `AGENTS.md` (si la guía cambió).
+Es la trasposición escrita de lo que este historial ya venía haciendo de facto.
+
+### Estado de las ramas
+
+- PR #108 `test(radiostack): …STOMP…` — abierta; su squad de documentación
+  (entrada de MAINTENANCE, TODO, ci.yml) ya viaja con ella.
+- `docs_agents` queda **superada** por el PR nuevo de la guía; si no se integra
+  pronto, borrarla (`git push origin --delete docs_agents`).
+
+---
+
 ## 2026-09-19 — RadioStack: el chat por STOMP, de punta a punta con `@SpringBootTest`
 
 Cierra el pendiente anotado el 12 de septiembre. El chat por WebSocket STOMP

@@ -60,7 +60,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
-| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 274 tests con Vitest en CI: 175 del backend —13 de ellos contra un PostgreSQL real, con las migraciones de Prisma aplicadas— y 99 del frontend |
+| `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 278 tests con Vitest en CI: 175 del backend —13 de ellos contra un PostgreSQL real, con las migraciones de Prisma aplicadas— y 103 del frontend |
 | `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 962 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde |
 
 ### 🐍 Python
@@ -138,12 +138,12 @@ Tests que se ejecutan hoy en cada push:
 | BatchProcessor | 20 | H2 en memoria |
 | RadioStack | 165 | JUnit 5 y Mockito; la cadena de filtros con MockMvc, y 10 sobre PostgreSQL real: 7 ejecutan las migraciones de Flyway y validan el esquema contra las entidades, y 3 recorren el chat por STOMP de punta a punta |
 | TaskHub_Angular (backend) | 175 | Vitest; 13 sobre PostgreSQL real que aplican la migración de Prisma y comprueban restricciones, cascadas y el filtro de visibilidad |
-| TaskHub_Angular (frontend) | 99 | Vitest sobre el constructor de Angular |
+| TaskHub_Angular (frontend) | 103 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | TaskHub_React | 962 | Cuatro capas, incluido navegador real |
 
-Suman **1.514 tests** que se ejecutan en cada push, 552 de ellos en `ci.yml`.
+Suman **1.521 tests** que se ejecutan en cada push, 559 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 
