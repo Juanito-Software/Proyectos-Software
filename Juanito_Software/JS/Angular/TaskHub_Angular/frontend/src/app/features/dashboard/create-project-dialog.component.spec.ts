@@ -72,6 +72,25 @@ describe('CreateProjectDialogComponent', () => {
     expect(m.close).not.toHaveBeenCalled();
   });
 
+  it('con un solo caracter «Crear» sigue desactivado: el backend exige 2', () => {
+    // Si el boton solo mirara si hay texto, un nombre de 1 letra llegaria al
+    // servidor y volveria rechazado (el validador exige min(2)).
+    m.componente.name = 'I';
+    m.fixture.detectChanges();
+
+    const pantalla = m.fixture.nativeElement as HTMLElement;
+    const crear = Array.from(pantalla.querySelectorAll('button')).find((b) => b.textContent?.includes('Crear'))!;
+    expect(crear.disabled).toBe(true);
+    crear.click();
+    expect(m.close).not.toHaveBeenCalled();
+
+    // Con dos caracteres el mismo boton ya deja pasar.
+    m.componente.name = 'II';
+    m.fixture.detectChanges();
+    crear.click();
+    expect(m.close).toHaveBeenCalledTimes(1);
+  });
+
   it('con nombre, pulsar «Crear» si cierra el dialogo', () => {
     // Control del anterior: prueba que el clic en ese boton llega a submit(), y
     // que el «no cierra» de arriba se debe al [disabled] y no a un selector que

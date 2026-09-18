@@ -204,7 +204,11 @@ export class ProjectDetailComponent implements OnInit {
           this.snackBar.open('Tarea creada', 'Cerrar', { duration: 3000 });
           this.loadTasks();
         },
-        error: () => this.snackBar.open('No se pudo crear la tarea', 'Cerrar', { duration: 3000 }),
+        error: (e) => {
+          // El motivo lo dice el validador del backend; un «No se pudo crear»
+          // generico esconderia por que se rechazo.
+          this.snackBar.open(this.textoDelFallo(e, 'No se pudo crear la tarea'), 'Cerrar', { duration: 3000 });
+        },
       });
     });
   }
@@ -244,5 +248,11 @@ export class ProjectDetailComponent implements OnInit {
         },
       });
     });
+  }
+
+  /** El backend falla con { message } en el cuerpo; si no viene, texto de relleno. */
+  private textoDelFallo(e: unknown, porDefecto: string): string {
+    const cuerpo = e as { error?: { message?: string } } | null;
+    return cuerpo?.error?.message || porDefecto;
   }
 }

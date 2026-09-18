@@ -38,7 +38,7 @@ export interface CreateTaskDialogResult {
     </div>
     <div mat-dialog-actions align="end">
       <button mat-button (click)="dialogRef.close()">Cancelar</button>
-      <button mat-flat-button color="primary" [disabled]="!title.trim()" (click)="submit()">Crear</button>
+      <button mat-flat-button color="primary" [disabled]="title.trim().length < 2" (click)="submit()">Crear</button>
     </div>
   `,
   styles: [`

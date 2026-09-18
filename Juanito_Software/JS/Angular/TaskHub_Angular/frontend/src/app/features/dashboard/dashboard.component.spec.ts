@@ -72,9 +72,24 @@ describe('DashboardComponent', () => {
     m.componente.ngOnInit();
 
     const peticion = m.control.expectOne((r) => r.url === URL && r.method === 'GET');
+    expect(peticion.request.params.get('page')).toBe('1');
+    // Pedir en grande: con el limite de 10 por defecto el panel ocultaria
+    // proyectos sin avisar.
+    expect(peticion.request.params.get('limit')).toBe('100');
     peticion.flush([proyecto('p1'), proyecto('p2')]);
 
     expect(m.componente.projects.map((p) => p.id)).toEqual(['p1', 'p2']);
+  });
+
+  it('si la lista no carga, lo dice en vez de fingir que no hay proyectos', () => {
+    m.fixture.detectChanges();
+    m.control.expectOne((r) => r.url === URL).flush(null, { status: 500, statusText: 'Server Error' });
+    m.fixture.detectChanges();
+
+    expect(m.componente.loadError).toBe(true);
+    const pantalla = m.fixture.nativeElement as HTMLElement;
+    expect(pantalla.textContent).toContain('No se pudieron cargar los proyectos');
+    expect(pantalla.textContent).not.toContain('No tienes proyectos aún');
   });
 
   describe('crear proyecto', () => {
@@ -110,7 +125,8 @@ describe('DashboardComponent', () => {
         .expectOne((r) => r.method === 'POST')
         .flush({ message: 'nombre corto' }, { status: 400, statusText: 'Bad Request' });
 
-      expect(m.abrirAviso).toHaveBeenCalledWith('No se pudo crear el proyecto', 'Cerrar', expect.anything());
+      // El aviso es el motivo que manda el servidor, no un «no se pudo» generico.
+      expect(m.abrirAviso).toHaveBeenCalledWith('nombre corto', 'Cerrar', expect.anything());
       m.control.expectNone((r) => r.method === 'GET');
     });
   });

@@ -24,7 +24,7 @@ import { CreateProjectRequest } from '../../core/models';
     </div>
     <div mat-dialog-actions align="end">
       <button mat-button (click)="dialogRef.close()">Cancelar</button>
-      <button mat-flat-button color="primary" [disabled]="!name.trim()" (click)="submit()">Crear</button>
+      <button mat-flat-button color="primary" [disabled]="name.trim().length < 2" (click)="submit()">Crear</button>
     </div>
   `,
   styles: [`

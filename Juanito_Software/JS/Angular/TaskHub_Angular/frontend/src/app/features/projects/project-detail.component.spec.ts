@@ -224,6 +224,21 @@ describe('ProjectDetailComponent', () => {
 
       m.control.expectNone((r) => r.method === 'POST');
     });
+
+    it('si el servidor rechaza la tarea, avisa con su motivo y no recarga', async () => {
+      const m = await montar();
+      control = m.control;
+      m.alCerrarDialogo({ title: 'N', priority: 'LOW' });
+
+      m.componente.openCreateTaskDialog();
+      m.control
+        .expectOne((r) => r.url === TAREAS && r.method === 'POST')
+        .flush({ message: 'titulo demasiado corto' }, { status: 400, statusText: 'Bad Request' });
+
+      // El motivo que manda el validador, no un «no se pudo» generico.
+      expect(m.abrirAviso).toHaveBeenCalledWith('titulo demasiado corto', 'Cerrar', expect.anything());
+      m.control.expectNone((r) => r.method === 'GET');
+    });
   });
 
   describe('eliminar tarea', () => {
