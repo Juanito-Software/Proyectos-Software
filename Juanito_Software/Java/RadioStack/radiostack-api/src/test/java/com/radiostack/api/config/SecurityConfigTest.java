@@ -55,15 +55,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * ContextoWebDePrueba, al final del fichero) en vez de usar
  * RadiostackApiApplication:
  *
- *   RadiostackApiApplication lleva @EntityScan y @EnableJpaRepositories como
- *   anotaciones DIRECTAS, no como autoconfiguracion. @WebMvcTest apaga la
- *   autoconfiguracion, pero no puede apagar esas dos: se ejecutan igual, Spring
- *   Data registra los 6 repositorios y todos piden un `entityManagerFactory`
- *   que en una rodaja web no existe. El contexto ni siquiera llega a arrancar.
- *
- *   Comprobado: con la version anterior de este fichero, los 15 tests fallaban
- *   con «A component required a bean named 'entityManagerFactory' that could not
- *   be found», y el log empezaba por «Found 6 JPA repository interfaces».
+ *   El conocimiento JPA de RadioStack es una configuracion normal de Spring,
+ *   @EntityScan y @EnableJpaRepositories en com.radiostack.persistence.config.
+ *   No es delito en si: la rodaja podria excluirla con un filtro de
+ *   @ComponentScan. El problema es que la aplicacion no es solo JpaConfig. El
+ *   escaneo del paquete base de @SpringBootApplication barre com.radiostack de
+ *   arriba a abajo: ademas de la configuracion de persistencia encontraria
+ *   DataInitializer y el resto de beans que exigen repositorios y servicios
+ *   reales, y una rodaja web no tiene BD que ofrecerles. El contexto ni siquiera
+ *   llegaria a arrancar.
  *
  *   Con una configuracion propia y las clases traidas una a una con @Import, no
  *   hay escaneo de componentes y el contexto contiene exactamente lo que se
@@ -71,9 +71,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   de PRODUCCION, mas los dos controladores con los que se atraviesan las
  *   reglas. Nada de JPA, nada de PostgreSQL, nada de Flyway.
  *
- *   (El arreglo de fondo seria mover @EntityScan y @EnableJpaRepositories a una
- *   configuracion del modulo de persistencia, donde pertenecen. Es un cambio de
- *   produccion y merece su propio PR.)
+ *   Quien quiera una rodaja montada sobre la aplicacion real ya puede hacerlo
+ *   sin parches: excluir JpaConfig y los beans dependientes con
+ *   @ComponentScan.Filter y el contexto completa; antes de mover esas
+ *   anotaciones, puestas como estaban en la clase raiz, @WebMvcTest no podia
+ *   apagarlas ni con un filtro.
  *
  * JwtService NO se sustituye por un doble: se construye uno real con una clave
  * de prueba. Asi los tokens de estos tests recorren el mismo camino que los de
@@ -412,9 +414,12 @@ class SecurityConfigTest {
  *
  * @WebMvcTest busca hacia arriba, desde el paquete del test, la primera clase
  * anotada con @SpringBootConfiguration. Al existir esta, se para aqui y no llega
- * a RadiostackApiApplication, que es lo que se quiere evitar: esa clase arrastra
- * @EntityScan y @EnableJpaRepositories, y con ellas los repositorios de JPA, que
- * en una rodaja web no tienen `entityManagerFactory` con el que construirse.
+ * a RadiostackApiApplication, que es lo que se quiere evitar: el escaneo del
+ * paquete base de esa clase barre com.radiostack entero y encontraria, ademas de
+ * la configuracion JPA del modulo de persistencia, los beans que dependen de
+ * repositorios y servicios reales; en una rodaja web no hay base de datos con la
+ * que construirlos. (El conocimiento JPA en si ya es un bean excluible, pero la
+ * aplicacion no es solo ese bean.)
  *
  * No lleva @ComponentScan a proposito: en este contexto no se escanea nada. Todo
  * lo que hay dentro entra por el @Import del test o por @MockBean, de modo que
