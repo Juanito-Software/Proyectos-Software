@@ -219,16 +219,21 @@ jobs:
           #
           # Hay dos excepciones, las dos deliberadas. SecurityConfigTest usa
           # @WebMvcTest, que levanta solo la capa web —sin JPA ni DataSource— y
-          # fija la clave de firma por propiedad. Y EsquemaYMigracionesTest sí
-          # necesita PostgreSQL y RADIOSTACK_JWT_SECRET: es el único que arranca
-          # la aplicación entera para que Flyway aplique las migraciones de
-          # verdad y Hibernate valide el esquema resultante contra las entidades.
+          # fija la clave de firma por propiedad. Y los dos tests de punta a
+          # punta sí necesitan PostgreSQL y RADIOSTACK_JWT_SECRET: arrancan la
+          # aplicación entera para que Flyway aplique las migraciones de verdad
+          # y Hibernate valide el esquema resultante contra las entidades
+          # (EsquemaYMigracionesTest) y para recorrer el camino del chat por
+          # STOMP desde un WebSocket real hasta la base de datos
+          # (ChatStompEndToEndTest). Comparten la marca RADIOSTACK_DB_TESTS a
+          # propósito, para entrar y salir juntos del recuento.
           #
           # El total reparte por modulos: 2 en core, 34 en persistence —el
-          # mapeador entre entidades y dominio, y los seis adaptadores— y 126 en
-          # api, de los cuales 7 son los de esquema y migraciones.
+          # mapeador entre entidades y dominio, y los seis adaptadores— y 129 en
+          # api, de los cuales 10 son los que arrancan el contexto de verdad:
+          # 7 de esquema y migraciones y 3 del chat por STOMP.
           - proyecto: Juanito_Software/Java/RadioStack
-            minimo: 162
+            minimo: 165
     # PostgreSQL para EsquemaYMigracionesTest.
     #
     # Las credenciales son las que documenta el application.yml de RadioStack a
@@ -271,7 +276,7 @@ jobs:
           # La marca que habilita los tests que necesitan base de datos. En un
           # portatil no esta definida y esos tests se saltan; aqui si, y el paso
           # de abajo NO cuenta los saltados, de modo que si esta variable dejara
-          # de llegar el recuento bajaria de 162 a 155 y el job fallaria. No
+          # de llegar el recuento bajaria de 165 a 155 y el job fallaria. No
           # pueden dejar de ejecutarse en silencio.
           RADIOSTACK_DB_TESTS: "true"
           # Clave solo para el CI. La aplicacion se niega a arrancar sin ella, y

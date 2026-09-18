@@ -43,7 +43,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 |---|---|
 | `BatchProcessor` | Motor de integración de datos sobre Spring Batch: mueve registros entre CSV, API REST y base de datos en las 9 combinaciones, con la entidad resuelta en tiempo de ejecución. 20 tests que ejecutan las nueve rutas de punta a punta sobre H2 en memoria, en CI |
 | `HashTools` | Utilidades de hashing y criptografía (validación de contraseñas, AES) |
-| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast. Autenticación JWT compartida por HTTP y por el CONNECT de STOMP, y chat en directo sobre WebSocket. 162 tests en CI: la cadena de filtros de seguridad atravesada de verdad con MockMvc, y las migraciones de Flyway aplicadas sobre un PostgreSQL real que el runner levanta como servicio |
+| `RadioStack` | Emisora de radio por internet multi-módulo (core, api, persistence, stream, admin) sobre Icecast. Autenticación JWT compartida por HTTP y por el CONNECT de STOMP, y chat en directo sobre WebSocket. 165 tests en CI: la cadena de filtros de seguridad atravesada de verdad con MockMvc, el chat por STOMP recorrido de punta a punta con `@SpringBootTest`, y las migraciones de Flyway aplicadas sobre un PostgreSQL real que el runner levanta como servicio |
 | `Spring/` | Ejercicios y pruebas con Spring Boot y Spring Batch |
 | `SpringlessEasyBatcher` | Motor de batching sin Spring — software propietario, código no incluido (ver su README) |
 | `others/` | Utilidades varias: `EscribirNombresArchivos`, `ServidorJuegos`, `XlsxToCsvConverter` |
@@ -136,7 +136,7 @@ Tests que se ejecutan hoy en cada push:
 | Proyecto | Tests | Sobre qué |
 | --- | --- | --- |
 | BatchProcessor | 20 | H2 en memoria |
-| RadioStack | 162 | JUnit 5 y Mockito; la cadena de filtros con MockMvc, y 7 sobre PostgreSQL real que ejecutan las migraciones de Flyway y validan el esquema contra las entidades |
+| RadioStack | 165 | JUnit 5 y Mockito; la cadena de filtros con MockMvc, y 10 sobre PostgreSQL real: 7 ejecutan las migraciones de Flyway y validan el esquema contra las entidades, y 3 recorren el chat por STOMP de punta a punta |
 | TaskHub_Angular (backend) | 175 | Vitest; 13 sobre PostgreSQL real que aplican la migración de Prisma y comprueban restricciones, cascadas y el filtro de visibilidad |
 | TaskHub_Angular (frontend) | 99 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
