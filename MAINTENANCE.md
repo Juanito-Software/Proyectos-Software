@@ -53,6 +53,74 @@ de los proyectos).
 
 ---
 
+## 2026-09-19 — RadioStack: el chat por STOMP, de punta a punta con `@SpringBootTest`
+
+Cierra el pendiente anotado el 12 de septiembre. El chat por WebSocket STOMP
+tenía tests del interceptor (`StompAuthChannelInterceptorTest`) y del
+controlador con dobles, pero nadie había atravesado el camino entero contra un
+servidor real: CONNECT con token, suscripción al tópico de una emisión, SEND
+que se guarda en la base y se difunde con el alias del token, y los rechazos.
+
+`ChatStompEndToEndTest` levanta la aplicación con `WebEnvironment.RANDOM_PORT`
+y entra por un `WebSocketStompClient` real (Spring 6.1 tenía ya en el classpath
+`spring-websocket`, `spring-messaging` y `tomcat-embed-websocket`; no hizo falta
+tocar el `pom`). Tres pruebas:
+
+1. **Enviar con token** guarda el mensaje en `chat_message` y lo difunde al
+   tópico con el alias del token (`lucia@radiostack.com`), no con el que dice el
+   cuerpo.
+2. **Leer sin token** está permitido: un oyente anónimo suscrito recibe la
+   difusión de un autor autenticado.
+3. **Enviar sin token** se rechaza en el interceptor y **no queda nada** en el
+   historial.
+
+### Sin tocar producción
+
+El test pasó contra el código de producción tal como estaba: no se cambió una
+sola línea de `src/main`. Que el SEND sin token no deje rastro no es algo que
+haya que arreglar, es el comportamiento existente, y ahora está demostrado de
+punta a punta. El interceptor corta la trama en el `clientInboundChannel`
+**antes** de que el controlador llegue a ejecutarse, de modo que
+`chatService.enviarMensaje` ni se invoca. La comprobación explícita de
+`Authentication` dentro de `ChatWebSocketController.enviar`, que está ahí "por
+si esa política cambiase" (así lo dice su comentario), quedó cubierta por el
+test 1, que afirma que el alias sale del token.
+
+### Cuatro lecciones del recorrido, que pagaron la sesión
+
+- **El broker simple no manda RECEIPT para SUBSCRIBE.** Se intentó sincronizar
+  la suscripción por receipt y el test colgaba: en
+  `SimpleBrokerMessageHandler` el SUBSCRIBE solo registra el destino, no
+  responde. Se sustituyó por un asentamiento de 300 ms con el comentario que
+  explica por qué.
+- **El canal entrante es multi-hilo**, y el orden suscripción/emisión no está
+  garantizado ni en la misma conexión: el `clientInboundChannel` de Spring usa
+  un `ThreadPoolTaskExecutor` con core igual a 2×núcleos. El asentamiento de
+  arriba cubre esa carrera, no la mala voluntad del broker.
+- **`MappingJackson2MessageConverter` desconoce `java.time`.** Con el convertidor
+  por defecto, el MESSAGE con `timestamp` (`LocalDateTime`) llegaba y la
+  conversión a `ChatMessageDTO` fallaba en silencio con
+  `MessageConversionException`. Se registró `JavaTimeModule` en un `ObjectMapper`
+  propio. De paso, `ConcurrentTaskScheduler()` estaba deprecado en Spring 6.1:
+  el cliente usa un `ThreadPoolTaskScheduler` compartido.
+- **Los tests con servidor real no pueden fiarse de `@Transactional`** para
+  limpiar: los hilos del broker no viven en la transacción del test, así que
+  `@AfterEach` borra las filas con el marcador único que genera cada test.
+
+### Cifras
+
+- api: 126 → **129** tests. RadioStack: **162 → 165**, mínimo de CI
+  actualizado en `.github/workflows/ci.yml`.
+- Ya son **10** los tests que arrancan el contexto completo contra PostgreSQL
+  (7 de `EsquemaYMigracionesTest` + 3 de `ChatStompEndToEndTest`), todos detrás
+  de la misma marca `RADIOSTACK_DB_TESTS` para entrar y salir juntos del
+  recuento del CI. El javadoc de `EsquemaYMigracionesTest` se actualizó en
+  consecuencia (ya no es «el único» de RadioStack que toca una base de datos).
+- Sin la marca, el recuento baja de 165 a 155, y el paso de comprobación del
+  workflow lo detecta.
+
+---
+
 ## 2026-09-18 — TaskHub_Angular: los cuatro comportamientos pendientes de la #90
 
 La sesión anterior terminó con el frontend de Angular en 261 tests y cuatro

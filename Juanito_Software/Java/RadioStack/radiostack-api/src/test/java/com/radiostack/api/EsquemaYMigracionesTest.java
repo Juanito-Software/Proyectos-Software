@@ -19,9 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * El unico test de RadioStack que toca una base de datos de verdad.
+ * Uno de los dos tests de RadioStack que arrancan el contexto completo contra
+ * PostgreSQL de verdad; el otro es ChatStompEndToEndTest.
  *
- * Cubre el hueco que quedaba despues de 155 tests: las migraciones de Flyway
+ * Cubre el hueco que quedaba despues de 155 tests —los demas no tocan una base
+ * de datos real—: las migraciones de Flyway
  * —`V1__init.sql` y `V2__demo_data.sql`— no se ejecutaban en ninguna parte. Si
  * una estuviera rota, el CI seguiria en verde y el fallo aparecia al desplegar.
  *
@@ -48,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * la variable RADIOSTACK_DB_TESTS, que solo define el workflow.
  *
  * Y se salta en bloque a proposito: el paso del CI que cuenta tests descuenta los
- * saltados, asi que si esa variable no llegara al job, el recuento bajaria de 161
+ * saltados, asi que si esa variable no llegara al job, el recuento bajaria de 165
  * a 155 y el job fallaria. Estos tests no pueden dejar de ejecutarse en silencio.
  */
 @SpringBootTest
