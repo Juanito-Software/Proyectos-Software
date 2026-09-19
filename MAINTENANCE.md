@@ -26,10 +26,12 @@ Convención de estados:
 - [x] **Botones habilitados con 1 carácter + «No se pudo crear» genérico.**
   `trim().length >= 2` en los diálogos y el aviso muestra el `{ message }` del
   backend. _Fuente: 2026-09-11 (noche), #90. Resuelto 2026-09-18._
-- [ ] **README del proyecto desactualizado: «99 tests».**
+- [x] **README del proyecto desactualizado: «99 tests».**
   `JS/Angular/TaskHub_Angular/README.md` sigue diciendo que son 99; el CI exige
-  103 del frontend (cifras vigentes en el README raíz). _Fuente: auditoría
-  `/VerificarDocs` 2026-09-19._
+  103 del frontend (cifras vigentes en el README raíz). Actualizado el 2026-09-19
+  con la verificación real de la suite: 103 frontend (dashboard 17, projects 44)
+  y 175 backend (162 con dobles + 13 contra PostgreSQL). _Fuente: auditoría
+  `/VerificarDocs` 2026-09-19 → resuelto 2026-09-19 (rama `UpgradeDocs`)._
 
 ## RadioStack
 
@@ -76,13 +78,18 @@ Convención de estados:
 
 ## Seguridad y dependencias
 
-- [ ] **44 vulnerabilidades sin verificar por API.** GitHub informó de «44
+- [x] **44 vulnerabilidades sin verificar por API.** GitHub informó de «44
   vulnerabilities on the default branch (16 high, 22 moderate, 6 low)» al hacer
   push; la cabecera de MAINTENANCE.md dice 2 alertas Dependabot abiertas. Hace
-  falta consultar la API. _Fuente: 2026-09-11 (noche)._
-- [ ] **Dependabot (pip): bloque «En curso».** Es la única fila no saneada del
-  estado de mantenimiento del README raíz. _Fuente: README.md (tabla de
-  mantenimiento)._
+  falta consultar la API. Verificadas por la API de GitHub el 2026-09-19: **44
+  abiertas (16 high, 22 medium, 6 low)** —npm 33, pip 8, maven 2, composer 1—.
+  Detalle en la entrada fechada. _Fuente: 2026-09-11 (noche) → resuelto
+  2026-09-19 (rama `UpgradeDocs`)._
+- [x] **Dependabot (pip): bloque «En curso».** Es la única fila no saneada del
+  estado de mantenimiento del README raíz. Las 8 alertas pip son todas `torch`
+  de FPS-AI-Toolkit, excluidas a propósito por `dependabot.yml` (el stack de
+  PyTorch se gestiona a mano con el índice CUDA). _Fuente: README.md (tabla de
+  mantenimiento) → resuelto 2026-09-19 (rama `UpgradeDocs`)._
 
 ## TaskHub_React (del historial, siguen abiertos)
 
@@ -190,13 +197,24 @@ de los proyectos).
 > reservas. La familia «registro de secretos en claro» tenía un caso vivo en
 > TaskHub_Angular —`pino-http` escribía tokens y cookies en el log—, corregido en
 > la #92. Y al hacer push, GitHub informó de 44 vulnerabilidades de Dependabot en
-> `main`, frente a las 2 que se anotan abajo; está sin verificar por API. Detalle
-> en la sección del 11 de septiembre (noche).
+> `main`, frente a las 2 que se anotan abajo; estaba sin verificar por API.
 
-- **Dependabot:** 2 abiertas, ambas dependencias transitivas del build de
-  Angular sin arreglo disponible (las únicas "correcciones" son retrocesos de
-  versión). Se dejan abiertas a propósito para que GitHub las cierre cuando
-  Angular actualice.
+> **Actualización 2026-09-19.** Verificadas por la API de GitHub: son **44
+> alertas Dependabot abiertas** en `main` (16 high, 22 medium, 6 low), todas
+> dependencias transitivas del build. Por ecosistema: **npm 33, pip 8, maven 2,
+> composer 1**. Las 8 de pip son todas `torch` de FPS-AI-Toolkit, excluidas a
+> propósito (ver `dependabot.yml`). La anotación de «2 abiertas» de abajo era lo
+> que quedaba tras el saneamiento de septiembre; el resto son las alertas
+> bloqueadas aguas arriba, deliberadamente abiertas. Detalle en la entrada
+> fechada `2026-09-19 — Bloque A`.
+
+- **Dependabot:** 44 abiertas (16 high, 22 medium, 6 low), todas dependencias
+  transitivas del build —npm 33, pip 8, maven 2, composer 1—. Las de npm/Maven
+  sin arreglo disponible (las únicas "correcciones" son retrocesos de versión)
+  se dejan abiertas a propósito para que GitHub las cierre cuando la cadena
+  actualice; las 8 de pip (`torch`) se excluyen porque el stack se gestiona a
+  mano. Detalle: actualización **2026-09-19** de esta cabecera y entrada
+  fechada.
 - **Secret scanning:** 4 alertas revisadas. Una era real (clave de API de
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
@@ -223,6 +241,39 @@ de los proyectos).
   el escáner automático; aparecieron leyendo el código. Los detalles de dónde
   estuvo cada una se omiten a propósito: este historial es público y señalarlos
   equivaldría a señalar los commits anteriores al arreglo.
+
+---
+
+## 2026-09-19 — Bloque A de mantenimiento (rama `UpgradeDocs`)
+
+Primera ejecución del comando `/NewTask` (renombrado ese mismo día desde
+`/NewProject`, PR #116). Se abordan las tres tareas rápidas sin riesgo de la
+priorización:
+
+1. **README de TaskHub_Angular actualizado.** La suite se ejecutó en local y
+   dio **103 tests frontend** (antes «99» en el README del proyecto; el mínimo
+   del CI ya era 103). Se actualizaron también las cifras por carpeta
+   (dashboard 15 → 17, projects 42 → 44) y el backend (162 → **175**, para
+   reflejar los 13 tests contra PostgreSQL real que estaban fuera del bucle de
+   `npm test`, contados solo en CI).
+2. **44 vulnerabilidades verificadas por API de GitHub.** El 2026-09-11 el push
+   avisaba de «44 vulnerabilities on the default branch» sin verificar. Son
+   **44 abiertas (16 high, 22 medium, 6 low)**, todas transitivas del build,
+   por ecosistema **npm 33, pip 8, maven 2, composer 1**. Los paquetes con
+   varias: `qs` (8), `torch` (8), `fast-uri` (4), `@angular/*` (5),
+   `hono`/`vitest`/`@vitest/mocker`/`brace-expansion`/`extract-zip`/
+   `js-yaml` (2 c/u). Sin parche disponible aguas arriba: `extract-zip` (2) y
+   `torch <= 2.6.0` (3).
+3. **Dependabot (pip) saneado.** Las 8 alertas pip son todas `torch` de
+   `FPS-AI-Toolkit` (`requirements.txt`, fijado `2.6.0+cu124`), y
+   `dependabot.yml` las excluye a propósito desde el 2026-09-03: el stack de
+   PyTorch se gestiona a mano con el índice CUDA (`pip install --index-url
+   https://download.pytorch.org/whl/cu124`), donde Dependabot solo propondría
+   versiones de PyPI que romperían la compilación CUDA o dejarían el proyecto en
+   CPU. La fila del README raíz pasa de «En curso» a «Saneado».
+
+Cambios: README del proyecto (cifras de tests) y fila Dependabot (pip) del
+README raíz.
 
 ---
 

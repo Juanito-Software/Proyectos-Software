@@ -72,11 +72,13 @@ Solo después de la confirmación de que la rama ya está creada:
 
 ## FASE 6 — Final del desarrollo
 
-Cuando termines el desarrollo, entrega el comando que debe ejecutar el usuario
+Cuando termines el desarrollo, actualiza la documentacion pertinente entrega los comandos necesarios que debe ejecutar el usuario
 para subir la rama, abrir o reutilizar el PR y programar el auto-merge en
 squash:
 
 ```text
+git add ""
+git commit ""
 git subir
 ```
 
@@ -85,7 +87,8 @@ git subir
 `NewTask` significa:
 
 RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
-COMENZAR DESARROLLO → AL TERMINAR, ENTREGAR `git subir`.
+COMENZAR DESARROLLO → AL TERMINAR, DOCUMENTAR, ENTREGAR `git add "",
+git commit "" y git subir`.
 
 El agente nunca crea la rama: la crea el usuario. La confirmación de que la
 rama ha sido creada es obligatoria antes de cualquier modificación relacionada
