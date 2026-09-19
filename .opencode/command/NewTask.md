@@ -77,7 +77,7 @@ para subir la rama, abrir o reutilizar el PR y programar el auto-merge en
 squash:
 
 ```text
-git subir $1
+git subir
 ```
 
 ## REGLA GENERAL DE SEGURIDAD
@@ -85,7 +85,7 @@ git subir $1
 `NewTask` significa:
 
 RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
-COMENZAR DESARROLLO → AL TERMINAR, ENTREGAR `git subir $1`.
+COMENZAR DESARROLLO → AL TERMINAR, ENTREGAR `git subir`.
 
 El agente nunca crea la rama: la crea el usuario. La confirmación de que la
 rama ha sido creada es obligatoria antes de cualquier modificación relacionada
