@@ -26,6 +26,10 @@ Convención de estados:
 - [x] **Botones habilitados con 1 carácter + «No se pudo crear» genérico.**
   `trim().length >= 2` en los diálogos y el aviso muestra el `{ message }` del
   backend. _Fuente: 2026-09-11 (noche), #90. Resuelto 2026-09-18._
+- [ ] **README del proyecto desactualizado: «99 tests».**
+  `JS/Angular/TaskHub_Angular/README.md` sigue diciendo que son 99; el CI exige
+  103 del frontend (cifras vigentes en el README raíz). _Fuente: auditoría
+  `/VerificarDocs` 2026-09-19._
 
 ## RadioStack
 
@@ -215,6 +219,38 @@ de los proyectos).
   el escáner automático; aparecieron leyendo el código. Los detalles de dónde
   estuvo cada una se omiten a propósito: este historial es público y señalarlos
   equivaldría a señalar los commits anteriores al arreglo.
+
+---
+
+## 2026-09-19 — Comandos de opencode y MCP de GitHub (rama `CommandsOpenCode`)
+
+Para agilizar el mantenimiento del repo se añaden seis comandos de opencode
+de proyecto en `.opencode/command/`:
+
+- `/CierreSesion` — cierra la sesión: resume cambios, añade la entrada fechada
+  en `MAINTENANCE.md` y marca `[x]` las tareas del ToDo consolidado.
+- `/VerificarDocs` — auditoría de coherencia de la documentación (enlaces,
+  Markdown, contradicciones, duplicidades, fuentes de verdad); mantiene al día
+  ToDo, Maintenance y AGENTS.
+- `/EstadoRepo` — fotografía del estado del repo (rama, git status, commits,
+  ramas, PRs, ToDo, última entrada); solo lectura.
+- `/NewProject <rama>` — protocolo de una nueva tarea: entrega `git nueva
+  <rama>` y `git subir <rama>` (los ejecuta el usuario), recopila requisitos y
+  espera confirmación de que la rama está subida antes de programar. El agente
+  **nunca** crea la rama ni hace push.
+- `/Write` — sinónimo `write`: marca información relevante para guardarla en
+  memoria persistente. Responde a `/write`, `/write.message` y `/write.chat` y
+  a `/Activate.Command(...)` (variantes `write.message` solo el mismo mensaje,
+  `write.chat` toda la conversación, `write` a criterio del agente).
+  Confirmación: ✅ INFO updated.
+- `/Technical` — sinónimo `technical` (también `/Activate.Command(technical)`):
+  análisis profundo y riguroso, investigación intensiva, búsqueda web si hay
+  herramientas, razonamiento prolongado, detalle muy alto.
+
+El MCP de GitHub (hosted, solo-lectura) queda configurado en
+`.opencode/opencode.json` con `GITHUB_TOKEN` del entorno; no da rama ni push al
+agente. Pendiente: definir `GITHUB_TOKEN` (p. ej. `$PROFILE`) y reiniciar
+opencode para que el MCP y los comandos carguen.
 
 ---
 

@@ -115,3 +115,40 @@ Windows, PowerShell (`pwsh`); JDK 21 + Maven 3.9.9, Node 22 y PostgreSQL 17 como
 servicio local. En un entorno headless/nube, Maven Central y
 `binaries.prisma.sh` pueden estar bloqueados: los cambios Java/Prisma se
 verifican en la máquina local o en el CI, no ahí.
+
+## Comandos de opencode
+
+El repo define comandos de opencode de proyecto en `.opencode/command/`:
+
+- `/CierreSesion` — cierra la sesión: resume cambios, añade la entrada fechada en
+  `MAINTENANCE.md` y marca `[x]` las tareas del ToDo consolidado.
+- `/VerificarDocs` — auditoría de coherencia de la doc (enlaces, Markdown,
+  contradicciones, duplicidades, fuentes de verdad); mantiene al día ToDo,
+  Maintenance y AGENTS.
+- `/EstadoRepo` — fotografía del repo (rama, git status, commits, ramas, PRs,
+  ToDo, última entrada de MAINTENANCE); solo lectura.
+- `/NewProject <rama>` — prepara una tarea nueva: entrega `git nueva <rama>`
+  (el usuario crea la rama) y `git subir <rama>`, recopila requisitos y espera
+  confirmación de que la rama está subida antes de programar. **El agente nunca
+  crea la rama.**
+
+El MCP de GitHub (hosted, solo-lectura) se configura en `.opencode/opencode.json`
+y requiere `GITHUB_TOKEN` en el entorno; no da rama ni push al agente.
+
+## Sinónimos de opencode (no son comandos de opencode)
+
+El usuario puede invocar en el chat dos sinónimos que no son comandos reales de
+opencode: `write` y `technical`. Responde tanto a la forma con barra
+(`/write`, `/write.message`, `/write.chat`, `/technical`) como a la sintaxis
+`/Activate.Command(...)` (o `-Activate.Command(...)`).
+
+- `write` — marca información para guardarla en memoria persistente
+  (`AGENTS.md` y `MAINTENANCE.md`). Variantes: `write` (a tu criterio),
+  `write.message` (solo el mismo mensaje) y `write.chat` (toda la conversación).
+  Responde también a `/write`, `/write.message` y `/write.chat`.
+  Confirma con: ✅ INFO updated.
+- `technical` — activa un modo de análisis profundo y riguroso: investigación
+  intensiva de los datos, búsqueda web si hay herramientas activas, razonamiento
+  prolongado, `nivel_de_detalle = muy alto` y `estilo = técnico | académico`.
+  Ámbitos ideales: IA, redes neuronales, arquitectura de software, programación
+  avanzada, seguridad, protocolos y diseño de sistemas.
