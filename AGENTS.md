@@ -19,9 +19,11 @@ su cuenta (`commit`, `push`, `merge`, `gh`).
    configuration to persistence`.
 4. `git subir` — alias: push, abre/reutiliza el PR y programa el auto-merge en
    squash; con el push arranca el CI y, al integrar en `main`, el despliegue.
-   Si no hay PR abierto de la rama y esta ya se fusionó antes (PR `merged`
-   previo), el alias integra `main` en la rama antes de pushear para que el PR
-   nuevo solo lleve el cambio nuevo; sin cambios nuevos avisa y se detiene.
+   Antes de tocar nada, **blinda** el árbol: si hay un merge en curso
+   (`MERGE_HEAD`) o cambios sin commitear, avisa y se detiene. Si no hay PR
+   abierto de la rama y esta ya se fusionó antes (PR `merged` previo), el alias
+   integra `main` en la rama antes de pushear para que el PR nuevo solo lleve el
+   cambio nuevo; sin cambios nuevos avisa y se detiene.
 
 ## Fuentes de verdad
 
