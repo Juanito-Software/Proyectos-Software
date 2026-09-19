@@ -106,7 +106,7 @@ git subir
 ```
 
 (el `git add` siempre se entrega con el listado real de rutas de esta tarea;
-`git commit ""` es solo la plantilla, nunca se entrega vacío).
+`git commit -m ""` es solo la plantilla, nunca se entrega vacío).
 
 **## REGLA GENERAL DE SEGURIDAD**
 
@@ -114,7 +114,7 @@ git subir
 
 RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
 COMENZAR DESARROLLO → AL TERMINAR, DOCUMENTAR Y ENTREGAR
-`git add` con las rutas, `git commit ""` y `git subir`.
+`git add` con las rutas, `git commit -m ""` y `git subir`.
 
 El agente nunca crea la rama: la crea el usuario. La confirmación de que la
 rama ha sido creada es obligatoria antes de cualquier modificación relacionada

@@ -14,7 +14,7 @@ su cuenta (`commit`, `push`, `merge`, `gh`).
    integradas (`: gone]`) y crea la rama. Nombres históricos: `Fix_RadioStack`,
    `fix_taskhub-angular`.
 2. `git add "<ruta1>"` … — las rutas exactas de lo tocado.
-3. `git commit "<commit_message>"` — Conventional Commits en una línea
+3. `git commit -m "<commit_message>"` — Conventional Commits en una línea (sin `-m`, git interpreta el texto como una ruta y falla)
    (`fix:`, `feat:`, `refactor:`, `test:`, `docs:`), p. ej. `fix: move JPA
    configuration to persistence`.
 4. `git subir` — alias: push, abre/reutiliza el PR y programa el auto-merge en
