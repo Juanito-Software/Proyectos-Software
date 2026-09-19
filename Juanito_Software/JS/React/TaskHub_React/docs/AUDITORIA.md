@@ -45,7 +45,7 @@ integral.
 | Contraseñas | Mínimo 6 caracteres | 15 caracteres, lista de bloqueo y composición |
 | Cabeceras HTTP | Ninguna | `helmet` con CSP a medida y HSTS |
 | CORS | Abierto a cualquier origen | Delegado de mismo origen |
-| Tests | 37 comprobaciones de API | **962** en cuatro capas |
+| Tests | 37 comprobaciones de API | **983** en cuatro capas |
 | Cobertura del servidor | No medida | **99,6 %** de la lógica pura, con umbral en el CI |
 | Cobertura del cliente | No medida | **96,9 %**, con umbral |
 | Interfaz | Estilos por defecto, sin tokens | Sistema de tokens, modo oscuro y foco de teclado visible |
@@ -272,13 +272,13 @@ con las WCAG, y este documento no va a insinuar que lo sea.
 
 ## 7. Tests
 
-**962 comprobaciones** en cuatro capas que prueban cosas distintas:
+**983 comprobaciones** en cuatro capas que prueban cosas distintas:
 
 | Suite | Cuántas | Cobertura | Umbral | Necesita |
 |---|---:|---|---|---|
-| Unitarios de servidor | 548 | **99,5 %** stmts · 99,0 % ramas | 99/98/98/99 | Nada |
+| Unitarios de servidor | 564 | **99,6 %** stmts · 98,9 % ramas | 99/98/98/99 | Nada |
 | Unitarios de cliente | 224 | **96,5 %** stmts · 96,6 % ramas | 95/94/93/96 | Nada |
-| API contra PostgreSQL | 154 | — | — | PostgreSQL |
+| API contra PostgreSQL | 159 | — | — | PostgreSQL |
 | Navegador (Playwright) | 36 | — | — | PostgreSQL y build |
 
 **Qué mide el 99,5 % y qué no.** Solo la lógica que corre sin base de datos. Los
@@ -402,7 +402,7 @@ credencial siempre es una cadena, un recuento nunca—. Lo detectó su propio te
 | Autenticación | 9,5/10 | Lo mejor del proyecto. Rotación, detección de reutilización, revocación, cambio de contraseña con revocación global, CSRF cerrado por tres vías |
 | Autorización | 9/10 | El código era correcto desde el principio; ahora además está vigilado en escritura |
 | Seguridad | 9/10 | Sin vulnerabilidad explotable encontrada, 0 dependencias vulnerables, registro de eventos, y límite de intentos por IP y por cuenta. Falta la capa de alertas |
-| Testing | 9/10 | 962 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
+| Testing | 9/10 | 983 comprobaciones, cobertura medida y con umbral en las dos suites unitarias, y tests revisados uno a uno |
 | E2E | 8,5/10 | 36 pruebas del ciclo completo, incluidas renovación y revocación |
 | CI/CD | 9/10 | Nueve jobs, permisos mínimos, sin exposición a forks, cobertura de las dos suites, despliegue encadenado a `ci-ok`, y el job espera al estado final del despliegue y comprueba que la aplicación responde. Falta fijar las acciones a SHA y exigir que las ramas estén al día antes de fusionar |
 | DevOps | 6,5/10 | Despliegue automático que funciona, pero sin entornos separados ni rollback documentado |
@@ -510,10 +510,10 @@ Comprobado en esta auditoría, no supuesto:
 | ESLint | ✅ 0 problemas |
 | TypeScript `--noEmit` | ✅ 0 errores |
 | Build | ✅ Playground y cliente |
-| Unitarios de servidor | ✅ 548/548 |
-| Cobertura de servidor | ✅ 99,58 / 98,77 / 98,80 / 99,56 |
+| Unitarios de servidor | ✅ 564/564 |
+| Cobertura de servidor | ✅ 99,61 / 98,87 / 98,87 / 99,58 |
 | Unitarios de cliente | ✅ 224/224 |
-| API contra PostgreSQL | ✅ 154/154 |
+| API contra PostgreSQL | ✅ 159/159 |
 | Navegador (Playwright) | ✅ 36/36 *(ejecutado fuera del entorno de auditoría, que no puede descargar Chromium)* |
 | `npm audit` cliente y servidor | ✅ 0 vulnerabilidades |
 | Búsqueda de secretos en el repositorio | ✅ Sin hallazgos |

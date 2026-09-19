@@ -64,6 +64,15 @@ export const tasksController = {
     }
   },
 
+  async replace(req: Request, res: Response, next: NextFunction) {
+    try {
+      const task = await tasksService.replace(req.params.id, req.userId!, req.body);
+      res.json(ApiResponse.success(task, 'Tarea reemplazada correctamente'));
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async remove(req: Request, res: Response, next: NextFunction) {
     try {
       await tasksService.remove(req.params.id, req.userId!);

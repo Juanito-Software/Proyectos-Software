@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Request } from 'express';
-import { createTaskValidator, updateTaskValidator, filterTasksValidator } from './tasks.validation.js';
+import { createTaskValidator, replaceTaskValidator, updateTaskValidator, filterTasksValidator } from './tasks.validation.js';
 
 /**
  * Los validadores son la primera barrera de la API: deciden qué llega a la
@@ -74,6 +74,33 @@ describe('updateTaskValidator', () => {
 
   it('rechaza un estado inválido igual que al crear', () => {
     expect(updateTaskValidator(req({ status: 'inventado' }))).not.toBeNull();
+  });
+});
+
+describe('replaceTaskValidator (PUT = reemplazo completo)', () => {
+  /**
+   * PUT envía la representación completa de la tarea, así que exige el título
+   * como un POST. La diferencia con PATCH es justo esa: un cuerpo vacío o sin
+   * título, que PATCH rechaza por «al menos un campo», aquí se rechaza porque
+   * una tarea sin título no existe.
+   */
+
+  it('exige el título: un cuerpo vacío se rechaza', () => {
+    expect(replaceTaskValidator(req({}))).not.toBeNull();
+  });
+
+  it('acepta solo el título: los demás campos vuelven a sus por defecto al guardar', () => {
+    expect(replaceTaskValidator(req({ title: 'Reemplazo' }))).toBeNull();
+  });
+
+  it('acepta el cuerpo completo de una tarea', () => {
+    expect(
+      replaceTaskValidator(req({ title: 'T', description: 'D', status: 'completed', priority: 'high' })),
+    ).toBeNull();
+  });
+
+  it('rechaza un estado que no existe igual que al crear', () => {
+    expect(replaceTaskValidator(req({ title: 'T', status: 'casi-hecho' }))).not.toBeNull();
   });
 });
 

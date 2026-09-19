@@ -88,6 +88,15 @@ export const updateTaskValidator: ValidatorFn = (req): string[] | null => {
   return errors.length > 0 ? errors : null;
 };
 
+/**
+ * PUT envía la representación COMPLETA de la tarea, así que sus exigencias
+ * son las de un POST: el título es obligatorio y el resto vuelve a sus
+ * valores por defecto si no se manda. Comparte validación con `create`, no
+ * con `update`; la diferencia entre los dos verbos vive en el servicio
+ * (`replace` reinicia lo que no llega, `update` lo deja como estaba).
+ */
+export const replaceTaskValidator: ValidatorFn = createTaskValidator;
+
 export const filterTasksValidator: ValidatorFn = (req): string[] | null => {
   const errors: string[] = [];
   const { status, priority, search } = req.query;

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { tasksController } from './tasks.controller.js';
 import { validate, validarUuid } from '../../middleware/validate.middleware.js';
-import { createTaskValidator, updateTaskValidator, filterTasksValidator } from './tasks.validation.js';
+import { createTaskValidator, replaceTaskValidator, updateTaskValidator, filterTasksValidator } from './tasks.validation.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';
 import { apiLimiter } from '../../middleware/rateLimit.middleware.js';
 
@@ -28,8 +28,10 @@ router.get('/:id', idValido, tasksController.getById);
 // POST /api/tasks - Crear tarea
 router.post('/', validate(createTaskValidator), tasksController.create);
 
-// PUT /api/tasks/:id - Actualizar tarea completa
-router.put('/:id', idValido, validate(updateTaskValidator), tasksController.update);
+// PUT /api/tasks/:id - Reemplazo completo: la tarea queda tal cual se manda y
+// los campos que no viajan vuelven a su valor por defecto. PUT comparte
+// exigencia con POST (título obligatorio), no con PATCH.
+router.put('/:id', idValido, validate(replaceTaskValidator), tasksController.replace);
 
 // PATCH /api/tasks/:id - Actualización parcial (ej. solo marcar completada)
 router.patch('/:id', idValido, validate(updateTaskValidator), tasksController.update);

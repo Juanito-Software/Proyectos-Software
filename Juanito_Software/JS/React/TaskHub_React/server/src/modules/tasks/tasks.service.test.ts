@@ -238,6 +238,100 @@ describe('tarea inexistente o ajena', () => {
   });
 });
 
+describe('replace (PUT = reemplazo completo)', () => {
+  it('no reemplaza los campos omitidos: los deja en su valor por defecto', async () => {
+    // PUT declara la tarea entera. Un POST sin description/status/priority nace
+    // con esos valores; un PUT idem — vaya en contra de lo que cabría esperar
+    // de un "update", que conserva los existentes. Esa diferencia es la que
+    // distingue el verbo.
+    await tasksService.replace('task-1', USER, { title: 'Solo el título' });
+
+    expect(espias.update).toHaveBeenCalledWith('task-1', USER, {
+      title: 'Solo el título',
+      description: '',
+      status: 'pending',
+      priority: 'medium',
+    });
+  });
+
+  it('aplica los campos que sí llegan', async () => {
+    await tasksService.replace('task-1', USER, {
+      title: 'Completa',
+      description: 'con texto',
+      status: 'in-progress',
+      priority: 'high',
+    });
+
+    expect(espias.update).toHaveBeenCalledWith('task-1', USER, {
+      title: 'Completa',
+      description: 'con texto',
+      status: 'in-progress',
+      priority: 'high',
+    });
+  });
+
+  it('recorta los espacios del título y de la descripción', async () => {
+    await tasksService.replace('task-1', USER, { title: '  Pan  ', description: '  esquina  ' });
+
+    expect(espias.update).toHaveBeenCalledWith(
+      'task-1',
+      USER,
+      expect.objectContaining({ title: 'Pan', description: 'esquina' }),
+    );
+  });
+
+  it('completed:true se traduce a status completed', async () => {
+    await tasksService.replace('task-1', USER, { title: 'X', completed: true });
+
+    expect(espias.update).toHaveBeenCalledWith('task-1', USER, expect.objectContaining({ status: 'completed' }));
+  });
+
+  it('no comprueba el duplicado si no cambia el título', async () => {
+    await tasksService.replace('task-1', USER, { title: 'Comprar pan' });
+
+    expect(espias.findByTitle).not.toHaveBeenCalled();
+  });
+
+  it('comprueba el duplicado si cambia, excluyéndose a sí misma', async () => {
+    await tasksService.replace('task-1', USER, { title: 'Comprar leche' });
+
+    expect(espias.findByTitle).toHaveBeenCalledWith('Comprar leche', USER, 'task-1');
+  });
+
+  it('un título que ya tiene otra tarea da 409', async () => {
+    espias.findByTitle.mockResolvedValue({ ...TAREA, id: 'otra' });
+
+    await expect(tasksService.replace('task-1', USER, { title: 'Comprar leche' })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('reemplazar una tarea que no existe da 404 antes de tocar nada', async () => {
+    espias.findById.mockResolvedValue(null);
+
+    await expect(tasksService.replace('fantasma', USER, { title: 'x' })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+    expect(espias.update).not.toHaveBeenCalled();
+  });
+
+  it('el 23505 al reemplazar también da 409', async () => {
+    espias.update.mockRejectedValue(errorPg('23505'));
+
+    await expect(tasksService.replace('task-1', USER, { title: 'Comprar leche' })).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
+
+  it('si la escritura no devuelve fila, es 500', async () => {
+    espias.update.mockResolvedValue(null);
+
+    await expect(tasksService.replace('task-1', USER, { title: 'x' })).rejects.toMatchObject({
+      statusCode: 500,
+    });
+  });
+});
+
 describe('el título duplicado al ACTUALIZAR', () => {
   /**
    * La comprobación previa del renombrado. Tiene dos detalles que la suite de
