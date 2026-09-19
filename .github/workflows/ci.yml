@@ -229,11 +229,11 @@ jobs:
           # propósito, para entrar y salir juntos del recuento.
           #
           # El total reparte por modulos: 2 en core, 34 en persistence —el
-          # mapeador entre entidades y dominio, y los seis adaptadores— y 129 en
+          # mapeador entre entidades y dominio, y los seis adaptadores— y 130 en
           # api, de los cuales 10 son los que arrancan el contexto de verdad:
           # 7 de esquema y migraciones y 3 del chat por STOMP.
           - proyecto: Juanito_Software/Java/RadioStack
-            minimo: 165
+            minimo: 166
     # PostgreSQL para EsquemaYMigracionesTest.
     #
     # Las credenciales son las que documenta el application.yml de RadioStack a

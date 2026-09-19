@@ -2,11 +2,13 @@ package com.radiostack.api.config;
 
 import com.radiostack.api.controller.AuthController;
 import com.radiostack.api.controller.ChatController;
+import com.radiostack.api.controller.ParrillaController;
 import com.radiostack.api.security.JwtAuthenticationFilter;
 import com.radiostack.api.security.JwtService;
 import com.radiostack.core.domain.RolUsuario;
 import com.radiostack.core.domain.Usuario;
 import com.radiostack.core.service.ChatService;
+import com.radiostack.core.service.ParrillaService;
 import com.radiostack.core.service.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -68,7 +71,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   Con una configuracion propia y las clases traidas una a una con @Import, no
  *   hay escaneo de componentes y el contexto contiene exactamente lo que se
  *   quiere probar: SecurityConfig y JwtAuthenticationFilter, que son las clases
- *   de PRODUCCION, mas los dos controladores con los que se atraviesan las
+*   de PRODUCCION, mas los controladores con los que se atraviesan las
  *   reglas. Nada de JPA, nada de PostgreSQL, nada de Flyway.
  *
  *   Quien quiera una rodaja montada sobre la aplicacion real ya puede hacerlo
@@ -110,7 +113,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         JwtAuthenticationFilter.class,
         // Y los controladores a traves de los cuales se atraviesan sus reglas.
         ChatController.class,
-        AuthController.class
+        AuthController.class,
+        ParrillaController.class
 })
 class SecurityConfigTest {
 
@@ -140,6 +144,9 @@ class SecurityConfigTest {
 
     @MockBean
     private ChatService chatService;
+
+    @MockBean
+    private ParrillaService parrillaService;
 
     @MockBean
     private UsuarioService usuarioService;
@@ -270,6 +277,23 @@ class SecurityConfigTest {
         mockMvc.perform(get(CHAT)).andExpect(status().isOk());
 
         verify(chatService).obtenerMensajesPorEmision(42L);
+    }
+
+    @Test
+    void la_parrilla_se_puede_leer_sin_token() throws Exception {
+        // Este es el destinatario pensado de la regla `GET /api/v1/** ->
+        // permitAll`: la parrilla y los programas son informacion para los
+        // oyentes, no datos de usuario. A diferencia del chat, aqui hay un
+        // controlador que devuelve el contenido que se quiere publicar, y este
+        // test fija que atraviesa la cadena de filtros sin identidad y llega al
+        // controlador. Si algun dia se restringe la regla, el primer GET de
+        // catalogo que lo delatara seria este.
+        when(parrillaService.obtenerParrilla(any(), any())).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/parrilla?from=2026-09-19&to=2026-09-20"))
+                .andExpect(status().isOk());
+
+        verify(parrillaService).obtenerParrilla(any(), any());
     }
 
     @Test
