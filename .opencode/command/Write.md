@@ -1,26 +1,31 @@
 ---
-description: (Sinónimo `write`) Marca información relevante de la conversación para guardarla en memoria persistente. Uso en el chat: /Activate.Command(write.message|chat).
+description: Comando real de opencode. Registra en AGENTS.md el comportamiento/conocimiento del agente que se quiera conservar entre sesiones; variantes por argumento message, chat o ninguna.
 agent: build
 ---
 
-Sinónimo para gestionar la memoria persistente del proyecto. No es un comando
-del shell ni de git: se invoca en el chat con cualquiera de estas sintaxis,
-equivalentes:
+Comando de opencode para gestionar el comportamiento/conocimiento persistente
+del agente en `AGENTS.md`. Se invoca por su nombre en el chat, `/Write`, con un
+argumento opcional:
 
-- `/write` (o `/Activate.Command(write)`)
-- `/write.message` (o `/Activate.Command(write.message)`)
-- `/write.chat` (o `/Activate.Command(write.chat)`)
+- `/Write` — almacena la información más relevante de la conversación actual;
+  queda a tu criterio qué guardar si no se especifica.
+- `/Write message` — agenda solo lo que viene en el mismo mensaje que el
+  comando.
+- `/Write chat` — agenda el conjunto de la conversación.
 
-Cuando el usuario emita uno de estos, actúa según la variante:
+Registra durante la conversación el comportamiento/conocimiento del agente en
+`AGENTS.md`; la **memoria persistente** (consolidación al cierre de esa
+información y las entradas fechadas de `MAINTENANCE.md`) es competencia de
+`/CierreSesion`. Antes de escribir:
 
-- `/Activate.Command(write)` — almacena en memoria persistente la información
-  más relevante de la conversación actual; queda a tu criterio qué guardar si
-  no se especifica.
-- `/Activate.Command(write.message)` — agenda solo lo que viene en el mismo
-  mensaje que el comando.
-- `/Activate.Command(write.chat)` — agenda el conjunto de la conversación.
+1. Analiza la información y comprueba si ya existe en `AGENTS.md`; no dupliques.
+2. No registres información especulativa ni no confirmada.
+3. Distingue entre REQUERIDO, NECESARIO, OPCIONAL y FUERA DE ALCANCE.
+4. No modifiques documentos solo porque "podrían mejorarse".
 
-La memoria persistente del repo son `AGENTS.md` (la guía del agente) y
-`MAINTENANCE.md` (ToDo consolidado + historial). Tras guardar, confirma con:
+No uses `MAINTENANCE.md` como memoria genérica: la escritura persistente es
+competencia de `/CierreSesion` (entradas fechadas, estado de tareas y
+consolidación en `AGENTS.md`) y de `/VerificarDocs` solo cuando el usuario
+aplique la corrección de un hallazgo.
 
-✅ INFO updated
+Confirma tras guardar con: ✅ INFO updated

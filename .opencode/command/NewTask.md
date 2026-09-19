@@ -1,6 +1,6 @@
 ---
 
-description: Prepara una nueva tarea: recopila contexto y requisitos, entrega los comandos del usuario para crear la rama y espera confirmación antes de programar; al terminar entrega git subir.
+description: Prepara una nueva tarea: recopila contexto y requisitos, entrega los comandos del usuario para crear la rama y espera confirmación antes de programar; al terminar valida lo aplicable y entrega git subir.
 
 agent: build
 
@@ -83,9 +83,32 @@ Solo después de la confirmación de que la rama ya está creada:
 
 5. Comienza el desarrollo siguiendo las instrucciones del usuario.
 
-**## FASE 6 — Final del desarrollo**
+**## FASE 6 — Validación condicional (antes de entregar)**
 
-Cuando termines el desarrollo, actualiza la documentación pertinente
+Cuando el desarrollo esté terminado, valida antes de entregar los comandos Git.
+La validación es **condicional**: aplica solo lo que sea viable y aporte
+seguridad real, sin alargar la tarea ni inventar comprobaciones.
+
+1. **Control de alcance (obligatorio):** revisa los archivos modificados
+   (`git status`) y comprueba que solo están los de la tarea. Si hay cambios
+   fuera de la tarea, corrígelos o avisa antes de entregar.
+
+2. **Comprobaciones del proyecto (condicional):** aplica las que existan y sean
+   viables en el entorno local según el tipo de proyecto (tests, compile, lint,
+   typecheck, build…). NO ejecutes comprobaciones que no estén definidas en el
+   proyecto ni refactores nada para «mejorarlo»: si el entorno no lo permite
+   (p. ej. requiere base de datos o red), deja la verificación para el CI y
+   anótalo.
+
+3. **Revisión de errores:** si una comprobación ejecutada falla, corrígela
+   dentro del alcance de la tarea y vuelve a ejecutarla antes de entregar.
+
+4. Si el cambio es solo documentación o no hay comprobaciones aplicables,
+   indícalo y entrega directamente.
+
+**## FASE 7 — Final del desarrollo**
+
+Después de la validación, actualiza la documentación pertinente
 (`MAINTENANCE.md` y, si aplica, el README del proyecto) y entrega los tres
 comandos que debe ejecutar el usuario para dejar la rama lista:
 
@@ -93,7 +116,7 @@ comandos que debe ejecutar el usuario para dejar la rama lista:
    esta tarea (una por espacio, entre comillas). No lo dejes vacío: el agente
    debe conocer y enumerar cada archivo tocado.
 
-2. El `git commit` con mensaje Conventional Commits en una línea (`fix:`,
+2. El `git commit -m` con mensaje Conventional Commits en una línea (`fix:`,
    `feat:`, `refactor:`, `test:`, `docs:`).
 
 3. `git subir` — alias que hace push, abre o reutiliza el PR y programa el
@@ -113,7 +136,7 @@ git subir
 `NewTask` significa:
 
 RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
-COMENZAR DESARROLLO → AL TERMINAR, DOCUMENTAR Y ENTREGAR
+COMENZAR DESARROLLO → AL TERMINAR, VALIDAR LO APLICABLE → DOCUMENTAR Y ENTREGAR
 `git add` con las rutas, `git commit -m ""` y `git subir`.
 
 El agente nunca crea la rama: la crea el usuario. La confirmación de que la

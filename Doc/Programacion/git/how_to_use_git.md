@@ -1,3 +1,16 @@
+# Cómo usar Git — flujo canónico del repositorio
+
+> **Documentación canónica del flujo Git** de Proyectos-Software (© Juanito
+> Software). El flujo real del repo se apoya en dos aliases definidos en
+> `~/.gitconfig` — **`git nueva`** (crea rama desde `main` fresco y poda las ya
+> integradas) y **`git subir`** (push + PR + auto-merge; el argumento es el
+> método de integración, no una rama). El resumen vigente empieza en la sección
+> **_«Tu día a día»_**. Las secciones anteriores a ella son el **flujo antiguo**
+> (commits directos, `checkout -b`/`merge` manuales, Git Flow): se conservan
+> como referencia histórica, pero **no reflejan el flujo actual**.
+
+---
+
 -Configuración INICIAL repositorio-
 
 iniciar repositorio: 	git init
@@ -297,6 +310,8 @@ style: format code with rustfmt
 | archive  | mover a archive/                  |
 
 ---
+
+## TU DÍA A DÍA (flujo vigente del repositorio)
 
 Tu día a día pasa a ser esto:
 

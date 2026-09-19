@@ -95,6 +95,21 @@ para la trasminion de radio estoy usando Icecast + BUTT
    - **Volver al dashboard** cierra la conexión WebSocket y vuelve al panel principal.
 
 
+### Tests
+
+**166 tests en CI**, ejecutados con `mvn -B test` desde la raíz del proyecto:
+
+- la cadena de filtros de seguridad se recorre de verdad con MockMvc,
+- el chat por STOMP se prueba de punta a punta,
+- y las migraciones de Flyway se aplican sobre un PostgreSQL real que el runner
+  levanta como servicio: **10 tests** piden una base de datos (7 ejecutan las
+  migraciones y validan el esquema contra las entidades, y 3 recorren el chat
+  por STOMP de punta a punta).
+
+Sin `RADIOSTACK_DB_TESTS` ese grupo se salta y corren **155**. La cifra se
+mantiene al día en la tabla «Tests que se ejecutan hoy en cada push» del
+README del repositorio.
+
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 y de donde saco :
