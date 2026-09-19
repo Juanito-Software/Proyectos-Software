@@ -4,6 +4,13 @@ name: TaskHub_React CI
 # pero GitHub solo ejecuta los que están en .github/workflows de la RAÍZ del
 # repositorio. Al ser un monorepo, hay que copiarlo o enlazarlo allí; en el
 # README del proyecto está explicado.
+#
+# Las acciones oficiales están fijadas a SHA completos, no a etiquetas: una
+# etiqueta (v5, v4…) es un nombre que su mantenedor puede mover, y un pin que
+# compra una versión sin garantías de seguir siéndolo mañana. El SHA que apunta
+# a cada vN se consulta en su momento contra la API de GitHub (la ref
+# `refs/tags/v5` del repositorio de la acción); para actualizarla, se hace lo
+# mismo y se sustituye aquí.
 
 on:
   push:
@@ -58,9 +65,9 @@ jobs:
     name: Lint y comprobación de tipos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -89,9 +96,9 @@ jobs:
       DATABASE_URL: postgresql://noop:noop@localhost:5432/noop
       JWT_SECRET: secreto-inerte-para-tests-unitarios-del-servidor
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -109,7 +116,7 @@ jobs:
 
       - name: Guardar el informe de cobertura del servidor
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: cobertura-servidor
           path: Juanito_Software/JS/React/TaskHub_React/server/coverage/
@@ -120,9 +127,9 @@ jobs:
     name: Tests del cliente y cobertura
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -138,7 +145,7 @@ jobs:
 
       - name: Guardar el informe de cobertura
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: cobertura-cliente
           path: Juanito_Software/JS/React/TaskHub_React/client/coverage/
@@ -177,9 +184,9 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -196,9 +203,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -252,9 +259,9 @@ jobs:
       PORT: 3001
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
           cache: npm
@@ -277,7 +284,7 @@ jobs:
 
       - name: Guardar el informe si algo falla
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: informe-playwright
           path: Juanito_Software/JS/React/TaskHub_React/playwright-report/
@@ -288,9 +295,9 @@ jobs:
     name: Auditoría de dependencias
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '22'
 
@@ -429,7 +436,7 @@ jobs:
       # mismo una y otra vez no rompe nada, pero gasta tiempo de construcción
       # en Render, que en el plan gratuito sí está limitado. Así que el filtro
       # que se quitó del disparador reaparece aquí, que es donde importa.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
 

@@ -7,7 +7,7 @@ Antes de utilizar, distribuir o modificar cualquier proyecto, revisa la licencia
 que lo acompaña. Este repositorio no implica por sí mismo derechos de uso sobre todo su
 contenido: las condiciones varían según el programa.
 
-> **▶ Probar sin instalar nada:** [**TaskHub_React**](https://taskhub-react.onrender.com) está desplegado y accesible — gestor de tareas full-stack con React, Express y PostgreSQL, con [playground de la API](https://taskhub-react.onrender.com/playground) para lanzar peticiones reales contra los endpoints. 962 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde.
+> **▶ Probar sin instalar nada:** [**TaskHub_React**](https://taskhub-react.onrender.com) está desplegado y accesible — gestor de tareas full-stack con React, Express y PostgreSQL, con [playground de la API](https://taskhub-react.onrender.com/playground) para lanzar peticiones reales contra los endpoints. 983 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde.
 >
 > Está en un plan gratuito: la primera carga puede tardar cerca de un minuto mientras el servicio despierta.
 
@@ -63,7 +63,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `JS/JSGameChat` | juego para el chat en tiempo real |
 | `JS/unified-chat-widget` | Widget de chat multiplataforma embebible |
 | `JS/Angular/TaskHub_Angular` | Gestor de tareas fullstack en TypeScript (frontend Angular + backend Express/Prisma). 278 tests con Vitest en CI: 175 del backend —13 de ellos contra un PostgreSQL real, con las migraciones de Prisma aplicadas— y 103 del frontend |
-| `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 962 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde |
+| `JS/React/TaskHub_React` | Gestor de tareas fullstack en TypeScript (React + Express + PostgreSQL). **[▶ Demo en vivo](https://taskhub-react.onrender.com)** · [playground de la API](https://taskhub-react.onrender.com/playground) — 983 tests y despliegue encadenado al CI: un commit en rojo no llega a producción, y el pipeline no se da por bueno hasta que la versión nueva responde |
 
 ### 🐍 Python
 
@@ -145,7 +145,7 @@ cumplir):
 | TaskHub_Angular (frontend) | 103 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
-| TaskHub_React | 962 | Cuatro capas, incluido navegador real |
+| TaskHub_React | 983 | Cuatro capas, incluido navegador real |
 
 Suman **1.522 tests** que se ejecutan en cada push, 560 de ellos en `ci.yml`.
 

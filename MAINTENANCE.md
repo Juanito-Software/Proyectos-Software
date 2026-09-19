@@ -96,16 +96,29 @@ Convención de estados:
 - [x] **Encadenar el despliegue al CI.** Render ya espera al pipeline: un commit
   en rojo no llega a producción. Lo resolvió el usuario personalmente. _Fuente:
   2026-08-29/30, «Pendiente» → resuelto 2026-09-19._
-- [ ] **Limitación de intentos por cuenta además de por IP** (hoy solo por
-  dirección). _Fuente: 2026-08-29/30._
-- [ ] **Acciones del CI fijadas a etiqueta mayor, no a SHA.**
-  _Fuente: 2026-08-29/30._
+- [x] **Limitación de intentos por cuenta además de por IP** (hoy solo por
+  dirección). _Fuente: 2026-08-29/30 → resuelto 2026-09-19._ Implementado como
+  capas 2 y 3 del login (`accountSlowDown` + `accountLimiter`, tope duro de 200
+  por cuenta) en `server/src/middleware/rateLimit.middleware.ts` y cableado en
+  `server/src/modules/auth/auth.router.ts`, con tests en
+  `rateLimit.middleware.test.ts`.
+- [x] **Acciones del CI fijadas a etiqueta mayor, no a SHA.** Todas las acciones
+  de `taskhub-react-ci.yml` y de `ci.yml` (raíz) quedaron ancladas a SHA completos
+  con nota de política en la cabecera: `checkout`, `setup-node`, `upload-artifact`,
+  `setup-python`, `setup-java` y `shivammathur/setup-php` (este último apuntaba a
+  un tag anotado; se resolvió al commit real del tag). Verificado: cero referencias
+  `@v*` restantes en `.github/workflows/`. _Fuente: 2026-08-29/30 → resuelto
+  2026-09-19._
 - [x] **Protección de rama** que exija `ci-ok` antes de fusionar (sin revisión
   humana). Lo resolvió el usuario personalmente. _Fuente: 2026-08-29/30 →
   resuelto 2026-09-19._
-- [ ] **`PUT` y `PATCH` comparten controlador** (actualización parcial en ambos;
-  desviación de la semántica HTTP, con tests desde la auditoría). _Fuente:
-  2026-08-29/30._
+- [x] **`PUT` y `PATCH` comparten controlador** (actualización parcial en ambos;
+  desviación de la semántica HTTP, con tests desde la auditoría). Separados:
+  `PUT` es reemplazo completo (exige título como `POST`; campos omitidos vuelven
+  a sus valores por defecto) con `replaceTaskValidator` y método `replace`; `PATCH`
+  sigue siendo parcial con `update`. Tests nuevos en `tasks.validation.test.ts`,
+  `tasks.service.test.ts` y `tasks.controller.test.ts`, y comprobaciones en
+  `verify.ts`. _Fuente: 2026-08-29/30 → resuelto 2026-09-19._
 - [ ] **E2E comparten la base de desarrollo** y dejan usuarios `e2e-*`; limpiarlos
   o darles BD propia. _Fuente: 2026-08-29/30._
 
@@ -243,6 +256,51 @@ de los proyectos).
   equivaldría a señalar los commits anteriores al arreglo.
 
 ---
+
+## 2026-09-19 — TaskHub_React: Bloque B — SHA en el CI, límite por cuenta y `PUT`/`PATCH` (rama `BloqueB`)
+
+Tercer bloque del endurecimiento de TaskHub_React, tres frentes (los nombres
+son los de la sesión de auditoría del 2026-08-29/30):
+
+**1. Acciones del CI a SHA completos.** Es la medida pendiente que quedaba en la
+ficha de CI/CD de la auditoría. Se sustituyeron todas las referencias por tag
+(`@v4`/`@v5`/`@v2`) por su commit SHA completo, verificando cada SHA contra la
+API de GitHub (los tags anotados se resuelven al commit real del tag, no a la
+etiqueta). Cobertura: `taskhub-react-ci.yml` (`checkout`, `setup-node`,
+`upload-artifact`) y `ci.yml` de la raíz (`checkout`, `setup-python`,
+`setup-node`, `setup-java`, `shivammathur/setup-php`). Cada workflow lleva un
+comentario en la cabecera con la política de pin y cómo actualizar una acción.
+Verificado: cero ocurrencias de `uses: …@v*` en `.github/workflows/`. Con esto
+se cierra la única tarea pendiente de la ficha CI/CD de la auditoría.
+
+**2. Límite de intentos por cuenta: cerrar la tarea, no el código.** Las capas 2
+y 3 del login (`accountSlowDown` + `accountLimiter`, tope duro de 200 por
+cuenta) ya estaban implementadas desde el 2026-09-03 (commit `b6d0989`) con sus
+tests; el nombre de la ficha de MAINTENANCE («limitación por cuenta además de
+por IP») no se había marcado `[x]`. Se verifica mediante el acceso al
+`rateLimit.middleware.test.ts` (los tests de duplicación de fichero de la
+sesión del 2026-09-12 los avalan) y se cierra como resuelto.
+
+**3. `PUT` como reemplazo completo y `PATCH` como parcial.** Hasta ahora ambos
+verbos ejecutaban `update` (parcial), una desviación de la semántica HTTP que la
+auditoría denunció. `PUT` pasa a reemplazo completo: exige `title` igual que
+`POST` (comparte validador `createTaskValidator` vía el alias
+`replaceTaskValidator`) y los campos omitidos vuelven a sus valores por defecto
+(`description ''`, `status 'pending'`, `priority 'medium'`); detecta títulos
+duplicados excluyendo la propia tarea y devuelve 409, 404 si no existe y 500 si
+la escritura no devuelve fila. `PATCH` conserva la semántica parcial (`update`).
+Test-first: unitarios en `tasks.validation.test.ts` (4 nuevos),
+`tasks.service.test.ts` (10 nuevos) y `tasks.controller.test.ts` (2 casos en
+`it.each` ya existentes), y 5 comprobaciones nuevas en `verify.ts` dedicadas a
+`PUT` con una tarea propia. El playground (`public/app.js`) ya enviaba los
+cuatro campos en `PUT`, así que es compatible con la semántica nueva.
+
+**Cifras tras el bloque:** 983 comprobaciones (564 unitarios de servidor —de 548—
+, 224 de cliente, 159 de API contra PostgreSQL —de 154— y 36 de navegador).
+Cobertura de servidor 99,61 / 98,87 / 98,87 / 99,58, sobre los umbrales
+99/98/98/99. README raíz, README del proyecto y AUDITORIA alineados. Funciones
+de `tasks.service.ts` al 90 % en la métrica de cobertura: se deja así porque el
+98 % se mide sobre el proyecto; no se expande la tarea.
 
 ## 2026-09-19 — Bloque A de mantenimiento (rama `UpgradeDocs`)
 

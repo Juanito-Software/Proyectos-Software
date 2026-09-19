@@ -129,6 +129,44 @@ export const tasksService = {
     }
   },
 
+  /**
+   * PUT es un reemplazo COMPLETO, y por eso no comparte método con `update`.
+   *
+   * PATCH actualiza solo lo que llega y deja el resto como estaba; PUT declara
+   * «esta es la tarea entera a partir de ahora», así que los campos que no se
+   * envían vuelven a sus valores por defecto, igual que al crear (título
+   * obligatorio, descripción vacía, pendiente, prioridad media). Antes ambos
+   * métodos hablaban con el mismo controlador y un PUT de una sola esquina no
+   * era ningún reemplazo; era un PATCH con otro nombre.
+   */
+  async replace(id: string, userId: string, input: CreateTaskDTO) {
+    const existing = await tasksRepository.findById(id, userId);
+    if (!existing) throw ApiError.notFound('Tarea no encontrada');
+
+    const title = input.title.trim();
+    if (title.toLowerCase() !== existing.title.toLowerCase()) {
+      if (await tasksRepository.findByTitleForUser(title, userId, id)) {
+        throw ApiError.conflict('Ya tienes una tarea con este título');
+      }
+    }
+
+    try {
+      const updated = await tasksRepository.update(id, userId, {
+        title,
+        description: input.description?.trim() ?? '',
+        status: resolveStatus(input) ?? 'pending',
+        priority: (input.priority ?? 'medium') as TaskPriority,
+      });
+      if (!updated) throw ApiError.internal('No se pudo actualizar la tarea');
+      return toDto(updated);
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw ApiError.conflict('Ya tienes una tarea con este título');
+      }
+      throw err;
+    }
+  },
+
   async remove(id: string, userId: string) {
     if (!(await tasksRepository.delete(id, userId))) {
       throw ApiError.notFound('Tarea no encontrada');

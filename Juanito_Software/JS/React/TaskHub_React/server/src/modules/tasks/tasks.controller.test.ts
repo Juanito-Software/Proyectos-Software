@@ -72,6 +72,7 @@ beforeEach(() => {
     getById: vi.spyOn(tasksService, 'getById').mockResolvedValue(TAREA),
     create: vi.spyOn(tasksService, 'create').mockResolvedValue(TAREA),
     update: vi.spyOn(tasksService, 'update').mockResolvedValue(TAREA),
+    replace: vi.spyOn(tasksService, 'replace').mockResolvedValue(TAREA),
     remove: vi.spyOn(tasksService, 'remove').mockResolvedValue(undefined),
     statsForUser: vi.spyOn(tasksService, 'statsForUser').mockResolvedValue({
       total: 1,
@@ -119,15 +120,17 @@ describe('el usuario sale SIEMPRE del token', () => {
     expect(espias.listForUser.mock.calls[0][0]).toBe(USER);
   });
 
-  it('getById, update y remove lo pasan igual', async () => {
+  it('getById, update, replace y remove lo pasan igual', async () => {
     const req = peticion({ params: { id: 'task-1' }, body: { title: 'x' } });
 
     await ejecutar(tasksController.getById, req);
     await ejecutar(tasksController.update, req);
+    await ejecutar(tasksController.replace, req);
     await ejecutar(tasksController.remove, req);
 
     expect(espias.getById).toHaveBeenCalledWith('task-1', USER);
     expect(espias.update).toHaveBeenCalledWith('task-1', USER, { title: 'x' });
+    expect(espias.replace).toHaveBeenCalledWith('task-1', USER, { title: 'x' });
     expect(espias.remove).toHaveBeenCalledWith('task-1', USER);
   });
 });
@@ -177,6 +180,7 @@ describe('códigos de estado', () => {
     ['list', tasksController.list],
     ['getById', tasksController.getById],
     ['update', tasksController.update],
+    ['replace', tasksController.replace],
     ['remove', tasksController.remove],
     ['stats', tasksController.stats],
   ])('%s responde 200', async (_caso, metodo) => {
@@ -197,6 +201,7 @@ describe('propagación de errores', () => {
     ['getById', 'getById', tasksController.getById],
     ['create', 'create', tasksController.create],
     ['update', 'update', tasksController.update],
+    ['replace', 'replace', tasksController.replace],
     ['remove', 'remove', tasksController.remove],
     ['stats', 'statsForUser', tasksController.stats],
   ])('%s manda el fallo a next(), no lo deja colgado', async (_caso, servicio, metodo) => {

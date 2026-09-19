@@ -67,7 +67,7 @@ TaskHub/
 │   │   │   ├── users/            # repository (SQL) · types (rol user/admin)
 │   │   │   ├── tasks/            # router · controller · service · repository
 │   │   │   │   ├── tasks.repository.test.ts       ← 13 tests
-│   │   │   │   └── tasks.validation.test.ts       ← 25 tests
+│   │   │   │   └── tasks.validation.test.ts       ← 51 tests
 │   │   │   └── admin/            # router · controller · service (solo rol admin)
 │   │   ├── middleware/           # auth · admin · rate limit · validación · errores · logging
 │   │   │   ├── rateLimit.middleware.test.ts       ← 8 tests
@@ -81,7 +81,7 @@ TaskHub/
 │   │   │   └── app.js            # su lógica, aparte para que la CSP no ceda
 │   │   ├── app.ts                # fábrica de la app Express
 │   │   ├── server.ts             # arranque, semilla del admin y apagado ordenado
-│   │   └── verify.ts             # suite end-to-end de la API      ← 154 tests
+│   │   └── verify.ts             # suite end-to-end de la API      ← 159 tests
 │   ├── scripts/build-assets.mjs  # copia playground y cliente compilado a dist/
 │   ├── vitest.config.ts          # tests unitarios: solo lógica pura, sin BD
 │   ├── .env.example              # plantilla de variables de entorno
@@ -352,12 +352,12 @@ cosas: la aplicación en `/`, el playground en `/playground` y la API en `/api`.
 
 ## Tests
 
-**962 en total**, repartidos en cuatro capas que prueban cosas distintas:
+**983 en total**, repartidos en cuatro capas que prueban cosas distintas:
 
 | Comando | Qué ejecuta | Cuántos | Necesita |
 |---------|-------------|---------|----------|
-| `npm test` | Unitarios de servidor y cliente | 548 + 224 | Nada |
-| `npm run verify` | End-to-end de la API | 154 | PostgreSQL |
+| `npm test` | Unitarios de servidor y cliente | 564 + 224 | Nada |
+| `npm run verify` | End-to-end de la API | 159 | PostgreSQL |
 | `npm run test:e2e` | Navegador real (Playwright) | 36 | PostgreSQL y `npm run build` |
 | `npm run ci` | Lint, tipos, unitarios y build | — | Nada |
 
@@ -426,7 +426,7 @@ DELETE FROM users WHERE username LIKE 'e2e-%';
 
 Las tareas asociadas se van solas por el borrado en cascada.
 
-### Qué cubren las 154 comprobaciones de la API
+### Qué cubren las 159 comprobaciones de la API
 
 Registro, login, acceso sin token, CRUD completo, validación de campos y de
 filtros, título duplicado, traducción `completed` ↔ `status`, los tres filtros,

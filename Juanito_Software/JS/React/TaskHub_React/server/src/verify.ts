@@ -231,6 +231,114 @@ async function run(): Promise<void> {
       `${sysStatsBody.data?.totalRequests} peticiones`,
     );
 
+    // ── PUT: reemplazo completo, no un PATCH con otro nombre ─────────────
+    //
+    // PUT y PATCH comparten los mismos campos y el mismo endpoint, y durante
+    // mucho tiempo también el mismo controlador; esta tarea los separó. La
+    // diferencia de semántica es lo que se fija aquí: un PUT con solo el
+    // título deja la tarea como recién creada (los demás campos en sus
+    // valores por defecto), mientras que un PATCH conserva lo que no manda.
+    // Se usa una tarea propia para no alterar las cuentas de `taskId`.
+
+    const putOwner = await fetch(`${BASE}/api/tasks`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({
+        title: 'Para el PUT',
+        description: 'que se reemplazará',
+        status: 'completed',
+        priority: 'high',
+      }),
+    });
+    const putOwnerId =
+      ((await putOwner.json()) as Envelope<{ id: string }>).data?.id ?? '';
+
+    const putSoloTitulo = await fetch(`${BASE}/api/tasks/${putOwnerId}`, {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({ title: 'Solo el título' }),
+    });
+    const putSoloTituloBody = (await putSoloTitulo.json()) as Envelope<{
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+    }>;
+    check(
+      'PUT con solo el título: los campos omitidos vuelven a sus por defecto',
+      putSoloTitulo.status === 200 &&
+        putSoloTituloBody.data?.title === 'Solo el título' &&
+        putSoloTituloBody.data?.description === '' &&
+        putSoloTituloBody.data?.status === 'pending' &&
+        putSoloTituloBody.data?.priority === 'medium',
+      JSON.stringify(putSoloTituloBody.data),
+    );
+
+    const putCompleto = await fetch(`${BASE}/api/tasks/${putOwnerId}`, {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({
+        title: 'Ya con todo',
+        description: 'de nuevo',
+        status: 'completed',
+        priority: 'high',
+      }),
+    });
+    const putCompletoBody = (await putCompleto.json()) as Envelope<{
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+      completed: boolean;
+    }>;
+    check(
+      'PUT con el cuerpo completo pinta la tarea exacta',
+      putCompleto.status === 200 &&
+        putCompletoBody.data?.title === 'Ya con todo' &&
+        putCompletoBody.data?.description === 'de nuevo' &&
+        putCompletoBody.data?.status === 'completed' &&
+        putCompletoBody.data?.priority === 'high' &&
+        putCompletoBody.data?.completed === true,
+      JSON.stringify(putCompletoBody.data),
+    );
+
+    const putSinTitulo = await fetch(`${BASE}/api/tasks/${putOwnerId}`, {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({ description: 'sin título no hay tarea' }),
+    });
+    check(
+      'PUT sin título -> 400 (el reemplazo exige la representación completa)',
+      putSinTitulo.status === 400,
+      `status ${putSinTitulo.status}`,
+    );
+
+    const putInvalido = await fetch(`${BASE}/api/tasks/${putOwnerId}`, {
+      method: 'PUT',
+      headers: auth,
+      body: JSON.stringify({ title: 'x', status: 'inventado' }),
+    });
+    check(
+      'PUT con estado inventado -> 400',
+      putInvalido.status === 400,
+      `status ${putInvalido.status}`,
+    );
+
+    // El PATCH, en cambio, sigue siendo parcial: no reescribe lo ausente.
+    const patchParcial = await fetch(`${BASE}/api/tasks/${putOwnerId}`, {
+      method: 'PATCH',
+      headers: auth,
+      body: JSON.stringify({ priority: 'low' }),
+    });
+    const patchParcialBody = (await patchParcial.json()) as Envelope<{ priority: string; title: string }>;
+    check(
+      'PATCH solo toca lo enviado: el título del PUT anterior se conserva',
+      patchParcial.status === 200 &&
+        patchParcialBody.data?.priority === 'low' &&
+        patchParcialBody.data?.title === 'Ya con todo',
+      JSON.stringify(patchParcialBody.data),
+    );
+
     // ── Playground ───────────────────────────────────────────────────────
 
     const playground = await fetch(`${BASE}/playground`);
@@ -626,9 +734,11 @@ async function run(): Promise<void> {
 
     // ── PUT ──────────────────────────────────────────────────────────────
     //
-    // PUT no tenía ni un solo test en ninguna capa, y comparte controlador con
-    // PATCH: si el aislamiento se rompiera solo en uno de los dos, nadie se
-    // enteraría.
+    // PUT se probaba por el aislamiento aunque durante mucho tiempo no tenía
+    // entorno: compartía controlador con PATCH. Desde la separación (replace
+    // de reemplazo completo) se prueba además su semántica en el bloque de
+    // más arriba; aquí lo que importa es que el aislamiento no se rompa solo
+    // en uno de los dos verbos.
 
     const putAjena = await fetch(`${BASE}/api/tasks/${idVictima}`, {
       method: 'PUT',

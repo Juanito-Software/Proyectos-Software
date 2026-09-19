@@ -85,26 +85,36 @@ Solo después de la confirmación de que la rama ya está creada:
 
 **## FASE 6 — Final del desarrollo**
 
-Cuando termines el desarrollo, actualiza la documentación pertinente entrega los comandos necesarios que debe ejecutar el usuario
+Cuando termines el desarrollo, actualiza la documentación pertinente
+(`MAINTENANCE.md` y, si aplica, el README del proyecto) y entrega los tres
+comandos que debe ejecutar el usuario para dejar la rama lista:
 
-para subir la rama, abrir o reutilizar el PR y programar el auto-merge en
+1. El `git add` con las **rutas exactas de todos los ficheros modificados** en
+   esta tarea (una por espacio, entre comillas). No lo dejes vacío: el agente
+   debe conocer y enumerar cada archivo tocado.
 
-squash:
+2. El `git commit` con mensaje Conventional Commits en una línea (`fix:`,
+   `feat:`, `refactor:`, `test:`, `docs:`).
+
+3. `git subir` — alias que hace push, abre o reutiliza el PR y programa el
+   auto-merge en squash.
 
 ```text
-git add ""
-git commit ""
+git add "<ruta1>" "<ruta2>" "<ruta3>"
+git commit -m "<mensaje conventional commits>"
 git subir
 ```
+
+(el `git add` siempre se entrega con el listado real de rutas de esta tarea;
+`git commit ""` es solo la plantilla, nunca se entrega vacío).
 
 **## REGLA GENERAL DE SEGURIDAD**
 
 `NewTask` significa:
 
 RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
-
-COMENZAR DESARROLLO → AL TERMINAR, DOCUMENTAR, ENTREGAR `git add "",  
-git commit "" y git subir`.
+COMENZAR DESARROLLO → AL TERMINAR, DOCUMENTAR Y ENTREGAR
+`git add` con las rutas, `git commit ""` y `git subir`.
 
 El agente nunca crea la rama: la crea el usuario. La confirmación de que la
 rama ha sido creada es obligatoria antes de cualquier modificación relacionada
