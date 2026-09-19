@@ -22,12 +22,15 @@ su cuenta (`commit`, `push`, `merge`, `gh`).
 
 ## Fuentes de verdad
 
-- `MAINTENANCE.md` — historial operativo del repo y registro de decisiones.
-  Añadir una entrada fechada al cerrar un cambio estructural.
-- `TODO.md` — pendientes con trazabilidad (`_Fuente: …_`); marcar `[x]` con la
-  referencia de la sesión al cerrar.
-- **El estado real del código prevalece sobre los docs** (varios READMEs están
-  atrasados en cifras; las cifras fiables son las de `ci.yml`).
+- `MAINTENANCE.md` — **única fuente consolidada del repo**. Empieza con el ToDo
+  (el Roadmap quedó integrado en `## Stack tecnológico…`) y sigue con el
+  historial operativo y las decisiones. Las tareas llevan trazabilidad
+  (`_Fuente: …_`); al cerrar una, múdala a su sección como `[x]` con la
+  referencia de la sesión, y al cerrar un cambio estructural añade una entrada
+  fechada.
+- **El estado real del código prevalece sobre los docs.** Las cifras de tests y
+  cobertura se documentan **solo** en `README.md`; los `minimo` de `ci.yml` son
+  los que las hacen cumplir.
 - Método de verificación: "comportamiento provocado" — test antes del código,
   rojo primero, implementación después. Los tests se escriben en español
   snake_case (p. ej. `un_programa_va_y_vuelve_por_el_adaptador_real`).
@@ -40,12 +43,12 @@ Dos workflows corren en cada push/PR a `main` y bloquean el merge: `ci.yml`
 **`CI en verde`**). Solo se ejecutan los de la **raíz** `.github/workflows`.
 
 - No referenciar los nombres de jobs de matriz en reglas de protección: incluyen
-  el mínimo (`PHP · tests (…, 41)`) y cambian al subirlo.
+  el mínimo declarado y cambian al subirlo.
 - Cada job de tests declara un **mínimo** y cuenta `<testcase>` menos
   `<skipped>`. **Al añadir tests hay que subir el `minimo` correspondiente** en
   el workflow (si el total baja del mínimo, el job falla; si lo supera, avisa
-  con `::notice::`). Mínimos actuales: RadioStack 166 · TaskHub_Angular backend
-  175 / frontend 103 · gym-app 41 · TaskHub FastAPI 55 · BatchProcessor 20.
+  con `::notice::`). Las cifras actuales de tests y sus mínimos no se duplican
+  aquí: viven en `README.md`.
 
 ## Java / Maven (RadioStack)
 
@@ -53,10 +56,10 @@ Multimódulo: core → persistence → api (+ stream, admin). Spring Boot 3, tar
 Java 17. Desde la raíz del proyecto: `mvn -B test`.
 
 - La app **no arranca sin `RADIOSTACK_JWT_SECRET`** (Base64, sin valor por
-  defecto). Los 10 `@SpringBootTest` —`EsquemaYMigracionesTest` (7) y
-  `ChatStompEndToEndTest` (3)— necesitan además PostgreSQL y
-  `RADIOSTACK_DB_TESTS=true`; sin la variable **se saltan**, así que local
-  rinden 155 y en CI 166. Local: servicio
+  defecto). Los tests `@SpringBootTest` (`EsquemaYMigracionesTest` y
+  `ChatStompEndToEndTest`) necesitan además PostgreSQL y
+  `RADIOSTACK_DB_TESTS=true`; sin la variable **se saltan** (la cifra de la
+  suite con y sin BD está en `README.md`). Local: servicio
   `postgresql-x64-17`, BD/usuario `radiostack`/`radiostack` (iguales a
   `application.yml` a propósito; es el mismo par que CI levanta en
   `postgres:17-alpine`). No hay docker local: la verificación con BD se hace en
@@ -78,8 +81,9 @@ Java 17. Desde la raíz del proyecto: `mvn -B test`.
 ## Node / TypeScript
 
 - **TaskHub_Angular** (`JS/Angular/TaskHub_Angular/{backend,frontend}`).
-  - Backend (Express + Prisma): `npm ci && npm test`. 13 tests contra PostgreSQL
-    real exigen `TASKHUB_DB_TESTS=true` + `DATABASE_URL`; el CI corre antes
+  - Backend (Express + Prisma): `npm ci && npm test`. Los tests que tocan
+    PostgreSQL real exigen `TASKHUB_DB_TESTS=true` + `DATABASE_URL` (cifras en
+    `README.md`); el CI corre antes
     `prisma migrate deploy` y verifica que el esquema no se ha desviado de las
     migraciones (`prisma migrate diff --exit-code`). Los tests unitarios no
     necesitan `prisma generate` (doblan `@prisma/client`).
