@@ -34,10 +34,12 @@ Convención de estados:
   `radiostack-persistence` resolvería de raíz las rodajas y quitaría a la API el
   conocimiento de los paquetes internos de otro módulo. Es cambio de producción,
   merece PR propio. _Fuente: 2026-09-12, «Lo que queda anotado y sin hacer»._
-- [ ] **GET públicos bajo `/api/v1`.** Regla pensada para la parrilla/programas,
+- [x] **GET públicos bajo `/api/v1`.** Regla pensada para la parrilla/programas,
   alcanza a todos los GET (incluido `/api/v1/auth/me`). Decisión de producto:
-  queda **documentado con un test**, no se cambia por iniciativa propia. _Fuente:
-  2026-09-12._
+  queda **documentado con un test**, no se cambia por iniciativa propia.
+  `SecurityConfigTest.la_parrilla_se_puede_leer_sin_token` fija la regla para un
+  GET de catálogo. _Fuente: 2026-09-12. Resuelto 2026-09-19 (rama
+  `Fix_GET_Publicos`, mín. CI 166)._
 - [x] **Suplantación por REST en el chat.** `ChatController` ya toma el alias del
   token (`usuario.email()`), no del cuerpo. _Fuente: 2026-09-11 (noche) →
   resuelto 2026-09-12._

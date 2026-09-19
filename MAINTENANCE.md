@@ -53,6 +53,28 @@ de los proyectos).
 
 ---
 
+## 2026-09-19 — RadioStack: los GET bajo `/api/v1`, documentados con un test
+
+Cierra el pendiente anotado el 12 de septiembre. La regla
+`GET /api/v1/** -> permitAll` existe en `SecurityConfig` (pensada para la parrilla
+y los programas, información para los oyentes) y ya estaba documentado su caso
+incómodo, `/api/v1/auth/me`, pero no había ninguna prueba positiva de un GET de
+catálogo: el chat la tenía, la parrilla no.
+
+`SecurityConfigTest.la_parrilla_se_puede_leer_sin_token` atraviesa la cadena de
+filtros de verdad con MockMvc —sin identidad, como un oyente anónimo— contra
+`ParrillaController`, el destinatario citado por la propia regla. Ahora el primer
+GET de catálogo que deje de ser público es el test que lo delata, no un
+incidente.
+
+**Sin tocar producción**: solo el test y el recuento. Total 165 → **166**
+(api 129 → 130) y `minimo: 166` en `ci.yml`. Es además una tercera rodaja
+`@WebMvcTest` (con `ChatController`, `AuthController` y ahora `ParrillaController`
+traídos por `@Import`), de modo que sigue sin arrancar la aplicación ni pedir
+PostgreSQL.
+
+---
+
 ## 2026-09-19 — RadioStack: el chat por STOMP, de punta a punta con `@SpringBootTest`
 
 Cierra el pendiente anotado el 12 de septiembre. El chat por WebSocket STOMP

@@ -44,7 +44,7 @@ Dos workflows corren en cada push/PR a `main` y bloquean el merge: `ci.yml`
 - Cada job de tests declara un **mínimo** y cuenta `<testcase>` menos
   `<skipped>`. **Al añadir tests hay que subir el `minimo` correspondiente** en
   el workflow (si el total baja del mínimo, el job falla; si lo supera, avisa
-  con `::notice::`). Mínimos actuales: RadioStack 162 · TaskHub_Angular backend
+  con `::notice::`). Mínimos actuales: RadioStack 166 · TaskHub_Angular backend
   175 / frontend 103 · gym-app 41 · TaskHub FastAPI 55 · BatchProcessor 20.
 
 ## Java / Maven (RadioStack)
@@ -53,9 +53,10 @@ Multimódulo: core → persistence → api (+ stream, admin). Spring Boot 3, tar
 Java 17. Desde la raíz del proyecto: `mvn -B test`.
 
 - La app **no arranca sin `RADIOSTACK_JWT_SECRET`** (Base64, sin valor por
-  defecto). `EsquemaYMigracionesTest` (7 tests, el único `@SpringBootTest`)
-  necesita además PostgreSQL y `RADIOSTACK_DB_TESTS=true`; sin la variable
-  **se saltan**, así que local rinden 155 y en CI 162. Local: servicio
+  defecto). Los 10 `@SpringBootTest` —`EsquemaYMigracionesTest` (7) y
+  `ChatStompEndToEndTest` (3)— necesitan además PostgreSQL y
+  `RADIOSTACK_DB_TESTS=true`; sin la variable **se saltan**, así que local
+  rinden 155 y en CI 166. Local: servicio
   `postgresql-x64-17`, BD/usuario `radiostack`/`radiostack` (iguales a
   `application.yml` a propósito; es el mismo par que CI levanta en
   `postgres:17-alpine`). No hay docker local: la verificación con BD se hace en
