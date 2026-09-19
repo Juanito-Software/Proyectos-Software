@@ -264,6 +264,57 @@ de los proyectos).
 
 ---
 
+## 2026-09-19 — Git: `git subir` blindado, ramas legadas podadas y ToDo con bloques C–G
+
+Sesión de higiene del árbol y de los aliases de git, con el ToDo consolidado
+como hilo conductor. El usuario ejecutó los comandos mutadores; el agente solo
+los entregó adaptados.
+
+### `git subir` blindado
+
+Al alias se le anteponen dos guardas que lo detienen antes de tocar nada: un
+merge en curso (`MERGE_HEAD`) y cambios sin commitear
+(`git status --porcelain`). La última línea del alias
+(`gh pr merge --"$metodo" --delete-branch --auto`) queda intacta, de modo que el
+auto-merge se conserva incluso en el caso «PR cerrado adelante» — es el flujo
+que ya probaron los PR #121, #122 y #123. El blindaje y la integración de `main`
+en ramas ya fusionadas quedan documentados en `AGENTS.md` (paso 4 del flujo de
+git; PR #124).
+
+### Ramas legadas podadas
+
+`Maintenance_upgrade`, `fix_taskhub-angular` y `docs_agentes_v2` se borraron
+también en el remoto (`git push origin --delete`), y `UpgradeDoc` en local. Las
+cuatro se verificaron libres de contenido que `main` no tuviera: 0 diffs, o
+contenido ya integrado por squash (p. ej. el test STOMP vía la #108). Quedan
+solo `origin/main` y dos ramas de Dependabot (#55, #57). Aclarado el porqué de
+la poda selectiva: `git nueva` solo borra ramas locales cuyo remoto desapareció
+(`: gone]`); las legadas no calificaban porque su remota seguía viva, y el
+`--delete-branch` del auto-merge ya borra las remotas en el flujo normal.
+
+### ToDo consolidado: bloques C–G
+
+Se etiquetaron los pendientes existentes como Bloques C (`@EntityScan` /
+`@EnableJpaRepositories` a persistencia), D (E2E compartiendo BD, usuarios
+`e2e-*`), E (`Claude outputs/`, decisión) y F (OmniForge, GPTDevTeam), y se
+añadió en «Seguridad y dependencias» el **Bloque G** nuevo: vulnerabilidades
+corregibles de npm/Maven con parche (cifras del análisis del 2026-09-19). PR
+#123.
+
+### Bloques A y B verificados cerrados
+
+Entradas `[x]` en el ToDo y PRs #118 (Bloque A) y #119/#120 (Bloque B)
+integrados en `main`; sin cambios nuevos que añadir.
+
+### `how_to_use_git.md` alineado con el alias final
+
+El bloque `[alias] subir` del documento queda idéntico al instalado (blindaje +
+integración con abort limpio), y la guía y los diagramas «camino completo»
+están al día. Commiteado en `686fa0c`; la rama `Documentacion-General` queda
+lista para `git subir` (PR no creado todavía en el momento del cierre).
+
+---
+
 ## 2026-09-19 — TaskHub_React: Bloque B — SHA en el CI, límite por cuenta y `PUT`/`PATCH` (rama `BloqueB`)
 
 Tercer bloque del endurecimiento de TaskHub_React, tres frentes (los nombres
