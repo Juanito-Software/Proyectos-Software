@@ -410,13 +410,142 @@ el alias por la mitad.
 ```ini
 [alias]
 	nueva = "!f() { [ -z \"$1\" ] && { echo \"Uso: git nueva <nombre-de-rama>\"; return 1; }; git checkout main && git pull --ff-only --prune || return 1; git branch -vv | grep ': gone]' | awk '{print $1}' | xargs -r git branch -D; git checkout -b \"$1\"; }; f"
-	subir = "!f() { r=$(git rev-parse --abbrev-ref HEAD); [ \"$r\" = \"main\" ] && { echo \"Estas en main. Empieza con: git nueva <rama>\"; return 1; }; metodo=\"${1:-squash}\"; case \"$metodo\" in squash|rebase|merge) ;; *) echo \"Metodo no valido: usa squash, rebase o merge.\"; return 1;; esac; git push -u origin \"$r\" || return 1; gh pr create --fill 2>/dev/null || echo \"PR ya existente: se reutiliza.\"; gh pr merge --\"$metodo\" --delete-branch --auto; }; f"
+	subir = "!f() { r=$(git rev-parse --abbrev-ref HEAD) || return 1; [ \"$r\" = \"main\" ] && { echo \"Estas en main. Empieza con: git nueva <rama>\"; return 1; }; metodo=\"${1:-squash}\"; case \"$metodo\" in squash|rebase|merge) ;; *) echo \"Metodo no valido: usa squash, rebase o merge.\"; return 1;; esac; gitdir=$(git rev-parse --git-dir); if [ -f \"$gitdir/MERGE_HEAD\" ]; then echo \"Hay un merge en curso sin terminar (MERGE_HEAD). Resuelvelo o abortalo antes de subir.\"; return 1; fi; if [ -n \"$(git status --porcelain)\" ]; then echo \"Tienes cambios sin commitear. Commitealos o descartalos antes de subir.\"; return 1; fi; pr_number=$(gh pr list --head \"$r\" --state open --json number --jq \".[0].number // empty\" 2>/dev/null); if [ -n \"$pr_number\" ]; then echo \"PR ya existente: #$pr_number\"; git push -u origin \"$r\" || return 1; else echo \"No hay un PR abierto para $r.\"; prior=$(gh pr list --head \"$r\" --state merged --json number --jq \".[0].number // empty\" 2>/dev/null); if [ -n \"$prior\" ]; then echo \"La rama $r ya se fusiono en el PR #$prior.\"; git fetch origin main -q 2>/dev/null; if git diff origin/main HEAD --quiet; then echo \"La rama $r no tiene cambios nuevos respecto a main. Nada que subir.\"; return 1; fi; echo \"Detectados cambios nuevos. Integro main...\"; if ! git merge origin/main --no-edit; then echo \"Conflictos al integrar main. Aborto el merge para no dejar la rama a medias.\"; git merge --abort; echo \"Resuelve a mano (git merge origin/main), commitea y repite: git subir\"; return 1; fi; fi; git push -u origin \"$r\" || return 1; echo \"Creando el PR...\"; pr_url=$(gh pr create --fill) || { echo \"Error: no se pudo crear el PR.\"; return 1; }; echo \"PR creado: $pr_url\"; pr_number=$(gh pr view \"$pr_url\" --json number --jq \".number\") || return 1; fi; gh pr merge \"$pr_number\" --\"$metodo\" --delete-branch --auto; }; f"
 ```
 
 En `nueva`, el `||` en vez de encadenar con `&&` hasta el final no es un
 descuido: si no hay ninguna rama huérfana, `grep` termina con error, y con `&&`
 no llegarías a crear la rama.
 
+En `subir`, las dos últimas versiones de este alias se corresponden con las
+decisiones tomadas en las sesiones de la semana del 2026-09-19: el **blindaje**
+(guardas de `MERGE_HEAD` y `git status --porcelain` antes de tocar nada) y la
+**integración de `main`** cuando la rama ya se fusionó en un PR previo (`merged`)
+— así el PR nuevo solo lleva el cambio nuevo, y un PR reabierto con historial
+repetido se descarta con «nada que subir».
+
 ---
 
 Comparado con lo de antes son **dos comandos más** —`nueva` al principio y `subir` en vez de `push`—, y a cambio ningún commit roto entra en `main` ni llega a producción.
+
+
+
+
+---
+
+
+## `git nueva <rama>` — camino completo
+
+```
+                git nueva prueba
+                      │
+                      ▼
+              ❯ 1 │ cambiar a main
+                      │
+                      ▼
+              ❯ 2 │ actualizar desde origin (con prune)
+                      │                                (si falla → return 1)
+                      ▼
+              ❯ 3 │ listar ramas locales cuyo remoto
+                  │  ya no existe  («: gone]»)
+                      │
+                      ▼
+              ❯ 4 │ quedarse solo con el nombre
+                  │  (awk '{print $1}')
+                      │
+                      ▼
+              ❯ 5 │ borrarlas (git branch -D)
+                      │
+                      ▼
+              ❯ 6 │ crear la rama nueva (git checkout -b)
+                      │
+                      ▼
+                      prueba
+```
+
+**Explicación paso a paso:**
+
+1. **Cambiar a `main`** — `git checkout main`; el alias trabaja siempre desde `main` para que la rama nueva parta de lo más fresco. Si no estás en `main` al ejecutarlo, te cambia solo.
+2. **Actualizar desde origin** — `git pull --ff-only --prune`: trae lo último de `origin/main` (siempre fast-forward, sin merges sorpresa) y con `--prune` borra las refs de seguimiento de ramas remotas que ya no existen en el servidor (las que `git subir` eliminó al integrar). Si esto falla, `|| return 1` aborta el alias.
+3. **Listar ramas locales «huérfanas»** — `git branch -vv | grep ': gone]'`: el `-vv` muestra el upstream de cada rama; `: gone]` marca las que apuntan a una rama remota ya borrada en origin. **Aquí es donde entra la poda automática** — solo actúa cuando el remoto desapareció; si la rama remota sigue viva (como pasó con las 3 legadas), no califica y no se toca.
+4. **Quedarse con el nombre** — `awk '{print $1}'` extrae solo el nombre de cada rama detectada (la primera columna de la línea).
+5. **Borrar las ramas huérfanas localmente** — `xargs -r git branch -D`: elimina todas las ramas listadas; `-r` hace que si no hay ninguna, no ejecute nada (evita un error vacío).
+6. **Crear y cambiar a la rama nueva** — `git checkout -b "$1"` crea la rama con el nombre que pasaste (`prueba`, `BloqueC_RadioStack`, lo que sea) partiendo de `main` ya actualizado.
+
+**Resultado:** empiezas en `prueba`, con `main` fresco y el árbol de ramas locales limpio de las ya integradas.
+
+---
+
+## `git subir` — camino completo
+
+```
+                 git subir [squash|rebase|merge]
+                      │
+                      ▼
+              ❯ 1 │ leer rama actual (r)
+                  │       (si falla → return 1)
+                      │
+                      ▼
+              ❯ 2 │ ¿ramas = main? → «Estás en main» → ◘ stop
+                      │
+                      ▼
+              ❯ 3 │ método default: squash
+                  │   (si no es squash/rebase/merge → ◘ stop)
+                      │
+                      ▼
+              ❯ 4 │ BLINDAJE: ¿MERGE_HEAD? → «merge en curso» → ◘ stop
+                  │ ¿cambios sin commitear? → «commitéalos» → ◘ stop
+                      │
+                      ▼
+              ❯ 5 │ ¿hay PR abierto de esta rama?
+                  │     (gh pr list --head r --open)
+                  ├──── SI ──────► ❯ 6 │ git push -u
+                  │                          │
+                  │                          ▼
+                  │                 reutiliza ese PR (#)
+                  │                          │──────────────┐
+                  ▼ NO                       │              │
+              ❯ 7 │ ¿hubo PR merged previo?   │              │
+                  │     (gh pr list --merged)│              │
+                  ├──── NO ──────────────────┤              │
+                  │   │                       ▼              │
+                  │   │               ❯ 8 │ ¿cambios vs main?
+                  │   │                   │  (git diff origin/main HEAD --quiet)
+                  │   │                   ├──── NO ──► «nada que subir» → ◘ stop
+                  │   │                   │
+                  │   │                   ▼
+                  │   │               ❯ 9 │ integrar main
+                  │   │                   │  (git merge origin/main --no-edit)
+                  │   │                   ├── conflicto → abort + ◘ stop
+                  │   │                   ▼
+                  │   │              ❯ 10 │ git push -u
+                  │   │                   ▼
+                  │   │              ❯ 11 │ crear PR nuevo (gh pr create --fill)
+                  │   │                   ▼
+                  │   │              obtener su número
+                  │   ▼                   │
+                  ▼                       ▼
+            ❯ 12 │ auto-merge: gh pr merge <#PR> --squash --delete-branch --auto
+                      │
+                      ▼
+            PR fusiona cuando el CI pasa · rama remota borrada automáticamente
+```
+
+**Explicación paso a paso:**
+
+1. **Leer la rama actual** — `r=$(git rev-parse --abbrev-ref HEAD)`: sabe en qué rama subes. Si no hay HEAD válido, aborta con error.
+2. **Protección de `main`** — si estás en `main`, no pushea ni crea PRs desde ahí; te recuerda usar `git nueva <rama>`. `main` solo recibe merges, nunca se sube.
+3. **Método de merge** — `metodo="${1:-squash}"`: por defecto `squash`; puedes pasar `git subir rebase` o `git subir merge`. Solo acepta esos tres; cualquier otra cosa aborta.
+4. **Blindaje** (las guardas que acabamos de instalar):
+   - Si existe `MERGE_HEAD` → hay un merge a medias sin resolver → se detiene antes de tocar nada.
+   - Si `git status --porcelain` no está vacío → hay cambios sin commitear → se detiene. Evita subir un PR «a medias».
+5. **¿PR ya abierto?** — consulta si la rama ya tiene un PR abierto. Si existe, no duplica: pushea los cambios nuevos y reutiliza ese PR (salta al paso 12).
+6. **Push de actualización** — `git push -u origin r` empuja los commits nuevos a la rama del PR ya abierto.
+7. **¿Rama con PR fusionado antes?** — el caso «PR cerrado adelante» que resolvimos: si esta rama ya se integró en el pasado, el alias lo detecta para no reabrir un PR que repita historia.
+8. **Comprobación de cambios** — `git diff origin/main HEAD --quiet`: si la rama no tiene nada nuevo respecto a `main`, no crea un PR vacío: avisa «nada que subir» y para.
+9. **Integrar main** — si hay cambios nuevos, hace `git merge origin/main --no-edit` para que el PR nuevo solo contenga tu cambio. Si hay conflictos, aborta el merge (`git merge --abort`) con la rama intacta y te pide resolver a mano.
+10. **Push inicial** — lanza la rama a origin.
+11. **Crear PR** — `gh pr create --fill` toma título y cuerpo del commit, y obtiene el número del PR nuevo.
+12. **Auto-merge** — `gh pr merge <#PR> --<método> --delete-branch --auto`: agenda el merge automático en cuanto el CI pase; con `--delete-branch` borra la rama remota al integrarse (que luego `git nueva` limpia en local).
+
+**Resultado:** tu cambio entra en `main` sin intervención manual (si el CI va verde), la rama remota se borra sola, y en la siguiente tarea el árbol queda podado.
