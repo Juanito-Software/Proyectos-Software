@@ -1,13 +1,31 @@
 ---
-description: Auditoría de coherencia de la documentación (enlaces, Markdown, contradicciones, duplicidades y fuentes de verdad). Informe sin cambios automáticos.
+description: Auditoría de coherencia de la documentación (enlaces, Markdown, contradicciones, duplicidades y fuentes de verdad). Por defecto solo inspecciona e informa; aplica correcciones únicamente si el usuario lo solicita.
 agent: build
 ---
 
-Comprueba la coherencia de la documentación del repositorio. Revisa como mínimo
-los documentos de la raíz que existan (hoy `README.md` y `MAINTENANCE.md`, única
-fuente consolidada).
+Comprueba la coherencia de la documentación del repositorio. Sigue este flujo:
 
-Comprueba:
+```
+INSPECCIONAR
+    ↓
+COMPARAR
+    ↓
+DETECTAR HALLAZGOS
+    ↓
+INFORMAR
+    ↓
+[solo si el usuario lo solicita]
+APLICAR CORRECCIONES APROBADAS
+    ↓
+VALIDAR
+```
+
+## 1. Inspeccionar
+
+Revisa como mínimo los documentos raíz (hoy `README.md`, `MAINTENANCE.md` —
+única fuente consolidada — y `AGENTS.md`). Audítalos **siempre**, aunque revisar
+esos documentos también sea tarea de `/CierreSesion` o de `/Write`: la
+auditoría se solapa con ellos sin conflicto. Comprueba:
 
 - enlaces internos y externos relevantes,
 - referencias a archivos que realmente existan,
@@ -21,14 +39,37 @@ Comprueba:
   `MAINTENANCE.md` como única fuente consolidada del repo (ToDo + Roadmap +
   historial).
 
-No hagas cambios automáticamente salvo que el usuario lo indique expresamente.
-Mantén actualizados el **ToDo** (su sección consolidada en `MAINTENANCE.md`), el
-**Maintenance** (`MAINTENANCE.md`) y el **AGENTS.md** con los hallazgos de la
-auditoría: entradas fechadas, tareas nuevas o resueltas y referencias.
+## 2. Comparar y detectar hallazgos
 
-Al finalizar, proporciona un informe claro con:
+Cruza lo inspeccionado con el estado real del repositorio (código, workflows,
+comandos, git…) y detecta los problemas. Identifica para cada hallazgo:
 
-- problemas encontrados,
 - archivos afectados,
-- gravedad o importancia de cada problema,
-- y posibles acciones para corregirlos.
+- gravedad o importancia,
+- y qué corrección resolvería el problema.
+
+## 3. Informar
+
+Entrega un informe claro con los problemas encontrados y las propuestas de
+corrección. **La ejecución normal no modifica archivos.**
+
+Solo si el usuario pide explícitamente aplicar los hallazgos o (p. ej. invocando
+la variante `/VerificarDocs_Validado`, en la que la invocación es el permiso):
+
+1. identifica exactamente qué hallazgos se van a aplicar,
+2. modifica únicamente los archivos afectados,
+3. limítate a los hallazgos aprobados: no hagas refactors documentales
+   adicionales,
+4. valida las modificaciones,
+5. informa exactamente qué archivos modificó,
+6. no realices operaciones Git automáticamente.
+
+`/VerificarDocs` es **auditor**: revisa y toca los documentos raíz (entre ellos
+`MAINTENANCE.md` y `AGENTS.md`) en cada auditoría, aunque eso se repita con el
+trabajo de `/CierreSesion` — revisar es su tarea; no debe saltarse esos
+documentos por miedo a solaparse. Es **no escritor**: no los usa como memoria
+general. La **memoria persistente del agente** (entradas fechadas y estado
+`[x]` del ToDo en `MAINTENANCE.md`, y comportamiento/conocimiento en
+`AGENTS.md`) es responsabilidad directa de `/CierreSesion`, no de `/Write`:
+`/Write` solo registra durante la conversación lo que `/CierreSesion` consolida
+al cerrar.

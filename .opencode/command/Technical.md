@@ -1,10 +1,10 @@
 ---
-description: (Sinónimo `technical`) Modo de análisis profundo y riguroso: investigación intensiva, búsqueda web si hay herramientas, y razonamiento prolongado con nivel de detalle muy alto.
+description: Comando real de opencode. Activa el modo de análisis profundo y riguroso, con investigación intensiva, búsqueda web si hay herramientas y razonamiento prolongado con nivel de detalle muy alto.
 agent: build
 ---
 
-Sinónimo para activar un modo de análisis profundo y riguroso. Se invoca en el
-chat con `-Activate.Command(technical)` o `/Activate.Command(technical)`.
+Comando de opencode que activa un modo de análisis profundo y riguroso. Se
+invoca por su nombre en el chat, `/Technical`.
 
 Al activarlo:
 

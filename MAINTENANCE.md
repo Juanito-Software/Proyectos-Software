@@ -399,24 +399,32 @@ Para agilizar el mantenimiento del repo se añaden seis comandos de opencode
 de proyecto en `.opencode/command/`:
 
 - `/CierreSesion` — cierra la sesión: resume cambios, añade la entrada fechada
-  en `MAINTENANCE.md` y marca `[x]` las tareas del ToDo consolidado.
+  en `MAINTENANCE.md`, marca `[x]` las tareas del ToDo consolidado y consolida
+  en `AGENTS.md` el comportamiento/conocimiento del agente (es el responsable
+  directo de la memoria persistente del agente).
 - `/VerificarDocs` — auditoría de coherencia de la documentación (enlaces,
-  Markdown, contradicciones, duplicidades, fuentes de verdad); mantiene al día
-  ToDo, Maintenance y AGENTS.
+  Markdown, contradicciones, duplicidades, fuentes de verdad). Audita **siempre**
+  los documentos raíz, incluidos `MAINTENANCE.md` y `AGENTS.md`, aunque se
+  solape con el trabajo de `/CierreSesion`; **solo audita e informa** y no
+  modifica documentos salvo petición explícita. Variante autorizada
+  `/VerificarDocs_Validado` que aplica las correcciones.
 - `/EstadoRepo` — fotografía del estado del repo (rama, git status, commits,
   ramas, PRs, ToDo, última entrada); solo lectura.
 - `/NewTask <rama>` — protocolo de una nueva tarea: entrega `git nueva <rama>`
   (la rama la crea el usuario), recopila requisitos y espera confirmación de
-  que la rama está creada antes de programar; al terminar el desarrollo entrega
-  `git subir <rama>`. El agente **nunca** crea la rama ni hace push.
-- `/Write` — sinónimo `write`: marca información relevante para guardarla en
-  memoria persistente. Responde a `/write`, `/write.message` y `/write.chat` y
-  a `/Activate.Command(...)` (variantes `write.message` solo el mismo mensaje,
-  `write.chat` toda la conversación, `write` a criterio del agente).
-  Confirmación: ✅ INFO updated.
-- `/Technical` — sinónimo `technical` (también `/Activate.Command(technical)`):
-  análisis profundo y riguroso, investigación intensiva, búsqueda web si hay
-  herramientas, razonamiento prolongado, detalle muy alto.
+  que la rama está creada antes de programar; al terminar el desarrollo valida
+  lo que aplique y entrega `git subir` (no recibe rama, sino el método de
+  integración). El agente **nunca** crea la rama ni hace push.
+- `/Write` — comando real de opencode: registra durante la conversación el
+  comportamiento/conocimiento del agente relevante para que `/CierreSesion` lo
+  consolide en `AGENTS.md` y `MAINTENANCE.md` (la memoria persistente de la
+  sesión es competencia de `/CierreSesion`). Variantes por argumento: `/Write`
+  (a criterio), `/Write message` (solo el mismo mensaje), `/Write chat` (toda
+  la conversación). Confirmación: ✅ INFO updated.
+- `/Technical` — comando real de opencode (la vía `/Activate.Command(...)` se
+  documentó de forma incorrecta y se eliminó): análisis profundo y riguroso,
+  investigación intensiva, búsqueda web si hay herramientas, razonamiento
+  prolongado, detalle muy alto.
 
 El MCP de GitHub (hosted, solo-lectura) queda configurado en
 `.opencode/opencode.json` con `GITHUB_TOKEN` del entorno; no da rama ni push al
