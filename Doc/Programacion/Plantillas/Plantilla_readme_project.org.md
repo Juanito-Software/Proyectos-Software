@@ -56,7 +56,7 @@
 
 - **Responsable actual**: Juan (@Juanito-Software)
 - **Tipo de proyecto**: `Interno`, `Colaborativo`, `Open Source`
-- 📝 Ver reglas en [CONTRIBUTING.md](./CONTRIBUTING.md)
+- 📝 Ver reglas en [CONTRIBUTING.md](./CONTRIBUTING.md) *(añádelo al proyecto si defines reglas de contribución; la plantilla no lo incluye)*
 - 🧵 Sugerencias o preguntas en [community-hub Discussions](https://github.com/Juanito-Software/community-hub/discussions)
 
 ---
