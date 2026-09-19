@@ -4,7 +4,6 @@
 - NodeJS = runtime JS
 - Python = scripting / data / ML
 - Rust = systems programming
-- libraries = código reutilizable
 
 ---
 
