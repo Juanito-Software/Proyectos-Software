@@ -238,10 +238,10 @@ de proyecto en `.opencode/command/`:
   ToDo, Maintenance y AGENTS.
 - `/EstadoRepo` — fotografía del estado del repo (rama, git status, commits,
   ramas, PRs, ToDo, última entrada); solo lectura.
-- `/NewProject <rama>` — protocolo de una nueva tarea: entrega `git nueva
-  <rama>` y `git subir <rama>` (los ejecuta el usuario), recopila requisitos y
-  espera confirmación de que la rama está subida antes de programar. El agente
-  **nunca** crea la rama ni hace push.
+- `/NewTask <rama>` — protocolo de una nueva tarea: entrega `git nueva <rama>`
+  (la rama la crea el usuario), recopila requisitos y espera confirmación de
+  que la rama está creada antes de programar; al terminar el desarrollo entrega
+  `git subir <rama>`. El agente **nunca** crea la rama ni hace push.
 - `/Write` — sinónimo `write`: marca información relevante para guardarla en
   memoria persistente. Responde a `/write`, `/write.message` y `/write.chat` y
   a `/Activate.Command(...)` (variantes `write.message` solo el mismo mensaje,
