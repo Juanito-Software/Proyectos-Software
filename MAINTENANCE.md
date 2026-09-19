@@ -67,10 +67,12 @@ Convención de estados:
 
 ## CV
 
-- [ ] **CV desactualizado: «71 tests», «Angular 19» y las cifras de TaskHub_Angular.**
+- [x] **CV desactualizado: «71 tests», «Angular 19» y las cifras de TaskHub_Angular.**
   El `package.json` declara `@angular/core ^21.2.19` y las cifras vigentes están
-  en `README.md` (tabla de tests del CI). Actualizar el CV con ellas. _Fuente:
-  2026-09-11 (noche), 2026-09-18 y 2026-09-19._
+  en `README.md` (tabla de tests del CI). Actualizado vía el comando global
+  `ActualizarCV`: las dos variantes de `CV_Tecnico` declaran 278 tests —175
+  backend + 103 frontend— y Angular 21. _Fuente: 2026-09-11 (noche), 2026-09-18
+  y 2026-09-19 → resuelto 2026-09-19._
 
 ## Seguridad y dependencias
 
@@ -84,14 +86,16 @@ Convención de estados:
 
 ## TaskHub_React (del historial, siguen abiertos)
 
-- [ ] **Encadenar el despliegue al CI.** Hoy Render no espera al pipeline; se
-  mantiene a propósito en desarrollo. _Fuente: 2026-08-29/30, «Pendiente»._
+- [x] **Encadenar el despliegue al CI.** Render ya espera al pipeline: un commit
+  en rojo no llega a producción. Lo resolvió el usuario personalmente. _Fuente:
+  2026-08-29/30, «Pendiente» → resuelto 2026-09-19._
 - [ ] **Limitación de intentos por cuenta además de por IP** (hoy solo por
   dirección). _Fuente: 2026-08-29/30._
 - [ ] **Acciones del CI fijadas a etiqueta mayor, no a SHA.**
   _Fuente: 2026-08-29/30._
-- [ ] **Protección de rama** que exija `ci-ok` antes de fusionar (sin revisión
-  humana). _Fuente: 2026-08-29/30._
+- [x] **Protección de rama** que exija `ci-ok` antes de fusionar (sin revisión
+  humana). Lo resolvió el usuario personalmente. _Fuente: 2026-08-29/30 →
+  resuelto 2026-09-19._
 - [ ] **`PUT` y `PATCH` comparten controlador** (actualización parcial en ambos;
   desviación de la semántica HTTP, con tests desde la auditoría). _Fuente:
   2026-08-29/30._
@@ -249,8 +253,9 @@ de proyecto en `.opencode/command/`:
 
 El MCP de GitHub (hosted, solo-lectura) queda configurado en
 `.opencode/opencode.json` con `GITHUB_TOKEN` del entorno; no da rama ni push al
-agente. Pendiente: definir `GITHUB_TOKEN` (p. ej. `$PROFILE`) y reiniciar
-opencode para que el MCP y los comandos carguen.
+agente. **Actualización 2026-09-19:** `GITHUB_TOKEN` definido en `$PROFILE` (vía
+`gh auth token`), opencode reiniciado —MCP y comandos cargados— y el PR #113
+fusiona esta rama en `main`.
 
 ---
 
