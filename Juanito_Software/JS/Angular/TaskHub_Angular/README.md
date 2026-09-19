@@ -169,8 +169,10 @@ Relaciones principales:
 
 ## 10. Tests
 
-**162 tests con Vitest en el backend.** No necesitan base de datos ni
-`prisma generate`: sustituyen `config/prisma` y `@prisma/client` por dobles, y
+**175 tests con Vitest en el backend**: 162 con dobles de Prisma y 13 contra un
+PostgreSQL real (los únicos que hablan con la base de datos). Los de dobles no
+necesitan base de datos ni `prisma generate`: sustituyen `config/prisma` y
+`@prisma/client` por dobles, y
 `src/tests/setup.ts` inyecta las variables de entorno mínimas para que
 `config/env.ts` no lance al importarse.
 
@@ -229,7 +231,7 @@ con él y la *pull request* no se puede fusionar.
 
 ### Frontend
 
-**99 tests con Vitest**, lanzados por el constructor `@angular/build:unit-test`
+**103 tests con Vitest**, lanzados por el constructor `@angular/build:unit-test`
 de Angular sobre jsdom. Tampoco necesitan backend: las peticiones se interceptan
 con `HttpTestingController`.
 
@@ -243,8 +245,8 @@ npx ng test --no-watch
 |---|---|---|
 | `src/app/core/` | 29 | Sesión y SSR, renovación de token con dos 401 simultáneos, guardia de rutas, contrato HTTP de los servicios |
 | `src/app/features/auth/` | 11 | A dónde va el usuario tras login y registro; el aviso de credenciales no revela si el email existe |
-| `src/app/features/dashboard/` | 15 | Crear y borrar proyectos: qué petición sale, cuál no sale al cancelar, y que «Eliminar» no navega al proyecto |
-| `src/app/features/projects/` | 42 | Tablero: mover tarjetas guarda solo el estado y se revierte si el servidor falla; edición de tareas, fechas y comentarios; diálogo de miembros |
+| `src/app/features/dashboard/` | 17 | Crear y borrar proyectos: qué petición sale, cuál no sale al cancelar, y que «Eliminar» no navega al proyecto |
+| `src/app/features/projects/` | 44 | Tablero: mover tarjetas guarda solo el estado y se revierte si el servidor falla; edición de tareas, fechas y comentarios; diálogo de miembros |
 | `src/app/app.component.spec.ts` | 2 | El del andamiaje del CLI |
 
 Los componentes se prueban por su **efecto** —la petición que sale, o la que no
