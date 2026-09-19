@@ -38,6 +38,16 @@ auditoría se solapa con ellos sin conflicto. Comprueba:
   `README.md` (los `minimo` de `ci.yml` son los que las aplican) y
   `MAINTENANCE.md` como única fuente consolidada del repo (ToDo + Roadmap +
   historial).
+- **cifras al día**: cada proyecto con tests documenta su cifra en su propio
+  `README.md` (p. ej. BatchProcessor 20, RadioStack 166 —o 155 sin
+  `RADIOSTACK_DB_TESTS`—, FastAPI TaskHub 55, gym-app 41,
+  TaskHub_Angular backend 175 / frontend 103, TaskHub_React 983) y el global
+  `README.md` las consolida en la tabla «Tests que se ejecutan hoy en cada
+  push» y en la suma total («Suman … tests»). Comprueba que esas cifras
+  coinciden con el conteo real de tests (informes de CI si hay resultados, o el
+  conteo de `<testcase>` de Surefire / `vitest-report.xml` /
+  `pytest-report.xml` / `phpunit-report.xml` en la última ejecución) y con los
+  `minimo` declarados en `ci.yml`. Una cifra obsoleta es un hallazgo.
 
 ## 2. Comparar y detectar hallazgos
 

@@ -1,5 +1,5 @@
 ---
-description: Cierra la sesión: resume los cambios, añade la entrada fechada en MAINTENANCE.md (sin duplicar si ya existe la de hoy), marca a [x] las tareas completadas del ToDo y registra en AGENTS.md el comportamiento/conocimiento relevante.
+description: Cierra la sesión: resume los cambios, añade la entrada fechada en MAINTENANCE.md (sin duplicar si ya existe la de hoy), marca a [x] las tareas completadas del ToDo, registra en AGENTS.md el comportamiento/conocimiento relevante y deja al día las cifras de tests en los READMEs de los proyectos y el global.
 agent: build
 ---
 
@@ -25,4 +25,11 @@ Ejecuta el cierre de la sesión de trabajo siguiendo las convenciones del repo.
    persistente del agente** y son tu documento: registra aquí el cierre, sin
    inventar comportamiento ni conocimiento especulativo (eso lo registra
    `/Write` durante la conversación; tú consolidas).
-6. Muestra al final un resumen de lo realizado.
+6. **Deja las cifras al día.** Si durante la sesión cambió el número de tests o
+   la cobertura de algún proyecto, actualiza la cifra en su `README.md` **y** en
+   el `README.md` global (tabla «Tests que se ejecutan hoy en cada push» y suma
+   total, así como el catálogo si menciona cifras). Usa el conteo real verificado
+   (informes de CI, `<testcase>` de los reportes de la última ejecución) y
+   comprueba que los `minimo` de `ci.yml` siguen siendo coherentes con la cifra
+   nueva; no inventes números.
+7. Muestra al final un resumen de lo realizado.
