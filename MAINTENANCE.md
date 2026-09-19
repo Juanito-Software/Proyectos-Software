@@ -39,7 +39,8 @@ Convención de estados:
   viven en la clase de arranque de la API; moverlas a una configuración de
   `radiostack-persistence` resolvería de raíz las rodajas y quitaría a la API el
   conocimiento de los paquetes internos de otro módulo. Es cambio de producción,
-  merece PR propio. _Fuente: 2026-09-12, «Lo que queda anotado y sin hacer»._
+  merece PR propio. _Bloque C. Fuente: 2026-09-12, «Lo que queda anotado y sin
+  hacer»._
 - [x] **GET públicos bajo `/api/v1`.** Regla pensada para la parrilla/programas,
   alcanza a todos los GET (incluido `/api/v1/auth/me`). Decisión de producto:
   queda **documentado con un test**, no se cambia por iniciativa propia.
@@ -90,6 +91,12 @@ Convención de estados:
   de FPS-AI-Toolkit, excluidas a propósito por `dependabot.yml` (el stack de
   PyTorch se gestiona a mano con el índice CUDA). _Fuente: README.md (tabla de
   mantenimiento) → resuelto 2026-09-19 (rama `UpgradeDocs`)._
+- [ ] **Vulnerabilidades corregibles (npm/Maven con parche).** Bloque G (alta):
+  corregir las alertas que tienen parche disponible y dejar documentadas las que
+  no lo tienen (`extract-zip` y `torch ≤ 2.6.0`). Punto de partida en el análisis
+  del 2026-09-19 (44 abiertas: 16 high, 22 medium, 6 low). _Bloque G. Fuente:
+  2026-09-19 (rama `UpgradeDocs`)._
+- [x] **Dependabot (pip): bloque «En curso».** Es la única fila no saneada del
 
 ## TaskHub_React (del historial, siguen abiertos)
 
@@ -120,19 +127,19 @@ Convención de estados:
   `tasks.service.test.ts` y `tasks.controller.test.ts`, y comprobaciones en
   `verify.ts`. _Fuente: 2026-08-29/30 → resuelto 2026-09-19._
 - [ ] **E2E comparten la base de desarrollo** y dejan usuarios `e2e-*`; limpiarlos
-  o darles BD propia. _Fuente: 2026-08-29/30._
+  o darles BD propia. _Bloque D. Fuente: 2026-08-29/30._
 
 ## Sin empezar
 
-- [ ] **OmniForge.** _Fuente: 2026-09-11 (noche) y 2026-09-18._
-- [ ] **GPTDevTeam.** _Fuente: 2026-09-11 (noche) y 2026-09-18._
+- [ ] **OmniForge.** _Bloque F. Fuente: 2026-09-11 (noche) y 2026-09-18._
+- [ ] **GPTDevTeam.** _Bloque F. Fuente: 2026-09-11 (noche) y 2026-09-18._
 
 ## Notas — requieren decisión, no hay tarea definida
 
 - [ ] **`Claude outputs/` en el historial.** Un borrador de entrada y un PDF
   quedaron versionados y salen del `.gitignore`; aunque desindexados, siguen
-  descargables por hash mientras no se reescriba la historia de git. _Fuente:
-  2026-09-12 (tarde)._
+  descargables por hash mientras no se reescriba la historia de git. _Bloque E
+  (decisión, no tarea de código). Fuente: 2026-09-12 (tarde)._
 
 ## Stack tecnológico y hoja de ruta de aprendizaje
 
