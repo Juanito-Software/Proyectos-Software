@@ -127,10 +127,10 @@ El repo define comandos de opencode de proyecto en `.opencode/command/`:
   Maintenance y AGENTS.
 - `/EstadoRepo` — fotografía del repo (rama, git status, commits, ramas, PRs,
   ToDo, última entrada de MAINTENANCE); solo lectura.
-- `/NewProject <rama>` — prepara una tarea nueva: entrega `git nueva <rama>`
-  (el usuario crea la rama) y `git subir <rama>`, recopila requisitos y espera
-  confirmación de que la rama está subida antes de programar. **El agente nunca
-  crea la rama.**
+- `/NewTask <rama>` — prepara una nueva tarea: entrega `git nueva <rama>` (el
+  usuario crea la rama), recopila requisitos y espera confirmación de que la
+  rama está creada antes de programar; al terminar el desarrollo entrega
+  `git subir <rama>`. **El agente nunca crea la rama.**
 
 El MCP de GitHub (hosted, solo-lectura) se configura en `.opencode/opencode.json`
 y requiere `GITHUB_TOKEN` en el entorno; no da rama ni push al agente.

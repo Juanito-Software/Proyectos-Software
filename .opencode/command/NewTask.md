@@ -1,5 +1,5 @@
 ---
-description: Prepara una nueva tarea: recopila contexto y requisitos, entrega los comandos del usuario para crear y subir la rama, y espera confirmación antes de programar.
+description: Prepara una nueva tarea: recopila contexto y requisitos, entrega los comandos del usuario para crear la rama y espera confirmación antes de programar; al terminar entrega git subir.
 agent: build
 ---
 
@@ -18,20 +18,18 @@ Inicia el protocolo de preparación de una nueva tarea con la rama `$1`.
    nada equivalente.
 7. Indica claramente qué rama (`$1`) se va a usar para la tarea.
 
-## FASE 2 — Instrucción para crear y subir la rama
+## FASE 2 — Instrucción para crear la rama
 
-Después de la preparación, entrega exactamente los comandos que debe ejecutar el
-usuario, en este orden:
+Después de la preparación, entrega exactamente el comando que debe ejecutar el
+usuario:
 
 ```text
 git nueva $1
-git subir $1
 ```
 
 `git nueva` es el alias del usuario que prepara la rama (actualiza `main`, poda
-las ramas ya integradas y crea la rama). `git subir` sube la rama, abre o
-reutiliza el PR y programa el auto-merge en squash. No sustituyas ninguno por
-otros comandos salvo que el usuario lo pida.
+las ramas ya integradas y crea la rama). No lo sustituyas por otros comandos
+salvo que el usuario lo pida.
 
 ## FASE 3 — Recopilar requisitos
 
@@ -53,18 +51,18 @@ Una vez recopilada la información, DETENTE. NO debes:
 - ni realizar ningún cambio relacionado con el desarrollo.
 
 Debes esperar a que el usuario confirme explícitamente que ya ejecutó
-`git subir $1` y que la rama está subida (p. ej. «rama subida», «ya está
-subida»). Hasta esa confirmación, la tarea queda en estado:
+`git nueva $1` y que la rama está creada (p. ej. «rama creada», «ya está
+creada»). Hasta esa confirmación, la tarea queda en estado:
 
 **ESPERANDO CONFIRMACIÓN DE RAMA**
 
-El agente no crea ni sube la rama: eso lo hace el usuario. No asumas que la rama
-está subida aunque el usuario haya preparado la tarea. No continúes
-automáticamente tras mostrar los comandos.
+El agente no crea la rama: eso lo hace el usuario. No asumas que la rama está
+creada aunque el usuario haya preparado la tarea. No continúes automáticamente
+tras mostrar el comando.
 
 ## FASE 5 — Inicio del desarrollo
 
-Solo después de la confirmación de que la rama ya está subida:
+Solo después de la confirmación de que la rama ya está creada:
 
 1. Revisa de nuevo el estado de la rama.
 2. Revisa el contexto de `MAINTENANCE.md` y el ToDo.
@@ -72,13 +70,23 @@ Solo después de la confirmación de que la rama ya está subida:
 4. Resume brevemente qué vas a implementar.
 5. Comienza el desarrollo siguiendo las instrucciones del usuario.
 
+## FASE 6 — Final del desarrollo
+
+Cuando termines el desarrollo, entrega el comando que debe ejecutar el usuario
+para subir la rama, abrir o reutilizar el PR y programar el auto-merge en
+squash:
+
+```text
+git subir $1
+```
+
 ## REGLA GENERAL DE SEGURIDAD
 
-`NewProject` significa:
+`NewTask` significa:
 
-RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` y `git subir $1` → ESPERAR
-CONFIRMACIÓN → COMENZAR DESARROLLO.
+RECOPILAR REQUISITOS → ENTREGAR `git nueva $1` → ESPERAR CONFIRMACIÓN →
+COMENZAR DESARROLLO → AL TERMINAR, ENTREGAR `git subir $1`.
 
-El agente nunca crea la rama: la crea y sube el usuario. La confirmación de que
-la rama ha sido subida es obligatoria antes de cualquier modificación
-relacionada con la nueva tarea.
+El agente nunca crea la rama: la crea el usuario. La confirmación de que la
+rama ha sido creada es obligatoria antes de cualquier modificación relacionada
+con la nueva tarea.
