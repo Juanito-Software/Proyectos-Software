@@ -127,8 +127,11 @@ Convención de estados:
   sigue siendo parcial con `update`. Tests nuevos en `tasks.validation.test.ts`,
   `tasks.service.test.ts` y `tasks.controller.test.ts`, y comprobaciones en
   `verify.ts`. _Fuente: 2026-08-29/30 → resuelto 2026-09-19._
-- [ ] **E2E comparten la base de desarrollo** y dejan usuarios `e2e-*`; limpiarlos
-  o darles BD propia. _Bloque D. Fuente: 2026-08-29/30._
+- [x] **E2E comparten la base de desarrollo** y dejan usuarios `e2e-*`; limpiarlos
+  o darles BD propia. La salvaguarda de `playwright.config.js` ya impedía apuntar
+  a producción; ahora hay además un `npm run wipe:e2e` que borra de una vez los
+  usuarios `e2e-*` (tareas y sesiones en cascada). _Bloque D. Fuente: 2026-08-29/30.
+  Resuelto 2026-09-20 (rama `BloqueD`)._
 
 ## Sin empezar
 

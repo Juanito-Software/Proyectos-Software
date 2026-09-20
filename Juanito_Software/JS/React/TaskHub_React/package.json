@@ -8,6 +8,7 @@
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "verify": "npm run verify --prefix server",
+    "wipe:e2e": "npm run wipe:e2e --prefix server",
     "build": "npm run build --prefix client && npm run build --prefix server",
     "install:all": "npm install --include=dev && npm install --include=dev --prefix server && npm install --include=dev --prefix client",
     "lint": "eslint .",

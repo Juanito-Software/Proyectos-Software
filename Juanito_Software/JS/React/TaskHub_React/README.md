@@ -420,11 +420,16 @@ contra un entorno de pruebas remoto— define `E2E_ALLOW_REMOTE_DB=1`.
 
 Y si quedaran restos de una ejecución antigua:
 
-```sql
-DELETE FROM users WHERE username LIKE 'e2e-%';
+```bash
+set DATABASE_URL=postgresql://usuario:clave@localhost:5432/taskhub_e2e
+npm run wipe:e2e
 ```
 
-Las tareas asociadas se van solas por el borrado en cascada.
+Los usuarios no se tocan uno a uno: el script borra de una vez todos los que
+empiezan por `e2e-`, que es el prefijo que usan los tests de navegador con un
+sufijo aleatorio (como `e2e-0f5a2c8d91b3`). Un usuario real podía haber elegido
+ese nombre, pero fuera de los tests nadie lo usa a propósito, y sus tareas y
+sesiones de refresco se van solas por el borrado en cascada.
 
 ### Qué cubren las 159 comprobaciones de la API
 
