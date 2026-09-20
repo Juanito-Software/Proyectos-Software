@@ -1,0 +1,10 @@
+# Dependencias de desarrollo (tests). La suite no toca LLM, pantalla,
+# navegador ni red, así que NO necesita los pesos pesados de requirements.txt
+# (browser-use, playwright, open-interpreter, pyautogui): solo las librerías
+# que la cadena de imports (config, core.*, tools.*, main) carga de verdad.
+pytest
+langchain-core>=0.3.0
+langgraph>=0.2.0
+langchain-ollama>=0.2.0
+python-dotenv
+typing-extensions

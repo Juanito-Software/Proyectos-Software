@@ -180,6 +180,24 @@ Usuario (Prompt)
 
 ---
 
+## 🧪 Tests
+
+La suite usa `pytest` (dependencias de desarrollo en `requirements-dev.txt`):
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Ejecútala desde la carpeta del proyecto:
+
+```bash
+python -m pytest tests
+```
+
+Son **82 tests** sobre `GPTDevTeam_v2.0.py` (parser y limpieza de docstrings, heurísticas de AST, sandbox, validadores y memoria) **sin** necesitar Ollama: el fichero se carga como módulo y solo se prueban helpers puros. Corre en CI dentro del job `python-test` de `ci.yml`, con un mínimo declarado de 82.
+
+---
+
 ## 🚨 Notas de Seguridad
 
 - El código generado se ejecuta en un sandbox con límites de CPU/memoria y un filtro de imports, pero **no es un aislamiento de seguridad a nivel de sistema operativo** (no sustituye a una VM o contenedor).

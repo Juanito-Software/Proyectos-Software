@@ -130,15 +130,13 @@ def run(task: str, *, solo: bool, graph, memory, evaluator, logger) -> str:
         # Solo guardar tareas exitosas — evita contaminar el historial con fallos.
         # En modo solo: éxito si la respuesta no es un mensaje de error.
         # En modo planner: éxito si synthesize() no marcó status="error".
-        # Solo excluir fallos estructurales (timeout, plan vacío).
         # Errores de tool puntuales (wrong_agent, tool_errors) son recuperables:
         # el agente completó la tarea aunque con tropiezos — vale la pena recordarlo.
-        fatal_failures = {"timeout", "plan_empty"}
         final_status = final_state.get("status", "done")
         task_succeeded = (
             not response.startswith("Error:")
             if solo
-            else final_status not in fatal_failures
+            else final_status == "done"
         )
         if task_succeeded:
             agents_used = (

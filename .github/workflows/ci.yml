@@ -693,16 +693,23 @@ jobs:
   # ---------------------------------------------------------------------------
   # Python: tests de los proyectos que sí los tienen.
   #
-  # TaskHub (FastAPI) tenía 55 tests bien escritos que no se ejecutaban en
-  # ninguna parte. Pasaban en la máquina de quien los escribió y en ningún sitio
-  # más, porque ni `pytest` ni `httpx` estaban declarados como dependencia: en
-  # un entorno limpio pytest ni arranca. Se resolvió con un
+  # El origen fue TaskHub (FastAPI): tenía 55 tests bien escritos que no se
+  # ejecutaban en ninguna parte. Pasaban en la máquina de quien los escribió y
+  # en ningún sitio más, porque ni `pytest` ni `httpx` estaban declarados como
+  # dependencia: en un entorno limpio pytest ni arranca. Se resolvió con un
   # requirements-dev.txt, y este job es lo que garantiza que siga resuelto —un
   # entorno limpio en cada push es la única forma de detectar que falta una
   # dependencia—.
   #
-  # No hace falta base de datos: conftest.py monta una SQLite en memoria por
-  # test, con StaticPool para que todas las sesiones vean la misma.
+  # La matriz admite ahora además OmniForge (115) y GPTDevTeam (82), con dos
+  # casos distintos de qué instalar o ejecutar: OmniForge solo necesita
+  # requirements-dev.txt y GPTDevTeam debe restringir pytest a `tests/` para no
+  # contar los ficheros de MetaGPT vendorizado. Cada proyecto declara en la
+  # matriz sus `requisitos` (con `-r` por fichero) y su `ruta_tests`.
+  #
+  # No hace falta base de datos en ninguno de los tres: TaskHub monta una
+  # SQLite en memoria por test (StaticPool), y las otras dos suites no tocan
+  # red ni LLM.
   # ---------------------------------------------------------------------------
   python-test:
     name: Python · tests
@@ -714,6 +721,24 @@ jobs:
           - proyecto: Juanito_Software/Python/FastApi/TaskHub/backend
             # Suelo de tests esperados. Ver el paso de comprobación.
             minimo: 55
+            # Ficheros de requisitos que se instalan (ver el paso «Instalar
+            # dependencias»).
+            requisitos: -r requirements.txt -r requirements-dev.txt
+          - proyecto: Juanito_Software/Python/OmniForge
+            minimo: 115
+            # Solo requirements-dev.txt: la suite no importa los pesos pesados
+            # de requirements.txt (browser-use, playwright, open-interpreter,
+            # pyautogui), y instalarlos alargaría el job sin aportar nada.
+            requisitos: -r requirements-dev.txt
+            # Ruta de tests para pytest (por defecto, el directorio actual).
+            ruta_tests: tests
+          - proyecto: Juanito_Software/Python/GPTDevTeam
+            minimo: 82
+            requisitos: -r requirements.txt -r requirements-dev.txt
+            # Sin esta ruta, pytest recogería también `MetaGPT/` (vendorizado)
+            # y contaría sus tests — los 249 ficheros de ahí no son de este
+            # proyecto.
+            ruta_tests: tests
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -722,22 +747,24 @@ jobs:
           cache: pip
           cache-dependency-path: ${{ matrix.proyecto }}/requirements*.txt
 
-      # Se instalan los dos ficheros por separado y a propósito. Si algún día
-      # una dependencia de ejecución se cuela solo en requirements-dev.txt, la
-      # aplicación se desplegaría sin ella y aquí no se notaría; teniéndolos
-      # separados, al menos la distinción está escrita en alguna parte.
+      # Se instalan los requisitos declarados por el proyecto, separando los
+      # ficheros y a propósito. Si algún día una dependencia de ejecución se
+      # cuela solo en requirements-dev.txt, la aplicación se desplegaría sin
+      # ella y aquí no se notaría; teniéndolos separados, al menos la
+      # distinción está escrita en alguna parte. Los proyectos cuya suite no
+      # toca todo el runtime (OmniForge) declaran solo requirements-dev.txt.
       - name: Instalar dependencias
         working-directory: ${{ matrix.proyecto }}
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install ${{ matrix.requisitos }}
 
       # El informe JUnit no es decorativo: es de donde sale la cuenta del paso
       # siguiente. Sin él habría que fiarse de la línea final de pytest, que es
       # texto pensado para leerse, no para parsearse.
       - name: pytest
         working-directory: ${{ matrix.proyecto }}
-        run: pytest -q --junitxml=pytest-report.xml
+        run: pytest -q ${{ matrix.ruta_tests }} --junitxml=pytest-report.xml
 
       # Mismo razonamiento que en el job de Java: un suelo, no un "mayor que
       # cero". Que el total baje de 55 a 20 dejaría el job en verde y la

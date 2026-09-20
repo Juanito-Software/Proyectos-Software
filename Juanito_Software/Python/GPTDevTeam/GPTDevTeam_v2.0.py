@@ -442,6 +442,9 @@ def limpiar_docstring_inicial(codigo: str) -> str:
                 if any(contenido.endswith(q) for q in triple_quotes) and len(contenido) > 6:
                     # Docstring de una sola línea tipo """texto""": se descarta la línea entera.
                     return '\n'.join(lineas[i + 1:]).lstrip()
+            else:
+                # Docstring multilínea: esta línea es el cierre → se descarta todo el bloque.
+                return '\n'.join(lineas[i + 1:]).lstrip()
         elif any(q in contenido for q in triple_quotes):
             if apertura_idx is None and cierre_idx is None:
                 cierre_idx = i
