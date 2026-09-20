@@ -9,6 +9,7 @@
     "build": "tsc && node scripts/build-assets.mjs",
     "start": "node dist/server.js",
     "verify": "tsx src/verify.ts",
+    "wipe:e2e": "tsx scripts/wipe-e2e.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
