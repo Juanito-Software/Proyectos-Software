@@ -96,7 +96,6 @@ Convención de estados:
   no lo tienen (`extract-zip` y `torch ≤ 2.6.0`). Punto de partida en el análisis
   del 2026-09-19 (44 abiertas: 16 high, 22 medium, 6 low). _Bloque G. Fuente:
   2026-09-19 (rama `UpgradeDocs`)._
-- [x] **Dependabot (pip): bloque «En curso».** Es la única fila no saneada del
 
 ## TaskHub_React (del historial, siguen abiertos)
 
