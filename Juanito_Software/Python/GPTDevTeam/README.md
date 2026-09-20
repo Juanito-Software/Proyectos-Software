@@ -194,7 +194,7 @@ Ejecútala desde la carpeta del proyecto:
 python -m pytest tests
 ```
 
-Son **82 tests** sobre `GPTDevTeam_v2.0.py` (parser y limpieza de docstrings, heurísticas de AST, sandbox, validadores y memoria) **sin** necesitar Ollama: el fichero se carga como módulo y solo se prueban helpers puros. Corre en CI dentro del job `python-test` de `ci.yml`, con un mínimo declarado de 82.
+Son **82 tests** sobre `GPTDevTeam_v2.0.py` (parser y limpieza de docstrings, heurísticas de AST, sandbox, validadores y memoria) **sin** necesitar Ollama: el fichero se carga como módulo y solo se prueban helpers puros. Corre en CI dentro del job `python-test` de `ci.yml`, con un mínimo declarado de 81: uno de los 82 es de entorno Windows y en el runner de Linux se salta (el contador descuenta los saltados).
 
 ---
 

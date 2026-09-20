@@ -145,11 +145,11 @@ cumplir):
 | TaskHub_Angular (frontend) | 103 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
 | OmniForge | 115 | pytest sin LLM ni red: parsing de planes, evaluador, memoria, skills, providers, filesystem |
-| GPTDevTeam | 82 | pytest sobre `GPTDevTeam_v2.0.py` (AST, sandbox, validadores, memoria) sin Ollama |
+| GPTDevTeam | 81 | pytest sobre `GPTDevTeam_v2.0.py` (AST, sandbox, validadores, memoria) sin Ollama; el 82.º es de entorno Windows y en el CI de Linux se salta |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | TaskHub_React | 983 | Cuatro capas, incluido navegador real |
 
-Suman **1.740 tests** que se ejecutan en cada push, 757 de ellos en `ci.yml`.
+Suman **1.739 tests** que se ejecutan en cada push, 756 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 

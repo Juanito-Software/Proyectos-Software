@@ -733,11 +733,18 @@ jobs:
             # Ruta de tests para pytest (por defecto, el directorio actual).
             ruta_tests: tests
           - proyecto: Juanito_Software/Python/GPTDevTeam
-            minimo: 82
+            minimo: 81
             requisitos: -r requirements.txt -r requirements-dev.txt
             # Sin esta ruta, pytest recogería también `MetaGPT/` (vendorizado)
             # y contaría sus tests — los 249 ficheros de ahí no son de este
             # proyecto.
+            #
+            # El suelo es 81, no 82: uno de los 82 es
+            # `test_mantiene_temp_y_perfil_en_windows`, que solo corre en
+            # Windows. El CI corre en Linux, así que ese test se salta y el
+            # contador lo descuenta (un <testcase> con <skipped/>). Si se
+            # quisiera proteger también el caso Windows, el suelo subiría a 82
+            # y la suite tendría que ejecutarse en un runner Windows.
             ruta_tests: tests
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

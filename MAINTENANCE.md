@@ -150,8 +150,10 @@ Convención de estados:
   sin necesidad de Ollama: se carga el fichero como módulo y se prueban helpers
   puros. De paso se corrigió `limpiar_docstring_inicial`, que no detectaba el
   cierre de un docstring multilínea y devolvía `"""` colgando en el código.
-  `requirements-dev.txt` (pytest) creado. _Bloque F. Fuente: 2026-09-11 (noche)
-  y 2026-09-18. Resuelto 2026-09-20 (rama `BloqueF`)._
+  `requirements-dev.txt` (pytest) creado. En el CI (Linux) se ejecutan 81: uno
+  de los tests es de entorno Windows y se descuenta por saltado. _Bloque F.
+  Fuente: 2026-09-11 (noche) y 2026-09-18. Resuelto 2026-09-20 (rama
+  `BloqueF`)._
 
 ## Notas — requieren decisión, no hay tarea definida
 
@@ -336,9 +338,11 @@ que ahora admite una matriz parametrizada: cada proyecto declara los
 `requirements` a instalar y la `ruta_tests` de pytest. OmniForge instala solo
 `requirements-dev.txt` (la suite no importa los pesos pesados de
 `requirements.txt`: browser-use, playwright, open-interpreter, pyautogui) y
-GPTDevTeam necesita `pytest tests` para no recoger `MetaGPT/` vendorizado. La
-tabla del inventario pasó a 115 y 82, y la cifra total del README raíz, a 1.740
-(757 en `ci.yml`).
+GPTDevTeam necesita `pytest tests` para no recoger `MetaGPT/` vendorizado. El
+mínimo declarado para GPTDevTeam es **81**, no 82: su 82.º test
+(`test_mantiene_temp_y_perfil_en_windows`) solo corre en Windows y el CI es
+Linux, así que se descuenta por saltado. La tabla del inventario pasó a 115 y
+81 (CI), y la cifra total del README raíz, a 1.739 (756 en `ci.yml`).
 
 ---
 
@@ -1531,7 +1535,7 @@ alguien los ejecutara.**
 | gym-app | 25 | — sin script en `composer.json` | **No** |
 | RadioStack | 2 | — | Solo compila |
 | OmniForge | 115 | pytest (CI, solo requirements-dev.txt) | Sí |
-| GPTDevTeam | 82 | pytest (CI, ruta `tests`) | Sí |
+| GPTDevTeam | 82 (81 en CI: uno es de Windows) | pytest (CI, ruta `tests`) | Sí |
 
 Dos correcciones que hizo falta hacerse a uno mismo mientras se levantaba esa
 tabla:
