@@ -35,12 +35,14 @@ Convención de estados:
 
 ## RadioStack
 
-- [ ] **`@EntityScan` / `@EnableJpaRepositories` al módulo de persistencia.** Hoy
+- [x] **`@EntityScan` / `@EnableJpaRepositories` al módulo de persistencia.** Hoy
   viven en la clase de arranque de la API; moverlas a una configuración de
   `radiostack-persistence` resolvería de raíz las rodajas y quitaría a la API el
   conocimiento de los paquetes internos de otro módulo. Es cambio de producción,
   merece PR propio. _Bloque C. Fuente: 2026-09-12, «Lo que queda anotado y sin
-  hacer»._
+  hacer». Resuelto 2026-09-18 (PR #105, `fix: move JPA configuration to
+  persistence`); la ficha quedó abierta por error en el ToDo y se cierra
+  2026-09-20._
 - [x] **GET públicos bajo `/api/v1`.** Regla pensada para la parrilla/programas,
   alcanza a todos los GET (incluido `/api/v1/auth/me`). Decisión de producto:
   queda **documentado con un test**, no se cambia por iniciativa propia.
