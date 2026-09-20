@@ -95,7 +95,14 @@ class TestSandboxEvaluacion:
 
 class TestSandboxTemporizacion:
     def test_script_infinito_se_corta_por_timeout(self, gdt, tmp_path):
-        fichero = _escribir_script(tmp_path / "infinito.py", "while True:\n    pass")
+        # Bucle durmiente y no CPU-bound: el sandbox limita CPU con RLIMIT_CPU
+        # (Unix), así que `while True: pass` moriría por SIGXCPU antes de llegar
+        # al timeout de pared y terminaría como "normal" en CI. Dormir consume
+        # CPU despreciable y hace el corte por timeout determinista.
+        fichero = _escribir_script(
+            tmp_path / "infinito.py",
+            "import time\nwhile True:\n    time.sleep(0.5)",
+        )
         # Timeout corto para que el test sea rápido
         estado = gdt.ejecutar_codigo_py(fichero, workspace_dir=str(tmp_path), timeout=2)
         assert estado.termination_reason == "timeout"
