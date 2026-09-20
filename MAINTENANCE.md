@@ -155,13 +155,6 @@ Convención de estados:
   Fuente: 2026-09-11 (noche) y 2026-09-18. Resuelto 2026-09-20 (rama
   `BloqueF`)._
 
-## Notas — requieren decisión, no hay tarea definida
-
-- [ ] **`Claude outputs/` en el historial.** Un borrador de entrada y un PDF
-  quedaron versionados y salen del `.gitignore`; aunque desindexados, siguen
-  descargables por hash mientras no se reescriba la historia de git. _Bloque E
-  (decisión, no tarea de código). Fuente: 2026-09-12 (tarde)._
-
 ## Stack tecnológico y hoja de ruta de aprendizaje
 
 > _Fuente: `ROADMAP.md` (integrado 2026-09-19; fichero original eliminado)._
@@ -378,7 +371,7 @@ la poda selectiva: `git nueva` solo borra ramas locales cuyo remoto desapareció
 
 Se etiquetaron los pendientes existentes como Bloques C (`@EntityScan` /
 `@EnableJpaRepositories` a persistencia), D (E2E compartiendo BD, usuarios
-`e2e-*`), E (`Claude outputs/`, decisión) y F (OmniForge, GPTDevTeam), y se
+`e2e-*`) y F (OmniForge, GPTDevTeam), y se
 añadió en «Seguridad y dependencias» el **Bloque G** nuevo: vulnerabilidades
 corregibles de npm/Maven con parche (cifras del análisis del 2026-09-19). PR
 #123.
