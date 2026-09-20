@@ -64,7 +64,7 @@ def _sprites(tmp_path, n=5, size=32):
         arr[..., 2] = (60 + i * 17) % 256
         arr[..., 3] = 255
         p = tmp_path / f"s{i}.png"
-        Image.fromarray(arr, mode="RGBA").save(p)
+        Image.fromarray(arr).save(p)
         paths.append(p)
     return paths
 

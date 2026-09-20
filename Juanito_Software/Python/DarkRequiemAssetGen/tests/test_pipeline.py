@@ -190,7 +190,7 @@ def _escena(bg, sujeto, size=256):
     arr[:, :] = bg
     q = size // 4
     arr[q : size - q, q : size - q] = sujeto
-    return Image.fromarray(arr, mode="RGB")
+    return Image.fromarray(arr)
 
 
 def test_bg_key_conserva_al_sujeto(palette):
