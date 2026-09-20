@@ -133,10 +133,27 @@ Convención de estados:
   usuarios `e2e-*` (tareas y sesiones en cascada). _Bloque D. Fuente: 2026-08-29/30.
   Resuelto 2026-09-20 (rama `BloqueD`)._
 
-## Sin empezar
+## OmniForge y GPTDevTeam (Bloque F)
 
-- [ ] **OmniForge.** _Bloque F. Fuente: 2026-09-11 (noche) y 2026-09-18._
-- [ ] **GPTDevTeam.** _Bloque F. Fuente: 2026-09-11 (noche) y 2026-09-18._
+- [x] **OmniForge.** Documentación reescrita (arquitectura real: planner
+  multi-agente, `--solo`, 29 tools en 5 módulos, memoria, evaluador, skills,
+  visión) y suite pytest de **115 tests** (planner, evaluador, memoria, skills,
+  LLM, filesystem, terminal, visión, configuración, estados, main y contrato de
+  tools). Sin LLM, pantalla, navegador ni red. De paso se corrigió un bug en
+  `main.py`: `run()` comparaba el estado final contra `{"timeout",
+  "plan_empty"}` cuando `synthesize()` emite `"error"`/`"done"`, así que las
+  tareas fallidas **sí** entraban en la memoria; ahora solo guarda `status ==
+  "done"`. `requirements-dev.txt` (pytest) creado. _Bloque F. Fuente: 2026-09-11
+  (noche) y 2026-09-18. Resuelto 2026-09-20 (rama `BloqueF`)._
+- [x] **GPTDevTeam.** Suite pytest de **82 tests** sobre `GPTDevTeam_v2.0.py`
+  (parser, limpiar_docstring_inicial, AST, sandbox, validadores, memoria),
+  sin necesidad de Ollama: se carga el fichero como módulo y se prueban helpers
+  puros. De paso se corrigió `limpiar_docstring_inicial`, que no detectaba el
+  cierre de un docstring multilínea y devolvía `"""` colgando en el código.
+  `requirements-dev.txt` (pytest) creado. En el CI (Linux) se ejecutan 81: uno
+  de los tests es de entorno Windows y se descuenta por saltado. _Bloque F.
+  Fuente: 2026-09-11 (noche) y 2026-09-18. Resuelto 2026-09-20 (rama
+  `BloqueF`)._
 
 ## Notas — requieren decisión, no hay tarea definida
 
@@ -265,6 +282,67 @@ de los proyectos).
   el escáner automático; aparecieron leyendo el código. Los detalles de dónde
   estuvo cada una se omiten a propósito: este historial es público y señalarlos
   equivaldría a señalar los commits anteriores al arreglo.
+
+---
+
+## 2026-09-20 — OmniForge y GPTDevTeam: de 0 tests a 115 + 82
+
+Primer día con las dos suites de Python que faltaban del inventario. El plan era
+«añadir tests al portafolio»; una vez más, lo interesante no fue el número sino
+lo que apareció al escribirlos.
+
+### OmniForge: 115 tests y un bug de memoria destapado
+
+Tras reescribir su `README.md` a la arquitectura real (planner multi-agente,
+`--solo`, 29 tools en 5 módulos, memoria, evaluador, skills, visión), se montó
+la suite sobre `pytest` (nuevo `requirements-dev.txt`). Los 115 tests cubren la
+lógica pura —planner (`_parse_plan`, prompts), evaluador (fallos, eficiencia,
+`analyze_and_generate_hint` con un LLM falso), memoria (límites, dedup,
+migración `[HINT]`), skills, fábrica de LLM (solo construcción, sin red),
+filesystem, terminal (`_subprocess_fallback`), helpers de visión, config,
+estados, y `_build_*_initial_state`/`run()` con fakes— sin tocar LLM, pantalla,
+navegador ni red.
+
+El bug: `run()` en `main.py` decidía qué guardar en memoria comparando el
+estado final con `{"timeout", "plan_empty"}`, pero `synthesize()` emite
+`"error"`/`"done"` — **las tareas fallidas entraban igualmente al historial** y
+contaminaban el contexto. Ahora `run()` solo guarda con `status == "done"`
+(alineado con el comentario que ya decía «`status="error"` → se omite
+`memory.add()`»).
+
+Detalles de la puesta a punto (los tests, rojos primero, destaparon además):
+los tools de langchain son `StructuredTool` y hay que invocarlos con
+`.invoke({...})`, no como funciones; `Evaluator(eval_dir=":nunca:")` no es
+ruta válida en Windows; `CONFIG.agent.verbose` imprime `─` y revienta con
+cp1252 en CI (fixture que lo desactiva); y un `__len__` en un fake hizo falsy
+la memoria (el objeto era falsy con longitud 0).
+
+### GPTDevTeam: 82 tests y `limpiar_docstring_inicial` arreglado
+
+`GPTDevTeam_v2.0.py` se carga como módulo con `importlib` (el nombre del
+fichero tiene un punto) y se prueban helpers puros: parser (`extraer_codigo_puro`,
+`extract_json`, `limpiar_docstring_inicial`), heurísticas AST (bucles infinitos,
+atributos fantasma, `extraer_api_estatica`, validador de tests vs API), sandbox
+de subprocess real, estado/evaluación y memoria JSON. **82 tests, sin Ollama.**
+
+De paso: `limpiar_docstring_inicial` no detectaba el cierre de un docstring
+multilínea (`"""\nTexto\n"""`) y devolvía las comillas colgando de la respuesta
+del LLM; arreglado. También se confirmó que el orden de `attributes` en
+`extraer_api_estatica` no es determinista (viene de un `set`) — el test
+compara ordenado.
+
+### Lo que quedó
+
+Las dos suites corren en cada push dentro del job `python-test` de `ci.yml`,
+que ahora admite una matriz parametrizada: cada proyecto declara los
+`requirements` a instalar y la `ruta_tests` de pytest. OmniForge instala solo
+`requirements-dev.txt` (la suite no importa los pesos pesados de
+`requirements.txt`: browser-use, playwright, open-interpreter, pyautogui) y
+GPTDevTeam necesita `pytest tests` para no recoger `MetaGPT/` vendorizado. El
+mínimo declarado para GPTDevTeam es **81**, no 82: su 82.º test
+(`test_mantiene_temp_y_perfil_en_windows`) solo corre en Windows y el CI es
+Linux, así que se descuenta por saltado. La tabla del inventario pasó a 115 y
+81 (CI), y la cifra total del README raíz, a 1.739 (756 en `ci.yml`).
 
 ---
 
@@ -1456,8 +1534,8 @@ alguien los ejecutara.**
 | TaskHub FastAPI | 55 | pytest + conftest | **No** |
 | gym-app | 25 | — sin script en `composer.json` | **No** |
 | RadioStack | 2 | — | Solo compila |
-| OmniForge | 0 | — | No |
-| GPTDevTeam | 0 propios | — | No |
+| OmniForge | 115 | pytest (CI, solo requirements-dev.txt) | Sí |
+| GPTDevTeam | 82 (81 en CI: uno es de Windows) | pytest (CI, ruta `tests`) | Sí |
 
 Dos correcciones que hizo falta hacerse a uno mismo mientras se levantaba esa
 tabla:
@@ -1583,8 +1661,10 @@ corría nadie ahora corren en cada push (71 + 55 + 41, más los 20 de
 BatchProcessor de la tanda anterior).
 
 Pendiente de la lista: frontend de Angular (2 tests, uno del andamiaje del CLI),
-RadioStack (2), OmniForge y GPTDevTeam (0 propios; acordado que sus tests pueden
-correr solo en local, porque dependen de un LLM).
+RadioStack (2). OmniForge y GPTDevTeam se cubrieron después en la rama
+`BloqueF` (2026-09-20): 115 y 82 tests, respectivamente; al principio se
+pensaba que no los podían tener porque dependían de un LLM, y resultó que la
+parte testable (núcleo, AST, sandbox, memoria) no necesita red.
 
 ---
 

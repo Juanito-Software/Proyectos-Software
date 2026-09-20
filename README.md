@@ -78,7 +78,7 @@ y, cuando aplica, una carpeta `docs/` con notas y documentación adicional.
 | `FPS-AI-Toolkit` | Herramientas de IA para juegos FPS |
 | `GPTDevTeam` | Pipeline multi-agente de generación y testeo de código con LLMs locales (Ollama) |
 | `MisServidores/` | Servidores FTP y WEB básicos |
-| `OmniForge` | Agente autónomo que controla un PC completo, 22 herramientas |
+| `OmniForge` | Agente autónomo que controla un PC completo, 29 herramientas |
 | `PC_Health_Sistema` | Monitorización de salud del sistema |
 | `PyGameChat` | juego para el chat en tiempo real |
 | `Radio_Python` | Radio por software |
@@ -130,7 +130,7 @@ Dos workflows corren en cada *pull request* y en cada push a `main`:
 
 | Workflow | Qué cubre |
 | --- | --- |
-| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los cinco proyectos que sí los tienen** |
+| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los siete proyectos que sí los tienen** |
 | `taskhub-react-ci.yml` | TaskHub_React entero: lint, tipos, unitarios, integración con PostgreSQL, *end-to-end* con Playwright, auditoría y despliegue |
 
 Tests que se ejecutan hoy en cada push (las cifras de tests y cobertura se
@@ -144,10 +144,12 @@ cumplir):
 | TaskHub_Angular (backend) | 175 | Vitest; 13 sobre PostgreSQL real que aplican la migración de Prisma y comprueban restricciones, cascadas y el filtro de visibilidad |
 | TaskHub_Angular (frontend) | 103 | Vitest sobre el constructor de Angular |
 | TaskHub (FastAPI) | 55 | pytest sobre SQLite en memoria |
+| OmniForge | 115 | pytest sin LLM ni red: parsing de planes, evaluador, memoria, skills, providers, filesystem |
+| GPTDevTeam | 81 | pytest sobre `GPTDevTeam_v2.0.py` (AST, sandbox, validadores, memoria) sin Ollama; el 82.º es de entorno Windows y en el CI de Linux se salta |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | TaskHub_React | 983 | Cuatro capas, incluido navegador real |
 
-Suman **1.522 tests** que se ejecutan en cada push, 560 de ellos en `ci.yml`.
+Suman **1.739 tests** que se ejecutan en cada push, 756 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 
