@@ -3,7 +3,7 @@
 Esta es la capa que justifica el proyecto. Un modelo de difusion produce una
 imagen de 1024x1024 con bordes antialiaseados, cientos de colores y una rejilla
 que casi nunca esta alineada. Unity no quiere eso: quiere una rejilla NxN exacta
-(el default del proyecto es 64x64), alpha dura, y una paleta cerrada.
+(el default del proyecto es 128x128), alpha dura, y una paleta cerrada.
 
 Orden de operaciones (importa, y mucho):
 
@@ -306,7 +306,7 @@ def run_pixelpass(
     out[..., 3] = alpha_small
     out[alpha_small == 0, :3] = 0
 
-    result_img = Image.fromarray(out, mode="RGBA")
+    result_img = Image.fromarray(out)
     preview = result_img.resize(
         (cfg.grid * cfg.preview_scale, cfg.grid * cfg.preview_scale), Image.NEAREST
     )

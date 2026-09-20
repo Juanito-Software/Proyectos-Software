@@ -91,7 +91,7 @@ class MockBackend(Backend):
         bg = np.array(_BG, dtype=np.float64)
         out = rgb * m[..., None] + bg[None, None, :] * (1 - m[..., None])
         out = out + rng.normal(0, 2.0, out.shape)  # ruido tipo compresion
-        return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), mode="RGB")
+        return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
 
 
 @register("mock")
