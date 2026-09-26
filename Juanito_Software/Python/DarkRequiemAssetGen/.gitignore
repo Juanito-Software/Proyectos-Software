@@ -1,14 +1,10 @@
 __pycache__/
-*.venv
-.venv
 *.pyc
+.venv/
 .pytest_cache/
-out/
-assets/
-unity/
-bench/out/
-tests/fixtures/
-*.egg-info/
-build/
-dist/
-models/
+
+# Salida de generar_sprite.py
+salida/
+
+# Candidatos generados a mano, fuera del repo
+staging/

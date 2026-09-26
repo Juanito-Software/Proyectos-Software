@@ -1,0 +1,16 @@
+# Dependencias de generar_sprite.py
+#
+# torch: instala la build de CUDA que corresponda a tu tarjeta. El indice por
+# defecto de PyPI trae la version de CPU en Windows y Linux:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu130
+# El paquete sigue siendo el mismo, solo cambia de donde se descarga. Verificado
+# aqui con torch 2.13.0+cu130 sobre CUDA 13.0.
+
+pillow>=10.0
+numpy>=1.24
+torch>=2.3
+diffusers>=0.30
+transformers>=4.44
+peft>=0.11
+accelerate>=0.33
+safetensors>=0.4
