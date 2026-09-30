@@ -818,6 +818,68 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
+  # Rust: tests del motor de indexación (puede llegar a ser el patrón del resto
+  # de proyectos Rust que aparezcan).
+  #
+  # motorIndexado tiene la feature opcional `api` (axum + tokio), que los otros
+  # tests no ejercitan si cargo corre sin banderas: sin `--features api` el
+  # módulo api no se compila y sus 5 tests desaparecen del recuento en silencio,
+  # por eso el comando la activa. Es el mismo motivo por el que Node/Python
+  # exponen una marca de tests con base de datos.
+  #
+  # La cuenta NO sale de un informe JUnit, porque cargo no genera uno: sale de
+  # `cargo test -- --list`, que es la API estable que el propio harness expone
+  # para enumerar tests. Imprime una línea por test terminada en ": test" (los
+  # benchmarks terminan en ": benchmark" y no cuentan), una y solo una vez, por
+  # muy anidado que esté el módulo. Es el mismo "uno por test ejecutado, ni más
+  # ni menos" que los otros jobs consiguen contando <testcase>, sin depender de
+  # texto pensado para leerse.
+  #
+  # `cargo test` sí falla si alguno de esos tests se rompe: el listado solo
+  # sustituye al recuento del suelo, que para eso existe.
+  # ---------------------------------------------------------------------------
+  rust-test:
+    name: Rust · tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      # Fija el toolchain a propósito, como hacen los demás jobs con sus
+      # versiones: los runners de GitHub traen Rust instalado, pero su versión
+      # cambia cuando actualizan la imagen y eso movería el mínimo sin avisar.
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+
+      - name: cargo test
+        working-directory: Juanito_Software/Rust/motorIndexado
+        run: cargo test --features api
+
+      - name: Comprobar que se han ejecutado los tests esperados
+        working-directory: Juanito_Software/Rust/motorIndexado
+        env:
+          MINIMO: 35
+        run: |
+          set -euo pipefail
+
+          # El listado es texto, pero texto que el propio harness garantiza:
+          # una línea "nombre: test" por test. La alternativa de parsear la
+          # línea final "N passed" es justo el tipo de salida legible que los
+          # demás jobs evitan, porque cambia de plataforma en plataforma.
+          total=$(cargo test --features api -- --list 2>/dev/null | grep -c ': test$')
+
+          echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
+
+          if [ "$total" -lt "$MINIMO" ]; then
+            echo "::error::Se esperaban al menos $MINIMO tests y se han enumerado $total. Si la bajada es intencionada, ajusta 'minimo' en el job (los tests no se enumeran solos con --list si no se compilan)."
+            exit 1
+          fi
+
+          if [ "$total" -gt "$MINIMO" ]; then
+            echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' para que la nueva cobertura quede protegida."
+          fi
+
+  # ---------------------------------------------------------------------------
   # Puerta final: un único nombre del que colgar la regla de la rama principal.
   #
   # Hasta ahora la única comprobación obligatoria de `main` era «CI en verde»,
@@ -856,6 +918,7 @@ jobs:
       - node-test
       - php-test
       - python-test
+      - rust-test
     # `if: always()` es imprescindible: sin él, este job se salta cuando alguno
     # de los anteriores falla, y un job saltado NO cuenta como fallo para la
     # protección de rama. La puerta quedaría en gris y la PR podría fusionarse

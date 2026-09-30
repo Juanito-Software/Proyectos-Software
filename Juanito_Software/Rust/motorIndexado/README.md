@@ -84,6 +84,13 @@ Se indexan archivos de texto por extensión, por ejemplo:
 cargo test
 ```
 
+Los tests de la API HTTP (módulo `api`) solo se compilan con la feature activa;
+el CI los ejecuta así, con cobertura completa:
+
+```bash
+cargo test --features api
+```
+
 ## Licencia
 
 MIT.

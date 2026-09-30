@@ -278,6 +278,57 @@ de los proyectos).
 
 ---
 
+## 2026-09-30 — motorIndexado: de «0 tests reales» a 35, y el primer job de Rust en el CI
+
+`motorIndexado` era el único proyecto con un commit «test:» que no traía tests:
+el `9226bb6` («test: cubrir index, busqueda, crawler y lib…») solo tocó PNGs, no
+tests Rust reales. En esta sesión se escribió la suite de verdad —**19 unitarios
++ 16 de integración = 35**— sin tocar una línea de producción (comportamiento
+provocado; no destapó ningún bug) y se le dio al repo su primer job Rust:
+`ci.yml` no tenía ninguno.
+
+### La suite
+
+- Unitarios en la lib (`src/`): `tokenizer` (6: texto vacío, separadores,
+  números, alfanuméricos), `index` (7: alta/acumulación, postings y
+  minúsculas, término ausente, merge y roundtrip JSON con serde), `search` (6:
+  consulta vacía/sin coincidencias, score de un término, acumulación
+  multi-término, orden descendente y `--limit`).
+- Integración (`tests/`): `crawler` (7, sobre archivos reales en un directorio
+  temporal: extensiones, subdirectorios, `--depth` con la semántica real de
+  WalkDir, vacíos, directorio inexistente y no-UTF8), `cli` (4, lanzando el
+  binario de verdad vía `CARGO_BIN_EXE`: `index` guarda, `search` consulta,
+  `run` en una pasada, sin resultados sale en verde) y `api` (5, router real
+  con `tower::oneshot`: resultados, límite por defecto y pedido, lista vacía y
+  400 sin `q`; gateado por `#![cfg(feature = "api")]`).
+
+Único `[dev-dependencies]` nuevo: `tower` (feature `util`), para `oneshot`.
+
+### El job `rust-test` en `ci.yml`
+
+cargo **no** genera JUnit: `cargo test` falla si cualquier test se rompe, y el
+mínimo del job se cuenta con `cargo test -- --list | grep -c ': test$'` — la
+API estable del propio harness, una línea por test terminada en `: test`, una
+sola vez por muy anidado que esté el módulo; el equivalente exacto de contar
+`<testcase>` sin parsear texto pensado para leerse. Igual que los demás jobs,
+falla si baja del mínimo (`MINIMO: 35`) y avisa si sube.
+
+`cargo test` corre con `--features api` porque sin esa bandera los 5 tests de
+la API desaparecen sin avisar (el módulo no se compila), el mismo motivo por el
+que Node/Python exponen la marca de BD en CI. La toolchain se fija también por
+SHA (`dtolnay/rust-toolchain@02cb101…`): los runners de ubuntu traen Rust, pero
+su versión muda al actualizar la imagen y movería el mínimo sin que nadie lo
+decidiera.
+
+### Lo que quedó
+
+- `motorIndexado` entra en la tabla de tests del `README.md`: 35 (total 1.774,
+  de ellos 791 en `ci.yml`; ocho proyectos con tests).
+- Pendiente ajeno a esta tarea, arrastrado de sesiones anteriores: borrar la
+  rama `TestingMotorIndexado2` (PR #137 legado, el del commit sin tests).
+
+---
+
 ## 2026-09-20 — OmniForge y GPTDevTeam: de 0 tests a 115 + 82
 
 Primer día con las dos suites de Python que faltaban del inventario. El plan era
