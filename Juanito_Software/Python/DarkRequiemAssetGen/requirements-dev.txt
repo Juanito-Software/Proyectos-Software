@@ -1,0 +1,10 @@
+# Dependencias de desarrollo de DarkRequiemAssetGen.
+#
+# Aqui solo vive lo que hace falta para correr los tests. Nada de esto se
+# importa desde generar_spritesheet.py, asi que el entorno de produccion se
+# queda igual de limpio con solo requirements.txt.
+#
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   pytest -q
+
+pytest>=8
