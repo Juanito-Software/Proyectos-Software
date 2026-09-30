@@ -130,7 +130,7 @@ Dos workflows corren en cada *pull request* y en cada push a `main`:
 
 | Workflow | Qué cubre |
 | --- | --- |
-| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los siete proyectos que sí los tienen** |
+| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los ocho proyectos que sí los tienen** |
 | `taskhub-react-ci.yml` | TaskHub_React entero: lint, tipos, unitarios, integración con PostgreSQL, *end-to-end* con Playwright, auditoría y despliegue |
 
 Tests que se ejecutan hoy en cada push (las cifras de tests y cobertura se
@@ -147,9 +147,10 @@ cumplir):
 | OmniForge | 115 | pytest sin LLM ni red: parsing de planes, evaluador, memoria, skills, providers, filesystem |
 | GPTDevTeam | 81 | pytest sobre `GPTDevTeam_v2.0.py` (AST, sandbox, validadores, memoria) sin Ollama; el 82.º es de entorno Windows y en el CI de Linux se salta |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
+| motorIndexado | 35 | cargo con la feature `api` activada: unitarios en `tokenizer`, `index` y `search`, y tests de integración para el crawler sobre archivos reales, la CLI (el binario) y el router HTTP |
 | TaskHub_React | 983 | Cuatro capas, incluido navegador real |
 
-Suman **1.739 tests** que se ejecutan en cada push, 756 de ellos en `ci.yml`.
+Suman **1.774 tests** que se ejecutan en cada push, 791 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 

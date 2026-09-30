@@ -125,3 +125,88 @@ impl InvertedIndex {
         self.doc_count += other.doc_count;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn path(nombre: &str) -> PathBuf {
+        PathBuf::from(format!("doc/{nombre}"))
+    }
+
+    #[test]
+    fn nuevo_indice_empieza_vacio() {
+        let indice = InvertedIndex::new();
+        assert_eq!(indice.doc_count(), 0);
+        assert_eq!(indice.term_count(), 0);
+    }
+
+    #[test]
+    fn add_document_indexa_terminos_y_cuenta_documentos() {
+        let mut indice = InvertedIndex::new();
+        indice.add_document(path("a.txt"), "hola mundo hola");
+        assert_eq!(indice.doc_count(), 1);
+        assert_eq!(indice.term_count(), 2);
+
+        let postings = indice.postings("hola").expect("término presente");
+        assert_eq!(postings.len(), 1);
+        assert_eq!(postings.get(&path("a.txt")), Some(&2));
+    }
+
+    #[test]
+    fn add_document_acumula_varios_documentos_por_termino() {
+        let mut indice = InvertedIndex::new();
+        indice.add_document(path("a.txt"), "hola mundo");
+        indice.add_document(path("b.md"), "hola rust");
+        assert_eq!(indice.doc_count(), 2);
+        assert_eq!(indice.term_count(), 3);
+
+        let postings = indice.postings("hola").expect("término presente");
+        assert_eq!(postings.len(), 2);
+        assert_eq!(postings.get(&path("b.md")), Some(&1));
+    }
+
+    #[test]
+    fn postings_normaliza_a_minusculas() {
+        let mut indice = InvertedIndex::new();
+        indice.add_document(path("a.txt"), "Hola");
+        assert!(indice.postings("hola").is_some());
+        assert!(indice.postings("HOLA").is_some());
+    }
+
+    #[test]
+    fn postings_devuelve_none_con_termino_ausente() {
+        let indice = InvertedIndex::new();
+        assert!(indice.postings("inexistente").is_none());
+    }
+
+    #[test]
+    fn merge_suma_documentos_y_frecuencias() {
+        let mut destino = InvertedIndex::new();
+        destino.add_document(path("a.txt"), "hola");
+
+        let mut origen = InvertedIndex::new();
+        origen.add_document(path("a.txt"), "hola mundo");
+
+        destino.merge(origen);
+
+        assert_eq!(destino.doc_count(), 2);
+        assert_eq!(destino.term_count(), 2);
+        let postings = destino.postings("hola").expect("término presente");
+        // El merge suma frecuencias por documento, no las machaca
+        assert_eq!(postings.get(&path("a.txt")), Some(&2));
+    }
+
+    #[test]
+    fn el_indice_hace_roundtrip_con_serde_json() {
+        let mut indice = InvertedIndex::new();
+        indice.add_document(path("a.txt"), "hola mundo");
+
+        let json = serde_json::to_string(&indice).expect("serializable");
+        let recuperado: InvertedIndex = serde_json::from_str(&json).expect("deserializable");
+
+        assert_eq!(recuperado.doc_count(), 1);
+        assert_eq!(recuperado.term_count(), 2);
+        assert!(recuperado.postings("hola").is_some());
+    }
+}
