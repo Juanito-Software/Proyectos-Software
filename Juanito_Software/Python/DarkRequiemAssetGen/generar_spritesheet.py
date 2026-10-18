@@ -110,11 +110,20 @@ DURACION_WALK = 125   # 8 fps
 DURACION_ROLL = 83    # 12 fps
 DURACION_DEATH = 125  # 8 fps
 
-#: Fotogramas por clip del `frames.json` de Unity, heredados de la hoja legacy
-#: de 21 frames: cada vista del idle se queda con 3 y cada vista del walking
-#: con 4. La hoja nueva genera mas (4 y 6 por vista); el importador de Unity
-#: ya estaba calibrado para estos conteos.
-FRAMES_CLIP_UNITY = {"idle": 3, "walking": 4}
+#: Clips del `frames.json` de Unity, en los nombres legacy de carpeta. La hoja
+#: nueva genera todos los fotogramas de cada fila (4, 6, 4 y 5 por vista) y el
+#: importador los recorta enteros: no hay recorte de clip.
+CLIPS_UNITY = ("idle", "walking", "roll", "death")
+
+#: Las cuatro direcciones que consume el juego y la vista fisica de la hoja que
+#: las alimenta. La hoja solo guarda tres vistas; `left` nace espejando la
+#: lateral con `espejar_horizontal`, asi que comparte rectangulos con `right`.
+DIRECCIONES_UNITY = (
+    ("down", "down", False),
+    ("up", "up", False),
+    ("right", "side", False),
+    ("left", "side", True),
+)
 
 #: Rutas.
 RAIZ = Path(__file__).resolve().parent
@@ -1891,7 +1900,7 @@ def construir_prompt_negativo() -> str:
     )
 
 
-def codificar_prompt_negativo(pipe, texto: str) -> tuple:
+def codificar_prompt_negativo(pipe, texto: str, device: str = "cpu") -> tuple:
     """Codifica solo el prompt negativo y devuelve `(neg_embeds, neg_pooled)`.
 
     Es un wrapper de `codificar_prompt` de `generar_sprite` con el prompt
@@ -1899,11 +1908,11 @@ def codificar_prompt_negativo(pipe, texto: str) -> tuple:
     encoding en CPU son exactamente los del helper, sin duplicar esa logica ni
     importar `torch` aqui.
     """
-    _, neg_embeds, _, neg_pooled = gs_base.codificar_prompt(pipe, "", texto)
+    _, neg_embeds, _, neg_pooled = gs_base.codificar_prompt(pipe, "", texto, device)
     return neg_embeds, neg_pooled
 
 
-def codificar_prompt_positivo(pipe, texto: str) -> tuple:
+def codificar_prompt_positivo(pipe, texto: str, device: str = "cpu") -> tuple:
     """Codifica solo el prompt positivo y devuelve `(embeds, pooled)`.
 
     Simetrico de `codificar_prompt_negativo`: el otro lado va vacio porque el
@@ -1911,7 +1920,7 @@ def codificar_prompt_positivo(pipe, texto: str) -> tuple:
     helper de `generar_sprite` es lo que garantiza que el troceado y la medicion
     con los dos tokenizers sean los mismos que en el script de referencia.
     """
-    embeds, _, pooled, _ = gs_base.codificar_prompt(pipe, texto, "")
+    embeds, _, pooled, _ = gs_base.codificar_prompt(pipe, texto, "", device)
     return embeds, pooled
 
 
@@ -2227,9 +2236,10 @@ def cargar_modelo(personaje: str = "sombra_velada"):
     )
     from diffusers.loaders import IPAdapterMixin
 
-    controlnet = ControlNetModel.from_pretrained(
-        CTRLNET_OPENPOSE, torch_dtype=torch.float16, variant="fp16"
-    )
+    # xinsir/controlnet-openpose-sdxl-1.0 solo publica el checkpoint completo
+    # (`diffusion_pytorch_model.safetensors`), sin variante `fp16`; pedirla
+    # devuelve 404. El casteo a float16 lo hace `torch_dtype` al cargar.
+    controlnet = ControlNetModel.from_pretrained(CTRLNET_OPENPOSE, torch_dtype=torch.float16)
     pipe = StableDiffusionXLPipeline.from_pretrained(
         MODELO_SDXL,
         controlnet=controlnet,
@@ -2239,7 +2249,10 @@ def cargar_modelo(personaje: str = "sombra_velada"):
     pipe.load_lora_weights(LORA_PIXEL_ART)
     pipe.fuse_lora()
     # En 0.40 el IP-Adapter se carga con `load_ip_adapter` y se ajusta con
-    # `set_ip_adapter_scale`; `set_ip_adapter` ya no existe.
+    # `set_ip_adapter_scale`; `set_ip_adapter` ya no existe. Con un solo
+    # adaptador la escala es un escalar: `set_ip_adapter_scale` la reparte por
+    # los attn processors. `pipe.image_encoder` aqui es un modulo suelto, no
+    # una lista, asi que no hay nada que multiplicar.
     IPAdapterMixin.load_ip_adapter(
         pipe,
         pretrained_model_name_or_path_or_dict=IP_ADAPTER_REPO,
@@ -2247,13 +2260,29 @@ def cargar_modelo(personaje: str = "sombra_velada"):
         weight_name="ip-adapter-plus_sdxl_vit-h.safetensors",
         image_encoder_folder="models/image_encoder",
     )
-    pipe.set_ip_adapter_scale([IP_ADAPTER_PESO] * len(pipe.image_encoder))
+    pipe.set_ip_adapter_scale(IP_ADAPTER_PESO)
     pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
     pipe.enable_attention_slicing()
-    if hasattr(pipe, "enable_vae_slicing"):
-        pipe.enable_vae_slicing()
-    pipe.enable_vae_tiling()
+    # Desde 0.30 el troceado del VAE cuelga del modulo, no del pipeline:
+    # `pipe.enable_vae_tiling` ya no existe y el `__getattr__` de
+    # `ConfigurationMixin` lo convierte en `AttributeError`.
+    pipe.vae.enable_slicing()
+    pipe.vae.enable_tiling()
     return pipe, controlnet
+
+
+def mover_a_gpu(pipe) -> None:
+    """Coloca el pipeline en la GPU con la politica de `gs_base.configurar_dispositivo`.
+
+    Va DESPUES de `llamador_real`, que es donde se codifican el negativo y la
+    referencia: con el offload activado los codificadores migran entre CPU y GPU
+    en cada llamada y codificar con los pesos a medio camino se vuelve fragil.
+    Sin esta llamada el pipeline se queda en CPU y una imagen de 768 px tardaria
+    minutos.
+    """
+    import torch
+
+    gs_base.configurar_dispositivo(pipe, torch)
 
 
 def llamador_real(
@@ -2268,13 +2297,15 @@ def llamador_real(
     Devuelve una funcion `llamar(frame, seed, control) -> RGB 768x768x3` que ya
     no vuelve a codificar nada: el prompt de cada frame y el negativo comun se
     codifican la primera vez que se usan y se guardan. Sin ese cache, una hoja de
-    21 frames gastaria casi todo su tiempo codificando texto en vez de diffuse,
+    57 frames gastaria casi todo su tiempo codificando texto en vez de diffuse,
     y con 8 GB de VRAM cada eco de mas es un riesgo de OOM.
 
     La referencia se pasa al IP-Adapter UNA vez, antes de cualquier generacion, y
-    en RGB: es lo que espera `set_ip_adapter_image`, y repetirla por frame seria
-    reprocesar el encoder ViT-H 21 veces. A partir de ahi `image=` es solo el
-    mapa de postura del ControlNet.
+    en RGB: el encoder ViT-H no acepta alfa, y repetirla por frame seria
+    reprocesarlo 21 veces. Como diffusers 0.40 quito `set_ip_adapter_image`, lo
+    que se hace es codificarla aqui con `prepare_ip_adapter_image_embeds` y
+    mandar ese tensor ya cocido en cada llamada, en `ip_adapter_image_embeds`.
+    A partir de ahi `image=` es solo el mapa de postura del ControlNet.
 
     El generador de ruido va en CPU a proposito: la semilla de un frame tiene
     que dar la misma imagen este equipo que el otro, y con CUDA el generador
@@ -2283,29 +2314,49 @@ def llamador_real(
     import torch
 
     ruta_ref = Path(referencia) if referencia is not None else RUTA_REFERENCIA
-    if referencia is not None or hasattr(pipe, "set_ip_adapter_image"):
+    embeds_ref = None
+    if referencia is not None or hasattr(pipe, "prepare_ip_adapter_image_embeds"):
         # Sin IP-Adapter cargado el metodo no existe: en ese caso la referencia
         # se ignora en lugar de reventar, que es lo que haria un acceso directo.
         with Image.open(ruta_ref) as abierta:
-            pipe.set_ip_adapter_image(abierta.convert("RGB"))
+            embeds_ref = pipe.prepare_ip_adapter_image_embeds(
+                ip_adapter_image=abierta.convert("RGB"),
+                ip_adapter_image_embeds=None,
+                device=getattr(pipe, "_execution_device", "cpu"),
+                num_images_per_prompt=1,
+                do_classifier_free_guidance=guidance > 1.0,
+            )
 
-    neg_embeds, neg_pooled = codificar_prompt_negativo(pipe, construir_prompt_negativo())
-    embeds_por_frame: dict[str, tuple] = {}
+    cache: dict[str, tuple] = {}
 
     def embeddings_de(frame: Frame) -> tuple:
-        if frame.clave not in embeds_por_frame:
-            embeds_por_frame[frame.clave] = codificar_prompt_positivo(
-                pipe, construir_prompt_frame(personaje, frame)
+        """Devuelve `(positivo, negativo)` del frame, codificados una vez.
+
+        Los dos lados se codifican perezosos y en el dispositivo donde se va a
+        generar, que se mira aqui y no al montar el llamador: `mover_a_gpu` se
+        llama despues, y con el offload puesto los codificadores estan en la GPU.
+        Pedirles entradas en CPU ahi revienta con "Expected all tensors to be on
+        the same device", y el pipeline concatena negativo y positivo ANTES de
+        mudarlos de sitio, asi que tampoco valdria con el negativo en CPU.
+        """
+        if "negativo" not in cache:
+            cache["negativo"] = codificar_prompt_negativo(
+                pipe, construir_prompt_negativo(), str(pipe._execution_device)
             )
-        return embeds_por_frame[frame.clave]
+        if frame.clave not in cache:
+            cache[frame.clave] = codificar_prompt_positivo(
+                pipe, construir_prompt_frame(personaje, frame), str(pipe._execution_device)
+            )
+        return cache[frame.clave], cache["negativo"]
 
     def llamar(frame: Frame, seed: int, control: dict | None = None) -> np.ndarray:
-        embeds, pooled = embeddings_de(frame)
+        (embeds, pooled), (neg_embeds, neg_pooled) = embeddings_de(frame)
         salida = pipe(
             prompt_embeds=embeds,
             negative_prompt_embeds=neg_embeds,
             pooled_prompt_embeds=pooled,
             negative_pooled_prompt_embeds=neg_pooled,
+            ip_adapter_image_embeds=embeds_ref,
             image=control["imagen"] if control else None,
             height=LIENZO,
             width=LIENZO,
@@ -2504,33 +2555,45 @@ def exportar_frames_unity(manifiesto: dict, destino: Path) -> Path:
     """Escribe el `frames.json` que consume el importador de Unity.
 
     No es el mismo formato que `spritesheet.json`: aqui cada clip trae sus
-    vistas, cada vista sus fotogramas, y el recorte se hace por indice
-    (columna) en lugar de por rect, que es lo que el animador necesita.
-    `celda_m` convierte los 128 px de celda a metros de mundo con el PPU.
+    cuatro direcciones (`down`, `up`, `right` y `left`), cada direccion sus
+    fotogramas, y el recorte se hace por indice (columna) en lugar de por
+    rect, que es lo que el animador necesita. `celda_m` convierte los 64 px de
+    celda a unidades de mundo con el PPU.
 
-    Los clips se recortan a `FRAMES_CLIP_UNITY`: la hoja nueva genera mas
-    fotogramas que la legacy (4 de idle y 6 de walking por vista) y el
-    importador ya estaba calibrado para la de 21; se quedan los primeros 3 y 4,
-    que son los que mantienen el numero de fotogramas por clip.
+    La hoja fisica solo tiene tres vistas por animacion: la direccion `left`
+    se sirve desde la misma lateral que `right` con `"espejo": true`, y el
+    importador la voltea con `espejar_horizontal` (`scale.x = -1`). Los clips
+    salen con TODOS los fotogramas de su fila (4, 6, 4 y 5 por direccion); el
+    ritmo (`duracion_ms`) y el bucle (`bucle`) salen del manifiesto, que es
+    donde ya estan calibrados.
     """
+    filas = {(row["anim"], row["dir"]): row for row in manifiesto["rows"]}
+    columna_de = {frame.global_index: frame.columna for frame in MATRIZ}
     celda_m = round(GRID / PPU, 4)
     clips = []
-    for animacion in ("idle", "walking"):
-        duracion = DURACION_IDLE if animacion == "idle" else DURACION_WALK
+    for animacion_legacy in CLIPS_UNITY:
+        animacion = ANIMACION_DESDE_LEGACY.get(animacion_legacy, animacion_legacy)
+        fila_base = filas[(animacion, "down")]
         vistas = []
-        for vista in ("frontal", "trasera", "lateral"):
-            frames = [
-                {"indice": f.indice, "columna": f.columna}
-                for f in MATRIZ
-                if animacion_legacy_de_manifiesto(f.animacion) == animacion
-                and f.vista_legacy == vista
-            ][:FRAMES_CLIP_UNITY[animacion]]
-            vistas.append({"vista": vista, "frames": frames})
+        for direccion, vista_fisica, espejo in DIRECCIONES_UNITY:
+            fila = filas[(animacion, vista_fisica)]
+            primero = fila["frames"][0]
+            vistas.append(
+                {
+                    "vista": VISTA_A_LEGACY[vista_fisica],
+                    "direccion": direccion,
+                    "espejo": espejo,
+                    "frames": [
+                        {"indice": indice_global - primero + 1, "columna": columna_de[indice_global]}
+                        for indice_global in fila["frames"]
+                    ],
+                }
+            )
         clips.append(
             {
-                "nombre": animacion,
-                "duracion_ms": duracion,
-                "bucle": True,
+                "nombre": animacion_legacy,
+                "duracion_ms": round(1000 / fila_base["fps"]),
+                "bucle": fila_base["loop"],
                 "vistas": vistas,
             }
         )
@@ -2581,7 +2644,7 @@ def main(argv: list[str] | None = None) -> int:
     ni pesos. Devuelve el codigo de salida en vez de llamar a `sys.exit`, para
     que las pruebas puedan invocarlo y leer el numero.
     """
-    ap = argparse.ArgumentParser(description="Genera la hoja de 21 frames de Dark Requiem.")
+    ap = argparse.ArgumentParser(description="Genera la hoja de 57 frames de Dark Requiem.")
     ap.add_argument("--personaje", default="sombra_velada")
     ap.add_argument("--pasos", type=int, default=PASOS)
     ap.add_argument("--guidance", type=float, default=GUIDANCE)
@@ -2607,6 +2670,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         pipe, _controlnet = cargar_modelo(args.personaje)
         llamar = llamador_real(pipe, args.personaje, args.pasos, args.guidance, ruta_ref)
+        # El texto y la referencia ya estan codificados: ahora si, a la GPU.
+        mover_a_gpu(pipe)
 
     frames = MATRIZ if args.limite is None else MATRIZ[: args.limite]
     ref = metricas_de_referencia(ruta_ref)

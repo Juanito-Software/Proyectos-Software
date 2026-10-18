@@ -21,7 +21,21 @@ configura asi.
 Unity no lee `spritesheet.json`: recorta por **carpetas** y por `frames.json`.
 Las celdas se guardan en los subdirectorios legacy que el importador espera,
 `idle/frontal/`, `walking/trasera/`…, y `frames.json` describe ppu, pivot y
-los clips (idle 0.167 s, walking 0.125 s) que el juego reproduce.
+los **cuatro clips** que el juego reproduce:
+
+| Clip | Direcciones | Frames/dir | Duración | Bucle |
+|---|---|---|---|---|
+| `idle` | down, up, right, left | 4 | 0.167 s | sí |
+| `walking` | down, up, right, left | 6 | 0.125 s | sí |
+| `roll` | down, up, right, left | 4 | 0.083 s | no |
+| `death` | down, up, right, left | 5 | 0.125 s | no |
+
+La hoja física solo tiene **tres vistas** por animación (`frontal`, `trasera`
+y `lateral`). La dirección `left` se sirve desde la misma lateral que `right`
+con `"espejo": true` en `frames.json`: el importador vuelve a usar la misma
+textura recortada con `scale.x = -1` (equivalente a
+`espejar_horizontal` de `generar_spritesheet.py`). No hace falta generar
+frames dobles para izquierda y derecha.
 
 ## Salida
 
