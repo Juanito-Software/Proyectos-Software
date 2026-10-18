@@ -1,0 +1,19 @@
+Informe final — spritesheet sombras_velada para Unity
+Qué se hizo
+1. generar_spritesheet.py: reescrito exportar_frames_unity → frames.json ahora declara 4 clips (idle, walking, roll, death) × 4 direcciones (down/up/right/left) con duración/bucle reales del manifiesto (sin truncar a FRAMES_CLIP_UNITY, ya eliminado). left reutiliza la fila side con "espejo": true (convención ya testada). Constantes nuevas: CLIPS_UNITY, DIRECCIONES_UNITY.
+2. Tests (método rojo→verde): +1 en tests/test_contrato_unity.py; actualizado el legacy en tests/test_generar_spritesheet.py. 194 passed en la suite final.
+3. DarkRequiem/README.md: tabla de los 4 clips (frames/dir, fps, bucle) y documentación del espejo.
+Generación y salida
+- Comando: .venv\Scripts\python.exe generar_spritesheet.py --falso — 57/57 frames ok.
+- Resultado en salida\sombra_velada\: spritesheet.png 384×768 (12 filas × 6 columnas de 64×64, alfa binario), frames.json (PPU 64, pivot 0.5/0.0), wanderer_sheet.json, previews\ ×8, crudas\ ×768.
+- Animaciones: idle 4f 6fps bucle · walking 6f 8fps bucle · roll 4f 12fps · death 5f 8fps.
+Validación
+- Numérica: geometría declarada, huecos transparentes, IoU consecutiva sin frames idénticos, identidad cromática vs sprite_referencia\sprite_3.png = 1.0; huella SHA de la referencia intacta.
+- Visual: hoja + previews down_idle, side_walk, up_idle (espejo correcto), down_death_3 (colapso reconocible).
+Problemas pendientes / limitaciones reales
+- Con --falso las filas up/side muestran el arte frontal de la referencia (up espejado): el modelo de ensayo no tiene arte de espaldas/perfil. Solo SDXL+ControlNet produce orientaciones reales (identidad aproximada).
+- Sin poses de run en la librería BODY_25; no se inventaron.
+- La carpeta real es sprite_referencia/ (la tarea la llamaba spritereferencia).
+- salida/ está en .gitignore (los outputs no se versionan).
+Importación en Unity
+Sprite Mode Multiple, PPU 64, leer rectángulos desde frames.json (clips[].vistas[]); para espejo: true usar scale.x = -1.

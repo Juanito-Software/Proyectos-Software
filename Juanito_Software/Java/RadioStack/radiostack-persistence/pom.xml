@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -14,6 +15,15 @@
 
     <name>radiostack-persistence</name>
     <description>Persistencia JPA y PostgreSQL de RadioStack</description>
+
+    <!--
+        Mockito 5 usa el mock maker inline por defecto. En Java 21 el
+        auto-attach de Byte Buddy puede fallar, por lo que configuramos
+        mockito-core como agente de la JVM de pruebas.
+    -->
+    <properties>
+        <argLine></argLine>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -50,6 +60,38 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+	
+	<dependency>
+    		<groupId>net.bytebuddy</groupId>
+    		<artifactId>byte-buddy-agent</artifactId>
+    		<scope>test</scope>
+	</dependency>
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -21,6 +21,7 @@
             <artifactId>radiostack-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.radiostack</groupId>
             <artifactId>radiostack-persistence</artifactId>
@@ -52,10 +53,12 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
@@ -99,11 +102,36 @@
 
     <build>
         <plugins>
+            <!-- Expone propiedades de las dependencias resueltas por Maven. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Permite que Mockito use el agente de Byte Buddy en Java 21,
+                evitando depender de la auto-adjuncion dinamica de la JVM.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                        <argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.14.13/byte-buddy-agent-1.14.13.jar</argLine>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
-
 </project>
