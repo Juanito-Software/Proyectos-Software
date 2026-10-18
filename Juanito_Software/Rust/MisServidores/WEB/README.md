@@ -8,14 +8,17 @@ Este proyecto implementa un servidor web funcional para entornos locales, capaz 
 
 ## ¿Qué hace este programa?
 
-El servidor escucha en `0.0.0.0:8080` y responde a las siguientes rutas:
+El servidor escucha en `0.0.0.0:8080` (todas las interfaces; HTTP sin cifrar) y responde a las siguientes rutas:
 
 | Método | Ruta | Respuesta |
 |--------|------|-----------|
-| GET | `/` | Página de inicio HTML |
-| GET | `/hola` | Página HTML "¡Hola desde Rust!" |
-| GET | `/api/saludo` | JSON `{"mensaje":"Hola desde el servidor"}` |
-| Cualquier otra | — | 404 Not Found |
+| GET / HEAD | `/` | Página de inicio HTML |
+| GET / HEAD | `/hola` | Página HTML "¡Hola desde Rust!" |
+| GET / HEAD | `/api/saludo` | JSON `{"mensaje":"Hola desde el servidor"}` |
+| GET / HEAD | Cualquier otra | 404 Not Found |
+| Cualquier otro método | — | 405 Method Not Allowed (`Allow: GET, HEAD`) |
+
+Solo se admiten HTTP/1.0 y HTTP/1.1, con un único objetivo de petición por conexión (sin keep-alive ni pipelining). El cuerpo de petición no se admite: `Content-Length` positivo responde 413, `Transfer-Encoding` responde 501 y cualquier combinación ambigua de ambas cabeceras responde 400.
 
 ---
 
@@ -31,10 +34,15 @@ El servidor escucha en `0.0.0.0:8080` y responde a las siguientes rutas:
 
 ## Detalles de implementación
 
-- **Concurrencia**: una conexión por hilo con `thread::spawn`
-- **Parser HTTP**: lectura línea a línea con `BufReader::read_line`, división de la línea de inicio con `splitn(3, ' ')`, cabeceras con `split_once(": ")`, body con `Content-Length`
-- **`HttpRequest`**: método, path, versión, mapa de cabeceras y body en bytes
-- **`HttpResponse`**: constructores `ok()`, `not_found()` y `error_interno()`; escritura con `write!` y `write_all`
+- **Concurrencia**: un conjunto fijo de trabajadores (`NUM_TRABAJADORES = 8`) con una cola acotada (`sync_channel(CAPACIDAD_COLA = 16)`); al saturarse, la conexión se rechaza cerrando el socket de forma controlada
+- **Parser HTTP**: lectura de líneas byte a byte con terminador CRLF obligatorio y límites explícitos (línea de petición 8 KiB, bloque de cabeceras 16 KiB, 100 cabeceras, URI 2 KiB, plazo de 10 s); se rechazan LF aislados, CR malformados y caracteres de control
+- **Validación de cabeceras**: `Vec<(nombre, valor)>` con nombres en minúsculas y duplicados conservados; se validan token de nombre, OWS en los extremos y ausencia de caracteres de control en el valor
+- **`Host`**: HTTP/1.1 exige exactamente una cabecera `Host` válida (reg-name, IPv4 o IPv6 entre corchetes, puerto opcional); en HTTP/1.0 es opcional
+- **Encuadre de cuerpo**: no se admiten cuerpos; `Content-Length` positivo → 413, `Transfer-Encoding` → 501, combinación ambigua → 400
+- **`PeticionHttp`**: método (`GET`/`HEAD`/otro), ruta, componente de consulta, versión (`HTTP/1.0`/`HTTP/1.1`) y cabeceras validadas
+- **`RespuestaHttp`**: `Content-Length` calculado en bytes (no caracteres), cabeceras en orden estable (vector, no `HashMap`), defensa contra inyección de CR/LF, `Connection: close`
+- **`HEAD`**: comparte el enrutado con `GET`; omite el cuerpo pero conserva el `Content-Length` del cuerpo que habría producido `GET`
+- **Errores de parsing**: mapeo explícito a 400 / 405 / 408 / 413 / 414 / 431 / 500 / 501 / 505 según el tipo de error detectado
 
 ---
 

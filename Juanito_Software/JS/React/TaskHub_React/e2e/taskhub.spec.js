@@ -222,10 +222,21 @@ test.describe('Autenticación', () => {
     await expect(page.getByPlaceholder('Usuario', { exact: true })).not.toBeVisible();
 
     // Y el token guardado ya no es el inventado: se ha renovado de verdad.
-    const tokenActual = await page.evaluate(
-      () => JSON.parse(localStorage.getItem('taskhub_auth')).token,
-    );
-    expect(tokenActual).not.toBe('token-caducado-a-proposito');
+    
+    // Espera a que termine la renovación asíncrona del token.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => JSON.parse(localStorage.getItem('taskhub_auth'))?.token,
+          ),
+        {
+          timeout: 10_000,
+          message: 'El token de acceso debería renovarse automáticamente',
+        },
+      )
+      .not.toBe('token-caducado-a-proposito');
+
   });
 
   test('la renovación rota el token: la cookie cambia', async ({ page }) => {

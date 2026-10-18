@@ -12,8 +12,9 @@ MisServidores/
 │   ├── servidor_ftp.py      # Servidor FTP completo con pyftpdlib
 │   └── README.md            # Instrucciones específicas del servidor FTP
 └── WEB/
-    ├── servidor_web.py      # Servidor HTTP básico con http.server
-    ├── ejecutar_servidor.bat # Lanzador rápido para Windows
+    ├── servidor_web.py      # Servidor HTTP/1.1 escrito desde cero (solo stdlib)
+    ├── test_servidor_web.py # Pruebas unitarias y de integración
+    ├── run.bat              # Lanzador rápido para Windows
     └── README.md            # Instrucciones específicas del servidor web
 ```
 
@@ -28,7 +29,7 @@ MisServidores/
 - Compatible con cualquier cliente FTP estándar (FileZilla, Total Commander, etc.).
 
 ### 🌐 Servidor Web HTTP (`WEB/servidor_web.py`)
-- Servidor HTTP estático basado en el módulo estándar `http.server` de Python.
+- Servidor HTTP/1.1 estático escrito desde cero sobre `socket`, solo con la biblioteca estándar (sin `http.server` ni dependencias).
 - Ideal para compartir archivos en red local o testear páginas HTML estáticas.
 - Lanzamiento instantáneo sin configuración previa.
 
@@ -66,7 +67,7 @@ El servidor arrancará por defecto en el puerto **21** (o el configurado en el s
 ### Servidor Web HTTP
 
 **Opción A - Lanzador automático (Windows):**
-Haz doble clic en `WEB/ejecutar_servidor.bat`.
+Haz doble clic en `WEB/run.bat`.
 
 **Opción B - Desde la consola:**
 ```bash
