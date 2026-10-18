@@ -474,13 +474,20 @@ def trocear_prompt(pipe, texto: str) -> list[str]:
     return trozos
 
 
-def codificar_prompt(pipe, prompt: str, negativo: str):
+def codificar_prompt(pipe, prompt: str, negativo: str, device: str = "cpu"):
     """Codifica el prompt troceado y pega las secuencias en una sola.
 
     Sin esto, un prompt de mas de 77 tokens se trunca en silencio por el final
     y se pierde la ultima instruccion, que aqui es precisamente la del color de
     fondo: la que decide despues que pixeles se borran. Codificar trozo a trozo
     y concatenarlos mantiene el texto entero.
+
+    `device` se puede cambiar porque el orden con el offload importa: con el
+    offload YA activo los pesos de los codificadores estan en la GPU y pedirles
+    entradas en CPU revienta con "Expected all tensors to be on the same
+    device". Codificando antes de activarlo (lo que hace `main`) vale el
+    `"cpu"` de por defecto, que ademas es lo que permite concatenar los trozos
+    sin mudarlos de sitio entre medias.
     """
     import torch
 
@@ -489,11 +496,7 @@ def codificar_prompt(pipe, prompt: str, negativo: str):
         for trozo in trocear_prompt(pipe, texto):
             e, _, p, _ = pipe.encode_prompt(
                 prompt=trozo,
-                # En CPU a proposito: con el offload los codificadores migran
-                # entre CPU y GPU en cada llamada, y los trozos se quedarian en
-                # dispositivos distintos sin poder concatenarlos. El pipeline
-                # los mueve a la GPU al invocarlo.
-                device="cpu",
+                device=device,
                 num_images_per_prompt=1,
                 do_classifier_free_guidance=False,
             )

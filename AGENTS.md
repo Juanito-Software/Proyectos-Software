@@ -143,8 +143,9 @@ archivo es un comando real, invocado por su nombre):
 - `/NewTask <rama>` — prepara una nueva tarea: entrega `git nueva <rama>` (el
   usuario crea la rama), recopila requisitos y espera confirmación de que la
   rama está creada antes de programar; al terminar el desarrollo valida lo que
-  aplique y entrega `git subir` (el alias no recibe rama, sino el método:
-  `squash`/`rebase`/`merge`). **El agente nunca crea la rama.**
+  aplique y entrega **`git subir` sin argumentos** (el alias programa el
+  auto-merge en squash y no recibe el método en este comando). **El agente
+  nunca crea la rama.**
 - `/Write` — registra información relevante de la conversación para que
   `/CierreSesion` la consolide en la memoria persistente del agente (vía
   `$ARGUMENTS`: `message`, `chat` o ninguna).

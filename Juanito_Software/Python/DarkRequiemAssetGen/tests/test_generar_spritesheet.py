@@ -889,9 +889,17 @@ class _TuboFalso:
     def __init__(self):
         self.llamadas = []
         self.ip_images = []
+        # El llamador real codifica el texto donde se va a generar; aqui no hay
+        # GPU, asi que el tubo de mentira dice que es la CPU.
+        self._execution_device = "cpu"
 
-    def set_ip_adapter_image(self, imagen):
-        self.ip_images.append(imagen)
+    def prepare_ip_adapter_image_embeds(
+        self, ip_adapter_image, ip_adapter_image_embeds, device, num_images_per_prompt, do_classifier_free_guidance
+    ):
+        # diffusers 0.40 quito `set_ip_adapter_image`: la referencia se codifica
+        # con esto y el tensor ya cocido viaja en cada llamada.
+        self.ip_images.append(ip_adapter_image)
+        return [f"ip_embeds:{ip_adapter_image.mode}"]
 
     def __call__(self, **kwargs):
         self.llamadas.append(kwargs)
@@ -919,18 +927,21 @@ class _TorchFalso:
 def _parchea_codificadores(monkeypatch):
     """Cambia los dos codificadores por marcadores que cuentan y se nombran.
 
-    Devuelve el registro `{positivos: [...], negativos: n}` para poder
-    comprobar cuantas veces se codifico cada texto. El troceado de verdad ya
-    tiene sus pruebas en `generar_sprite.py`; aqui importa el CUENTO.
+    Devuelve el registro `{positivos: [...], negativos: n, dispositivos: [...]}`
+    para poder comprobar cuantas veces se codifico cada texto y EN QUE
+    dispositivo. El troceado de verdad ya tiene sus pruebas en `generar_sprite.py`;
+    aqui importa el CUENTO y el sitio.
     """
-    registro = {"positivos": [], "negativos": 0}
+    registro = {"positivos": [], "negativos": 0, "dispositivos": []}
 
-    def positivo(pipe, texto):
+    def positivo(pipe, texto, device="cpu"):
         registro["positivos"].append(texto)
+        registro["dispositivos"].append(device)
         return f"embeds:{texto}", f"pooled:{texto}"
 
-    def negativo(pipe, texto):
+    def negativo(pipe, texto, device="cpu"):
         registro["negativos"] += 1
+        registro["dispositivos"].append(device)
         return f"neg_embeds:{texto}", f"neg_pooled:{texto}"
 
     monkeypatch.setattr(gs, "codificar_prompt_positivo", positivo)
@@ -959,17 +970,20 @@ def test_los_pasos_y_la_guia_por_defecto_son_los_del_script_de_referencia():
 def test_codificar_prompt_positivo_pide_el_negativo_vacio(monkeypatch):
     # Delega en el helper de `generar_sprite` con el otro lado VACIO: codificar
     # tambien el negativo aqui seria tirar GPU en algo que el llamador real
-    # hace una sola vez para los 21 frames.
+    # hace una sola vez para los 21 frames. El dispositivo se pasa de largo,
+    # que si no el helper codifica donde no toca.
     vistos = {}
 
-    def codificar(pipe, prompt, negativo):
-        vistos["args"] = (pipe, prompt, negativo)
+    def codificar(pipe, prompt, negativo, device="cpu"):
+        vistos["args"] = (pipe, prompt, negativo, device)
         return ("embeds", "neg_embeds", "pooled", "neg_pooled")
 
     monkeypatch.setattr(gs.gs_base, "codificar_prompt", codificar)
     embeds, pooled = gs.codificar_prompt_positivo("PIPE", "un texto de prueba")
     assert (embeds, pooled) == ("embeds", "pooled")
-    assert vistos["args"] == ("PIPE", "un texto de prueba", "")
+    assert vistos["args"] == ("PIPE", "un texto de prueba", "", "cpu")
+    gs.codificar_prompt_positivo("PIPE", "texto", "cuda:0")
+    assert vistos["args"] == ("PIPE", "texto", "", "cuda:0")
 
 
 def test_el_llamador_real_encoda_el_prompt_de_su_frame_y_el_negativo_compartido(monkeypatch):
@@ -1027,6 +1041,22 @@ def test_el_llamador_real_reutiliza_el_prompt_y_el_negativo_entre_frames(monkeyp
     assert registro["negativos"] == 1, "el negativo es uno para toda la hoja"
 
 
+def test_el_llamador_real_codifica_el_texto_donde_se_genera(monkeypatch):
+    # Ni el positivo ni el negativo pueden quedar en CPU: el pipeline concatena
+    # los dos ANTES de mudarlos al dispositivo de ejecucion, y con el offload
+    # los codificadores ya estan en la GPU cuando se codifica. Pedirles texto en
+    # CPU ahi revienta con "Expected all tensors to be on the same device".
+    pipe = _TuboFalso()
+    llamar, registro = _llamador_real_en_cpu(monkeypatch, pipe)
+    llamar(gs.MATRIZ[0], 1, gs.control_de_frame(gs.MATRIZ[0]))
+    assert registro["dispositivos"] == ["cpu", "cpu"]
+    # Y se leen del tubo en el momento, no al montarlo: `mover_a_gpu` se llama
+    # despues de `llamador_real`.
+    pipe._execution_device = "cuda:0"
+    llamar(gs.MATRIZ[1], 2, gs.control_de_frame(gs.MATRIZ[1]))
+    assert registro["dispositivos"] == ["cpu", "cpu", "cuda:0"]
+
+
 def test_el_llamador_real_acepta_pasos_y_guia_propios(monkeypatch):
     # Lo que llega por `--pasos` y `--guidance` tiene que llegar al pipeline.
     pipe = _TuboFalso()
@@ -1040,14 +1070,19 @@ def test_el_llamador_real_acepta_pasos_y_guia_propios(monkeypatch):
 
 def test_el_llamador_real_pasa_la_referencia_en_rgb_una_sola_vez_al_ip_adapter(monkeypatch):
     # El IP-Adapter procesa la referencia: pasarle una imagen por frame es
-    # repetir ese trabajo 21 veces, y con alfa en vez de RGB
-    # `set_ip_adapter_image` se queja.
+    # repetir ese trabajo 21 veces, y con alfa en vez de RGB el encoder ViT-H
+    # se queja. Ademas el tensor cocido tiene que LLEGAR: codificarlo y no
+    # mandarlo seria dejar la hoja sin referencia sin decirselo a nadie.
     pipe = _TuboFalso()
     llamar, _ = _llamador_real_en_cpu(monkeypatch, pipe)
     for frame in gs.MATRIZ[:2]:
         llamar(frame, 1, gs.control_de_frame(frame))
     assert len(pipe.ip_images) == 1
     assert pipe.ip_images[0].mode == "RGB"
+    assert [llamada["ip_adapter_image_embeds"] for llamada in pipe.llamadas] == [
+        ["ip_embeds:RGB"],
+        ["ip_embeds:RGB"],
+    ]
 
 
 # --- QC temporal: el balanceo tiene que verse en la hoja, no solo en la celda
@@ -1237,7 +1272,7 @@ def test_el_manifiesto_json_lleva_la_misma_hoja_que_la_imagen(tmp_path):
     assert json.loads(ruta.read_text(encoding="utf-8"))["frames"][0]["rect"]["w"] == gs.GRID
 
 
-def test_frames_unity_describe_ppu_pivot_y_los_dos_clips(tmp_path):
+def test_frames_unity_describe_ppu_pivot_y_los_cuatro_clips(tmp_path):
     # Unity no lee `spritesheet.json`: lee `frames.json` con su propio formato
     # (ppu, pivot y clips). Sin esto el importador no tiene nada que cortar.
     resultados = _resultados_completos()
@@ -1250,13 +1285,21 @@ def test_frames_unity_describe_ppu_pivot_y_los_dos_clips(tmp_path):
     assert datos["pivot"] == {"x": 0.5, "y": 0.0}
     assert datos["hoja"] == "spritesheet"
     clips = {c["nombre"]: c for c in datos["clips"]}
-    assert set(clips) == {"idle", "walking"}
+    assert set(clips) == {"idle", "walking", "roll", "death"}
+    # Fotogramas por vista (four directions: down, up, right, left).
+    frames = {"idle": 4, "walking": 6, "roll": 4, "death": 5}
+    duraciones = {
+        "idle": gs.DURACION_IDLE,
+        "walking": gs.DURACION_WALK,
+        "roll": gs.DURACION_ROLL,
+        "death": gs.DURACION_DEATH,
+    }
     for nombre, clip in clips.items():
-        assert clip["bucle"] is True
-        assert clip["duracion_ms"] == (gs.DURACION_IDLE if nombre == "idle" else gs.DURACION_WALK)
-        # Tres vistas (frontal, trasera, lateral) y 9 y 12 fotogramas.
-        assert len(clip["vistas"]) == 3
-        assert sum(len(v["frames"]) for v in clip["vistas"]) == (9 if nombre == "idle" else 12)
+        assert clip["duracion_ms"] == duraciones[nombre]
+        assert clip["bucle"] is (nombre in ("idle", "walking"))
+        # Cuatro direcciones: las tres vistas fisicas mas la lateral espejada.
+        assert len(clip["vistas"]) == 4
+        assert sum(len(v["frames"]) for v in clip["vistas"]) == 4 * frames[nombre]
 
 
 def test_exportar_todo_deja_la_carpeta_lista_para_unity(tmp_path):

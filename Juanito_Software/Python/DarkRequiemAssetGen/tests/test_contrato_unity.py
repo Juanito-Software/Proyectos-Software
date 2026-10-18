@@ -398,6 +398,42 @@ def test_la_vista_lateral_se_espeja_por_codigo_para_izquierda_y_derecha():
     assert np.array_equal(espejo, original.imagen[:, ::-1])
 
 
+def test_el_frames_json_de_unity_declara_los_cuatro_clips_y_las_cuatro_direcciones(tmp_path):
+    """`frames.json` es lo que Unity lee: los cuatro clips con sus cuatro
+    direcciones. La hoja fisica solo guarda tres vistas; `left` nace del
+    espejo de la lateral (`espejo: true`) y por eso comparte rectangulos con
+    `right`."""
+    ruta = gs.exportar_frames_unity(gs.construir_manifiesto(_resultados_completos()), tmp_path)
+    datos = json.loads(ruta.read_text(encoding="utf-8"))
+    clips = {c["nombre"]: c for c in datos["clips"]}
+    assert set(clips) == {"idle", "walking", "roll", "death"}
+
+    frames_por_clip = {"idle": 4, "walking": 6, "roll": 4, "death": 5}
+    duracion_por_clip = {
+        "idle": gs.DURACION_IDLE,
+        "walking": gs.DURACION_WALK,
+        "roll": gs.DURACION_ROLL,
+        "death": gs.DURACION_DEATH,
+    }
+    bucle_por_clip = {"idle": True, "walking": True, "roll": False, "death": False}
+    for nombre, clip in clips.items():
+        assert clip["duracion_ms"] == duracion_por_clip[nombre], nombre
+        assert clip["bucle"] is bucle_por_clip[nombre], nombre
+        assert [(v["direccion"], v["vista"], v["espejo"]) for v in clip["vistas"]] == [
+            ("down", "frontal", False),
+            ("up", "trasera", False),
+            ("right", "lateral", False),
+            ("left", "lateral", True),
+        ], nombre
+        for vista in clip["vistas"]:
+            assert len(vista["frames"]) == frames_por_clip[nombre], (nombre, vista["direccion"])
+        # La direccion izquierda reutiliza los rectangulos de la derecha:
+        # el importador solo voltea la imagen, no recorta otra celda.
+        derecha = clip["vistas"][2]["frames"]
+        izquierda = clip["vistas"][3]["frames"]
+        assert derecha == izquierda, nombre
+
+
 # --- CLI ------------------------------------------------------------------
 
 

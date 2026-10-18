@@ -7,10 +7,6 @@ Preparar programas 1 a 1 añadiendo build.bat
 
 Lenguaje + SO de 0
 
-mejoras en servidores FTP y WEB en python y rust
-
-CI/CD
-
 Añadir metadatos CV
 
 Terminar la version de Python y de Java de SpringlessEasyBatcher

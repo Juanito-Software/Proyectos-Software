@@ -818,14 +818,15 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Rust: tests del motor de indexación (puede llegar a ser el patrón del resto
-  # de proyectos Rust que aparezcan).
+  # Rust: tests de los dos proyectos Rust con suite propia. Cada proyecto
+  # declara en la matriz su `proyecto`, su `minimo` y sus `banderas` de cargo.
   #
   # motorIndexado tiene la feature opcional `api` (axum + tokio), que los otros
   # tests no ejercitan si cargo corre sin banderas: sin `--features api` el
   # módulo api no se compila y sus 5 tests desaparecen del recuento en silencio,
   # por eso el comando la activa. Es el mismo motivo por el que Node/Python
-  # exponen una marca de tests con base de datos.
+  # exponen una marca de tests con base de datos. FTP Server no tiene features
+  # y declara banderas vacías.
   #
   # La cuenta NO sale de un informe JUnit, porque cargo no genera uno: sale de
   # `cargo test -- --list`, que es la API estable que el propio harness expone
@@ -841,6 +842,19 @@ jobs:
   rust-test:
     name: Rust · tests
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - proyecto: Juanito_Software/Rust/motorIndexado
+            # Suelo de tests esperados. Ver el paso de comprobación.
+            minimo: 35
+            banderas: --features api
+          - proyecto: Juanito_Software/Rust/MisServidores/FTP
+            # 26 unitarios (src/main.rs) + 24 de integración
+            # (tests/sesiones_ftp.rs): solo std, sin dependencias.
+            minimo: 50
+            banderas: ""
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
@@ -852,13 +866,13 @@ jobs:
           toolchain: stable
 
       - name: cargo test
-        working-directory: Juanito_Software/Rust/motorIndexado
-        run: cargo test --features api
+        working-directory: ${{ matrix.proyecto }}
+        run: cargo test ${{ matrix.banderas }}
 
       - name: Comprobar que se han ejecutado los tests esperados
-        working-directory: Juanito_Software/Rust/motorIndexado
+        working-directory: ${{ matrix.proyecto }}
         env:
-          MINIMO: 35
+          MINIMO: ${{ matrix.minimo }}
         run: |
           set -euo pipefail
 
@@ -866,7 +880,7 @@ jobs:
           # una línea "nombre: test" por test. La alternativa de parsear la
           # línea final "N passed" es justo el tipo de salida legible que los
           # demás jobs evitan, porque cambia de plataforma en plataforma.
-          total=$(cargo test --features api -- --list 2>/dev/null | grep -c ': test$')
+          total=$(cargo test ${{ matrix.banderas }} -- --list 2>/dev/null | grep -c ': test$')
 
           echo "Tests ejecutados: $total (mínimo esperado: $MINIMO)"
 

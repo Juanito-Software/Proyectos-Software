@@ -1,30 +1,57 @@
-1. Compilación (release)
+1. Variables de entorno obligatorias (el servidor NO arranca sin credenciales)
+
+Windows (PowerShell):
+  $env:FTP_USUARIO = "juan"
+  $env:FTP_CLAVE   = "tu_clave"
+
+Windows (cmd):
+  set FTP_USUARIO=juan
+  set FTP_CLAVE=tu_clave
+
+Linux/macOS:
+  export FTP_USUARIO=juan FTP_CLAVE=tu_clave
+
+Variables opcionales (ver README.md para el detalle y los valores por defecto):
+  FTP_HOST, FTP_PORT, FTP_ROOT, FTP_MAX_CLIENTS, FTP_MAX_UPLOAD_BYTES,
+  FTP_MAX_COMMAND_BYTES, FTP_CONTROL_TIMEOUT, FTP_DATA_CONNECT_TIMEOUT,
+  FTP_DATA_TIMEOUT, FTP_MAX_LOGIN_ATTEMPTS, FTP_PASV_ADDRESS
+
+--------------------------------------------------------------------------------
+
+2. Compilación (release)
 
 cargo build --release
 
 --------------------------------------------------------------------------------
 
-2. Ejecución del servidor
+3. Ejecución del servidor
 
 Desde PowerShell:
 
 cd "d:\Proyectos\Proyectos-Software\Juanito_Software\Rust\MisServidores\FTP"
 .\target\release\ftp_server.exe
 
---------------------------------------------------------------------------------
-
 Desde CMD:
 
 cd /d "d:\Proyectos\Proyectos-Software\Juanito_Software\Rust\MisServidores\FTP"
 target\release\ftp_server.exe
 
+Por defecto escucha en 127.0.0.1:2121 y usa el directorio storage/ (junto al
+binario) como raíz FTP. El arranque imprime la raíz canónica y los límites.
+
 --------------------------------------------------------------------------------
 
-3. Conexión desde cliente FTP (ej: FileZilla)
+4. Conexión desde cliente FTP (ej: FileZilla)
 
-Host: 127.0.0.1
+Host: 127.0.0.1 (o la IP LAN + FTP_PASV_ADDRESS si hay NAT)
 Puerto: 2121
-Usuario: cualquiera
-Contraseña: cualquiera
+Usuario: el de FTP_USUARIO
+Contraseña: la de FTP_CLAVE
 Modo: PASV (pasivo)
 
+--------------------------------------------------------------------------------
+
+5. Tests
+
+cargo test
+cargo clippy --all-targets -- -D warnings
