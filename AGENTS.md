@@ -1,5 +1,34 @@
 # AGENTS.md
 
+## Coordinación multiagente
+
+### Contexto compartido
+
+- Al igual que `Agents.md` contiene las instrucciones y el contexto general de los proyectos en los que hemos trabajado, `Agents_Shared_Context.md` es el documento destinado a coordinar las tareas multiagente.
+- Todos los agentes DEBEN consultar `Agents_Shared_Context.md` antes de comenzar a trabajar cuando se haya anunciado explícitamente una tarea multiagente.
+- El contexto compartido DEBE utilizarse para comprender los objetivos de la tarea, las asignaciones de agentes, las responsabilidades, las restricciones, las dependencias y los requisitos de coordinación.
+- Cada agente DEBE actuar dentro del propósito y las responsabilidades que se le hayan asignado explícitamente. Los agentes NO DEBEN asumir responsabilidades asignadas a otros agentes ni modificar partes del proyecto ajenas a su cometido sin autorización.
+- Los agentes DEBEN mantener actualizado el contexto compartido cuando su trabajo genere información relevante para otros agentes, incluidos hallazgos, decisiones, interfaces, dependencias, bloqueos y estado de finalización.
+- Los agentes DEBEN respetar las decisiones y los acuerdos documentados en el contexto compartido. Si surge un conflicto, una ambigüedad o una dependencia, DEBEN documentarlo y coordinarse antes de realizar cambios que puedan entrar en conflicto.
+- Los agentes NO DEBEN sobrescribir ni eliminar información aportada por otros agentes, salvo que el cambio sea necesario y coherente con las reglas de coordinación.
+
+### Reglas de activación
+
+- **La coordinación multiagente está desactivada por defecto.** No hay ninguna tarea multiagente activa a menos que el usuario la anuncie explícitamente.
+- El usuario indicará expresamente cuándo una tarea requiere coordinación multiagente y definirá, o autorizará la definición de, el propósito de cada agente.
+- Hasta que se anuncie una tarea multiagente, los agentes DEBEN seguir las instrucciones habituales del proyecto y NO DEBEN iniciar flujos de trabajo multiagente ni inventar asignaciones de agentes.
+- Una vez anunciada una tarea multiagente, `Agents_Shared_Context.md` se convierte en el documento de referencia principal para coordinar dicha tarea, siempre sujeto a las instrucciones de mayor prioridad del proyecto y a las indicaciones explícitas del usuario.
+- Cada agente DEBE leer las responsabilidades que tiene asignadas antes de actuar y limitar su trabajo al ámbito que le corresponda.
+- Cuando finalice una tarea multiagente, los agentes DEBEN dejar el contexto compartido en un estado que refleje fielmente las decisiones finales, el trabajo completado, los problemas pendientes y la información relevante para la transferencia de responsabilidades.
+
+### Resolución de conflictos
+
+- Las instrucciones explícitas del usuario tienen prioridad sobre el contenido del contexto compartido.
+- Las instrucciones generales del proyecto tienen prioridad sobre cualquier instrucción contradictoria del contexto compartido.
+- Si un agente no puede determinar el propósito que tiene asignado, encuentra instrucciones contradictorias o detecta un conflicto con el trabajo de otro agente, DEBE solicitar una aclaración o documentar el bloqueo en lugar de realizar suposiciones.
+
+---
+
 Monorepo personal (© Juanito Software): ~50 proyectos heterogéneos en
 `Juanito_Software/<lenguaje>/…`; la mayoría son experimentos sin CI. Todo se
 escribe y se comenta en **español**.
