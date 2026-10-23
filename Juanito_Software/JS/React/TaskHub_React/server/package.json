@@ -31,10 +31,10 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.14.0",
     "@types/pg": "^8.23.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "tsx": "^4.19.2",
     "typescript": "^5.5.4",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "qs": "6.16.0"
