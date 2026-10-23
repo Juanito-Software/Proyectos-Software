@@ -5,7 +5,6 @@ agent: build
 
 ---
 
-Actualiza el CV profesional de Juan Bernáldez a partir del estado real del repositorio `Proyectos-Software`. No es un comando del shell ni de git: se invoca en el chat con `/ActualizarCV`.
 
 Al ejecutarlo combina:
 
