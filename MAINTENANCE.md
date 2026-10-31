@@ -79,6 +79,17 @@ Convención de estados:
   backend + 103 frontend— y Angular 21. _Fuente: 2026-09-11 (noche), 2026-09-18
   y 2026-09-19 → resuelto 2026-09-19._
 
+## BatchProcessor
+
+- [ ] **Importar un CSV con ids a una tabla con datos sobrescribe filas.** El
+  CSV trae la columna `id`, la entidad usa `IDENTITY` y `JpaItemWriter` hace
+  `merge`: un id del CSV que coincida con una fila existente (o con una recién
+  insertada en el mismo job) se **actualiza** en vez de insertarse, sin aviso.
+  Afecta a `GenericEntity` (y en principio a `Persona`). Decisión de producto
+  pendiente: ignorar los ids del CSV (insertar siempre) o tratarlos como clave
+  real (upsert explícito). _Fuente: 2026-10-31, fallo intermitente de
+  `JobCsvADatabaseTest` en la rama `IncrementarTestsCI`._
+
 ## Seguridad y dependencias
 
 - [x] **44 vulnerabilidades sin verificar por API.** GitHub informó de «44
@@ -327,6 +338,24 @@ con la primera ejecución del CI.
   CI; añadido junto con los nuevos. Total 2.131, de ellos 1.148 en `ci.yml`;
   trece proyectos con tests.
 - `monorepo-ok` depende ahora también de `forge-test`.
+
+### Tres fallos ajenos que bloqueaban la PR
+
+Ninguno lo causaba esta rama, pero los tres tumbaban el CI:
+
+- **TaskHub_React · auditoría (server):** aviso alto nuevo en `body-parser`
+  (GHSA-27r3-jxmh-p828). `npm audit fix` → `body-parser 1.20.9`,
+  `express 4.22.3`. Quedan 3 moderadas de `qs 6.16.0` sin arreglo dentro del
+  rango de `express`; no bloquean (la política corta en altas).
+- **TaskHub_React · auditoría (client):** varios avisos altos en `undici`
+  8.11.2, que llega como dependencia de desarrollo vía `jsdom`. `npm audit fix`
+  dentro de `^8.9.0`.
+- **BatchProcessor · `JobCsvADatabaseTest` (7 filas en vez de 10):** dependía
+  del orden de los tests. `deleteAll()` no reinicia el contador `IDENTITY`; si
+  el test anterior dejó el contador en 4, los ids 1..3 del CSV se insertan como
+  4..6 y los ids 4..6 del CSV coinciden con ellos y se actualizan. El test
+  reinicia ahora el contador (`ALTER TABLE … RESTART WITH 1`). El bug de fondo
+  queda en el ToDo (sección BatchProcessor).
 
 ---
 

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
@@ -43,10 +44,23 @@ class JobCsvADatabaseTest {
     @Autowired
     private GenericRepository<GenericEntity, Long> repositorio;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Test
     @DisplayName("Las diez filas del CSV de ejemplo acaban guardadas en la base de datos")
     void elCsvDeEjemploAcabaEnLaBaseDeDatos() {
         repositorio.deleteAll();
+        // deleteAll() vacia la tabla pero NO reinicia el contador IDENTITY.
+        // El CSV trae ids 1..10 y JpaItemWriter hace merge: si otro test de la
+        // misma JVM ya inserto filas (p. ej. 3, contador en 4), los ids 1..3 se
+        // insertan como 4..6 y los ids 4..6 del CSV coinciden con ellas y se
+        // ACTUALIZAN en vez de insertarse -> 7 filas. El resultado dependia del
+        // orden de los tests (Surefire usa el del sistema de ficheros). Se
+        // reinicia el contador para que el test no dependa de lo que corrio
+        // antes. El problema de fondo (importar un CSV con ids sobre una tabla
+        // con datos sobrescribe filas) queda anotado en MAINTENANCE.md.
+        jdbcTemplate.execute("ALTER TABLE genericentity ALTER COLUMN id RESTART WITH 1");
 
         ResponseEntity<String> respuesta = controlador.runBatchJob(Map.of(
                 "reader", "csvItemReader",
