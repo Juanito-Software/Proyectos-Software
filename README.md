@@ -130,7 +130,7 @@ Dos workflows corren en cada *pull request* y en cada push a `main`:
 
 | Workflow | Qué cubre |
 | --- | --- |
-| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los ocho proyectos que sí los tienen** |
+| `ci.yml` | Todo el monorepo: sintaxis de Python y JS, JSON y YAML bien formados, un guardián de patrones ya corregidos, compilación de los proyectos Maven sin tests, y **los tests de los trece proyectos que sí los tienen** |
 | `taskhub-react-ci.yml` | TaskHub_React entero: lint, tipos, unitarios, integración con PostgreSQL, *end-to-end* con Playwright, auditoría y despliegue |
 
 Tests que se ejecutan hoy en cada push (las cifras de tests y cobertura se
@@ -148,9 +148,14 @@ cumplir):
 | GPTDevTeam | 81 | pytest sobre `GPTDevTeam_v2.0.py` (AST, sandbox, validadores, memoria) sin Ollama; el 82.º es de entorno Windows y en el CI de Linux se salta |
 | gym-app | 41 | PHPUnit sobre SQLite en memoria |
 | motorIndexado | 35 | cargo con la feature `api` activada: unitarios en `tokenizer`, `index` y `search`, y tests de integración para el crawler sobre archivos reales, la CLI (el binario) y el router HTTP |
+| MisServidores · FTP (Rust) | 50 | cargo, solo std: 26 unitarios y 24 de integración con sesiones FTP reales |
+| MisServidores · WEB (Rust) | 69 | cargo, solo std: unitarios del parser y las respuestas, e integración contra un servidor real en 127.0.0.1 |
+| MisServidores · FTP (Python) | 54 | pytest sobre la suite unittest, solo stdlib: unitarios y sesiones FTP reales |
+| MisServidores · WEB (Python) | 109 | pytest sobre la suite unittest, solo stdlib; el 110.º (permisos denegados) se salta si el proceso corre como root |
+| Forge (C) | 75 | `tests/test_forge.ps1` en Windows (MSYS2 UCRT64): empaquetar, validar y extraer FGA1/FGA2, y rechazos de rutas peligrosas, dispositivos reservados y junctions |
 | TaskHub_React | 983 | Cuatro capas, incluido navegador real |
 
-Suman **1.774 tests** que se ejecutan en cada push, 791 de ellos en `ci.yml`.
+Suman **2.131 tests** que se ejecutan en cada push, 1.148 de ellos en `ci.yml`.
 
 ### Dos comprobaciones obligatorias, y por qué
 

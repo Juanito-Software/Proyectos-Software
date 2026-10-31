@@ -707,9 +707,14 @@ jobs:
   # contar los ficheros de MetaGPT vendorizado. Cada proyecto declara en la
   # matriz sus `requisitos` (con `-r` por fichero) y su `ruta_tests`.
   #
-  # No hace falta base de datos en ninguno de los tres: TaskHub monta una
-  # SQLite en memoria por test (StaticPool), y las otras dos suites no tocan
-  # red ni LLM.
+  # No hace falta base de datos en ninguno: TaskHub monta una SQLite en
+  # memoria por test (StaticPool), y las demás suites no tocan red ni LLM.
+  #
+  # MisServidores (FTP y WEB) son solo stdlib: sus requirements.txt están
+  # vacíos y la suite es unittest, que pytest recoge sin cambios. Declaran un
+  # requirements-dev.txt con pytest y nada más. Levantan sus servidores en
+  # 127.0.0.1 con puerto 0 (efímero), así que no chocan entre sí ni con el
+  # runner.
   # ---------------------------------------------------------------------------
   python-test:
     name: Python · tests
@@ -746,6 +751,17 @@ jobs:
             # quisiera proteger también el caso Windows, el suelo subiría a 82
             # y la suite tendría que ejecutarse en un runner Windows.
             ruta_tests: tests
+          - proyecto: Juanito_Software/Python/MisServidores/FTP
+            # test_servidor_ftp.py: unitarios + sesiones FTP reales.
+            minimo: 54
+            requisitos: -r requirements-dev.txt
+          - proyecto: Juanito_Software/Python/MisServidores/WEB
+            # 110 tests en test_servidor_web.py. El suelo es 109: el de
+            # permisos denegados se salta si el proceso corre como root (el
+            # sistema no aplica la denegación), y así el suelo no depende de
+            # con qué usuario corra el runner.
+            minimo: 109
+            requisitos: -r requirements-dev.txt
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -818,15 +834,15 @@ jobs:
           fi
 
   # ---------------------------------------------------------------------------
-  # Rust: tests de los dos proyectos Rust con suite propia. Cada proyecto
+  # Rust: tests de los proyectos Rust con suite propia. Cada proyecto
   # declara en la matriz su `proyecto`, su `minimo` y sus `banderas` de cargo.
   #
   # motorIndexado tiene la feature opcional `api` (axum + tokio), que los otros
   # tests no ejercitan si cargo corre sin banderas: sin `--features api` el
   # módulo api no se compila y sus 5 tests desaparecen del recuento en silencio,
   # por eso el comando la activa. Es el mismo motivo por el que Node/Python
-  # exponen una marca de tests con base de datos. FTP Server no tiene features
-  # y declara banderas vacías.
+  # exponen una marca de tests con base de datos. Los servidores FTP y WEB no
+  # tienen features y declaran banderas vacías.
   #
   # La cuenta NO sale de un informe JUnit, porque cargo no genera uno: sale de
   # `cargo test -- --list`, que es la API estable que el propio harness expone
@@ -854,6 +870,11 @@ jobs:
             # 26 unitarios (src/main.rs) + 24 de integración
             # (tests/sesiones_ftp.rs): solo std, sin dependencias.
             minimo: 50
+            banderas: ""
+          - proyecto: Juanito_Software/Rust/MisServidores/WEB
+            # 69 tests en src/main.rs (unitarios + integración contra un
+            # servidor real en 127.0.0.1): solo std, sin dependencias.
+            minimo: 69
             banderas: ""
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -892,6 +913,92 @@ jobs:
           if [ "$total" -gt "$MINIMO" ]; then
             echo "::notice::Hay $total tests y el mínimo declarado es $MINIMO. Sube 'minimo' para que la nueva cobertura quede protegida."
           fi
+
+  # ---------------------------------------------------------------------------
+  # C: tests de Forge (formato de archivo FGA1/FGA2).
+  #
+  # Forge se desarrolla y se prueba en Windows (MSYS2 UCRT64 + GCC), y su suite
+  # es un script de PowerShell (tests/test_forge.ps1) que ejercita el ejecutable
+  # de verdad: empaqueta, valida y extrae, y comprueba los rechazos de seguridad
+  # —rutas peligrosas, nombres de dispositivo reservados, junctions—, que solo
+  # tienen sentido en Windows. Por eso este es el único job en windows-latest.
+  #
+  # No se usa ninguna acción de terceros para el compilador: la imagen de
+  # Windows trae MSYS2 en C:\msys64, y basta con instalar con pacman el GCC de
+  # UCRT64 y make. Así no hay otra acción más que fijar a SHA.
+  #
+  # `make clean all` y no `make`: libforge.a está versionado en el repositorio y
+  # tras el checkout todos los ficheros tienen la misma fecha, así que make
+  # podría dar la librería por buena y enlazar la versionada en vez de compilar
+  # el código de la PR.
+  #
+  # El script se lanza con pwsh directamente, no con `make test` (que llama a
+  # powershell.exe): así su salida queda en este paso y de ella sale la cuenta.
+  # Ante el primer fallo el script lanza una excepción y pwsh sale con código
+  # distinto de cero, así que el paso falla solo; el suelo cubre el otro caso,
+  # que desaparezcan comprobaciones sin que nada falle.
+  # ---------------------------------------------------------------------------
+  forge-test:
+    name: C · Forge tests
+    runs-on: windows-latest
+    env:
+      PROYECTO: Juanito_Software/C/Forge
+      # Suelo de comprobaciones esperadas: 52 llamadas a Assert-* más los tres
+      # bucles de rechazos (10 rutas peligrosas, 12 nombres de dispositivo y 4
+      # componentes con punto/espacio final). Ver el paso de comprobación.
+      MINIMO: 75
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Instalar GCC y make (MSYS2 UCRT64)
+        shell: pwsh
+        run: |
+          C:\msys64\usr\bin\pacman.exe -Sy --noconfirm --needed mingw-w64-ucrt-x86_64-gcc make
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Compilar
+        # Shell de login de MSYS2 en UCRT64: el mismo entorno que el README.
+        shell: C:\msys64\usr\bin\bash.exe --login -eo pipefail {0}
+        env:
+          MSYSTEM: UCRT64
+          CHERE_INVOKING: "1"
+        run: |
+          cd "$PROYECTO"
+          make clean all
+
+      - name: Tests (tests/test_forge.ps1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          # Write-Host del proceso hijo llega como stdout y Tee-Object lo guarda.
+          pwsh -NoProfile -File "$env:PROYECTO/tests/test_forge.ps1" |
+            Tee-Object -FilePath forge-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Comprobar que se han ejecutado los tests esperados
+        shell: pwsh
+        run: |
+          # La cuenta sale de la línea de resumen que imprime el propio script
+          # («Pruebas superadas: N»), que suma uno por cada Assert-* superado.
+          $linea = Select-String -Path forge-tests.log -Pattern 'Pruebas superadas:\s*(\d+)' |
+            Select-Object -Last 1
+          if (-not $linea) {
+            Write-Host "::error::El script de Forge no ha impreso su resumen: no ha terminado."
+            exit 1
+          }
+          $total = [int]$linea.Matches[0].Groups[1].Value
+          $minimo = [int]$env:MINIMO
+
+          Write-Host "Tests ejecutados: $total (mínimo esperado: $minimo)"
+
+          if ($total -lt $minimo) {
+            Write-Host "::error::Se esperaban al menos $minimo tests y se han ejecutado $total. Si la bajada es intencionada, ajusta MINIMO en el job forge-test."
+            exit 1
+          }
+
+          if ($total -gt $minimo) {
+            Write-Host "::notice::Hay $total tests y el mínimo declarado es $minimo. Sube MINIMO para que la nueva cobertura quede protegida."
+          }
 
   # ---------------------------------------------------------------------------
   # Puerta final: un único nombre del que colgar la regla de la rama principal.
@@ -933,6 +1040,7 @@ jobs:
       - php-test
       - python-test
       - rust-test
+      - forge-test
     # `if: always()` es imprescindible: sin él, este job se salta cuando alguno
     # de los anteriores falla, y un job saltado NO cuenta como fallo para la
     # protección de rama. La puerta quedaría en gris y la PR podría fusionarse
