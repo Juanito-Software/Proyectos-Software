@@ -194,8 +194,8 @@ Estado actual:
 | --- | --- |
 | Análisis de código (CodeQL) | **0 abiertas** de 256 · las diez familias de problemas corregidas |
 | Escaneo de secretos | Revisado · credenciales expuestas retiradas y revocadas |
-| Dependabot (npm, Maven) | Saneado · quedan alertas bloqueadas aguas arriba, deliberadamente abiertas |
-| Dependabot (pip) | Saneado · 8 alertas, todas `torch` de FPS-AI-Toolkit, excluidas a propósito (stack de PyTorch gestionado a mano, ver `dependabot.yml`) |
+| Dependabot (npm, Composer, Maven) | Saneado (2026-10-31) · corregidas todas las alertas con parche; quedan 5 de npm bloqueadas aguas arriba y 2 de Maven pendientes de migrar a JasperReports 7, documentadas en `MAINTENANCE.md` |
+| Dependabot (pip) | Saneado (2026-10-31) · PyJWT, Werkzeug, Pillow, filelock y fsspec corregidos; quedan 8 alertas, todas `torch` de FPS-AI-Toolkit, excluidas a propósito (stack de PyTorch gestionado a mano, ver `dependabot.yml`) |
 
 De las 256 alertas de análisis de código, la inmensa mayoría se cerró porque el
 código dejó de tener el problema, no por descarte manual.

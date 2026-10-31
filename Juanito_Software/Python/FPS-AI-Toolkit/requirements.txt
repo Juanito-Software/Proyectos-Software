@@ -4,7 +4,7 @@
 
 numpy==1.26.4
 opencv-python==4.13.0.92
-Pillow==12.3.0
+Pillow==13.0.0
 mss==10.2.0
 # dxcam: captura de pantalla rapida en Windows. El codigo la importaba
 # (MultifuncionFPS.py) pero faltaba en requirements, asi que una instalacion
@@ -61,8 +61,8 @@ PyYAML==6.0.3
 typing_extensions==4.15.0
 sympy==1.13.1
 networkx==3.6.1
-filelock==3.29.0
-fsspec==2026.4.0
+filelock==4.2.5
+fsspec==2026.9.0
 
 # Módulos locales (no PyPI; mantenlos en tu repo)
 # FloatTrans
