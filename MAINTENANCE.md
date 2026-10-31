@@ -104,11 +104,28 @@ Convención de estados:
   de FPS-AI-Toolkit, excluidas a propósito por `dependabot.yml` (el stack de
   PyTorch se gestiona a mano con el índice CUDA). _Fuente: README.md (tabla de
   mantenimiento) → resuelto 2026-09-19 (rama `UpgradeDocs`)._
-- [ ] **Vulnerabilidades corregibles (npm/Maven con parche).** Bloque G (alta):
+- [x] **Vulnerabilidades corregibles (npm/Maven con parche).** Bloque G (alta):
   corregir las alertas que tienen parche disponible y dejar documentadas las que
   no lo tienen (`extract-zip` y `torch ≤ 2.6.0`). Punto de partida en el análisis
-  del 2026-09-19 (44 abiertas: 16 high, 22 medium, 6 low). _Bloque G. Fuente:
-  2026-09-19 (rama `UpgradeDocs`)._
+  del 2026-09-19 (44 abiertas: 16 high, 22 medium, 6 low). Corregidas todas las
+  que tenían parche en npm, pip y Composer; quedan abiertas 15, documentadas
+  como bloqueadas aguas arriba o pendientes de migración. _Bloque G. Fuente:
+  2026-09-19 (rama `UpgradeDocs`) → resuelto 2026-10-31 (rama
+  `corregirVulnerabilidades`)._
+- [ ] **JasperReportExecutor: migrar a JasperReports 7.** Las dos alertas de
+  deserialización (#1393, #1913) solo se corrigen en 7.0.4/7.0.7, y la 7 no
+  carga el JRXML de la 6: `JasperCompileManager` falla con «Unable to load
+  report» (probado con 7.0.8 + `jasperreports-pdf`). Hay que convertir
+  `informeJugadores.jrxml` e `informePuntuaciones.jrxml` al formato 7 (Jaspersoft
+  Studio 7) y añadir `jasperreports-pdf`. No explotable hoy: el código compila
+  plantillas del classpath y nunca deserializa `.jasper`. _Fuente: 2026-10-31
+  (rama `corregirVulnerabilidades`)._
+- [ ] **FPS-AI-Toolkit: subir el stack de PyTorch.** Las 8 alertas de `torch`
+  (2.6.0+cu124) se corrigen entre 2.7.1 y 2.13; hay que subir `torch` y
+  `torchvision` juntos con el índice CUDA y validar en la GPU (política de
+  `dependabot.yml`). De paso, `requirements.txt` no resuelve: `opencv-python
+  4.13.0.92` exige `numpy>=2` y se fija `numpy==1.26.4` (preexistente).
+  _Fuente: 2026-10-31 (rama `corregirVulnerabilidades`)._
 
 ## TaskHub_React (del historial, siguen abiertos)
 
@@ -253,13 +270,21 @@ de los proyectos).
 > bloqueadas aguas arriba, deliberadamente abiertas. Detalle en la entrada
 > fechada `2026-09-19 — Bloque A`.
 
-- **Dependabot:** 44 abiertas (16 high, 22 medium, 6 low), todas dependencias
-  transitivas del build —npm 33, pip 8, maven 2, composer 1—. Las de npm/Maven
-  sin arreglo disponible (las únicas "correcciones" son retrocesos de versión)
-  se dejan abiertas a propósito para que GitHub las cierre cuando la cadena
-  actualice; las 8 de pip (`torch`) se excluyen porque el stack se gestiona a
-  mano. Detalle: actualización **2026-09-19** de esta cabecera y entrada
-  fechada.
+> **Actualización 2026-10-31.** Bloque G cerrado: corregidas todas las alertas
+> Dependabot con parche publicado (npm, pip y Composer). Quedan **15 abiertas**,
+> todas documentadas: 5 bloqueadas aguas arriba en `unified-chat-widget`
+> (`extract-zip` ×2 y `deepmerge` sin versión corregida; `basic-ftp` y `zod`
+> fijados en versiones vulnerables por la cadena `@retconned/kick-js` →
+> `puppeteer@23`), 2 de JasperReports pendientes de migrar a la 7 y las 8 de
+> `torch`, gestionado a mano. Detalle en la entrada fechada `2026-10-31 —
+> Vulnerabilidades`.
+
+- **Dependabot:** 15 abiertas tras el Bloque G (2026-10-31), todas
+  documentadas: las de npm sin arreglo disponible o bloqueadas por la cadena se
+  dejan abiertas a propósito para que GitHub las cierre cuando la cadena
+  actualice; las 2 de Maven esperan la migración a JasperReports 7 y las 8 de
+  pip (`torch`) se excluyen porque el stack se gestiona a mano. Detalle:
+  actualización **2026-10-31** de esta cabecera y entrada fechada.
 - **Secret scanning:** 4 alertas revisadas. Una era real (clave de API de
   Google, revocada y restringida a YouTube Data API v3), dos falsos positivos y una de
   código de terceros ya retirado.
@@ -286,6 +311,107 @@ de los proyectos).
   el escáner automático; aparecieron leyendo el código. Los detalles de dónde
   estuvo cada una se omiten a propósito: este historial es público y señalarlos
   equivaldría a señalar los commits anteriores al arreglo.
+
+---
+
+## 2026-10-31 — Vulnerabilidades: Bloque G cerrado (rama `corregirVulnerabilidades`)
+
+Repaso completo de las alertas Dependabot abiertas en `main`. Para cada lockfile
+y `requirements.txt` del monorepo se cruzó la versión instalada con la base de
+advisories de GitHub (`github/advisory-database`), y de ahí sale la versión
+mínima que corrige cada alerta. Regla seguida: **subir lo justo dentro de la
+serie actual** (parche o minor) y solo cambiar de major cuando no había otra
+salida y los tests lo confirmaban.
+
+### Corregidas
+
+**npm** (lockfiles regenerados; `npm 11` para el frontend de Angular, porque
+`npm 10` falla con `Cannot read properties of null (reading 'edgesOut')` al
+resolver los peers de `vitest`):
+
+| Proyecto | Cambios | Alertas |
+| --- | --- | --- |
+| TaskHub_Angular/frontend | `@angular/*` 21.2.19 → 21.2.25 (cli/build/ssr 21.2.29), `vitest` 4.1.12; transitivas `undici` 7.30.1, `fast-uri` 3.1.9, `piscina` 5.3.2, `@modelcontextprotocol/sdk` 1.32.1, `hono` 4.13.14, `@hono/node-server` 2.1.5, `vite` 7.3.7, `body-parser` 1.20.9/2.4.0, `qs` 6.16.2, `ip-address` 10.7.5, `proxy-addr` 2.0.8, `brace-expansion` 5.0.12, `source-map-js` 1.2.2, `nanoid` 3.3.20 | Angular SSR/router/core, undici, fast-uri, piscina, MCP SDK, hono, vite/launch-editor, vitest, body-parser, qs, ip-address, proxy-addr, brace-expansion, source-map-js |
+| TaskHub_Angular/backend | `morgan` 1.12.1, `compression` 1.8.2, `vitest` 4.1.12, **`zod` 3 → 4.6.7**; transitivas `vite` 8.3.5, `fast-copy` 4.3.1, `body-parser`, `qs`, `ip-address`, `proxy-addr`, `brace-expansion`, `source-map-js` | morgan, compression, zod, vitest, vite, fast-copy y las transitivas comunes |
+| TaskHub_React/server | override `qs` 6.16.0 → 6.16.2 | qs |
+| TaskHub_React (raíz) | `zod` 4.5.4 → 4.6.7 (vía `eslint-plugin-react-hooks`) | zod |
+| JSGameChat | `body-parser` 1.20.9, `engine.io` 6.6.11, `ip-address`, `proxy-addr`, `qs` | body-parser, Socket.IO/engine.io, ip-address, proxy-addr, qs |
+| unified-chat-widget | `axios` 1.18.1 → 1.21.0; `follow-redirects` 1.16.2, `js-yaml` 4.3.2, `brace-expansion` 1.1.21, `body-parser`, `ip-address`, `proxy-addr`, `qs` | axios, follow-redirects, js-yaml, brace-expansion, body-parser, ip-address, proxy-addr, qs |
+| gym-app (npm) | `axios` 1.21.0, `vite` 8.3.5; `follow-redirects`, `browserslist` 4.29.5, `baseline-browser-mapping`, `postcss-selector-parser` 6.1.5, `nanoid`, `source-map-js` | axios, vite/launch-editor, follow-redirects, browserslist, baseline-browser-mapping, postcss-selector-parser, source-map-js |
+| FastApi/TaskHub/frontend | `vite` 8.3.5; `nanoid`, `source-map-js` | vite/launch-editor, source-map-js |
+
+En el frontend de Angular sobra el `overrides` de `undici` (y su comentario):
+`@angular/build` 21.2.29 ya trae `undici` 7.30.1, tal como preveía la nota.
+
+El único cambio de código: **zod 4 retiró `AnyZodObject`**, así que
+`backend/src/middlewares/validate.ts` pasa a tipar el esquema como `ZodObject`.
+El resto de validadores (`.email()`, `.uuid()`, `.datetime()`) sigue siendo API
+válida en zod 4.
+
+Las alertas de `undici` en TaskHub_React/client y de `body-parser` en
+TaskHub_React/server ya estaban corregidas en `main` (undici 8.12.3,
+body-parser 1.20.9): GitHub las cerrará al reanalizar.
+
+**pip:**
+
+- `PyJWT` 2.13.0 → **2.15.1** en FastApi/TaskHub/backend y LeaderBoard_Unity
+  (las 15 alertas de PyJWT, crítica incluida). La GHSA-gvp8-978c-rx2q (mutación
+  del dict `options`) no tiene versión corregida declarada, pero solo afecta
+  hasta 2.13.0; además ninguno de los dos proyectos pasa `options` a
+  `jwt.decode()`.
+- `Werkzeug` 3.1.8 → 3.1.9 en LeaderBoard_Unity y StreamTools/BackCount.
+- FPS-AI-Toolkit: **`Pillow` 12.3.0 → 13.0.0** (41 alertas, 5 críticas),
+  **`filelock` 3.29.0 → 4.2.5** y `fsspec` 2026.4.0 → 2026.9.0. Pillow 13 y
+  filelock 4 piden Python ≥ 3.11; el venv del proyecto es 3.11.9.
+
+**Composer** (gym-app): `composer update` de `laravel/framework` (12.64.0 →
+12.70.2), `league/commonmark` (2.10.6), `league/flysystem` (3.36.0),
+`symfony/http-foundation` y `symfony/yaml` (7.4.22) con sus dependencias,
+resuelto con `platform.php = 8.2` (la versión del CI) para no colar paquetes
+que exijan 8.3. `composer audit`: sin avisos.
+
+### Documentadas y bloqueadas aguas arriba (quedan abiertas)
+
+| Alertas | Paquete | Motivo |
+| --- | --- | --- |
+| #2095, #2051 | `extract-zip` 2.0.1 (unified-chat-widget) | Sin versión corregida (afecta hasta 2.0.1, la última). Llega por `@puppeteer/browsers`. |
+| #2370 | `deepmerge` 4.3.1 (unified-chat-widget) | Sin versión corregida. Llega por `puppeteer-extra`. |
+| #2197 | `basic-ftp` 5.3.1 (unified-chat-widget) | Solo corregido en 6.x; `get-uri` (incluso la 8.0.1) exige `^5.3.1`. |
+| #2344 | `zod` 3.23.8 (unified-chat-widget) | Solo corregido en 4.6.6; lo fija `chromium-bidi` 0.11.0 de `puppeteer@23`, y `@retconned/kick-js` pide `puppeteer ^23`. |
+| #1393, #1913 | `jasperreports` 6.21.5 (JasperReportExecutor) | Corregido en 7.0.4/7.0.7, pero la 7 no lee el JRXML de la 6 (probado con 7.0.8: «Unable to load report»). Requiere convertir las dos plantillas. No explotable: no se deserializan `.jasper`. Anotado en el ToDo. |
+| #1889, #1890, #1892–#1895, #1897, #1923 | `torch` 2.6.0+cu124 (FPS-AI-Toolkit) | Excluido por `dependabot.yml`: se sube a mano con `torchvision` y el índice CUDA, validando en la GPU. Anotado en el ToDo. |
+
+Fuera de la lista de alertas, el análisis también encontró avisos nuevos en
+dependencias de desarrollo que no tienen salida sin cambiar de major en la
+cadena: `minimatch` 10.x (lo fija `eslint ^10`), `glob` 13 (`@angular/cli`) y
+`deepmerge-ts` 7.1.5 (lo fija exacto `@prisma/config` 6; se corrige con Prisma
+7). Se dejan como están.
+
+### Cómo se comprobó
+
+- TaskHub_Angular/backend: 162 tests en verde, `tsc` y `eslint` limpios.
+- TaskHub_Angular/frontend: 103 tests (`ng test`) y `ng build` con prerender
+  correctos (el aviso de presupuesto de 500 kB ya existía).
+- TaskHub_React/server: 564 tests y `tsc --noEmit`.
+- gym-app: `vite build` y los 41 tests de `php artisan test` (con un manifiesto
+  de Vite de relleno, como hace el CI tras compilar los assets).
+- FastApi/TaskHub: `vite build` del frontend y los 55 tests del backend con
+  PyJWT 2.15.1 (Python 3.12).
+- LeaderBoard_Unity, BackCount y FPS-AI-Toolkit: resolución de dependencias con
+  `uv pip compile`. En FPS-AI-Toolkit apareció un conflicto previo, ajeno a este
+  cambio: `opencv-python 4.13.0.92` exige `numpy>=2` y el fichero fija
+  `numpy==1.26.4`. Anotado en el ToDo.
+- Escaneo final de todos los lockfiles contra la base de advisories: solo
+  quedan las alertas de las dos tablas anteriores.
+
+### Una nota sobre el entorno
+
+Ni el contenedor del agente ni la VM local tenían acceso a los registros de
+paquetes al principio de la sesión (403 en npm, PyPI, Packagist y Maven
+Central). Hasta que se activó el acceso a red, lo único posible fue el análisis.
+Los lockfiles se regeneraron en copias de trabajo fuera del repositorio y solo
+se copiaron de vuelta `package.json` y `package-lock.json`, sin tocar los
+`node_modules` de Windows.
 
 ---
 
