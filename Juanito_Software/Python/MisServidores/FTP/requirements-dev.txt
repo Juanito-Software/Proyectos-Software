@@ -1,0 +1,8 @@
+# Dependencias necesarias para ejecutar los tests, y solo para eso.
+#
+# El servidor no tiene dependencias (solo biblioteca estándar) y la suite es
+# unittest, pero el CI la ejecuta con pytest para sacar el informe JUnit del
+# que cuenta los tests. Se instala con:
+#   pip install -r requirements-dev.txt
+
+pytest==9.1.1

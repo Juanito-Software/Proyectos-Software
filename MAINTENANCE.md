@@ -278,6 +278,58 @@ de los proyectos).
 
 ---
 
+## 2026-10-31 — CI: tests de MisServidores (FTP y WEB, Python y Rust) y de Forge (rama `IncrementarTestsCI`)
+
+Cinco suites que existían y no se ejecutaban en ninguna parte (salvo FTP Rust,
+que ya estaba en `rust-test`) entran en `ci.yml`: **+307 tests** en el CI.
+
+| Suite | Job | Mínimo |
+| --- | --- | --- |
+| MisServidores/FTP (Python) | `python-test` | 54 |
+| MisServidores/WEB (Python) | `python-test` | 109 |
+| MisServidores/WEB (Rust) | `rust-test` | 69 |
+| Forge (C) | `forge-test` (nuevo, `windows-latest`) | 75 |
+
+### Python: `requirements-dev.txt` y un bug de Linux en el servidor WEB
+
+Los dos servidores son solo stdlib y sus `requirements.txt` están vacíos; se les
+añade un `requirements-dev.txt` con `pytest==9.1.1` (la misma versión que
+TaskHub) para que la matriz instale algo y el informe JUnit salga igual que en
+los demás.
+
+En Linux la suite de WEB se colgaba: 70 tests fallaban con «el hilo del servidor
+no terminó». `ServidorWeb.detener()` solo hacía `close()` del socket de escucha
+desde otro hilo, y en Linux eso **no despierta** un `accept()` bloqueado (en
+Windows sí, por eso nunca se vio). Arreglo mínimo: `shutdown(SHUT_RDWR)` antes
+del `close()`, ignorando el `OSError` que lanza en Windows. Con eso, 109 en
+verde + 1 saltado en Linux (el de permisos denegados se salta como root; en el
+runner, que no es root, probablemente corra y el job avisará con `::notice::`
+de subir a 110).
+
+### Forge: el único job en Windows
+
+La suite de Forge es `tests/test_forge.ps1` y prueba cosas que solo existen en
+Windows (junctions, nombres de dispositivo reservados), así que el job corre en
+`windows-latest`. Sin acciones de terceros: se usa el MSYS2 que ya trae la imagen
+(`pacman -Sy … mingw-w64-ucrt-x86_64-gcc make`) y se compila con
+`make clean all` —`libforge.a` está versionado y, tras el checkout, `make`
+podría dar por buena la librería del repo en vez de compilar la de la PR—. La
+cuenta sale de la línea «Pruebas superadas: N» que imprime el script. El mínimo
+75 es un **recuento estático** (52 llamadas a `Assert-*` + bucles de 10, 12 y 4
+casos), no se pudo ejecutar fuera de Windows: confirmarlo con `make test` local o
+con la primera ejecución del CI.
+
+### Lo que quedó
+
+- `.github/workflows/` sigue protegido contra escritura remota: el workflow se
+  entregó como fichero completo (`ci-nuevo.yml` en la raíz) para moverlo a mano.
+- La tabla del `README.md` no incluía el FTP de Rust (50) aunque ya estaba en el
+  CI; añadido junto con los nuevos. Total 2.131, de ellos 1.148 en `ci.yml`;
+  trece proyectos con tests.
+- `monorepo-ok` depende ahora también de `forge-test`.
+
+---
+
 ## 2026-09-30 — motorIndexado: de «0 tests reales» a 35, y el primer job de Rust en el CI
 
 `motorIndexado` era el único proyecto con un commit «test:» que no traía tests:

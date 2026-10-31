@@ -110,11 +110,7 @@ Sin `RADIOSTACK_DB_TESTS` ese grupo se salta y corren **155**. La cifra se
 mantiene al día en la tabla «Tests que se ejecutan hoy en cada push» del
 README del repositorio.
 
----------------------------------------------------------------------------------------------------------------------------------------------------
-
-y de donde saco :
-
-
+------------------------------------------------------------------------------------------------------
 
 Servidor de streaming (Icecast/SHOUTcast)
 
@@ -149,4 +145,4 @@ Quieres control total y no pagar por el servidor:
 Instala Icecast en un VPS (5–10 €/mes) y opcionalmente un dominio.
 Quieres algo rápido y que alguien lo mantenga:
 Contrata un servicio de streaming (Radio.co, Live365, etc.); te dan la URL de stream y a veces web/reproductor.
-En ambos casos, RadioStack (tu proyecto) puede seguir siendo tu “cerebro”: parrilla, programas, chat, etc. El stream en sí lo pone Icecast/SHOUTcast, ya sea el que tú instalas o el que te da el servicio.
+En ambos casos, RadioStack puede seguir siendo tu “cerebro”: parrilla, programas, chat, etc. El stream en sí lo pone Icecast/SHOUTcast, ya sea el que tú instalas o el que te da el servicio.

@@ -788,6 +788,15 @@ class ServidorWeb:
         self._deteniendo.set()
         sock, self._socket = self._socket, None
         if sock is not None:
+            # En Linux, close() desde otro hilo NO despierta un accept()
+            # bloqueado: el hilo de servir_bucle se quedaría colgado. shutdown()
+            # sí lo despierta (accept() falla con EINVAL). En Windows, close()
+            # ya basta y shutdown() sobre un socket de escucha lanza OSError,
+            # que se ignora.
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
             try:
                 sock.close()
             except OSError:
