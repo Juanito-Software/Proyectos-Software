@@ -11,6 +11,7 @@ import { registrarEventoSeguridad } from './security-log.js';
  * `Set-Cookie` entera, con el token de refresco dentro, en la salida del CI.
  */
 
+/** Intercepta console.warn y devuelve el array donde se van guardando las líneas. */
 function capturar() {
   const lineas: string[] = [];
   vi.spyOn(console, 'warn').mockImplementation((linea: unknown) => {

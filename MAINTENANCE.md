@@ -314,6 +314,64 @@ de los proyectos).
 
 ---
 
+## 2026-11-02 — Documentación del código: BatchProcessor y TaskHub_React (rama `documentarCodigo`)
+
+Pasada de documentación sobre todo el código de los dos proyectos, incluidos
+tests y configuración: **solo comentarios, ni una línea de código cambiada**.
+
+### Qué se documentó
+
+- **Cabecera por fichero** que explica qué papel tiene dentro del proyecto.
+  En los routers y en `env.ts`, en forma de tabla: rutas y si exigen sesión, o
+  variables de entorno con su valor por defecto. `app.ts` resume el orden de la
+  cadena de middlewares.
+- **JSDoc / Javadoc** en cada clase, función, método y tipo exportado:
+  qué hace, parámetros, retorno y errores (`@throws` con el código HTTP cuando
+  es un `ApiError`).
+- **Comentarios en línea** solo donde la lógica no se explica sola: el porqué
+  del `chunk(10)` y de los casts en `BatchController`, el parámetro `Fecha` que
+  hace única cada instancia de job, el orden de los middlewares...
+- En los tests, que ya tenían cabeceras y `@DisplayName`/descripciones, se
+  añadieron solo los comentarios que faltaban en sus ayudantes (`montar`,
+  `peticion`, `respuestaFalsa`...).
+- `application.properties` de BatchProcessor, agrupado por secciones y con el
+  efecto de cada propiedad (incluido el aviso de que `ddl-auto=create` borra
+  las tablas en cada arranque).
+
+### Lo que destapó documentar
+
+Documentar obliga a contrastar el comentario con el código, y hubo tres
+comentarios que **contaban algo que no es verdad**. Se corrigieron (sin tocar
+el código):
+
+- `CsvItemWriter` dice invertir el orden de las columnas, y no lo hace:
+  `JobCsvACsvTest` ya fija que salen en orden de declaración. El comentario
+  ahora lo dice, en vez de explicar una inversión que no ocurre.
+- `vite.config.js` del cliente conservaba un bloque que hablaba de umbrales de
+  cobertura del ~36 %; los reales están en 93–96 %. Se dejó solo la nota vigente.
+- El Javadoc de `BatchConfig` estaba separado de la clase por un bloque de
+  ejemplo y un `//@EnableScheduling`; se recolocó para que pertenezca a la
+  clase. Lo mismo con el de `accountSlowDown` en `rateLimit.middleware.ts`, que
+  había quedado encima de otra función.
+
+También quedan explicadas como tales dos piezas desactivadas que parecían
+vivas: `BatchScheduler` (cuerpo comentado; dependía de un `Job` que ya no
+existe) y `DatabaseItemWriter.ManualItemWriter` (no lo usa ningún bean).
+
+### Cómo se comprobó que no cambia nada
+
+- **TS/JS** (79 ficheros): se comparó el AST de cada fichero antes y después,
+  impreso sin comentarios con el compilador de TypeScript. Idénticos.
+- **Java y `.properties`** (23 ficheros): misma comparación quitando
+  comentarios fuera de literales. Idénticos.
+- Además, por si acaso: BatchProcessor `mvn test` (20 en verde); TaskHub_React
+  `lint`, `typecheck`, tests del servidor (564) y del cliente (224, con los
+  umbrales de cobertura) y `build`. `npm run verify` y los e2e de Playwright
+  necesitan PostgreSQL y quedan para el CI; al no cambiar el código, no pueden
+  comportarse distinto.
+
+---
+
 ## 2026-10-31 — Vulnerabilidades: Bloque G cerrado (rama `corregirVulnerabilidades`)
 
 Repaso completo de las alertas Dependabot abiertas en `main`. Para cada lockfile

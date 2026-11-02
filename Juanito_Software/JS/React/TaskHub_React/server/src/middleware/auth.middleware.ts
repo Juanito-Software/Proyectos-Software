@@ -22,6 +22,14 @@ import { ApiError } from '../utils/api-error.js';
  * traduce la violación de clave foránea a un 401 en lugar de reventar con un
  * 500. Esas son las dos vías por las que una cuenta borrada podía provocar algo
  * más que una pantalla vacía.
+ *
+ * Espera la cabecera `Authorization: Bearer <token>`. Si el token es válido,
+ * rellena `req.userId` y `req.username` y deja pasar; si falta, está caducado o
+ * su firma no cuadra, responde 401.
+ *
+ * @param req  petición entrante
+ * @param _res no se usa
+ * @param next continúa, o recibe un `ApiError` 401
  */
 export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;

@@ -1,3 +1,10 @@
+/**
+ * Configuración de Vite (servidor de desarrollo y build) y de Vitest (tests).
+ *
+ * En desarrollo el cliente se sirve en el 5173 y todo lo que empieza por
+ * `/api` se reenvía al servidor Express del 3001. Así el navegador ve un solo
+ * origen: no hace falta relajar CORS y la cookie de refresco viaja sin más.
+ */
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -12,6 +19,9 @@ export default defineConfig({
       },
     },
   },
+  // ── Tests (Vitest) ──────────────────────────────────────────────────────
+  // jsdom simula el DOM del navegador; `globals` permite usar describe/it/expect
+  // sin importarlos.
   test: {
     environment: 'jsdom',
     globals: true,
@@ -21,20 +31,12 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{js,jsx}'],
       exclude: ['src/main.jsx', 'src/test/**', 'src/constants.js'],
-      /**
-       * Umbrales fijados POR DEBAJO de la cobertura medida hoy (~36% de
-       * sentencias, ~43% de ramas). No son un objetivo, son un suelo: su
-       * única función es que la cobertura no baje sin que nadie se entere.
-       *
-       * Están así de bajos a propósito. Lo cubierto es la capa de servicios
-       * (96%) y los dos componentes de tarea (100% y 86%), que es donde los
-       * fallos rompen cosas de verdad. Lo que queda a cero —App, AuthForm,
-       * TaskList y AuthContext— necesita montar el contexto de sesión, y se
-       * cubrirá en el siguiente paso.
-       *
-       * SUBIR estos números conforme se añadan tests. Un umbral inalcanzable
-       * acaba desactivándose, que es peor que no tenerlo.
-       */
+      // Umbrales mínimos de cobertura (`npm run test:coverage` falla si se
+      // baja de ellos). No son un objetivo, son un suelo: su única función es
+      // que la cobertura no baje sin que nadie se entere. SUBIRLOS conforme
+      // se añadan tests; un umbral inalcanzable acaba desactivándose, que es
+      // peor que no tenerlo.
+      //
       // Los umbrales van justo por debajo de la cobertura real (96.95 / 95.93 /
       // 95.65 / 98.09) para que funcionen como trinquete: si un cambio la baja,
       // el CI se entera. Cuando suba, hay que volver a subirlos — un umbral muy

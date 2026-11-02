@@ -11,6 +11,7 @@ export const STATUSES = [
   { value: 'completed', label: 'Completada' },
 ];
 
+/** Prioridades, de menor a mayor. */
 export const PRIORITIES = [
   { value: 'low', label: 'Baja' },
   { value: 'medium', label: 'Media' },
@@ -26,8 +27,16 @@ export const PRIORITIES = [
  * cuál es decisión propia.
  */
 
+/**
+ * @param {string} value valor de la API ('pending', 'in-progress'...)
+ * @returns {string} etiqueta en español, o el propio valor si no se conoce
+ */
 export const statusLabel = (value) =>
   STATUSES.find((s) => s.value === value)?.label ?? value;
 
+/**
+ * @param {string} value valor de la API ('low', 'medium', 'high')
+ * @returns {string} etiqueta en español, o el propio valor si no se conoce
+ */
 export const priorityLabel = (value) =>
   PRIORITIES.find((p) => p.value === value)?.label ?? value;

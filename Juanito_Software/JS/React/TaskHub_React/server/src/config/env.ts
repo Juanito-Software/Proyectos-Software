@@ -1,5 +1,34 @@
+/**
+ * Configuración del servidor, leída de variables de entorno (y de `.env` en
+ * desarrollo, gracias a `dotenv/config`).
+ *
+ * Todo se lee y se valida **al importar el módulo**: si falta algo
+ * obligatorio o un valor no tiene sentido, el proceso no arranca. Es
+ * preferible fallar al desplegar que descubrirlo con la primera petición.
+ *
+ * Variables:
+ * | Variable                | Por defecto        | Uso                                     |
+ * |-------------------------|--------------------|-----------------------------------------|
+ * | `NODE_ENV`              | `development`      | `production` endurece varias reglas     |
+ * | `PORT`                  | `3001`             | puerto HTTP                             |
+ * | `DATABASE_URL`          | —  (obligatoria)   | cadena de conexión de PostgreSQL        |
+ * | `JWT_SECRET`            | solo en desarrollo | firma de los tokens de acceso           |
+ * | `ACCESS_TOKEN_TTL`      | `15m`              | vida del token de acceso                |
+ * | `REFRESH_TOKEN_TTL`     | `7d`               | vida del token de refresco              |
+ * | `REFRESH_GRACE_SECONDS` | `10`               | margen para rotaciones simultáneas      |
+ * | `ALLOWED_ORIGINS`       | localhost en dev   | orígenes CORS, separados por comas      |
+ * | `ADMIN_USERNAME/PASSWORD` | —  (opcionales)  | semilla del administrador               |
+ */
 import 'dotenv/config';
 
+/**
+ * Lee una variable de entorno obligatoria.
+ *
+ * @param name     nombre de la variable
+ * @param fallback valor si no está definida; sin él, la variable es obligatoria
+ * @returns el valor de la variable o el de respaldo
+ * @throws Error si no está definida y no hay valor de respaldo
+ */
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback;
   if (value === undefined) {
@@ -23,6 +52,13 @@ const isProd = nodeEnv === 'production';
 const DEV_JWT_SECRET = 'clave-solo-para-desarrollo-no-usar-en-produccion';
 const MIN_SECRET_LENGTH = 32;
 
+/**
+ * Decide el secreto de firma. En desarrollo usa `JWT_SECRET` o, si falta, el
+ * valor público de desarrollo. En producción exige uno propio de al menos 32
+ * caracteres.
+ *
+ * @throws Error en producción si falta, es el de desarrollo o es demasiado corto
+ */
 function resolveJwtSecret(): string {
   const fromEnv = process.env.JWT_SECRET;
 
@@ -122,6 +158,10 @@ const refreshTokenTtl = required('REFRESH_TOKEN_TTL', '7d');
  */
 const refreshGraceMs = Number(required('REFRESH_GRACE_SECONDS', '10')) * 1000;
 
+/**
+ * Configuración ya validada. Es de solo lectura (`as const`); el resto del
+ * servidor la importa en lugar de leer `process.env` directamente.
+ */
 export const env = {
   nodeEnv,
   port: Number(required('PORT', '3001')),
@@ -144,4 +184,5 @@ export const env = {
   adminPassword: process.env.ADMIN_PASSWORD || null,
 } as const;
 
+/** `true` si `NODE_ENV` es `production`. */
 export const isProduction = isProd;

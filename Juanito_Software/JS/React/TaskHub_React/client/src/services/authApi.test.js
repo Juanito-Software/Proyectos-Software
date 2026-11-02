@@ -14,6 +14,7 @@ import {
  * sin token y la sesión parece iniciada pero ninguna petición funciona.
  */
 
+/** Sustituye fetch por un doble que responde siempre con ese estado y cuerpo. */
 function mockFetch(status, body) {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -22,6 +23,7 @@ function mockFetch(status, body) {
   });
 }
 
+/** Respuesta correcta con el envoltorio `ApiResponse` del servidor. */
 const sobre = (data) => ({ success: true, data, timestamp: '2026-01-01T00:00:00.000Z' });
 
 describe('login', () => {

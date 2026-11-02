@@ -16,7 +16,9 @@ export { generarRefreshToken, hashRefreshToken } from './refresh-token.js';
  * normal de una reutilización.
  */
 
+/** Fila de `refresh_sessions` (sin el hash, que nunca sale del repositorio). */
 export interface RefreshSession {
+  /** Id de esta fila (de este token concreto). */
   id: string;
   family_id: string;
   user_id: string;
@@ -34,11 +36,16 @@ export type MotivoRevocacion =
   | 'reuse-detected'
   | 'password-changed';
 
+/** Acceso a la tabla `refresh_sessions`. */
 export const sessionsRepository = {
   /**
    * Crea la primera fila de una familia nueva. Es lo que ocurre al iniciar
    * sesión o al registrarse: cada login abre una sesión independiente, de modo
    * que cerrar una en el móvil no cierra la del portátil.
+   *
+   * @param userId dueño de la sesión
+   * @param token  token de refresco en claro; se guarda solo su hash
+   * @returns la fila creada, con `expires_at` = ahora + `REFRESH_TOKEN_TTL`
    */
   async crearFamilia(userId: string, token: string): Promise<RefreshSession> {
     const filas = await query<RefreshSession>(
@@ -60,6 +67,9 @@ export const sessionsRepository = {
    * el mismo token solo una encuentra la fila sin revocar y la otra actualiza
    * cero filas. No hace falta transacción explícita ni bloqueo: una única
    * sentencia ya es atómica.
+   *
+   * @param tokenHash SHA-256 del token presentado
+   * @returns la fila recién rotada, o `null` si no había una activa
    */
   async marcarRotado(tokenHash: string): Promise<RefreshSession | null> {
     const filas = await query<RefreshSession>(
@@ -78,6 +88,9 @@ export const sessionsRepository = {
    * Busca un token sin modificarlo. Se usa cuando `marcarRotado` no encuentra
    * nada, para averiguar por qué: si no existe, si ya estaba revocado, si
    * caducó, o si es una reutilización que obliga a matar la familia.
+   *
+   * @param tokenHash SHA-256 del token presentado
+   * @returns la fila, en el estado que esté, o `null` si no existe
    */
   async buscarPorHash(tokenHash: string): Promise<RefreshSession | null> {
     const filas = await query<RefreshSession>(
@@ -89,7 +102,15 @@ export const sessionsRepository = {
     return filas[0] ?? null;
   },
 
-  /** Encadena el token nuevo al que acaba de rotarse, dentro de la misma familia. */
+  /**
+   * Encadena el token nuevo al que acaba de rotarse, dentro de la misma familia.
+   *
+   * @param familyId familia de la sesión
+   * @param userId   dueño
+   * @param token    token nuevo en claro; se guarda su hash
+   * @param parentId fila de la que procede (la recién rotada)
+   * @returns la fila nueva, con caducidad renovada
+   */
   async encadenar(
     familyId: string,
     userId: string,
@@ -110,6 +131,8 @@ export const sessionsRepository = {
    * sesión y, sobre todo, al detectar una reutilización: en ese momento hay que
    * asumir que el atacante tiene también el token siguiente de la cadena, así
    * que rechazar solo el presentado no serviría de nada.
+   *
+   * @returns cuántas filas se revocaron
    */
   async revocarFamilia(familyId: string, motivo: MotivoRevocacion): Promise<number> {
     const filas = await query<{ id: string }>(
@@ -124,7 +147,10 @@ export const sessionsRepository = {
 
   /**
    * Revoca todas las sesiones de un usuario, en todos sus dispositivos.
-   * Pensado para cuando se sospecha que la cuenta está comprometida.
+   * Pensado para cuando se sospecha que la cuenta está comprometida, y
+   * usado también al cambiar la contraseña.
+   *
+   * @returns cuántas filas se revocaron
    */
   async revocarTodasDelUsuario(userId: string, motivo: MotivoRevocacion): Promise<number> {
     const filas = await query<{ id: string }>(
@@ -155,6 +181,8 @@ export const sessionsRepository = {
    * fila revocada. Se conservan hasta que el token habría caducado de todas
    * formas, porque antes de esa fecha todavía hacen falta para detectar una
    * reutilización.
+   *
+   * @returns cuántas filas se borraron
    */
   async limpiarCaducadas(): Promise<number> {
     const filas = await query<{ id: string }>(

@@ -28,6 +28,7 @@
  * flujo de errores y no se pierda entre el registro de peticiones.
  */
 
+/** Catálogo cerrado de eventos: añadir uno nuevo obliga a declararlo aquí. */
 export type EventoSeguridad =
   | 'login.correcto'
   | 'login.fallido'
@@ -42,6 +43,7 @@ export type EventoSeguridad =
   | 'password.cambiada'
   | 'password.cambio-rechazado';
 
+/** Datos que acompañan a un evento. Todos opcionales. */
 interface DatosEvento {
   /** Nombre de usuario, si se conoce. En un login fallido es lo que se intentó. */
   usuario?: string;
@@ -83,6 +85,19 @@ function esSospechoso(clave: string, valor: unknown): boolean {
   return typeof valor === 'string' && PROHIBIDAS.test(clave);
 }
 
+/**
+ * Escribe un evento de seguridad como una línea JSON en `stderr`.
+ *
+ * Los valores de texto cuyas claves parezcan credenciales salen como
+ * `<censurado>`, y los `undefined` se omiten.
+ *
+ * @param evento tipo de evento
+ * @param datos  contexto del evento (usuario, motivo, ip...)
+ *
+ * @example
+ * registrarEventoSeguridad('login.fallido', { usuario: 'ana', motivo: 'credenciales-invalidas' });
+ * // {"tipo":"seguridad","evento":"login.fallido","momento":"…","usuario":"ana","motivo":"credenciales-invalidas"}
+ */
 export function registrarEventoSeguridad(evento: EventoSeguridad, datos: DatosEvento = {}): void {
   const limpio: Record<string, unknown> = {};
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+/** Clave de localStorage donde se recuerda el tema elegido. */
 const CLAVE = 'taskhub-tema';
 
 /**
@@ -35,6 +36,12 @@ function temaEfectivo(guardado) {
  * El estado vive en el atributo `data-tema` del elemento raíz, no en una clase
  * de React: así el CSS es la única fuente de verdad sobre el aspecto y ningún
  * componente necesita saber qué tema hay puesto para pintarse.
+ *
+ * Al pulsar, guarda la elección; desde ese momento manda sobre la preferencia
+ * del sistema.
+ *
+ * @param {object} props
+ * @param {string} [props.className] clases extra (p. ej. para colocarlo flotando)
  */
 export default function ThemeToggle({ className = '' }) {
   const [tema, setTema] = useState(() => temaEfectivo(temaGuardado()));

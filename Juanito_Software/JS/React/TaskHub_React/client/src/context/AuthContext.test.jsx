@@ -38,9 +38,11 @@ function espiar() {
 }
 
 let espias;
+// Accesos cortos a los espías que se recrean en cada test.
 const setAuthToken = () => espias.setAuthToken;
 const configurarAuth = () => espias.configurarAuth;
 
+/** Misma clave de localStorage que usa el contexto. */
 const STORAGE_KEY = 'taskhub_auth';
 
 /**
@@ -73,6 +75,7 @@ function Sonda() {
   );
 }
 
+/** Monta la sonda dentro del proveedor real. */
 const montar = () =>
   render(
     <AuthProvider>

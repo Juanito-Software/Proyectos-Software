@@ -1,3 +1,16 @@
+/**
+ * Construcción de la aplicación Express: seguridad, CORS, rutas de la API,
+ * playground, cliente React y manejo de errores.
+ *
+ * Orden de la cadena de middlewares (importa):
+ * 1. `trust proxy` (solo producción) → helmet (CSP, HSTS...) → CORS.
+ * 2. Parser JSON (máx. 100 kB) → registro de peticiones → contador.
+ * 3. Playground (`/playground`) y endpoints públicos (`/api/health`,
+ *    `/api/system/stats`).
+ * 4. Routers de la API: `/api/auth`, `/api/tasks`, `/api/admin`.
+ * 5. Estáticos del cliente React y *fallback* a `index.html` para su router.
+ * 6. 404 en JSON para `/api/*` desconocidas y, al final, `errorHandler`.
+ */
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -14,14 +27,23 @@ import { ApiError } from './utils/api-error.js';
 import { ApiResponse } from './utils/api-response.js';
 import { env, isProduction } from './config/env.js';
 
+// En módulos ES no existe __dirname: se reconstruye a partir de la URL del
+// fichero. Sirve para localizar public/ y client/ junto al código compilado.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Fábrica en vez de una instancia exportada directamente: así verify.ts puede
 // crear la app DESPUÉS de fijar DB_SCHEMA al esquema temporal de pruebas, sin
 // tocar nunca los datos reales del usuario.
+/**
+ * Crea una instancia nueva de la aplicación, sin abrir ningún puerto (eso lo
+ * hace `server.ts`). Cada llamada tiene sus propios contadores.
+ *
+ * @returns aplicación Express lista para `listen()` o para tests con supertest
+ */
 export function createApp() {
   const app = express();
 
+  // Datos para /api/system/stats: momento de arranque y peticiones atendidas.
   const startTime = new Date();
   let requestCount = 0;
 
@@ -170,6 +192,8 @@ export function createApp() {
     res.sendFile(path.join(playgroundDir, 'index.html'));
   });
 
+  // Comprobación de vida para el balanceador de Render y para los tests: no
+  // toca la base de datos.
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json(ApiResponse.success({ ok: true }, 'TaskHub API'));
   });
@@ -194,6 +218,7 @@ export function createApp() {
     );
   });
 
+  // Routers de la API. Cada uno aplica sus propios límites y autenticación.
   app.use('/api/auth', authRouter);
   app.use('/api/tasks', tasksRouter);
   app.use('/api/admin', adminRouter);
@@ -223,6 +248,7 @@ export function createApp() {
     next(ApiError.notFound(`No existe ${req.method} ${req.originalUrl}`));
   });
 
+  // Siempre el último: recoge cualquier next(err) de lo anterior.
   app.use(errorHandler);
 
   return app;

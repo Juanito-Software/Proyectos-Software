@@ -1,6 +1,12 @@
+/**
+ * Validadores de entrada de las rutas de tareas. Comprueban tipos, valores
+ * permitidos y longitudes; las reglas de negocio (títulos duplicados, dueño de
+ * la tarea) las aplica `tasks.service.ts`.
+ */
 import { ValidatorFn } from '../../middleware/validate.middleware.js';
 import { TASK_STATUSES, TASK_PRIORITIES, isTaskStatus, isTaskPriority } from './tasks.types.js';
 
+// Listas legibles para los mensajes de error («pending, in-progress, completed»).
 const STATUS_LIST = TASK_STATUSES.join(', ');
 const PRIORITY_LIST = TASK_PRIORITIES.join(', ');
 
@@ -26,6 +32,13 @@ const MAX_TITLE = 100;
 const MAX_DESCRIPTION = 5_000;
 const MAX_SEARCH = 200;
 
+/**
+ * Revisa los campos opcionales comunes a crear, reemplazar y editar. `null`
+ * se acepta como «no enviado» en `description`, `status` y `priority`.
+ *
+ * @param body   cuerpo de la petición
+ * @param errors lista a la que se añaden los errores encontrados
+ */
 function validateOptionalFields(body: Record<string, unknown>, errors: string[]): void {
   const { description, status, priority, completed } = body;
 
@@ -45,6 +58,7 @@ function validateOptionalFields(body: Record<string, unknown>, errors: string[])
   }
 }
 
+/** `POST`: título obligatorio (1–100 caracteres tras recortar) y opcionales válidos. */
 export const createTaskValidator: ValidatorFn = (req): string[] | null => {
   const errors: string[] = [];
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -60,6 +74,10 @@ export const createTaskValidator: ValidatorFn = (req): string[] | null => {
   return errors.length > 0 ? errors : null;
 };
 
+/**
+ * `PATCH`: al menos un campo, y los que vengan, válidos. El título, si viene,
+ * no puede quedar vacío.
+ */
 export const updateTaskValidator: ValidatorFn = (req): string[] | null => {
   const errors: string[] = [];
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -97,6 +115,7 @@ export const updateTaskValidator: ValidatorFn = (req): string[] | null => {
  */
 export const replaceTaskValidator: ValidatorFn = createTaskValidator;
 
+/** `GET /api/tasks`: filtros `status`, `priority` y `search` de la query, si vienen. */
 export const filterTasksValidator: ValidatorFn = (req): string[] | null => {
   const errors: string[] = [];
   const { status, priority, search } = req.query;

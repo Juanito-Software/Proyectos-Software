@@ -6,6 +6,18 @@ import ThemeToggle from './ThemeToggle';
 import ChangePasswordForm from './ChangePasswordForm';
 import { STATUSES, PRIORITIES } from '../constants';
 
+/**
+ * Pantalla principal con sesión: cabecera, alta de tareas, filtros y lista.
+ *
+ * Es dueña de la lista de tareas. Los hijos no la modifican directamente:
+ * avisan con `onUpdate`/`onDelete` y aquí se actualiza el estado, sin volver
+ * a pedir la lista al servidor.
+ *
+ * @param {object} props
+ * @param {{username: string}} props.user usuario con sesión
+ * @param {() => void} props.onLogout cierra la sesión; también se llama si la
+ *        carga de tareas descubre que la sesión expiró
+ */
 export default function TaskList({ user, onLogout }) {
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const [tasks, setTasks] = useState([]);
@@ -20,6 +32,7 @@ export default function TaskList({ user, onLogout }) {
   const [priority, setPriority] = useState('');
   const [search, setSearch] = useState('');
 
+  /** Muestra un aviso breve (3 s) arriba de la lista. */
   function showNotification(message) {
     setNotification(message);
     setTimeout(() => setNotification(null), 3000);
@@ -51,6 +64,7 @@ export default function TaskList({ user, onLogout }) {
     return () => clearTimeout(id);
   }, [status, priority, search, loadTasks]);
 
+  /** Crea la tarea en el servidor y la pone la primera de la lista. */
   async function handleCreateTask(task) {
     try {
       const created = await createTask(task);
@@ -76,6 +90,7 @@ export default function TaskList({ user, onLogout }) {
     if (!silencioso) showNotification('Tarea actualizada');
   }
 
+  /** Quita de la lista una tarea ya borrada en el servidor (lo hace TaskItem). */
   function handleDeleteTask(id) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }

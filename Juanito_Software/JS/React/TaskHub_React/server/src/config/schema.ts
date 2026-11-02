@@ -7,6 +7,14 @@
  *
  * Todo el script es idempotente (IF NOT EXISTS), así que se puede ejecutar en
  * cada arranque sin comprobar antes si las tablas ya están.
+ *
+ * Tablas:
+ * - `users`: cuentas (nombre único sin distinguir mayúsculas, hash bcrypt, rol).
+ * - `tasks`: tareas de cada usuario; se borran en cascada con su dueño.
+ * - `refresh_sessions`: un registro por token de refresco emitido, para rotar,
+ *   revocar y detectar reutilización.
+ *
+ * Lo ejecuta `initSchema()` de `db.ts` al arrancar el servidor.
  */
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS users (

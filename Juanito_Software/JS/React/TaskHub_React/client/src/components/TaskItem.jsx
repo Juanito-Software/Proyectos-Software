@@ -16,11 +16,28 @@ import { statusLabel, priorityLabel } from '../constants';
  * navegador que marca una tarea y comprueba el distintivo es lo que detectaría
  * que las dos se separen.
  */
+/**
+ * @param {object} task tarea actual
+ * @returns {object} copia con `completed` invertido y `status` coherente
+ */
 function conCompletadaCambiada(task) {
   const completed = !task.completed;
   return { ...task, completed, status: completed ? 'completed' : 'pending' };
 }
 
+/**
+ * Una tarea de la lista: casilla de completada, distintivos de estado y
+ * prioridad, descripción y botones de editar y borrar. Al editar, se
+ * sustituye por un `TaskForm` relleno.
+ *
+ * Habla con la API por su cuenta y avisa al padre del resultado.
+ *
+ * @param {object} props
+ * @param {object} props.task tarea a mostrar (`TaskDto` del servidor)
+ * @param {(tarea: object, opciones?: {silencioso?: boolean}) => void} props.onUpdate
+ *        recibe la tarea actualizada para sustituirla en la lista
+ * @param {(id: string) => void} props.onDelete recibe el id de la tarea borrada
+ */
 export default function TaskItem({ task, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState(null);
@@ -60,6 +77,7 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     }
   }
 
+  /** Pide confirmación, borra en el servidor y avisa al padre. Si falla, solo lo registra en consola. */
   async function handleDelete() {
     if (!confirm('¿Eliminar esta tarea?')) return;
     try {
@@ -70,6 +88,10 @@ export default function TaskItem({ task, onUpdate, onDelete }) {
     }
   }
 
+  /**
+   * Guarda la edición con PATCH y cierra el formulario. Si falla, el
+   * formulario sigue abierto con los datos escritos (el error va a consola).
+   */
   async function handleEditSubmit(values) {
     try {
       const updated = await updateTask(task.id, values);

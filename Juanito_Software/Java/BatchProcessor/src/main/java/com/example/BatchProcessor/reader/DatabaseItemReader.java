@@ -20,6 +20,23 @@ import org.springframework.util.Assert;
  */
 public class DatabaseItemReader {
 
+    /**
+     * Construye un lector JPA paginado que recorre <b>todas</b> las filas de la
+     * entidad indicada ({@code SELECT e FROM Entidad e}), de 10 en 10.
+     *
+     * <p>No guarda su estado entre ejecuciones ({@code saveState=false}): si un
+     * job falla a mitad, al relanzarlo vuelve a leer desde el principio.
+     *
+     * <p>La anotación {@code @Value} del parámetro no tiene efecto aquí, porque
+     * esta clase no es un bean; el valor real lo inyecta el {@code @Bean} de
+     * {@code BatchConfig}, que es quien la llama.
+     *
+     * @param entityManagerFactory factoría JPA de la base de la que se lee
+     * @param entityClassName      nombre completo de la entidad
+     * @param <T>                  tipo de la entidad
+     * @return lector listo para el paso
+     * @throws ClassNotFoundException si la clase no existe
+     */
     public <T> JpaPagingItemReader<T> databaseReader(EntityManagerFactory entityManagerFactory,
                                                      @Value("#{jobParameters['entityClass']}") String entityClassName) throws ClassNotFoundException {
         System.out.println(entityClassName);
@@ -40,6 +57,8 @@ public class DatabaseItemReader {
         String jpqlQuery = "SELECT e FROM " + entityClass.getSimpleName() + " e";
 
         // Establecer el queryString al lector
+        // JPQL usa el nombre de la entidad, que por defecto es el nombre simple
+        // de la clase (no el de la tabla).
         reader.setQueryString(jpqlQuery);
 
         return reader;

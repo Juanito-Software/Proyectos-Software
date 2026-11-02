@@ -4,25 +4,43 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 /**
- * Entidad JPA que representa una persona en la base de datos.
- * Esta clase almacena información sobre una persona y está asociada a un empleo mediante una relación ManyToOne.
+ * Entidad JPA de ejemplo: una persona con su nombre completo y su empleo.
+ *
+ * <p>Sirve para demostrar que el motor no está atado a {@link GenericEntity}:
+ * poniendo {@code entityClass=com.example.BatchProcessor.model.Persona}, las
+ * nueve rutas funcionan con esta clase (el CSV de entrada debe tener entonces
+ * las cabeceras {@code personaId}, {@code nombreCompleto} y {@code empleo}).
+ * También es la forma que devuelve y acepta la API de ejemplo del puerto 8081.
+ *
+ * <p>El empleo es un texto, no una relación con otra entidad.
  */
 @Entity
-@Table(name = "persona")  // Prefijo 'tbl_' añadido al nombre de la tabla
+@Table(name = "persona")
 public class Persona {
+
+    /** Clave primaria, autoincremental; columna {@code personaId}. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "personaId")  // Mapea el atributo "personaId" con la columna "persona_id"
+    @Column(name = "personaId")
     private Long personaId;
 
-    @Column(name = "nombreCompleto")  // Mapea el atributo "personaId" con la columna "persona_id"
+    /** Nombre y apellidos; columna {@code nombreCompleto}. */
+    @Column(name = "nombreCompleto")
     private String nombreCompleto;
 
-    @Column(name = "empleo")  // Mapea el atributo "personaId" con la columna "persona_id"
+    /** Puesto de trabajo, como texto libre; columna {@code empleo}. */
+    @Column(name = "empleo")
     private String empleo;
 
+    /** Constructor vacío: lo necesitan JPA, Jackson y el lector de CSV. */
     public Persona() {}
 
+    /**
+     * Crea una persona aún sin id (lo asignará la base al guardarla).
+     *
+     * @param nombreCompleto nombre y apellidos
+     * @param empleo         puesto de trabajo
+     */
     public Persona(String nombreCompleto, String empleo) {
         this.nombreCompleto = nombreCompleto;
         this.empleo = empleo;

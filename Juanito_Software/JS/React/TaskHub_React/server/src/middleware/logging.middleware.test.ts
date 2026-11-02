@@ -24,6 +24,7 @@ function respuestaFalsa(statusCode = 200) {
   return { res, terminar: () => oyentes.finish?.() };
 }
 
+/** Petición simulada; `extra` sobrescribe método o URL. */
 const peticion = (extra: Partial<Request> = {}) =>
   ({ method: 'GET', originalUrl: '/api/tasks', ...extra }) as unknown as Request;
 

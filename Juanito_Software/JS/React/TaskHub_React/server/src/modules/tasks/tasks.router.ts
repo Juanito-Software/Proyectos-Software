@@ -1,3 +1,10 @@
+/**
+ * Rutas de tareas, montadas en `/api/tasks`.
+ *
+ * Todas exigen sesión (`authMiddleware`) y pasan por el limitador general de
+ * la API. Cada usuario solo opera sobre sus propias tareas: el filtro por
+ * dueño lo aplica el repositorio con el `userId` del token.
+ */
 import { Router } from 'express';
 import { tasksController } from './tasks.controller.js';
 import { validate, validarUuid } from '../../middleware/validate.middleware.js';
@@ -7,6 +14,8 @@ import { apiLimiter } from '../../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
+// Primero el límite de peticiones, después la identificación: un cliente que
+// martillea la API se corta sin llegar a verificar tokens.
 router.use(apiLimiter);
 router.use(authMiddleware);
 

@@ -16,6 +16,7 @@ import { ApiError } from '../utils/api-error.js';
  * tocara sin querer una ruta de administración.
  */
 
+/** Usuario normal tal como lo devolvería el repositorio. */
 const USUARIO = {
   id: 'user-1',
   username: 'juan',
@@ -23,6 +24,7 @@ const USUARIO = {
   passwordHash: '$2b$12$hash',
   createdAt: '2026-01-01T00:00:00.000Z',
 };
+/** El mismo usuario con rol de administrador. */
 const ADMIN = { ...USUARIO, id: 'admin-1', username: 'jefe', role: 'admin' as const };
 
 /** Petición simulada con la cabecera que se quiera. */
@@ -43,6 +45,7 @@ async function ejecutar(
   return { error, req };
 }
 
+/** Token de acceso firmado de verdad para USUARIO. */
 const tokenValido = () =>
   tokenService.generateAccessToken({ userId: USUARIO.id, username: USUARIO.username });
 

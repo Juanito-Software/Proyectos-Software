@@ -44,6 +44,13 @@ export const REFRESH_COOKIE = 'taskhub_refresh';
  */
 const COOKIE_PATH = '/api/auth';
 
+/**
+ * Pone la cookie del token de refresco (`HttpOnly`, `SameSite=Strict`, ruta
+ * `/api/auth`, `Secure` en producción) con la misma vida que el token.
+ *
+ * @param res   respuesta en la que se añade `Set-Cookie`
+ * @param token token de refresco en claro
+ */
 export function setRefreshCookie(res: Response, token: string): void {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
@@ -57,6 +64,11 @@ export function setRefreshCookie(res: Response, token: string): void {
   });
 }
 
+/**
+ * Pide al navegador que borre la cookie de refresco.
+ *
+ * @param res respuesta en la que se añade el `Set-Cookie` de borrado
+ */
 export function clearRefreshCookie(res: Response): void {
   // Los atributos tienen que coincidir con los del `set` o el navegador no
   // identifica la cookie y se queda con la vieja.
@@ -77,6 +89,9 @@ export function clearRefreshCookie(res: Response): void {
  * El `split` por `=` está limitado al primer separador porque el valor podría
  * contener uno; y se compara el nombre ya recortado, porque la cabecera lleva
  * un espacio detrás de cada `;`.
+ *
+ * @param req petición con la cabecera `Cookie`
+ * @returns el token de refresco, o `undefined` si no viene o está mal codificado
  */
 export function readRefreshCookie(req: Request): string | undefined {
   const cabecera = req.headers.cookie;

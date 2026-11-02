@@ -1,3 +1,13 @@
+/**
+ * Casos de uso de tareas: reglas de negocio entre el controlador y el
+ * repositorio.
+ *
+ * Todas las operaciones reciben el `userId` del token y lo pasan al
+ * repositorio, que filtra por dueño. Una tarea de otro usuario se trata igual
+ * que una inexistente (404), para no revelar que existe.
+ *
+ * Todo lo que devuelven es `TaskDto` (con el campo `completed` derivado).
+ */
 import { tasksRepository, toDto } from './tasks.repository.js';
 import { ApiError } from '../../utils/api-error.js';
 import { CreateTaskDTO, UpdateTaskDTO, TaskFilters, TaskStatus, TaskPriority } from './tasks.types.js';
@@ -6,6 +16,9 @@ import { CreateTaskDTO, UpdateTaskDTO, TaskFilters, TaskStatus, TaskPriority } f
  * El cliente puede mandar `status` (modelo nuevo) o `completed` (modelo
  * antiguo, que sigue usando el frontend React). Si llegan los dos manda
  * `status`, por ser el más expresivo.
+ *
+ * @param input cuerpo con `status` y/o `completed`
+ * @returns el estado resultante, o `undefined` si no llega ninguno de los dos
  */
 function resolveStatus(input: { status?: TaskStatus; completed?: boolean }): TaskStatus | undefined {
   if (input.status !== undefined) return input.status;
@@ -47,18 +60,34 @@ function isForeignKeyViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && (err as { code?: string }).code === '23503';
 }
 
+/** Casos de uso de tareas. */
 export const tasksService = {
+  /**
+   * @param userId  dueño de las tareas
+   * @param filters filtros opcionales (estado, prioridad, texto)
+   * @returns tareas del usuario, más recientes primero
+   */
   async listForUser(userId: string, filters?: TaskFilters) {
     const tasks = await tasksRepository.findAllByUser(userId, filters);
     return tasks.map(toDto);
   },
 
+  /**
+   * @throws ApiError 404 si la tarea no existe o es de otro usuario
+   */
   async getById(id: string, userId: string) {
     const task = await tasksRepository.findById(id, userId);
     if (!task) throw ApiError.notFound('Tarea no encontrada');
     return toDto(task);
   },
 
+  /**
+   * Crea una tarea. Recorta título y descripción y aplica los valores por
+   * defecto (`pending`, `medium`, descripción vacía).
+   *
+   * @throws ApiError 409 si el usuario ya tiene una tarea con ese título (sin
+   *         distinguir mayúsculas); 401 si la cuenta ya no existe
+   */
   async create(input: CreateTaskDTO, userId: string) {
     const title = input.title.trim();
 
@@ -96,6 +125,12 @@ export const tasksService = {
     }
   },
 
+  /**
+   * Actualización parcial (PATCH): solo cambia los campos que llegan.
+   *
+   * @throws ApiError 404 si no existe o es de otro usuario; 409 si el título
+   *         nuevo ya lo usa otra tarea del usuario
+   */
   async update(id: string, userId: string, input: UpdateTaskDTO) {
     const existing = await tasksRepository.findById(id, userId);
     if (!existing) throw ApiError.notFound('Tarea no encontrada');
@@ -139,6 +174,10 @@ export const tasksService = {
    * métodos hablaban con el mismo controlador y un PUT de una sola esquina no
    * era ningún reemplazo; era un PATCH con otro nombre.
    */
+  /**
+   * @throws ApiError 404 si no existe o es de otro usuario; 409 si el título
+   *         nuevo ya lo usa otra tarea del usuario
+   */
   async replace(id: string, userId: string, input: CreateTaskDTO) {
     const existing = await tasksRepository.findById(id, userId);
     if (!existing) throw ApiError.notFound('Tarea no encontrada');
@@ -167,12 +206,16 @@ export const tasksService = {
     }
   },
 
+  /**
+   * @throws ApiError 404 si no existe o es de otro usuario
+   */
   async remove(id: string, userId: string) {
     if (!(await tasksRepository.delete(id, userId))) {
       throw ApiError.notFound('Tarea no encontrada');
     }
   },
 
+  /** @returns recuento de tareas del usuario por estado (ver `countByUser`) */
   async statsForUser(userId: string) {
     return tasksRepository.countByUser(userId);
   },

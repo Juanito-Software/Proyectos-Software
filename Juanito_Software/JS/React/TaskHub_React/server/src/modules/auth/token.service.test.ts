@@ -12,6 +12,7 @@ import { env } from '../../config/env.js';
  * fallo más grave de este diseño, así que hay tests en las dos direcciones.
  */
 
+/** Datos de usuario para firmar los tokens de prueba. */
 const PAYLOAD = { userId: 'u-1', username: 'juan' };
 
 describe('token de acceso', () => {

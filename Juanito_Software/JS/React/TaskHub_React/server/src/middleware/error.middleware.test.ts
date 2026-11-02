@@ -35,6 +35,7 @@ function respuestaFalsa() {
 }
 
 const req = {} as Request;
+/** next() vacío: el manejador de errores no debe llamarlo. */
 const next = (() => {}) as NextFunction;
 
 /**

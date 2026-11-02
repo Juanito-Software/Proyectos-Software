@@ -2,8 +2,18 @@ import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { env } from '../../config/env.js';
 
+/**
+ * Tokens de acceso (JWT firmados con HS256).
+ *
+ * Los tokens de refresco no son JWT y no pasan por aquí: ver
+ * `refresh-token.ts` y `sessions.repository.ts`.
+ */
+
+/** Contenido (claims propios) de un token de acceso. */
 export interface TokenPayload {
+  /** Id del usuario. */
   userId: string;
+  /** Nombre del usuario, para los logs; no se usa para autorizar. */
   username: string;
   /**
    * Marca el token como de acceso.
@@ -35,6 +45,7 @@ export interface TokenPayload {
  */
 const ALGORITHM: jwt.Algorithm = 'HS256';
 
+/** Emisión y verificación de tokens de acceso. */
 export const tokenService = {
   /**
    * Emite un token de acceso de vida corta.
@@ -44,6 +55,9 @@ export const tokenService = {
    * necesite una lista negra consultada en cada petición — a cambio, un token
    * ya emitido sigue valiendo hasta que caduca aunque se cierre la sesión, y
    * por eso la duración es de minutos y no de días.
+   *
+   * @param payload id y nombre del usuario; el `typ` se añade aquí
+   * @returns JWT firmado que caduca a los `ACCESS_TOKEN_TTL`
    */
   generateAccessToken(payload: Omit<TokenPayload, 'typ'>): string {
     return jwt.sign({ ...payload, typ: 'access' }, env.jwtSecret, {
@@ -60,6 +74,14 @@ export const tokenService = {
     });
   },
 
+  /**
+   * Comprueba firma, caducidad y contenido de un token de acceso.
+   *
+   * @param token JWT recibido en la cabecera `Authorization`
+   * @returns los datos del token si es válido
+   * @throws jwt.JsonWebTokenError o jwt.TokenExpiredError si no lo es
+   *         (authMiddleware los convierte en 401)
+   */
   verifyAccessToken(token: string): TokenPayload {
     const payload = jwt.verify(token, env.jwtSecret, {
       algorithms: [ALGORITHM],

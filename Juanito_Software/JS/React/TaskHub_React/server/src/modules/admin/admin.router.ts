@@ -1,3 +1,8 @@
+/**
+ * Rutas del panel de administración, montadas en `/api/admin`.
+ *
+ * Todas exigen sesión válida y rol `admin`.
+ */
 import { Router } from 'express';
 import { adminController } from './admin.controller.js';
 import { authMiddleware } from '../../middleware/auth.middleware.js';

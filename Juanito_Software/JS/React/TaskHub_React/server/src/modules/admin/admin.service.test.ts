@@ -18,6 +18,7 @@ import { ApiError } from '../../utils/api-error.js';
  * de verdad, y mezclar las dos cosas haría estos tests lentos sin añadir nada.
  */
 
+// Usuarios de prueba tal como los devolvería el repositorio.
 const ADMIN = { id: 'admin-1', username: 'jefe', role: 'admin' as const };
 const NORMAL = { id: 'user-1', username: 'juan', role: 'user' as const };
 

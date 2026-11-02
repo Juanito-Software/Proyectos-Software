@@ -3,7 +3,15 @@ import { query } from '../../config/db.js';
 import { ApiError } from '../../utils/api-error.js';
 import { registrarEventoSeguridad } from '../../utils/security-log.js';
 
+/**
+ * Casos de uso del panel de administración. Opera sobre toda la instancia,
+ * no sobre el usuario que hace la petición.
+ */
 export const adminService = {
+  /**
+   * @returns todos los usuarios con su número de tareas (`AdminUserView[]`),
+   *          sin hashes de contraseña
+   */
   listUsers() {
     return usersRepository.listAll();
   },
@@ -13,6 +21,12 @@ export const adminService = {
    *
    * Dos salvaguardas, y las dos existen por lo mismo: que un clic no deje la
    * aplicación sin nadie que pueda administrarla.
+   *
+   * @param targetId    id del usuario a borrar
+   * @param requesterId id del administrador que lo pide (sale del token)
+   * @returns `{ id, username }` del usuario borrado
+   * @throws ApiError 400 si se intenta borrar a sí mismo o al último
+   *                  administrador; 404 si el usuario no existe
    */
   async removeUser(targetId: string, requesterId: string) {
     if (targetId === requesterId) {
@@ -45,7 +59,12 @@ export const adminService = {
     return { id: targetId, username: target.username };
   },
 
-  /** Resumen de toda la instancia, no de un usuario concreto. */
+  /**
+   * Resumen de toda la instancia, no de un usuario concreto. Una sola
+   * consulta con subconsultas de recuento.
+   *
+   * @returns `{ users, admins, tasks, pending, inProgress, completed }`
+   */
   async globalStats() {
     const rows = await query<{
       users: number;

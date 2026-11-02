@@ -7,6 +7,7 @@ import {
 } from './auth.validation.js';
 import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_BYTES } from './password-policy.js';
 
+/** Petición simulada con el cuerpo dado. */
 const req = (body: unknown) => ({ body }) as unknown as Request;
 
 /**

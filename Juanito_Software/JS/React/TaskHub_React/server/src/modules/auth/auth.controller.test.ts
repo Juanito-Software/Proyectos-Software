@@ -18,6 +18,7 @@ import { ApiError } from '../../utils/api-error.js';
  * único punto. Aquí se comprueba en las tres rutas que emiten credenciales.
  */
 
+/** Lo que devolvería el servicio al abrir sesión. */
 const CREDENCIALES = {
   user: { id: 'user-1', username: 'juan', role: 'user' as const },
   accessToken: 'jwt-de-acceso',
@@ -53,6 +54,7 @@ function respuestaFalsa() {
   return { res, capturado };
 }
 
+/** Petición simulada; `extra` añade cuerpo, cabeceras o userId. */
 const peticion = (extra: Partial<Request> = {}) =>
   ({ headers: {}, body: {}, ...extra }) as unknown as Request;
 

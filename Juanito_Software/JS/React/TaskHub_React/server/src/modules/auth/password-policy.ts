@@ -67,6 +67,7 @@
  * Explicado junto a la comprobación correspondiente.
  */
 
+/** Longitud mínima de una contraseña, en caracteres. */
 export const MIN_PASSWORD_LENGTH = 15;
 
 /**
@@ -185,6 +186,7 @@ const SUSTITUCIONES_LEET: Record<string, string> = {
   '8': 'b',
 };
 
+/** Traduce las sustituciones leet a letras: `p@ssw0rd` → `password`. */
 function deshacerLeet(valor: string): string {
   return valor.replace(/[@40!13$57+8]/g, (c) => SUSTITUCIONES_LEET[c] ?? c);
 }
@@ -257,8 +259,11 @@ const TIENE_MAYUSCULA = /\p{Lu}/u;
 const TIENE_DIGITO = /[0-9]/;
 const TIENE_SIMBOLO = /[^\p{L}\p{N}\s]/u;
 
+/** Veredicto de `validarPassword`. */
 export interface ResultadoPolitica {
+  /** `true` si la contraseña cumple todas las reglas. */
   valida: boolean;
+  /** Primer motivo de rechazo, redactado para mostrarlo al usuario. */
   error?: string;
 }
 
@@ -274,6 +279,11 @@ export interface ResultadoPolitica {
  * útil de los que apliquen: la lista de bloqueo va ANTES que la composición,
  * porque a quien escribe "passwordpassword" le sirve más saber que es una
  * contraseña común que saber que le falta una mayúscula.
+ *
+ * @param password contraseña a comprobar (se acepta `unknown` para validar
+ *                 directamente lo que llega en el cuerpo de la petición)
+ * @param username nombre de usuario, para rechazar contraseñas que lo contengan
+ * @returns `{ valida: true }` o `{ valida: false, error }`
  */
 export function validarPassword(password: unknown, username?: string): ResultadoPolitica {
   if (typeof password !== 'string' || !password) {

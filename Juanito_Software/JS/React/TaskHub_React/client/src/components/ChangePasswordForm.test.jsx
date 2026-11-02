@@ -21,8 +21,10 @@ import * as authApi from '../services/authApi';
  * 3. **Que un fallo no deje el formulario en estado de éxito.**
  */
 
+/** Contraseña nueva que cumple la política. */
 const VALIDA = 'Café con leche y 2 tostadas!';
 
+/** Monta el formulario dentro de un AuthProvider, como en la aplicación. */
 function montar() {
   return render(
     <AuthProvider>

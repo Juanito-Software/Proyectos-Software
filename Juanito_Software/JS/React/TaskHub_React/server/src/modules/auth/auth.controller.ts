@@ -1,3 +1,12 @@
+/**
+ * Controlador de autenticación (`/api/auth/*`).
+ *
+ * Traduce entre HTTP y `authService`, y es el único sitio que pone o borra la
+ * cookie del token de refresco. Los errores se pasan a `next()`.
+ *
+ * Las respuestas que abren sesión llevan en el cuerpo `{ user, accessToken }`
+ * y el token de refresco en `Set-Cookie`.
+ */
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service.js';
 import { ApiResponse } from '../../utils/api-response.js';
@@ -10,6 +19,11 @@ import { setRefreshCookie, clearRefreshCookie, readRefreshCookie } from './auth.
  * JSON, el cliente podría leerlo con JavaScript y `HttpOnly` no habría servido
  * de nada. El token de acceso sí va en el cuerpo, porque el cliente tiene que
  * ponerlo en la cabecera `Authorization` de cada petición.
+ *
+ * @param res       respuesta en la que se escribe
+ * @param estado    código HTTP (201 al registrarse, 200 en el resto)
+ * @param resultado lo que devolvió el servicio, con `refreshToken` incluido
+ * @param mensaje   texto para el usuario
  */
 function responder(
   res: Response,
@@ -22,7 +36,9 @@ function responder(
   res.status(estado).json(ApiResponse.success(cuerpo, mensaje));
 }
 
+/** Manejadores HTTP de `/api/auth/*`. */
 export const authController = {
+  /** `POST /api/auth/register` — crea la cuenta y deja al usuario dentro (201). */
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.register(req.body);
@@ -32,6 +48,7 @@ export const authController = {
     }
   },
 
+  /** `POST /api/auth/login` — comprueba las credenciales y abre sesión. */
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await authService.login(req.body);

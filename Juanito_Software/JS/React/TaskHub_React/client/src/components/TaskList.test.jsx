@@ -52,6 +52,7 @@ afterEach(() => {
 
 const usuario = { username: 'juan' };
 
+/** Monta la lista con un usuario de prueba; las props sobrescriben las de por defecto. */
 const montar = (props = {}) =>
   render(<TaskList user={usuario} onLogout={vi.fn()} {...props} />);
 

@@ -1,10 +1,21 @@
+/**
+ * Validadores de entrada de las rutas de autenticación. Devuelven la lista de
+ * errores (que `validate()` convierte en un 400) o `null` si todo está bien.
+ */
 import { Request } from 'express';
 import { ValidatorFn } from '../../middleware/validate.middleware.js';
 import { validarPassword } from './password-policy.js';
 
+/** Longitud mínima del nombre de usuario, tras recortar espacios. */
 const MIN_USERNAME_LENGTH = 3;
+/** Longitud máxima del nombre de usuario, tras recortar espacios. */
 const MAX_USERNAME_LENGTH = 32;
 
+/**
+ * Registro: nombre de usuario entre 3 y 32 caracteres y contraseña que cumpla
+ * la política completa (`password-policy.ts`). Los mensajes repetidos se
+ * eliminan, así que si faltan los dos campos sale un solo error.
+ */
 export const registerValidator: ValidatorFn = (req: Request): string[] | null => {
   const errors: string[] = [];
   const { username, password } = req.body ?? {};

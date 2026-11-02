@@ -11,18 +11,32 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 /**
- * Escritor que envía datos procesados a una API mediante solicitudes POST.
- * Utilizado en el contexto de Spring Batch.
+ * Escritor que envía cada chunk a una API REST con un POST.
+ *
+ * <p>El cuerpo es un array JSON con los elementos del chunk (hasta 10, el
+ * tamaño de chunk del controlador), serializados con los campos de la entidad.
+ * La API receptora debe aceptar una lista, como la de ejemplo en
+ * {@code apiToWriteUrl}.
+ *
+ * <p>No reintenta: si una petición falla, el paso falla y el job termina en
+ * {@code FAILED}. Los chunks ya enviados antes del fallo no se deshacen, porque
+ * la transacción del paso no abarca a la API remota.
+ *
+ * @param <T> tipo de la entidad
  */
 @Component
 public class ApiItemWriter<T> implements ItemWriter<T> {
 
+    /** Cliente HTTP construido con la configuración de Spring Boot. */
     private final RestTemplate restTemplate;
 
-    // URL de la API donde se enviarán los datos
+    // URL de la API donde se enviarán los datos (propiedad apiToWriteUrl)
     private String apiUrl;
 
-
+    /**
+     * @param restTemplateBuilder constructor de {@code RestTemplate}
+     * @param apiUrl              URL de escritura ({@code apiToWriteUrl})
+     */
     public ApiItemWriter(RestTemplateBuilder restTemplateBuilder, @Value("${apiToWriteUrl}") String apiUrl) {
         this.restTemplate = restTemplateBuilder.build();
         this.apiUrl = apiUrl;
@@ -39,6 +53,10 @@ public class ApiItemWriter<T> implements ItemWriter<T> {
      *
      * <p>Lo destapó {@code JobCsvAApiTest} al contar peticiones en lugar de
      * mirar solo el estado final del job.
+     *
+     * @param chunk elementos a enviar; si está vacío no se hace ninguna petición
+     * @throws RuntimeException si la API responde con un código no 2xx o la
+     *                          petición falla (la causa original va encadenada)
      */
     @Override
     public void write(Chunk<? extends T> chunk) throws Exception {

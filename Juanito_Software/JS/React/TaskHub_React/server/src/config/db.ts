@@ -1,3 +1,10 @@
+/**
+ * Conexión a PostgreSQL: un único pool compartido por toda la aplicación, un
+ * atajo para consultas y la creación del esquema.
+ *
+ * Los repositorios importan `query` (o `pool`, si necesitan transacciones) y
+ * no saben nada de la cadena de conexión ni del esquema de tests.
+ */
 import pg from 'pg';
 import { env } from './env.js';
 import { SCHEMA_SQL } from './schema.js';
@@ -36,6 +43,11 @@ function resolveConnectionString(): string {
 
 const connectionString = resolveConnectionString();
 
+/**
+ * Pool de conexiones de `pg`. Reutiliza conexiones abiertas en vez de abrir
+ * una por consulta. Úsalo directamente solo para transacciones
+ * (`pool.connect()` + `BEGIN`/`COMMIT`); para lo demás, `query()`.
+ */
 export const pool = new pg.Pool({
   connectionString,
   // Neon y la mayoría de proveedores gestionados exigen TLS. No se desactiva
@@ -45,7 +57,16 @@ export const pool = new pg.Pool({
   ...(schema ? { options: `-c search_path=${schema}` } : {}),
 });
 
-/** Atajo para consultas sueltas; devuelve directamente las filas tipadas. */
+/**
+ * Atajo para consultas sueltas; devuelve directamente las filas tipadas.
+ *
+ * Los valores van siempre como parámetros (`$1`, `$2`...), nunca concatenados
+ * en el texto: así `pg` los escapa y no hay inyección SQL.
+ *
+ * @param text   SQL con marcadores `$n`
+ * @param params valores de los marcadores, en orden
+ * @returns las filas del resultado (vacío si no hay ninguna)
+ */
 export async function query<T extends pg.QueryResultRow>(
   text: string,
   params: unknown[] = [],
@@ -59,6 +80,7 @@ export async function initSchema(): Promise<void> {
   await pool.query(SCHEMA_SQL);
 }
 
+/** Cierra todas las conexiones del pool. Se llama al apagar el servidor y al final de los scripts. */
 export async function closePool(): Promise<void> {
   await pool.end();
 }

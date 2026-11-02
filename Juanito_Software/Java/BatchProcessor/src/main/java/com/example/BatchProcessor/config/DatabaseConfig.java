@@ -16,9 +16,18 @@ import java.util.Map;
 
 
 /**
- * Configuración de la base de datos utilizando HikariCP para la gestión de conexiones.
- * Esta clase lee los parámetros de conexión a la base de datos
- * y configura el DataSource para ser utilizado en la aplicación.
+ * Base de datos <b>principal</b>: {@code DataSource} con HikariCP y su
+ * {@code EntityManagerFactory}.
+ *
+ * <p>Es la base de la que leen los lectores, en la que escribe
+ * {@code databaseItemWriter} y donde Spring Batch guarda sus metadatos. Los
+ * dos beans son {@code @Primary}: cualquier componente que pida un
+ * {@code DataSource} o una {@code EntityManagerFactory} por tipo recibe estos.
+ * La segunda base, destino de la ruta base de datos → base de datos, está en
+ * {@link SecondDatabaseConfig}.
+ *
+ * <p>Los parámetros de conexión llegan de {@link DataSourceConfigProperties}
+ * ({@code spring.datasource.*}).
  */
 @Configuration
 public class DatabaseConfig {
@@ -27,6 +36,7 @@ public class DatabaseConfig {
     // Inyectar la clase DataSourceConfig que contiene las propiedades de la base de datos que comienzan por spring.datasource
     private final DataSourceConfigProperties dataSourceConfigProperties;
 
+    /** @param dataSourceConfigProperties propiedades {@code spring.datasource.*} ya enlazadas */
     public DatabaseConfig(DataSourceConfigProperties dataSourceConfigProperties) {
         this.dataSourceConfigProperties = dataSourceConfigProperties;
     }
@@ -46,6 +56,14 @@ public class DatabaseConfig {
      * {@code @Primary} para que todo lo que la pida por tipo siga recibiendo
      * esta. Es un cambio sin efecto visible hoy y la condición previa para poder
      * añadir una segunda base de datos sin romper la primera.
+     *
+     * @param builder             constructor que aporta Spring Boot (adaptador
+     *                            de Hibernate ya configurado)
+     * @param dataSource          base principal
+     * @param jpaProperties       propiedades {@code spring.jpa.*}
+     * @param hibernateProperties propiedades {@code spring.jpa.hibernate.*}
+     * @return factoría de la unidad de persistencia {@code default}, que
+     *         gestiona las entidades de {@code com.example.BatchProcessor.model}
      */
     @Primary
     @Bean(name = "entityManagerFactory")
@@ -74,6 +92,14 @@ public class DatabaseConfig {
                 .build();
     }
 
+    /**
+     * Pool de conexiones HikariCP a la base principal.
+     *
+     * <p>Se construye a mano, no con la autoconfiguración, para leer los
+     * ajustes del pool desde {@link DataSourceConfigProperties.HikariConfig}.
+     *
+     * @return {@code DataSource} principal
+     */
     @Primary
     @Bean(name = "dataSource")
     public DataSource dataSource() {
@@ -98,6 +124,10 @@ public class DatabaseConfig {
         return dataSource;
     }
 
+    // ── Código histórico, desactivado ──────────────────────────────────────
+    // Los dos bloques comentados que siguen son versiones anteriores de esta
+    // configuración, conservadas como referencia didáctica. Ninguno se compila.
+    //
     //Mediante esta implementacion estabamos leyendo desde el archivo de propiedades application.properties directamente
 
     /*@Value("${spring.datasource.url}")
