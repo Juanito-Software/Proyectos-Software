@@ -25,6 +25,7 @@ const nuevoUsuario = () => `e2e-${crypto.randomUUID().slice(0, 12)}`;
 // Cumple los cuatro requisitos: 15+ caracteres, mayúscula, número y símbolo.
 const PASSWORD = 'Frase larga de prueba e2e 7!';
 
+/** Abre la app, pasa al modo registro y crea una cuenta nueva; espera a estar dentro. */
 async function registrarse(page, username = nuevoUsuario()) {
   await page.goto('/');
 
@@ -317,6 +318,7 @@ test.describe('Autenticación', () => {
  */
 const PASSWORD_NUEVA = 'Otra frase distinta y larga 9!';
 
+/** Inicia sesión desde la pantalla de acceso y espera a ver el nombre de usuario. */
 async function entrar(page, username, password) {
   await page.goto('/');
   await page.getByPlaceholder('Usuario', { exact: true }).fill(username);
@@ -325,6 +327,7 @@ async function entrar(page, username, password) {
   await expect(page.getByText(username)).toBeVisible({ timeout: 15_000 });
 }
 
+/** Abre el formulario de cambio de contraseña desde la cabecera, lo rellena y lo envía. */
 async function cambiarPassword(page, actual, nueva) {
   // `exact` en casi todo, y no por costumbre: estos selectores casan por
   // subcadena, y aquí hay tres nombres que se contienen unos a otros. El botón

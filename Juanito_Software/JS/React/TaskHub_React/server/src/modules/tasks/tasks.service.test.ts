@@ -15,8 +15,10 @@ import { tasksRepository } from './tasks.repository.js';
  * 500 con el mensaje de PostgreSQL dentro.
  */
 
+/** Id del usuario dueño de las tareas de prueba. */
 const USER = 'user-1';
 
+/** Tarea de ejemplo tal como la devolvería el repositorio. */
 const TAREA = {
   id: 'task-1',
   title: 'Comprar pan',

@@ -1,3 +1,10 @@
+/**
+ * Cliente HTTP de autenticación (`/api/auth`). Funciones sin estado: el token
+ * de acceso lo guarda AuthContext y el de refresco, el navegador (cookie).
+ *
+ * Todas devuelven el campo `data` de la respuesta o lanzan un `Error` con el
+ * mensaje del servidor.
+ */
 const AUTH_BASE = '/api/auth';
 
 /**
@@ -9,6 +16,11 @@ const AUTH_BASE = '/api/auth';
  * pasarle `credentials`: al ser mismo origen —en producción directamente, y en
  * desarrollo a través del proxy de Vite—, `fetch` ya manda las cookies por
  * defecto.
+ *
+ * @param {string} path ruta bajo /api/auth
+ * @param {object} [body] cuerpo JSON
+ * @param {string} fallbackError mensaje si el servidor no da uno
+ * @returns {Promise<unknown>}
  */
 async function post(path, body, fallbackError) {
   const res = await fetch(`${AUTH_BASE}${path}`, {
@@ -26,10 +38,12 @@ async function post(path, body, fallbackError) {
   return payload.data;
 }
 
+/** @returns {Promise<{user: object, accessToken: string}>} */
 export async function login(username, password) {
   return post('/login', { username, password }, 'Error al iniciar sesión');
 }
 
+/** @returns {Promise<{user: object, accessToken: string}>} */
 export async function register(username, password) {
   return post('/register', { username, password }, 'Error al registrarse');
 }
@@ -55,7 +69,12 @@ export async function logout() {
   return post('/logout', undefined, 'No se pudo cerrar la sesión');
 }
 
-/** Cierra todas las sesiones del usuario, en todos sus dispositivos. */
+/**
+ * Cierra todas las sesiones del usuario, en todos sus dispositivos.
+ *
+ * @param {string} accessToken token de acceso actual
+ * @returns {Promise<{revocadas: number}>}
+ */
 export async function logoutAll(accessToken) {
   const res = await fetch(`${AUTH_BASE}/logout-all`, {
     method: 'POST',
@@ -85,6 +104,11 @@ export async function logoutAll(accessToken) {
  *
  * Necesita la cabecera `Authorization` porque la ruta exige sesión: el usuario
  * se saca del token, nunca del cuerpo.
+ *
+ * @param {string} accessToken token de acceso actual
+ * @param {string} actual contraseña actual
+ * @param {string} nueva contraseña nueva
+ * @returns {Promise<{user: object, accessToken: string}>}
  */
 export async function changePassword(accessToken, actual, nueva) {
   const res = await fetch(`${AUTH_BASE}/change-password`, {

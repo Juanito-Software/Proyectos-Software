@@ -21,6 +21,7 @@ import { ApiError } from '../../utils/api-error.js';
  *    petición colgada hasta que el cliente se cansara.
  */
 
+/** Tarea de ejemplo tal como la devolvería el servicio. */
 const TAREA = {
   id: 'task-1',
   title: 'Comprar pan',
@@ -32,8 +33,10 @@ const TAREA = {
   updatedAt: '2026-01-01T00:00:00.000Z',
   completed: false,
 };
+/** Id del usuario autenticado en las peticiones simuladas. */
 const USER = 'user-1';
 
+/** Response simulado que guarda el status y el cuerpo que se le escriben. */
 function respuestaFalsa() {
   const capturado = { status: 200, cuerpo: null as unknown };
   const res = {
@@ -49,9 +52,11 @@ function respuestaFalsa() {
   return { res, capturado };
 }
 
+/** Petición simulada de USER; `extra` añade params, query o body. */
 const peticion = (extra: Partial<Request> = {}) =>
   ({ userId: USER, params: {}, query: {}, body: {}, ...extra }) as unknown as Request;
 
+/** Ejecuta un método del controlador y devuelve lo respondido y lo pasado a next(). */
 async function ejecutar(
   metodo: (r: Request, s: Response, n: NextFunction) => Promise<void>,
   req: Request = peticion(),

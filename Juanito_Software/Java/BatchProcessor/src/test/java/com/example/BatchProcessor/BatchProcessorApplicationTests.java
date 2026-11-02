@@ -28,6 +28,10 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class BatchProcessorApplicationTests {
 
+	/**
+	 * Pasa si el contexto arranca: todos los beans se crean y se cablean. Está
+	 * vacío a propósito, el fallo saltaría al cargar la clase de test.
+	 */
 	@Test
 	void contextLoads() {
 	}

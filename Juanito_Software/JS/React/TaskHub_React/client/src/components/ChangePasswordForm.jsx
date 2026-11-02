@@ -19,6 +19,12 @@ import {
  * Al terminar, el servidor cierra todas las demás sesiones. Se avisa antes de
  * enviar, no después: una acción que expulsa dispositivos debe anunciarse
  * mientras todavía se puede cancelar.
+ *
+ * Tras un cambio correcto muestra la confirmación en lugar del formulario.
+ *
+ * @param {object} props
+ * @param {() => void} [props.onDone] cierra el panel; si se da, aparecen los
+ *        botones «Cancelar» y «Cerrar»
  */
 export default function ChangePasswordForm({ onDone }) {
   const { changePassword } = useAuth();
@@ -33,6 +39,7 @@ export default function ChangePasswordForm({ onDone }) {
   const noCoinciden = confirmacion.length > 0 && nueva !== confirmacion;
   const requisitos = estadoRequisitos(nueva);
 
+  /** Comprueba en local (coincidencia, política, que no repita la actual) y envía. */
   async function handleSubmit(e) {
     e.preventDefault();
     e.stopPropagation();

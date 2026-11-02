@@ -1,3 +1,9 @@
+/**
+ * Acceso a la tabla `users` y único sitio donde se usa bcrypt.
+ *
+ * Las búsquedas por nombre no distinguen mayúsculas, igual que el índice
+ * único de la tabla.
+ */
 import bcrypt from 'bcrypt';
 import { query } from '../../config/db.js';
 import { User, PublicUser, AdminUserView, UserRole } from './users.types.js';
@@ -36,8 +42,10 @@ interface UserRow {
   created_at: Date;
 }
 
+/** Columnas que se leen siempre, en el orden de `UserRow`. */
 const COLUMNS = 'id, username, password_hash, role, created_at';
 
+/** Convierte una fila de Postgres en el `User` de la aplicación. */
 function toUser(row: UserRow): User {
   return {
     id: row.id,
@@ -48,13 +56,16 @@ function toUser(row: UserRow): User {
   };
 }
 
+/** Recorta un `User` a lo que puede ver el cliente (sin hash ni fechas). */
 function toPublic(user: User): PublicUser {
   return { id: user.id, username: user.username, role: user.role };
 }
 
+/** Consultas SQL sobre `users`. */
 export const usersRepository = {
   toPublic,
 
+  /** @returns el usuario con ese nombre (sin distinguir mayúsculas), o `null` */
   async findByUsername(username: string): Promise<User | null> {
     // Todos los valores viajan como parámetros ($1), nunca concatenados en la
     // cadena SQL: es lo que hace imposible la inyección.
@@ -65,11 +76,19 @@ export const usersRepository = {
     return rows[0] ? toUser(rows[0]) : null;
   },
 
+  /** @returns el usuario con ese id, o `null` */
   async findById(id: string): Promise<User | null> {
     const rows = await query<UserRow>(`SELECT ${COLUMNS} FROM users WHERE id = $1`, [id]);
     return rows[0] ? toUser(rows[0]) : null;
   },
 
+  /**
+   * Registra un usuario normal: hashea la contraseña y lo inserta.
+   *
+   * @param username nombre; se guarda recortado
+   * @param password contraseña en claro
+   * @returns el usuario creado, o `null` si el nombre ya estaba en uso
+   */
   async create(username: string, password: string): Promise<PublicUser | null> {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -92,6 +111,7 @@ export const usersRepository = {
     return rows[0] ? toPublic(toUser(rows[0])) : null;
   },
 
+  /** @returns `true` si `password` corresponde al hash guardado del usuario */
   async verifyPassword(user: User, password: string): Promise<boolean> {
     return bcrypt.compare(password, user.passwordHash);
   },
@@ -137,6 +157,7 @@ export const usersRepository = {
     }));
   },
 
+  /** @returns cuántos usuarios tienen ese rol */
   async countByRole(role: UserRole): Promise<number> {
     const rows = await query<{ count: number }>(
       'SELECT COUNT(*) AS count FROM users WHERE role = $1',
@@ -165,7 +186,12 @@ export const usersRepository = {
     return rows.length > 0;
   },
 
-  /** Las tareas del usuario se van solas por el ON DELETE CASCADE. */
+  /**
+   * Las tareas del usuario se van solas por el ON DELETE CASCADE, igual que
+   * sus sesiones de refresco.
+   *
+   * @returns `true` si existía y se borró
+   */
   async deleteById(id: string): Promise<boolean> {
     const rows = await query<{ id: string }>('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
     return rows.length > 0;

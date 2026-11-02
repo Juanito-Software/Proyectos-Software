@@ -17,6 +17,13 @@ import { registrarEventoSeguridad } from '../utils/security-log.js';
  * Devuelve 403 y no 404 porque aquí el recurso no es secreto: quien pregunta
  * ya está autenticado y sabe que existe una zona de administración. Ocultarla
  * no aportaría nada y confundiría el diagnóstico.
+ *
+ * Resultados: pasa al siguiente middleware si el usuario es admin; 401 si la
+ * cuenta ya no existe; 403 (y evento de seguridad) si no es admin.
+ *
+ * @param req  petición con `userId` ya puesto por authMiddleware
+ * @param _res no se usa
+ * @param next continúa, o recibe el `ApiError` correspondiente
  */
 export async function requireAdmin(
   req: Request,

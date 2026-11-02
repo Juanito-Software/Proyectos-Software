@@ -11,9 +11,11 @@ import type { ApiError } from '../utils/api-error.js';
  * Cinco rutas estaban afectadas.
  */
 
+/** Petición simulada con los parámetros de ruta dados. */
 const req = (params: Record<string, unknown>) => ({ params }) as unknown as Request;
 const validador = validarUuid('id');
 
+/** UUID bien formado. */
 const VALIDO = 'a3f1c8d2-4b5e-4a7f-9c1d-2e3f4a5b6c7d';
 
 describe('validarUuid', () => {

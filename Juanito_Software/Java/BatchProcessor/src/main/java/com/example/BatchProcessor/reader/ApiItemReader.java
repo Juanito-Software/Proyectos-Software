@@ -48,14 +48,26 @@ import java.util.List;
 @Component
 public class ApiItemReader<T> implements ItemReader<T>, StepExecutionListener {
 
+    /** Cliente HTTP con la configuración de Spring Boot (timeouts, conversores). */
     private final RestTemplate restTemplate;
+    /** El {@code ObjectMapper} de Spring, para respetar su configuración de Jackson. */
     private final ObjectMapper objectMapper;
+    /** URL de la que se descarga la lista (propiedad {@code apiToReadUrl}). */
     private final String apiUrl;
 
+    /** Elementos descargados; vacío hasta la primera llamada a {@link #read()}. */
     private List<T> items = new ArrayList<>();
+    /** Posición del siguiente elemento que devolverá {@link #read()}. */
     private int nextIndex = 0;
+    /** Clase de la entidad, resuelta en {@link #beforeStep}. */
     private Class<T> entityType;
 
+    /**
+     * @param restTemplateBuilder constructor de {@code RestTemplate} de Spring Boot
+     *                            (en los tests se sustituye por un servidor simulado)
+     * @param objectMapper        mapeador JSON de la aplicación
+     * @param apiUrl              URL de lectura ({@code apiToReadUrl})
+     */
     public ApiItemReader(RestTemplateBuilder restTemplateBuilder,
                          ObjectMapper objectMapper,
                          @Value("${apiToReadUrl}") String apiUrl) {
@@ -71,6 +83,11 @@ public class ApiItemReader<T> implements ItemReader<T>, StepExecutionListener {
      * es un singleton, asi que sin el, un segundo job en el mismo arranque
      * encontraria el indice al final de la lista anterior y no leeria nada. No
      * fallaria: devolveria cero elementos y el job terminaria en COMPLETED.
+     *
+     * @param stepExecution ejecución del paso; de ella se saca el parámetro
+     *                      {@code entityClass} del job
+     * @throws IllegalArgumentException si falta {@code entityClass} o no es una
+     *                                  clase del classpath
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -91,6 +108,14 @@ public class ApiItemReader<T> implements ItemReader<T>, StepExecutionListener {
         this.nextIndex = 0;
     }
 
+    /**
+     * Devuelve el siguiente elemento. La primera llamada del paso descarga la
+     * lista completa de la API en una sola petición GET; las siguientes la
+     * recorren en memoria.
+     *
+     * @return el siguiente elemento, o {@code null} cuando no quedan (así
+     *         indica Spring Batch el fin de la lectura)
+     */
     @Override
     public T read() {
         if (items.isEmpty()) {
@@ -100,6 +125,17 @@ public class ApiItemReader<T> implements ItemReader<T>, StepExecutionListener {
         return nextIndex < items.size() ? items.get(nextIndex++) : null;
     }
 
+    /**
+     * Pide la lista a la API y la convierte en una {@code List<entityType>}.
+     *
+     * <p>La API debe devolver un array JSON cuyos objetos tengan los campos de
+     * la entidad. Si devuelve un array vacío, el paso termina sin elementos.
+     *
+     * @return lista de entidades deserializadas
+     * @throws IllegalStateException si se llama antes de {@link #beforeStep}
+     * @throws RuntimeException      si la respuesta no es 2xx, no trae cuerpo o
+     *                               no se puede convertir en la entidad
+     */
     private List<T> descargar() {
         if (entityType == null) {
             throw new IllegalStateException(

@@ -1,3 +1,18 @@
+/**
+ * Rutas de autenticación, montadas en `/api/auth`.
+ *
+ * | Método y ruta                 | Exige sesión | Qué hace                                   |
+ * |-------------------------------|--------------|--------------------------------------------|
+ * | `POST /register`              | no           | crea la cuenta y abre sesión               |
+ * | `POST /login`                 | no           | abre sesión                                |
+ * | `POST /refresh`               | cookie       | rota el token de refresco, nuevo acceso    |
+ * | `POST /logout`                | cookie       | cierra esta sesión                         |
+ * | `POST /logout-all`            | sí           | cierra todas las sesiones del usuario      |
+ * | `POST /change-password`       | sí           | cambia la contraseña y cierra las demás    |
+ *
+ * El token de acceso viaja en la cabecera `Authorization`; el de refresco, en
+ * una cookie `httpOnly` (ver `auth.cookie.ts`).
+ */
 import { Router } from 'express';
 import { authController } from './auth.controller.js';
 import { validate } from '../../middleware/validate.middleware.js';

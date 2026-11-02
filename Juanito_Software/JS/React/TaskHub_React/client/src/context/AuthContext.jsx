@@ -8,6 +8,16 @@ import {
 } from '../services/authApi';
 import { setAuthToken, configurarAuth } from '../services/api';
 
+/**
+ * Estado de la sesión para toda la aplicación (contexto de React).
+ *
+ * Expone, a través de `useAuth()`:
+ * `user`, `token`, `isAuthenticated`, `login`, `register`, `logout` y
+ * `changePassword`.
+ *
+ * Mantiene sincronizados tres sitios: el estado de React, `localStorage` (para
+ * sobrevivir a una recarga) y el token que usa `services/api.js`.
+ */
 const AuthContext = createContext(null);
 
 /**
@@ -24,6 +34,10 @@ const AuthContext = createContext(null);
  */
 const STORAGE_KEY = 'taskhub_auth';
 
+/**
+ * @returns {{user: object, token: string} | null} la sesión guardada, o
+ *          `null` si no hay o no se puede leer
+ */
 function loadStoredAuth() {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -37,9 +51,15 @@ function loadStoredAuth() {
   return null;
 }
 
+/**
+ * Proveedor de la sesión. Envuelve la aplicación entera (ver `App.jsx`).
+ *
+ * @param {{children: import('react').ReactNode}} props
+ */
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(loadStoredAuth);
 
+  // Cada cambio de sesión se refleja en localStorage y en la capa de servicios.
   useEffect(() => {
     if (auth) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
@@ -99,12 +119,22 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * Inicia sesión y guarda las credenciales.
+   *
+   * @throws {Error} con el mensaje del servidor si falla (lo muestra App.jsx)
+   */
   async function login(username, password) {
     const { user, accessToken } = await loginApi(username, password);
     setAuthToken(accessToken);
     setAuth({ user, token: accessToken });
   }
 
+  /**
+   * Crea la cuenta y deja al usuario dentro.
+   *
+   * @throws {Error} con el mensaje del servidor si falla
+   */
   async function register(username, password) {
     const { user, accessToken } = await registerApi(username, password);
     setAuthToken(accessToken);
@@ -152,6 +182,7 @@ export function AuthProvider({ children }) {
     setAuth({ user, token: accessToken });
   }
 
+  // Lo que reciben los componentes con useAuth().
   const value = {
     user: auth?.user ?? null,
     token: auth?.token ?? null,
@@ -165,6 +196,12 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * Acceso a la sesión desde cualquier componente.
+ *
+ * @returns el valor del contexto (ver arriba)
+ * @throws {Error} si se usa fuera de `AuthProvider`
+ */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');

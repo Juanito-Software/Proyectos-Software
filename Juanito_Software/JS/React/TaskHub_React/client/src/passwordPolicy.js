@@ -17,8 +17,15 @@
  * mantenerlas sincronizadas sería una fuente de errores.
  */
 
+/** Longitud mínima en caracteres (igual que el servidor). */
 export const MIN_PASSWORD_LENGTH = 15;
+/** Máximo en bytes UTF-8: lo que bcrypt procesa sin truncar. */
 export const MAX_PASSWORD_BYTES = 72;
+/**
+ * Tope para el `maxLength` de los campos. `maxLength` cuenta caracteres, no
+ * bytes, así que con acentos se puede superar el límite de bytes: eso lo
+ * detecta `validarPasswordCliente`.
+ */
 export const MAX_PASSWORD_LENGTH = MAX_PASSWORD_BYTES;
 
 /**
@@ -55,6 +62,9 @@ export const REQUISITOS_PASSWORD = [
 /**
  * Qué requisitos cumple ya una contraseña, para poder marcarlos en la interfaz
  * según se escribe.
+ *
+ * @param {string} [password]
+ * @returns {{longitud: boolean, mayuscula: boolean, digito: boolean, simbolo: boolean}}
  */
 export function estadoRequisitos(password = '') {
   return {
@@ -70,6 +80,9 @@ export function estadoRequisitos(password = '') {
  *
  * El orden coincide con el del servidor para que el usuario no reciba un aviso
  * en el formulario y otro distinto de la API para el mismo problema.
+ *
+ * @param {string} password
+ * @returns {string | null} mensaje para el usuario, o `null` si cumple
  */
 export function validarPasswordCliente(password) {
   if (!password) return 'La contraseña es obligatoria';

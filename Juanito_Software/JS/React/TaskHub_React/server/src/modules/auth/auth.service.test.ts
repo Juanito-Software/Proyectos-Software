@@ -19,6 +19,7 @@ import { env } from '../../config/env.js';
  * hace `npm run verify` con 130 comprobaciones.
  */
 
+/** Usuario de prueba tal como lo devolvería el repositorio. */
 const USUARIO = {
   id: 'user-1',
   username: 'juan',

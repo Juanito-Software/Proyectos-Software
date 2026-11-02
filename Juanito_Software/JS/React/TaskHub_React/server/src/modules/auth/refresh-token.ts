@@ -24,6 +24,8 @@ const REFRESH_TOKEN_BYTES = 32;
  * 32 bytes son 256 bits de entropía: adivinarlo no es una vía de ataque.
  * Se codifica en base64url porque no lleva `+`, `/` ni `=`, que obligarían a
  * escapar el valor al meterlo en una cookie.
+ *
+ * @returns token aleatorio de 43 caracteres base64url
  */
 export function generarRefreshToken(): string {
   return crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('base64url');
@@ -39,6 +41,9 @@ export function generarRefreshToken(): string {
  * en cada renovación. El endurecimiento de bcrypt existe para resistir
  * diccionarios contra contraseñas que la gente elige; 32 bytes aleatorios no
  * tienen diccionario que valga.
+ *
+ * @param token token de refresco en claro (el valor de la cookie)
+ * @returns SHA-256 en hexadecimal (64 caracteres)
  */
 export function hashRefreshToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');

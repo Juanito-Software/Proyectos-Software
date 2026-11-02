@@ -7,13 +7,28 @@ import org.springframework.stereotype.Component;
 
 
 /**
- * Listener para la finalización de trabajos por lotes.
- * Esta clase implementa el comportamiento a ejecutar después de que un trabajo por lotes termine,
- * mostrando en consola el estado del trabajo.
+ * Escucha de fin de job: escribe en la salida estándar si el job terminó bien
+ * o falló.
+ *
+ * <p>{@code BatchController} lo engancha a cada job que compone. Como el
+ * lanzador es síncrono y la respuesta HTTP no distingue éxito de fallo, este
+ * mensaje (y las tablas {@code BATCH_*}) es la forma de saber cómo acabó una
+ * ejecución.
+ *
+ * <p>{@code JobExecutionListenerSupport} está obsoleto desde Spring Batch 5:
+ * lo moderno sería implementar {@code JobExecutionListener} directamente. Se
+ * mantiene porque funciona igual.
  */
 @Component
 public class JobCompletionListener extends JobExecutionListenerSupport {
 
+    /**
+     * Se llama cuando el job termina, haya ido bien o no. Solo informa de
+     * {@code COMPLETED} y {@code FAILED}; otros estados ({@code STOPPED},
+     * {@code ABANDONED}...) no imprimen nada.
+     *
+     * @param jobExecution ejecución que acaba de terminar
+     */
     @Override
     public void afterJob(JobExecution jobExecution) {
 

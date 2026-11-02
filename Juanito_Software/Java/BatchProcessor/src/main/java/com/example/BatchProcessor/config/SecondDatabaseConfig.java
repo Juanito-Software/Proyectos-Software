@@ -38,6 +38,15 @@ import java.util.Map;
 @Configuration
 public class SecondDatabaseConfig {
 
+    /**
+     * Pool de conexiones a la segunda base ({@code second.datasource.*}).
+     *
+     * @param url        URL JDBC de la segunda base
+     * @param usuario    usuario de conexión
+     * @param contrasena contraseña de conexión
+     * @param driver     clase del driver JDBC
+     * @return {@code DataSource} de destino
+     */
     @Bean(name = "secondDataSource")
     public DataSource secondDataSource(
             @Value("${second.datasource.url}") String url,
@@ -59,6 +68,17 @@ public class SecondDatabaseConfig {
         return dataSource;
     }
 
+    /**
+     * Factoría JPA de la segunda base: mismas entidades que la principal
+     * ({@code com.example.BatchProcessor.model}), unidad de persistencia
+     * {@code second}.
+     *
+     * @param builder             constructor de factorías de Spring Boot
+     * @param dataSource          segunda base
+     * @param jpaProperties       propiedades {@code spring.jpa.*}, compartidas
+     * @param hibernateProperties propiedades de Hibernate, compartidas
+     * @return factoría que usa {@code secondDatabaseItemWriter}
+     */
     @Bean(name = "secondEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean secondEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
@@ -80,6 +100,14 @@ public class SecondDatabaseConfig {
                 .build();
     }
 
+    /**
+     * Gestor de transacciones de la segunda base. Hay que pasarlo por nombre
+     * ({@code transactionManager=secondTransactionManager}) al lanzar un job que
+     * escriba con {@code secondDatabaseItemWriter}.
+     *
+     * @param entityManagerFactory factoría JPA de la segunda base
+     * @return gestor de transacciones de destino
+     */
     @Bean(name = "secondTransactionManager")
     public JpaTransactionManager secondTransactionManager(
             @Qualifier("secondEntityManagerFactory") EntityManagerFactory entityManagerFactory) {

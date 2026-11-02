@@ -15,6 +15,7 @@ import { env } from '../../config/env.js';
  * mal formados.
  */
 
+/** Petición simulada con la cabecera Cookie dada (o sin ella). */
 const req = (cookie?: string) => ({ headers: cookie ? { cookie } : {} }) as unknown as Request;
 
 describe('readRefreshCookie', () => {

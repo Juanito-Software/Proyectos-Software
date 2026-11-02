@@ -37,6 +37,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** El único botón del componente. */
 const boton = () => screen.getByRole('button');
 
 describe('estado inicial', () => {

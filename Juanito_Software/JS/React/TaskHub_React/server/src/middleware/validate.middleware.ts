@@ -1,3 +1,7 @@
+/**
+ * Validación de entrada sin librerías: cada módulo define funciones que
+ * revisan la petición y este middleware las convierte en respuestas 400.
+ */
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/api-error.js';
 
@@ -30,6 +34,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * siquiera tiene forma de identificador no puede coincidir con ningún recurso,
  * así que distinguir «mal formado» de «no existe» no le dice a un atacante nada
  * que no supiera. Y 400 es coherente con el resto de validaciones de entrada.
+ *
+ * @param nombre nombre del parámetro de ruta (p. ej. `'id'` para `/:id`)
+ * @returns validador listo para pasar a `validate()`
  */
 export function validarUuid(nombre: string): ValidatorFn {
   return (req) => {
@@ -41,6 +48,16 @@ export function validarUuid(nombre: string): ValidatorFn {
   };
 }
 
+/**
+ * Convierte un validador en middleware de Express.
+ *
+ * Si el validador no encuentra errores, la petición sigue. Si encuentra uno,
+ * se responde 400 con ese mensaje; si encuentra varios, 400 con el mensaje
+ * «Error de validación» y la lista completa en `details`.
+ *
+ * @param validator función que revisa la petición
+ * @returns middleware que valida antes de llegar al controlador
+ */
 export function validate(validator: ValidatorFn) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const errors = validator(req);

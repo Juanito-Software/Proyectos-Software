@@ -35,15 +35,25 @@ import java.util.List;
  */
 public class DatabaseItemWriter {
 
-    // Implementación personalizada de ItemWriter
+    /**
+     * Escritor que guarda cada chunk con {@code saveAll} de un repositorio
+     * Spring Data. Solo acepta entidades que hereden de {@link GenericEntity}.
+     *
+     * @param <T> tipo de entidad
+     */
     public static class ManualItemWriter<T extends GenericEntity> implements ItemWriter<T> {
+        /** Repositorio con el que se persisten los elementos. */
         private final GenericRepository<T, Long> genericRepository; // Usar el repositorio genérico
 
-        // Inyectar el repositorio en el constructor
+        /** @param genericRepository repositorio de la entidad a guardar */
         public ManualItemWriter(GenericRepository<T, Long> genericRepository) {
             this.genericRepository = genericRepository;
         }
 
+        /**
+         * @param chunk elementos a guardar; si está vacío no hace nada
+         * @throws Exception si el guardado falla, con la causa encadenada
+         */
         @Override
         public void write(Chunk<? extends T> chunk) throws Exception {
             List<? extends T> items = chunk.getItems();

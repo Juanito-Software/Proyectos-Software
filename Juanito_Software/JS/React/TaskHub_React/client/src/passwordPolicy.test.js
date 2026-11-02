@@ -17,6 +17,7 @@ import {
  * pruebe con el mismo detalle que la del servidor.
  */
 
+/** Contraseña de referencia: cumple todo sin ser un galimatías. */
 const VALIDA = 'Cafe con leche y 2 tostadas!';
 
 describe('validarPasswordCliente', () => {

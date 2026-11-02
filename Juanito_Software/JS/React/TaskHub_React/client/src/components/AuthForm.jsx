@@ -7,6 +7,22 @@ import {
   validarPasswordCliente,
 } from '../passwordPolicy';
 
+/**
+ * Formulario de acceso, en dos modos: iniciar sesión o crear cuenta.
+ *
+ * En el registro añade la confirmación de la contraseña y la lista de
+ * requisitos, que se van marcando mientras se escribe, y no envía nada hasta
+ * que la contraseña cumple la política. Al iniciar sesión no aplica la
+ * política (las cuentas antiguas deben poder entrar).
+ *
+ * @param {object} props
+ * @param {'login' | 'register'} props.mode
+ * @param {(username: string, password: string) => Promise<void>} props.onSubmit
+ *        recibe el usuario ya recortado; mientras la promesa no termina, el
+ *        formulario queda bloqueado
+ * @param {() => void} props.onSwitch cambia de modo
+ * @param {string | null} [props.error] error del servidor a mostrar
+ */
 export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +40,7 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
   // calcula en el registro; al entrar la política no se aplica.
   const requisitos = isLogin ? null : estadoRequisitos(password);
 
+  /** Valida en local (solo en el registro) y llama a `onSubmit`. */
   async function handleSubmit(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -59,6 +76,7 @@ export default function AuthForm({ mode, onSubmit, onSwitch, error }) {
     }
   }
 
+  /** Cambia entre iniciar sesión y registrarse, limpiando lo que solo vale en un modo. */
   function switchMode() {
     // Al cambiar de modo se limpia la confirmación: si no, quedaría un valor
     // del registro anterior estorbando.

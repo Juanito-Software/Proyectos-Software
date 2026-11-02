@@ -14,7 +14,9 @@ import * as api from './services/api';
  * experiencia de uso que se arreglan aquí.
  */
 
+/** Contraseña que cumple la política (15+, mayúscula, número y símbolo). */
 const PASSWORD = 'Cafe con leche y 2 tostadas!';
+/** Misma clave de localStorage que usa la aplicación. */
 const STORAGE_KEY = 'taskhub_auth';
 
 let espias;

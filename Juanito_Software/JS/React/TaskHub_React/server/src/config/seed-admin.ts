@@ -14,6 +14,12 @@ import { validarPassword, MIN_PASSWORD_LENGTH } from '../modules/auth/password-p
  * asegura de que siga siendo admin y actualiza su contraseña a la configurada.
  * Eso convierte un redespliegue en la forma de recuperar el acceso si se
  * pierde la contraseña, sin tocar la base de datos a mano.
+ *
+ * Variables: `ADMIN_USERNAME` y `ADMIN_PASSWORD` (ver `env.ts`). Si falta
+ * alguna, no hace nada.
+ *
+ * @throws Error si `ADMIN_PASSWORD` no cumple la política de contraseñas; el
+ *         servidor no arranca en ese caso
  */
 export async function seedAdmin(): Promise<void> {
   const { adminUsername, adminPassword } = env;

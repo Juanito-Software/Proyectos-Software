@@ -1,3 +1,25 @@
+/**
+ * Suite de verificación de punta a punta de la API (`npm run verify`).
+ *
+ * A diferencia de los tests unitarios (Vitest, sin base de datos), esto
+ * levanta el servidor de verdad en el puerto 4050 contra un PostgreSQL real y
+ * hace peticiones HTTP como lo haría un cliente. Cada comprobación imprime ✅ o
+ * ❌, y al final el proceso sale con código 1 si alguna falló (así la usa el
+ * CI).
+ *
+ * Requisitos: `DATABASE_URL` apuntando a un PostgreSQL accesible. La suite no
+ * toca los datos existentes: trabaja en un esquema temporal propio que borra
+ * al terminar, pase lo que pase.
+ *
+ * Bloques, en orden: autenticación y CRUD básico; `completed` ↔ `status`;
+ * filtros; estadísticas; semántica de PUT y PATCH; playground; aislamiento
+ * entre usuarios; política de contraseñas; autorización sobre recursos ajenos;
+ * identificadores mal formados; límites de entrada; tokens de acceso y
+ * refresco (rotación, reutilización, carreras, cierre de sesión, limpieza);
+ * cabeceras de seguridad y CSP; CORS; manipulación de tokens; inyección SQL;
+ * administración; integridad referencial; cambio de contraseña; límite de
+ * intentos por cuenta.
+ */
 import crypto from 'node:crypto';
 import type { Server } from 'node:http';
 
@@ -46,23 +68,39 @@ await pool.query(`CREATE SCHEMA IF NOT EXISTS ${testSchema}`);
 await initSchema();
 await seedAdmin();
 
+/** Puerto en el que se levanta el servidor de prueba. */
 const PORT = 4050;
 const BASE = `http://localhost:${PORT}`;
 
+/** Contadores del resultado final. */
 let passed = 0;
 let failed = 0;
 
+/**
+ * Registra una comprobación: imprime ✅/❌ y suma al contador.
+ *
+ * @param name    qué se comprueba, en lenguaje natural
+ * @param ok      resultado
+ * @param details dato que ayuda a diagnosticar (p. ej. el status recibido)
+ */
 function check(name: string, ok: boolean, details?: string): void {
   console.log(`${ok ? '✅' : '❌'} ${name}${details ? ` — ${details}` : ''}`);
   ok ? passed++ : failed++;
 }
 
+/** Forma de las respuestas de la API (`ApiResponse`), para tipar los `json()`. */
 interface Envelope<T> {
   success: boolean;
   data: T;
   error?: string;
 }
 
+/**
+ * Ejecuta todas las comprobaciones en orden. Los bloques no son
+ * independientes: muchos reutilizan el usuario y las tareas creados al
+ * principio. El `finally` cierra el servidor, borra el esquema temporal y fija
+ * el código de salida.
+ */
 async function run(): Promise<void> {
   console.log('\n--- TaskHub API verification ---\n');
   let server: Server | null = null;
@@ -424,6 +462,7 @@ async function run(): Promise<void> {
     // Lo que se comprueba aquí es que la validación existe en la API y no solo
     // en el formulario: estas peticiones no pasan por el navegador.
 
+    /** POST /api/auth/register con usuario y contraseña dados. */
     const registrar = (u: string, p: string) =>
       fetch(`${BASE}/api/auth/register`, {
         method: 'POST',
@@ -431,6 +470,7 @@ async function run(): Promise<void> {
         body: JSON.stringify({ username: u, password: p }),
       });
 
+    /** Nombre de usuario único para cada caso de la política. */
     const nuevo = () => `pol-${crypto.randomUUID().slice(0, 8)}`;
 
     const corta = await registrar(nuevo(), 'Corto-Horse12!'); // 14
@@ -896,6 +936,7 @@ async function run(): Promise<void> {
       return '';
     };
 
+    /** POST /api/auth/login. */
     const entrar = (u: string, p: string) =>
       fetch(`${BASE}/api/auth/login`, {
         method: 'POST',
@@ -903,6 +944,7 @@ async function run(): Promise<void> {
         body: JSON.stringify({ username: u, password: p }),
       });
 
+    /** POST /api/auth/refresh con la cookie de refresco indicada (o ninguna). */
     const renovar = (refresco: string | null) =>
       fetch(`${BASE}/api/auth/refresh`, {
         method: 'POST',
@@ -912,6 +954,7 @@ async function run(): Promise<void> {
         },
       });
 
+    /** POST /api/auth/logout con la cookie de refresco indicada (o ninguna). */
     const cerrarSesion = (refresco: string | null) =>
       fetch(`${BASE}/api/auth/logout`, {
         method: 'POST',
@@ -1545,6 +1588,7 @@ async function run(): Promise<void> {
     const jwtLib = (await import('jsonwebtoken')).default;
     const secret = process.env.JWT_SECRET ?? 'clave-solo-para-desarrollo-no-usar-en-produccion';
 
+    /** Opciones de fetch con el token dado en la cabecera Authorization. */
     const withToken = (t: string) => ({ headers: { Authorization: `Bearer ${t}` } });
 
     const forged = jwtLib.sign({ userId: crypto.randomUUID(), username: 'falso' }, 'otro-secreto');

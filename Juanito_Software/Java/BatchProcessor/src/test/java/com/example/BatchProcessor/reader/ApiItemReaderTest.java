@@ -67,6 +67,7 @@ class ApiItemReaderTest {
         return servidor;
     }
 
+    /** StepExecution con el parametro entityClass que espera beforeStep. */
     private StepExecution pasoCon(String nombreDeClase) {
         JobParameters parametros = new JobParametersBuilder()
                 .addString("entityClass", nombreDeClase)

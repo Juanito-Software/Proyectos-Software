@@ -17,8 +17,12 @@
  * esto corra y los oyentes de eventos encuentran los elementos.
  */
 
+// ── Estado de la página ───────────────────────────────────────────────
+/** Última lista de tareas recibida; la usa el modal de edición. */
 let activeTasks = [];
+/** Id de la tarea seleccionada en la lista, para los botones /:id. */
 let selectedTaskId = null;
+/** Qué hace el formulario de acceso: 'login' o 'register'. */
 let authMode = 'login';
 
 // TaskHub1 es multiusuario: cada petición a /api/tasks necesita el JWT.
@@ -26,6 +30,10 @@ let authMode = 'login';
 // has iniciado sesión allí, el playground entra directamente.
 const STORAGE_KEY = 'taskhub_auth';
 
+/**
+ * @returns `{ user, token }` guardado en localStorage, o `null` si no hay
+ *          sesión o el valor está corrupto
+ */
 function getAuth() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
@@ -34,6 +42,11 @@ function getAuth() {
   }
 }
 
+/**
+ * Guarda la sesión (o la borra si se pasa `null`).
+ *
+ * @param {{user: object, token: string} | null} auth
+ */
 function setAuth(auth) {
   if (auth) localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
   else localStorage.removeItem(STORAGE_KEY);
@@ -51,6 +64,9 @@ let renovacionEnCurso = null;
  *
  * El token de refresco no se ve desde aquí: va en una cookie HttpOnly que
  * el navegador manda sola. Por eso esta función no recibe nada.
+ *
+ * @returns {Promise<object>} los datos de la sesión renovada
+ * @throws si el servidor rechaza la renovación
  */
 function renovarSesion() {
   if (!renovacionEnCurso) {
@@ -77,6 +93,11 @@ function renovarSesion() {
  * El token de acceso dura quince minutos, así que caducar es lo normal, no
  * la excepción: ante un 401 se renueva y se repite la petición una sola
  * vez. Solo si la renovación también falla se vuelve al formulario.
+ *
+ * @param {string} url
+ * @param {RequestInit} [options] opciones de fetch
+ * @param {boolean} [reintentado] uso interno: evita reintentar en bucle
+ * @returns {Promise<Response>}
  */
 async function authFetch(url, options = {}, reintentado = false) {
   const auth = getAuth();
@@ -104,12 +125,14 @@ async function authFetch(url, options = {}, reintentado = false) {
 
 // ── Autenticación ────────────────────────────────────────────────────
 
+/** Muestra el formulario de acceso y oculta los datos del usuario. */
 function showAuthOverlay() {
   document.getElementById('auth-overlay').classList.add('active');
   document.getElementById('user-badge').style.display = 'none';
   document.getElementById('admin-panel').style.display = 'none';
 }
 
+/** Oculta el formulario de acceso y muestra el usuario (y el panel admin, si toca). */
 function hideAuthOverlay() {
   document.getElementById('auth-overlay').classList.remove('active');
   const auth = getAuth();
@@ -141,6 +164,7 @@ async function deleteUserPrompt() {
   await simulateAPI('DELETE', `/api/admin/users/${id.trim()}`);
 }
 
+/** Alterna el formulario entre «iniciar sesión» y «crear cuenta». */
 function toggleAuthMode() {
   authMode = authMode === 'login' ? 'register' : 'login';
   const isLogin = authMode === 'login';
@@ -154,6 +178,13 @@ function toggleAuthMode() {
   document.getElementById('auth-error').classList.remove('active');
 }
 
+/**
+ * Envía el formulario de acceso a /api/auth/login o /register según el modo,
+ * guarda la sesión y carga las tareas. Los errores se muestran en el propio
+ * formulario y la respuesta completa, en la consola del playground.
+ *
+ * @param {SubmitEvent} e
+ */
 async function handleAuthSubmit(e) {
   e.preventDefault();
   const username = document.getElementById('auth-username').value;
@@ -220,6 +251,8 @@ async function logout() {
 }
 
 // ── Arranque ─────────────────────────────────────────────────────────
+// Con sesión guardada se entra directo; sin ella, formulario. Las
+// estadísticas del servidor se refrescan cada 3 segundos.
 
 window.addEventListener('DOMContentLoaded', () => {
   if (getAuth()?.token) {
@@ -232,6 +265,12 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(fetchSystemStats, 3000);
 });
 
+/**
+ * Aviso flotante que desaparece a los 3 segundos.
+ *
+ * @param {string} message
+ * @param {boolean} [isError] pinta el borde en rojo
+ */
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   const msgSpan = document.getElementById('toast-message');
@@ -241,6 +280,7 @@ function showToast(message, isError = false) {
   setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
+/** Pinta el contador de peticiones y el tiempo en marcha (endpoint público). */
 async function fetchSystemStats() {
   try {
     const res = await fetch('/api/system/stats');
@@ -260,6 +300,15 @@ async function fetchSystemStats() {
 // la respuesta del servidor: con innerHTML, cualquier etiqueta dentro de
 // esos textos se interpretaría como HTML y podría ejecutar código.
 // textContent inserta el texto tal cual, sin interpretarlo nunca.
+/**
+ * Muestra una petición y su respuesta en la «consola» del playground.
+ *
+ * @param {string} method  verbo HTTP
+ * @param {string} url
+ * @param {string} status  texto de estado («200 OK», «ERROR»...)
+ * @param {unknown} data   cuerpo de la respuesta, se muestra como JSON
+ * @param {boolean} [isError]
+ */
 function updateConsole(method, url, status, data, isError = false) {
   const terminal = document.getElementById('terminal');
   const statusSpan = document.getElementById('response-status');
@@ -277,6 +326,12 @@ function updateConsole(method, url, status, data, isError = false) {
 
 // ── Tareas ───────────────────────────────────────────────────────────
 
+/**
+ * Pide las tareas con los filtros del panel y repinta la lista.
+ *
+ * @param {boolean} [manual] `true` si lo pidió el usuario con el botón de
+ *                           recargar: entonces también se muestra en la consola
+ */
 async function fetchTasks(manual = false) {
   if (!getAuth()?.token) { showAuthOverlay(); return; }
 
@@ -309,6 +364,12 @@ async function fetchTasks(manual = false) {
   }
 }
 
+/**
+ * Repinta la lista de tarjetas. Todo texto que viene del servidor pasa por
+ * `escapeHTML` antes de entrar en `innerHTML`.
+ *
+ * @param {object[]} tasks
+ */
 function renderTasksList(tasks) {
   const container = document.getElementById('tasks-container');
   document.getElementById('task-counter').innerText = tasks.length;
@@ -371,6 +432,7 @@ function renderTasksList(tasks) {
   updateSelectedLabels();
 }
 
+/** Marca una tarea como seleccionada para los botones GET/PUT/DELETE /:id. */
 function selectTask(id) {
   selectedTaskId = id;
   document.querySelectorAll('.task-card').forEach(c => c.style.borderColor = 'var(--card-border)');
@@ -380,6 +442,7 @@ function selectTask(id) {
   showToast(`Tarea seleccionada: ${id.substring(0, 8)}…`);
 }
 
+/** Pone el id seleccionado (o «:id») en las rutas de los botones del panel. */
 function updateSelectedLabels() {
   const suffix = selectedTaskId || ':id';
   ['btn-get-specific', 'btn-put-specific', 'btn-delete-specific'].forEach(id => {
@@ -390,6 +453,7 @@ function updateSelectedLabels() {
 
 // ── Modal ────────────────────────────────────────────────────────────
 
+/** Abre el modal vacío para crear una tarea. */
 function openCreateModal() {
   if (!getAuth()?.token) { showAuthOverlay(); return; }
   document.getElementById('modal-title').innerText = 'Nueva tarea';
@@ -399,6 +463,7 @@ function openCreateModal() {
   document.getElementById('task-modal').classList.add('active');
 }
 
+/** Abre el modal relleno con la tarea indicada; al guardar se enviará un PUT. */
 function openEditModal(id) {
   const task = activeTasks.find(t => t.id === id);
   if (!task) return;
@@ -412,10 +477,16 @@ function openEditModal(id) {
   document.getElementById('task-modal').classList.add('active');
 }
 
+/** Cierra el modal de tarea. */
 function closeModal() {
   document.getElementById('task-modal').classList.remove('active');
 }
 
+/**
+ * Guarda el modal: POST si es nueva, PUT (reemplazo completo) si se edita.
+ *
+ * @param {SubmitEvent} e
+ */
 async function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -453,6 +524,7 @@ async function handleFormSubmit(e) {
   }
 }
 
+/** Pide confirmación y borra la tarea con DELETE /api/tasks/:id. */
 async function deleteTask(id) {
   if (!confirm('¿Eliminar esta tarea?')) return;
 
@@ -476,6 +548,12 @@ async function deleteTask(id) {
 
 // ── Botones del panel lateral ────────────────────────────────────────
 
+/**
+ * Lanza una petición de los botones de endpoint y muestra la respuesta.
+ *
+ * @param {string} method
+ * @param {string} url
+ */
 async function simulateAPI(method, url) {
   try {
     const res = await authFetch(url, { method });
@@ -487,6 +565,7 @@ async function simulateAPI(method, url) {
   }
 }
 
+/** @returns `true` si hay una tarea seleccionada; si no, avisa y devuelve `false` */
 function requireSelection() {
   if (!selectedTaskId) {
     showToast('Selecciona antes una tarea de la lista', true);
@@ -495,6 +574,7 @@ function requireSelection() {
   return true;
 }
 
+// Botones del panel que operan sobre la tarea seleccionada.
 function simulateGetSpecific() {
   if (requireSelection()) simulateAPI('GET', `/api/tasks/${selectedTaskId}`);
 }
@@ -507,6 +587,13 @@ function simulatePutSpecific() {
   if (requireSelection()) openEditModal(selectedTaskId);
 }
 
+/**
+ * Escapa los cinco caracteres con significado en HTML, para poder meter texto
+ * del servidor en `innerHTML` sin que se interprete como marcado.
+ *
+ * @param {unknown} str
+ * @returns {string}
+ */
 function escapeHTML(str) {
   return String(str).replace(/[&<>'"]/g, tag => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',

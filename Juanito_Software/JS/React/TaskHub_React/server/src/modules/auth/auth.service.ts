@@ -1,3 +1,17 @@
+/**
+ * Casos de uso de autenticación: registro, inicio y cierre de sesión,
+ * renovación con rotación de tokens de refresco y cambio de contraseña.
+ *
+ * Modelo de sesión:
+ * - **Token de acceso**: JWT de 15 minutos que el cliente manda en la cabecera
+ *   `Authorization`. No se puede revocar; por eso dura poco.
+ * - **Token de refresco**: 32 bytes aleatorios en una cookie `HttpOnly`, de 7
+ *   días, guardado como hash en `refresh_sessions`. Cada uso lo **rota** (se
+ *   gasta y se emite otro). Volver a usar uno ya gastado se trata como robo y
+ *   revoca la sesión entera.
+ *
+ * Cada operación deja un evento en el registro de seguridad.
+ */
 import { usersRepository } from '../users/users.repository.js';
 import { tokenService } from './token.service.js';
 import {
@@ -23,6 +37,14 @@ interface Credenciales {
   refreshToken: string;
 }
 
+/**
+ * Abre una sesión nueva e independiente: crea una familia de refresco y emite
+ * el primer par de tokens.
+ *
+ * @param userId   id del usuario
+ * @param username nombre, que va dentro del token de acceso
+ * @returns token de acceso y token de refresco en claro
+ */
 async function abrirSesion(userId: string, username: string): Promise<Credenciales> {
   const refreshToken = generarRefreshToken();
   await sessionsRepository.crearFamilia(userId, refreshToken);
@@ -32,7 +54,14 @@ async function abrirSesion(userId: string, username: string): Promise<Credencial
   };
 }
 
+/** Casos de uso de autenticación. */
 export const authService = {
+  /**
+   * Crea la cuenta (siempre con rol `user`) y abre sesión.
+   *
+   * @returns `{ user, accessToken, refreshToken }`
+   * @throws ApiError 409 si el nombre ya existe (sin distinguir mayúsculas)
+   */
   async register({ username, password }: RegisterDTO) {
     const user = await usersRepository.create(username.trim(), password);
     if (!user) {
@@ -43,6 +72,13 @@ export const authService = {
     return { user, ...credenciales };
   },
 
+  /**
+   * Comprueba usuario y contraseña y abre una sesión nueva.
+   *
+   * @returns `{ user, accessToken, refreshToken }`
+   * @throws ApiError 401 con el mismo mensaje si el usuario no existe o la
+   *         contraseña no coincide
+   */
   async login({ username, password }: LoginDTO) {
     const user = await usersRepository.findByUsername(username.trim());
     if (!user) {
@@ -92,6 +128,10 @@ export const authService = {
    * - Revocado por rotación **hace rato** → reutilización. Alguien está usando
    *   un token que ya se gastó, así que hay que asumir que tiene también el
    *   siguiente de la cadena: se revoca la familia entera.
+   *
+   * @param refreshToken valor de la cookie, o `undefined` si no venía
+   * @returns `{ user, accessToken, refreshToken }` con el refresco ya rotado
+   * @throws ApiError 401 en cualquiera de los casos de rechazo
    */
   async refresh(refreshToken: string | undefined) {
     if (!refreshToken || typeof refreshToken !== 'string') {
@@ -142,6 +182,8 @@ export const authService = {
    *
    * Separado del método anterior para que la regla se lea de un vistazo y se
    * pueda probar por su cuenta.
+   *
+   * @param hash SHA-256 del token que no se pudo rotar
    */
   async analizarFalloDeRotacion(hash: string): Promise<void> {
     const sesion = await sessionsRepository.buscarPorHash(hash);
@@ -174,7 +216,12 @@ export const authService = {
     });
   },
 
-  /** Cierra una sesión concreta. Las demás del mismo usuario siguen abiertas. */
+  /**
+   * Cierra una sesión concreta. Las demás del mismo usuario siguen abiertas.
+   * Sin cookie, o con una que no existe, no hace nada (y no falla).
+   *
+   * @param refreshToken valor de la cookie
+   */
   async logout(refreshToken: string | undefined): Promise<void> {
     if (!refreshToken || typeof refreshToken !== 'string') return;
 
@@ -191,7 +238,12 @@ export const authService = {
     }
   },
 
-  /** Cierra todas las sesiones del usuario, en todos sus dispositivos. */
+  /**
+   * Cierra todas las sesiones del usuario, en todos sus dispositivos.
+   *
+   * @param userId id del usuario, tomado del token de acceso
+   * @returns número de tokens revocados
+   */
   async logoutAll(userId: string): Promise<number> {
     const revocados = await sessionsRepository.revocarTodasDelUsuario(userId, 'logout-all');
     registrarEventoSeguridad('logout.global', { userId, tokensRevocados: revocados });
@@ -218,6 +270,13 @@ export const authService = {
    * sigue dentro y todos los demás dispositivos quedan fuera. Es lo que hacen
    * GitHub o Google, y es la diferencia entre una medida de seguridad que se
    * usa y una que se evita por incómoda.
+   *
+   * @param userId id del usuario, del token de acceso
+   * @param actual contraseña actual en claro
+   * @param nueva  contraseña nueva en claro
+   * @returns `{ user, accessToken, refreshToken }` de la sesión nueva
+   * @throws ApiError 401 si la actual no es correcta o la cuenta ya no existe;
+   *         400 si la nueva no cumple la política o es igual a la actual
    */
   async changePassword(userId: string, actual: string, nueva: string) {
     const user = await usersRepository.findById(userId);

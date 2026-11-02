@@ -18,9 +18,11 @@ import { MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH } from '../passwordPolicy';
 // Cumple los cuatro requisitos: 15+, mayúscula, número y símbolo.
 const VALIDA = 'Cafe con leche y 2 tostadas!';
 
+/** Monta el formulario en modo registro; las props sobrescriben los dobles. */
 const renderRegistro = (props = {}) =>
   render(<AuthForm mode="register" onSubmit={vi.fn()} onSwitch={vi.fn()} {...props} />);
 
+/** Monta el formulario en modo inicio de sesión. */
 const renderLogin = (props = {}) =>
   render(<AuthForm mode="login" onSubmit={vi.fn()} onSwitch={vi.fn()} {...props} />);
 

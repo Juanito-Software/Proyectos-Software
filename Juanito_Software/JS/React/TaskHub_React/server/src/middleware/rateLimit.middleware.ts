@@ -1,6 +1,20 @@
+/**
+ * Limitadores de peticiones (fuerza bruta y abuso de la API).
+ *
+ * | Middleware        | Clave            | Qué frena                                         |
+ * |-------------------|------------------|---------------------------------------------------|
+ * | `authLimiter`     | IP               | intentos fallidos en `/api/auth/*`                |
+ * | `apiLimiter`      | IP               | volumen general en `/api/tasks` y `/api/admin`    |
+ * | `accountSlowDown` | nombre de usuario| retrasa los fallos de login repetidos por cuenta  |
+ * | `accountLimiter`  | nombre de usuario| tope duro de fallos por cuenta                    |
+ *
+ * Los umbrales se pueden subir por entorno fuera de producción (la suite de
+ * verificación lo necesita); en producción las variables se ignoran.
+ */
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 
+/** Fallos de autenticación permitidos por IP y ventana, si no se configura otra cosa. */
 export const AUTH_LIMIT_POR_DEFECTO = 10;
 
 /**
@@ -208,6 +222,18 @@ export function calcularRetraso(intentos: number, desde: number = RETRASO_DESDE)
 }
 
 /**
+ * El retraso que aplica el middleware, con el umbral ya resuelto del entorno.
+ *
+ * Con nombre y exportada en vez de una lambda dentro de la configuración, para
+ * que se pueda probar. Una lambda anónima ahí dentro solo la ejecuta la
+ * librería en tiempo de petición, así que ningún test unitario la alcanza — y
+ * es la línea que decide cuánto se retrasa cada intento.
+ */
+export function retrasoDelMiddleware(usados: number): number {
+  return calcularRetraso(usados, resolverRetrasoDesde());
+}
+
+/**
  * Retrasos progresivos por cuenta.
  *
  * **Por qué retrasar en vez de denegar.** El limitador duro de arriba resuelve
@@ -223,18 +249,6 @@ export function calcularRetraso(intentos: number, desde: number = RETRASO_DESDE)
  * `skipSuccessfulRequests` hace que solo cuenten los fallos. Un usuario que
  * entra a la primera no acumula nada aunque lo haga cien veces al día.
  */
-/**
- * El retraso que aplica el middleware, con el umbral ya resuelto del entorno.
- *
- * Con nombre y exportada en vez de una lambda dentro de la configuración, para
- * que se pueda probar. Una lambda anónima ahí dentro solo la ejecuta la
- * librería en tiempo de petición, así que ningún test unitario la alcanza — y
- * es la línea que decide cuánto se retrasa cada intento.
- */
-export function retrasoDelMiddleware(usados: number): number {
-  return calcularRetraso(usados, resolverRetrasoDesde());
-}
-
 export const accountSlowDown = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: resolverRetrasoDesde(),

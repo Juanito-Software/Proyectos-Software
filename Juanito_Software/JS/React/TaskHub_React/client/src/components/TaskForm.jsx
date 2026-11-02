@@ -1,6 +1,23 @@
 import { useState } from 'react';
 import { STATUSES, PRIORITIES } from '../constants';
 
+/**
+ * Formulario de tarea, para crear y para editar.
+ *
+ * - **Crear** (sin `initialValues.id`): empieza vacío y, tras enviar, se
+ *   vacía para la siguiente tarea.
+ * - **Editar** (con `initialValues.id`): empieza relleno y conserva los datos
+ *   al enviar; quien lo usa decide cuándo cerrarlo.
+ *
+ * El título se recorta y no se envía si queda vacío. La validación de verdad
+ * (longitudes, duplicados) la hace el servidor.
+ *
+ * @param {object} props
+ * @param {(datos: {title: string, description: string, status: string, priority: string}) => void} props.onSubmit
+ *        recibe los datos ya recortados
+ * @param {object} [props.initialValues] tarea a editar
+ * @param {() => void} [props.onCancel] si se da, aparece el botón «Cancelar»
+ */
 export default function TaskForm({ onSubmit, initialValues, onCancel }) {
   const [title, setTitle] = useState(initialValues?.title ?? '');
   const [description, setDescription] = useState(initialValues?.description ?? '');
@@ -8,6 +25,7 @@ export default function TaskForm({ onSubmit, initialValues, onCancel }) {
   const [priority, setPriority] = useState(initialValues?.priority ?? 'medium');
   const isEditing = !!initialValues?.id;
 
+  /** Envía los datos y, si se está creando, deja el formulario limpio. */
   function handleSubmit(e) {
     e.preventDefault();
     const t = title.trim();

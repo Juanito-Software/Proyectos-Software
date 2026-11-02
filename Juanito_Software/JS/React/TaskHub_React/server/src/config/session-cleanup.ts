@@ -38,8 +38,10 @@ const RETRASO_INICIAL_MS = 60 * 1000;
 // `ReturnType<typeof setTimeout>` en lugar de `NodeJS.Timeout`: el espacio de
 // nombres global NodeJS no lo conoce ESLint sin configuración extra, y esta
 // forma es equivalente y no depende de él.
+/** Temporizador activo, o `null` si la limpieza no está arrancada. */
 let temporizador: ReturnType<typeof setTimeout> | null = null;
 
+/** Una limpieza: borra las sesiones caducadas y lo anota si borró alguna. */
 async function pasada(): Promise<void> {
   try {
     const borradas = await sessionsRepository.limpiarCaducadas();
@@ -54,6 +56,10 @@ async function pasada(): Promise<void> {
   }
 }
 
+/**
+ * Arranca la limpieza: primera pasada al minuto y después una cada 24 horas.
+ * Llamarla otra vez con la limpieza ya activa no hace nada.
+ */
 export function iniciarLimpiezaDeSesiones(): void {
   if (temporizador) return;
 
@@ -70,6 +76,7 @@ export function iniciarLimpiezaDeSesiones(): void {
   temporizador.unref();
 }
 
+/** Cancela la siguiente pasada. Se llama durante el apagado del servidor. */
 export function detenerLimpiezaDeSesiones(): void {
   if (temporizador) {
     clearTimeout(temporizador);

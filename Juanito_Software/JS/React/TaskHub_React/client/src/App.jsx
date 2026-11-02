@@ -1,3 +1,9 @@
+/**
+ * Raíz de la aplicación: decide entre la pantalla de acceso y la lista de
+ * tareas según haya sesión o no.
+ *
+ * El estado de la sesión vive en `AuthContext`; aquí solo se consume.
+ */
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthForm from './components/AuthForm';
@@ -5,6 +11,10 @@ import TaskList from './components/TaskList';
 import ThemeToggle from './components/ThemeToggle';
 import './App.css';
 
+/**
+ * Contenido real de la app. Va separado de `App` porque necesita `useAuth()`,
+ * que solo funciona por debajo del `AuthProvider`.
+ */
 function AppContent() {
   const { user, isAuthenticated, login, register, logout } = useAuth();
   const [authMode, setAuthMode] = useState('login');
@@ -29,6 +39,10 @@ function AppContent() {
     }
   }, [isAuthenticated]);
 
+  /**
+   * Envía el formulario de acceso: inicia sesión o registra según el modo. Si
+   * falla, el mensaje del servidor se muestra en el formulario.
+   */
   async function handleAuth(username, password) {
     setAuthError(null);
     try {
@@ -100,6 +114,7 @@ function AppContent() {
   );
 }
 
+/** Componente raíz: proveedor de autenticación alrededor de toda la app. */
 export default function App() {
   return (
     <AuthProvider>

@@ -9,8 +9,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-
-
+/**
+ * Ejecución programada de jobs por expresión cron. <b>Desactivada.</b>
+ *
+ * <p>La clase existe pero su cuerpo está comentado, por dos motivos:
+ * <ul>
+ *   <li>Dependía de un bean {@code Job genericJob} que ya no existe: los jobs se
+ *       componen en caliente en {@code BatchController}, a partir de los
+ *       nombres de lector, procesador y escritor que llegan en la petición.</li>
+ *   <li>Ni {@code @EnableScheduling} está activo (comentado en
+ *       {@code BatchConfig}) ni {@code application.properties} define
+ *       {@code batch.job.cron}.</li>
+ * </ul>
+ *
+ * <p>Para reactivarla habría que decidir qué combinación de beans lanza el
+ * cron, construir el job igual que el controlador, definir
+ * {@code batch.job.cron} (se mapea en {@link BatchJobProperties}) y activar
+ * {@code @EnableScheduling}.
+ */
 @Component
 public class BatchScheduler {
 
