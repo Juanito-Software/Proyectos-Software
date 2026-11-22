@@ -20,6 +20,7 @@ import tkinter.font as tkFont
 from PIL import Image, ImageTk, ImageDraw
 import os
 import ctypes
+import win32api
 import win32con
 import win32gui
 import winreg
@@ -92,33 +93,69 @@ NIGHT_BG = "#000000"  # negro
 NIGHT_FG = "#00FF00"  # verde lima
 
 class CrosshairOverlay(tk.Toplevel):
+    # Píxeles más transparentes que esto se ignoran al recortar el contenido de la mira
+    UMBRAL_ALFA = 20
+    # Cadencia de la comprobación de que la mira siga centrada (ms)
+    INTERVALO_CENTRADO_MS = 500
+
     def __init__(self, image_path, scale=1.0, alpha=1.0):
         super().__init__()
         self.overrideredirect(True)
         self.attributes("-topmost", True)
         self.attributes("-transparentcolor", "black")
         self.attributes("-alpha", alpha)
-        self.original_img = Image.open(image_path)
         self.scale = scale
-        self.label = tk.Label(self, bg="black")
+        self.label = tk.Label(self, bg="black", bd=0, highlightthickness=0, padx=0, pady=0)
         self.label.pack()
+        self._geometria = ""
+        self._cargar_imagen(image_path)
         self._render()
-        self.center()
         self.after(100, self._make_clickthrough)
+        self._centrar_periodicamente()
+
+    def _cargar_imagen(self, path):
+        """Carga la mira recortada a su contenido: el centro de la ventana pasa a ser el punto de mira."""
+        img = Image.open(path).convert("RGBA")
+        alfa = img.getchannel("A").point(lambda a: 255 if a > self.UMBRAL_ALFA else 0)
+        bbox = alfa.getbbox()
+        self.original_img = img.crop(bbox) if bbox else img
 
     def _render(self):
         w, h = self.original_img.size
-        nw, nh = int(w*self.scale), int(h*self.scale)
+        nw, nh = max(1, int(w*self.scale)), max(1, int(h*self.scale))
         img = self.original_img.resize((nw, nh), Image.Resampling.LANCZOS).convert("RGBA")
         self.tk_img = ImageTk.PhotoImage(img)
         self.label.config(image=self.tk_img)
         self.center()
 
     def center(self):
+        """Centra la mira en el monitor donde está el ratón (pantalla principal si falla)."""
         w, h = self.tk_img.width(), self.tk_img.height()
-        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-        x, y = (sw-w)//2, (sh-h)//2
-        self.geometry(f"{w}x{h}+{x}+{y}")
+        x0, y0, sw, sh = self._pantalla_objetivo()
+        x, y = x0 + (sw - w)//2, y0 + (sh - h)//2
+        geometria = f"{w}x{h}{'+' if x >= 0 else '-'}{abs(x)}{'+' if y >= 0 else '-'}{abs(y)}"
+        if geometria != self._geometria:
+            self._geometria = geometria
+            self.geometry(geometria)
+
+    def _pantalla_objetivo(self):
+        """Rectángulo (x, y, ancho, alto) del monitor que contiene al ratón."""
+        try:
+            hmon = win32api.MonitorFromPoint(win32api.GetCursorPos(),
+                                             win32con.MONITOR_DEFAULTTONEAREST)
+            izq, arriba, der, abajo = win32api.GetMonitorInfo(hmon)["Monitor"]
+            return izq, arriba, der - izq, abajo - arriba
+        except Exception:
+            return 0, 0, self.winfo_screenwidth(), self.winfo_screenheight()
+
+    def _centrar_periodicamente(self):
+        try:
+            if not self.winfo_exists():
+                return
+            self.center()
+            self.after(self.INTERVALO_CENTRADO_MS, self._centrar_periodicamente)
+        except tk.TclError:
+            return
 
     def update_scale(self, scale):
         self.scale = scale
@@ -128,7 +165,7 @@ class CrosshairOverlay(tk.Toplevel):
         self.attributes("-alpha", alpha)
 
     def change_image(self, path):
-        self.original_img = Image.open(path)
+        self._cargar_imagen(path)
         self._render()
 
     def _make_clickthrough(self):
