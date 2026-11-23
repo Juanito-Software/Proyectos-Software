@@ -104,7 +104,7 @@ Módulos estándar utilizados: `tkinter` · `threading` · `subprocess` · `os` 
 cd FPS-AI-Toolkit
 
 # 1. Instalar PyTorch con soporte CUDA (paso crítico)
-pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.14.1+cu126 torchvision==0.29.1+cu126 --index-url https://download.pytorch.org/whl/cu126
 
 # 2. Instalar el resto de dependencias
 pip install -r requirements.txt
