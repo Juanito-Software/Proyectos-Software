@@ -32,24 +32,28 @@ comtypes==1.4.16
 # ============================================================
 # IMPORTANTE: instalar manualmente con CUDA index-url
 
-# Stack de PyTorch para CUDA 12.4 (RTX 4060 Ti, sm_89).
+# Stack de PyTorch para CUDA 12.6 (RTX 4060 Ti, sm_89).
 #
 # Instalar los dos juntos y desde el indice de PyTorch, no de PyPI:
-#   pip install torch==2.6.0+cu124 torchvision==0.21.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+#   pip install torch==2.14.1+cu126 torchvision==0.29.1+cu126 --index-url https://download.pytorch.org/whl/cu126
 #
 # Se retiro torchaudio (estaba en 2.1.0+cu121): el proyecto es de vision y no
 # usa audio. Lo requiere ultralytics (YOLO) a traves de torch y torchvision,
 # nunca torchaudio. Quitarlo elimina ~100 MB de dependencia muerta.
 #
 # Nota sobre CUDA: el driver de NVIDIA es retrocompatible, asi que la build
-# cu124 funciona aunque el toolkit (nvcc) instalado sea 12.1 -- torch trae sus
+# cu126 funciona aunque el toolkit (nvcc) instalado sea 12.1 -- torch trae sus
 # propias librerias CUDA y solo necesita un driver suficientemente moderno.
-# Verificado: torch.cuda.is_available() == True sobre la RTX 4060 Ti.
+# Verificado con 2.6.0+cu124: torch.cuda.is_available() == True sobre la RTX 4060 Ti.
+# PENDIENTE de repetir con 2.14.1+cu126 (ver MAINTENANCE.md, 2026-11-23).
 #
-# 2.6.0 es ademas la version que corrige por defecto el torch.load con RCE
-# (weights_only=True). torch y torchvision van emparejados: 2.6.0 <-> 0.21.0.
-torch==2.6.0+cu124
-torchvision==0.21.0+cu124
+# Por que se subio de 2.6.0+cu124: las 8 alertas Dependabot de torch se corrigen
+# entre 2.7.1 y 2.13.0, y la serie cu124 de PyTorch no pasa de 2.6. 2.14.1 es la
+# ultima con ruedas cu126 y trae el torch.load seguro por defecto
+# (weights_only=True). torch y torchvision van emparejados: 2.14.x <-> 0.29.x
+# (torchvision 0.29.1 exige torch>=2.14.0).
+torch==2.14.1+cu126
+torchvision==0.29.1+cu126
 
 
 # ============================================================
@@ -59,7 +63,8 @@ torchvision==0.21.0+cu124
 requests==2.34.2
 PyYAML==6.0.3
 typing_extensions==4.15.0
-sympy==1.13.1
+# torch 2.14 exige sympy>=1.13.3 (con 2.6.0 estaba fijada en 1.13.1)
+sympy==1.14.0
 networkx==3.6.1
 filelock==4.2.5
 fsspec==2026.9.0

@@ -112,20 +112,21 @@ Convención de estados:
   como bloqueadas aguas arriba o pendientes de migración. _Bloque G. Fuente:
   2026-09-19 (rama `UpgradeDocs`) → resuelto 2026-10-31 (rama
   `corregirVulnerabilidades`)._
-- [ ] **JasperReportExecutor: migrar a JasperReports 7.** Las dos alertas de
+- [x] **JasperReportExecutor: migrar a JasperReports 7.** Las dos alertas de
   deserialización (#1393, #1913) solo se corrigen en 7.0.4/7.0.7, y la 7 no
-  carga el JRXML de la 6: `JasperCompileManager` falla con «Unable to load
-  report» (probado con 7.0.8 + `jasperreports-pdf`). Hay que convertir
-  `informeJugadores.jrxml` e `informePuntuaciones.jrxml` al formato 7 (Jaspersoft
-  Studio 7) y añadir `jasperreports-pdf`. No explotable hoy: el código compila
-  plantillas del classpath y nunca deserializa `.jasper`. _Fuente: 2026-10-31
-  (rama `corregirVulnerabilidades`)._
-- [ ] **FPS-AI-Toolkit: subir el stack de PyTorch.** Las 8 alertas de `torch`
-  (2.6.0+cu124) se corrigen entre 2.7.1 y 2.13; hay que subir `torch` y
-  `torchvision` juntos con el índice CUDA y validar en la GPU (política de
-  `dependabot.yml`). De paso, `requirements.txt` no resuelve: `opencv-python
-  4.13.0.92` exige `numpy>=2` y se fija `numpy==1.26.4` (preexistente).
-  _Fuente: 2026-10-31 (rama `corregirVulnerabilidades`)._
+  carga el JRXML de la 6. Migrado a 7.0.8 + `jasperreports-pdf` con las dos
+  plantillas convertidas al formato 7 y comprobadas contra el render de la 6
+  (mismo texto, 0 píxeles de diferencia). _Fuente: 2026-10-31 (rama
+  `corregirVulnerabilidades`) → resuelto 2026-11-23 (rama `fixvulnerabilities1`)._
+- [ ] **FPS-AI-Toolkit: validar el nuevo stack de PyTorch en la GPU.**
+  `requirements.txt` ya pide `torch 2.14.1+cu126` y `torchvision 0.29.1+cu126`
+  (cierra las 8 alertas de `torch`), pero no se ha podido probar sin la GPU:
+  reinstalar con el índice cu126 y comprobar `torch.cuda.is_available()` y el
+  detector. Si falla, volver a 2.6.0+cu124. De paso, `requirements.txt` no
+  resuelve del todo: `opencv-python 4.13.0.92` exige `numpy>=2` y se fija
+  `numpy==1.26.4` (preexistente). _Fuente: 2026-10-31 (rama
+  `corregirVulnerabilidades`); stack subido el 2026-11-23 (rama
+  `fixvulnerabilities1`), pendiente de validar._
 
 ## TaskHub_React (del historial, siguen abiertos)
 
@@ -279,6 +280,11 @@ de los proyectos).
 > `torch`, gestionado a mano. Detalle en la entrada fechada `2026-10-31 —
 > Vulnerabilidades`.
 
+- **Dependabot (2026-11-23):** segunda pasada en la rama `fixvulnerabilities1`:
+  quitado `@retconned/kick-js` (cierra la cadena `puppeteer`), `hono`, Laravel,
+  JasperReports 7 y `torch` 2.14.1; sin alertas conocidas pendientes salvo las
+  que tarde en cerrar el reescaneo (ver entrada fechada). Lo que sigue es el
+  estado a 2026-10-31:
 - **Dependabot:** 15 abiertas tras el Bloque G (2026-10-31), todas
   documentadas: las de npm sin arreglo disponible o bloqueadas por la cadena se
   dejan abiertas a propósito para que GitHub las cierre cuando la cadena
@@ -311,6 +317,75 @@ de los proyectos).
   el escáner automático; aparecieron leyendo el código. Los detalles de dónde
   estuvo cada una se omiten a propósito: este historial es público y señalarlos
   equivaldría a señalar los commits anteriores al arreglo.
+
+---
+
+## 2026-11-23 — Vulnerabilidades: segunda pasada (rama `fixvulnerabilities1`)
+
+Segundo repaso de las alertas Dependabot tras el Bloque G. Se refrescó la base de
+advisories (`github/advisory-database`, 2026-11-22) y se cruzó con los
+lockfiles, `composer.lock` y `requirements.txt`. Resultado: **todas las alertas
+que quedaban abiertas tienen ya arreglo en este cambio**, incluidas las que el
+2026-10-31 se dejaron como bloqueadas aguas arriba.
+
+### Corregidas
+
+| Proyecto | Cambio | Alertas |
+| --- | --- | --- |
+| unified-chat-widget | Se **quita `@retconned/kick-js`** de `package.json`: desde #148 el chat de Kick se conecta en `services/kick.js` con `ws` y la librería ya no se importaba en ningún sitio. Con ella se va toda la cadena `puppeteer@23` | `extract-zip` ×2 (#2051, #2095), `basic-ftp` ×3 (#2197, #2389, #2390), `zod` (#2344), `deepmerge` |
+| TaskHub_Angular/frontend | `hono` 4.13.14 → 4.13.20 y `@hono/node-server` 2.1.5 → 2.1.11 (solo `package-lock.json`; llegan por `@angular/cli` → `@modelcontextprotocol/sdk`, dependencia de desarrollo) | `hono` ×5 (#2391–#2395), `@hono/node-server` (#2387) |
+| gym-app (Composer) | `laravel/framework` v12.70.2 → v12.73.0 y 23 paquetes más en parche o minor; además `symfony/yaml` 7.4.23 (aviso nuevo de `composer audit`). `composer audit`: sin avisos; PHPUnit 41 tests en verde | `laravel/framework` (#2396) |
+| JasperReportExecutor | `jasperreports` 6.21.5 → **7.0.8** más `jasperreports-pdf` 7.0.8, y las dos plantillas convertidas al formato 7 | `jasperreports` ×2 (#1393, #1913) |
+| FPS-AI-Toolkit | `torch` 2.6.0+cu124 → **2.14.1+cu126** y `torchvision` 0.21.0 → 0.29.1+cu126; `sympy` 1.13.1 → 1.14.0 (torch 2.14 exige ≥ 1.13.3) | `torch` ×8 (#1889, #1890, #1892–#1895, #1897, #1923) |
+
+**Por qué cu126 y no cu124:** la serie cu124 de PyTorch no pasa de 2.6; la más
+cercana que sigue publicada es cu126, y 2.14.1 es su última versión. El código
+del proyecto no importa `torch` directamente (solo lo usa `ultralytics`), lo que
+acota el riesgo.
+
+**JasperReports 7: cómo se hizo.** La 7 no carga el JRXML de la 6 (`Unable to
+load report`). No hay modo de compatibilidad (solo existe `JacksonReportLoader`),
+así que se convirtieron las dos plantillas con un script a medida: sin `xmlns`,
+elementos como `<element kind="…">`, `bold`/`fontSize`/`hTextAlign` como
+atributos, `<query language="sql">` y `<conditionalStyle>` con sus atributos.
+Verificación: se rellenaron con las mismas 30 filas de prueba con la 6.21.5
+(plantilla original) y con la 7.0.8 (convertida) y se compararon los PDF: **mismo
+texto y 0 píxeles de diferencia** en las 4 páginas. `mvn package` compila. No se
+ha probado contra una base PostgreSQL real; el código de `JasperReportExecutor`
+no cambia.
+
+### Sin verificar (lo tiene que probar el usuario)
+
+- **FPS-AI-Toolkit en la GPU.** No se ha podido probar aquí: reinstalar con
+  `pip install torch==2.14.1+cu126 torchvision==0.29.1+cu126 --index-url
+  https://download.pytorch.org/whl/cu126`, y comprobar `torch.cuda.is_available()`
+  y que el detector arranca. Si falla, volver a `2.6.0+cu124` en
+  `requirements.txt` (las alertas de `torch` se reabrirían). Sigue anotado en el
+  ToDo.
+- **Preexistente sin tocar:** `requirements.txt` no resuelve del todo
+  (`opencv-python 4.13.0.92` exige `numpy>=2` y se fija `numpy==1.26.4`).
+
+### Observado y no corregido
+
+- `glob` 13.0.6 y `minimatch` 10.2.6 en `TaskHub_Angular/frontend` (dependencias
+  de herramientas de Angular) tienen aviso moderado; el arreglo es un salto de
+  major (`glob` 14, `minimatch` 11) que el árbol de `@angular/cli` no admite
+  todavía. Se vigila; no hay alerta Dependabot abierta de ellos a fecha de hoy.
+
+### Método y entorno
+
+- `scan.py` (cruce lockfile ↔ advisories) tras actualizar la base: los cuatro
+  lockfiles tocados salen sin avisos salvo los dos de `glob`/`minimatch` de
+  arriba.
+- `npm 11` para tocar los lockfiles (`npm uninstall --package-lock-only` y
+  `npm update hono @hono/node-server --package-lock-only`). El widget se
+  comprobó con `npm ci` limpio, `node --check` de todos los `.js` y la
+  importación de sus siete dependencias.
+- Composer ejecutado con `platform.php = 8.2` en una copia (el CI usa 8.2) para
+  no colar paquetes que pidan 8.3; solo se llevó `composer.lock` al repo, no
+  `composer.json`.
+- Las alertas se cerrarán cuando GitHub reescanee tras el merge; el número tarda
+  en bajar.
 
 ---
 

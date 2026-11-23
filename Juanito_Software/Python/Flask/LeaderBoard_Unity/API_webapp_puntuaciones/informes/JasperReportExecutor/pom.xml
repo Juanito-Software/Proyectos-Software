@@ -28,19 +28,28 @@
         el driver de PostgreSQL, y dejar que todo lo demas venga como dependencia
         transitiva, ya parcheado y coherente.
 
-        JasperReports 6.21.5 (ultima de la serie 6.x, que mantiene la API de
-        exportadores que usa el codigo) trae internamente:
-          - com.github.librepdf:openpdf 1.3.32  (sustituye a iText 2.1.7)
-          - org.apache.poi:poi / poi-ooxml 5.4.1
-          - jackson 2.17.x
-        Es decir, resuelve por si sola las alertas de iText, jasperreports y POI.
+        JasperReports 7.0.8 trae internamente las versiones parcheadas de POI,
+        Jackson y demas, y corrige las dos alertas de deserializacion de
+        JasperReports (se arreglan en 7.0.4 y 7.0.7). Desde la 7 el exportador a
+        PDF vive en un modulo aparte, jasperreports-pdf, que hay que declarar.
+
+        Las plantillas .jrxml estan en el formato de la 7 (la 7 no carga el de
+        la 6). Se convirtieron el 2026-11-23 y se comprobaron contra el render de
+        la 6.21.5: mismo texto y cero pixeles de diferencia. Ver MAINTENANCE.md.
     -->
     <dependencies>
-        <!-- Motor de informes. Arrastra OpenPDF, POI y Jackson ya parcheados. -->
+        <!-- Motor de informes. Arrastra POI y Jackson ya parcheados. -->
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports</artifactId>
-            <version>6.21.5</version>
+            <version>7.0.8</version>
+        </dependency>
+
+        <!-- Exportador a PDF (separado del motor desde la 7). -->
+        <dependency>
+            <groupId>net.sf.jasperreports</groupId>
+            <artifactId>jasperreports-pdf</artifactId>
+            <version>7.0.8</version>
         </dependency>
 
         <!--
